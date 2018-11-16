@@ -1,0 +1,24 @@
+
+config SND_MT76XX_SOC
+	tristate "SoC Audio for MT76XX APSoC Machine"
+	depends on SND_SOC && (RALINK_MT7620 || RALINK_MT7621 || RALINK_MT7628 || ARCH_MT7623) 
+	select I2C
+	select I2C_BOARDINFO
+	select I2C_COMPAT
+	select I2C_CHARDEV
+	select I2C_HELPER_AUTO
+	select I2C_RALINK
+	
+	help
+	  Say Y or M if you want to add support for codecs attached to
+	  the MTK I2S interface.
+
+
+config SND_MT76XX_PCM
+	tristate "MTK SoC Audio PCM Platform"
+	depends on SND_MT76XX_SOC
+
+config SND_MT76XX_I2S
+	tristate "MTK SoC I2S Support"
+	depends on SND_MT76XX_SOC
+

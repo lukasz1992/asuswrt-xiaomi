@@ -1,0 +1,11 @@
+#
+# Serial device configuration
+#
+
+
+menu "Ralink I2S"
+
+source "drivers/char/i2s/codec/Kconfig"
+source "drivers/char/i2s/core/Kconfig"
+
+endmenu

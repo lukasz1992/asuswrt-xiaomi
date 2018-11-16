@@ -1,0 +1,19 @@
+#!/bin/sh
+mount -a
+mkdir -p /var/run
+makedevlinks.sh
+cat /etc_ro/motd > /dev/console
+nvram_daemon&
+#goahead&
+init_system start
+
+#for telnet debugging
+telnetd
+
+#for syslogd
+mkdir -p /var/log
+
+#for cpe_app
+ln -s /etc_ro/init.d /etc/init.d
+ln -s /etc_ro/cron /etc/cron
+

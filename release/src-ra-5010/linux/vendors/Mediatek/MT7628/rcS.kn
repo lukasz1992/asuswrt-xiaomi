@@ -1,0 +1,34 @@
+#!/bin/sh
+mount -a
+mkdir -p /var/run
+cat /etc_ro/motd
+nvram_daemon&
+long_loop&
+#goahead&
+
+#for telnet debugging
+#telnetd
+
+#for syslogd
+#mkdir -p /var/log
+
+ralink_init gen 2860
+
+echo 3 > /proc/sys/vm/drop_caches
+echo 3 > /proc/sys/vm/drop_caches
+echo 3 > /proc/sys/vm/drop_caches
+free
+
+ifconfig ra0 up
+ifconfig eth2 up
+vconfig add eth2 1
+vconfig add eth2 2
+ifconfig eth2.1 up
+brctl addbr br0
+brctl addif br0 eth2.1
+brctl addif br0 ra0
+ifconfig br0 10.10.10.254 netmask 255.255.255.0
+config-vlan.sh 2 LLLLW
+
+
+telnetd

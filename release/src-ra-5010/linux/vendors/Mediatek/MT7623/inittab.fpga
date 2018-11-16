@@ -1,0 +1,2 @@
+::sysinit:/etc_ro/rcS
+ttyMT0::respawn:/bin/sh

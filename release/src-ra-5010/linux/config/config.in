@@ -1,0 +1,511 @@
+mainmenu_name "Ralink SDK Embedded Linux Application Configuration"
+
+mainmenu_option next_comment
+comment 'Library Configuration'
+
+comment 'Force build (Normally built when required)'
+bool 'Build libgmp'		CONFIG_LIB_LIBGMP_FORCE
+bool 'Build libpthread'		CONFIG_LIB_LIBPTHREAD_FORCE
+bool 'Build libnvram'		CONFIG_LIB_LIBNVRAM_FORCE
+bool 'Build libntfs-3g'		CONFIG_LIB_LIBNTFS3G_FORCE
+bool 'Build libbluetooth'	CONFIG_LIB_LIBBT_FORCE
+bool 'Build libreadline'	CONFIG_LIB_READLINE_FORCE
+bool 'Build libpcap'		CONFIG_LIB_LIBPCAP_FORCE
+bool 'Build libevent'		CONFIG_LIB_LIBEVENT_FORCE
+bool 'Build libncurse'		CONFIG_LIB_NCURSE_FORCE
+bool 'Build libflex'		CONFIG_LIB_FLEX_FORCE
+bool 'Build libupnp1.3.1 (UPnP + IXML + ThreadUtil)'	CONFIG_LIB_LIBUPNP_FORCE
+bool 'Build libdlna'		CONFIG_LIB_LIBDLNA_FORCE
+bool 'Build libffmpeg'		CONFIG_LIB_LIBFFMPEG_FORCE
+bool 'Build libgdbm'		CONFIG_LIB_LIBGDBM_FORCE
+bool 'Build libid3tag'		CONFIG_LIB_LIBID3TAG_FORCE
+bool 'Build libsqlite3'		CONFIG_LIB_LIBSQLITE3_FORCE
+bool 'Build libexif'		CONFIG_LIB_LIBEXIF_FORCE
+bool 'Build libogg'		CONFIG_LIB_LIBOGG_FORCE
+bool 'Build libvorbis'		CONFIG_LIB_LIBVORBIS_FORCE
+bool 'Build libflac'		CONFIG_LIB_LIBFLAC_FORCE
+bool 'Build libjpeg'		CONFIG_LIB_LIBJPEG_FORCE
+bool 'Build libdb'		CONFIG_LIB_LIBDB_FORCE
+bool 'Build libusb-0.1.12'	CONFIG_LIB_USB0112_FORCE
+bool 'Build libusb-1.0.0'	CONFIG_LIB_USB100_FORCE
+bool 'Build pcre'		CONFIG_LIB_PCRE_FORCE
+bool 'Build vstr'		CONFIG_LIB_VSTR_FORCE
+bool 'Build zlib'		CONFIG_LIB_ZLIB_FORCE
+bool 'Build lzo'                CONFIG_LIB_LZO_FORCE
+bool 'Build e2fsprogs'          CONFIG_LIB_E2FSPROGS_FORCE
+bool 'Build uClibc (libstdc++)'	CONFIG_LIB_LIBSTDC_PLUS_FORCE
+dep_bool ' Hello World Example (c++)'  CONFIG_USER_HELLO_WORLD $CONFIG_LIB_LIBSTDC_PLUS_FORCE
+
+if [ "$CONFIG_UCLIBC_0_9_28" = "y" ]; then
+comment 'Force build extra libraries in uClibc'
+bool 'Build libcrypt'		CONFIG_LIB_CRYPT_FORCE
+bool 'Build libm'		CONFIG_LIB_LIBM_FORCE
+bool 'Build libnsl'		CONFIG_LIB_NSL_FORCE
+bool 'Build libutil'		CONFIG_LIB_UTIL_FORCE
+bool 'Build libresolv'		CONFIG_LIB_RESOLV_FORCE
+bool 'Build librt'		CONFIG_LIB_RT_FORCE
+fi
+
+if [ "$CONFIG_LIB_USB100_FORCE" = "y" ]; then
+	define_bool CONFIG_LIB_LIBPTHREAD_FORCE y
+fi
+
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+
+comment 'MTD utils'
+bool 'mtd-utils'               CONFIG_USER_MTDUTILS
+dep_bool '  docfdisk'       CONFIG_USER_MTDUTILS_DOCFDISK $CONFIG_USER_MTDUTILS
+dep_bool '  doc_loadbios'   CONFIG_USER_MTDUTILS_DOC_LOADBIOS $CONFIG_USER_MTDUTILS
+dep_bool '  flashcp'        CONFIG_USER_MTDUTILS_FLASHCP $CONFIG_USER_MTDUTILS
+dep_bool '  flash_erase'    CONFIG_USER_MTDUTILS_FLASH_ERASE $CONFIG_USER_MTDUTILS
+dep_bool '  flash_eraseall' CONFIG_USER_MTDUTILS_FLASH_ERASEALL $CONFIG_USER_MTDUTILS
+dep_bool '  flash_lock'     CONFIG_USER_MTDUTILS_FLASH_LOCK $CONFIG_USER_MTDUTILS
+dep_bool '  flash_otp_dump' CONFIG_USER_MTDUTILS_FLASH_OTP_DUMP $CONFIG_USER_MTDUTILS
+dep_bool '  flash_otp_info' CONFIG_USER_MTDUTILS_FLASH_OTP_INFO $CONFIG_USER_MTDUTILS
+dep_bool '  flash_unlock'   CONFIG_USER_MTDUTILS_FLASH_UNLOCK $CONFIG_USER_MTDUTILS
+dep_bool '  ftl_check'      CONFIG_USER_MTDUTILS_FTL_CHECK $CONFIG_USER_MTDUTILS
+dep_bool '  ftl_format'     CONFIG_USER_MTDUTILS_FTL_FORMAT $CONFIG_USER_MTDUTILS
+dep_bool '  jffs2dump'      CONFIG_USER_MTDUTILS_JFFS2DUMP $CONFIG_USER_MTDUTILS
+dep_bool '  jffs2reader'    CONFIG_USER_MTDUTILS_JFFS2READER $CONFIG_USER_MTDUTILS
+dep_bool '  mkfs.jffs2'     CONFIG_USER_MTDUTILS_MKFSJFFS2 $CONFIG_USER_MTDUTILS
+dep_bool '  mtd_debug'      CONFIG_USER_MTDUTILS_MTD_DEBUG $CONFIG_USER_MTDUTILS
+dep_bool '  nanddump'       CONFIG_USER_MTDUTILS_NANDDUMP $CONFIG_USER_MTDUTILS
+dep_bool '  nandtest'       CONFIG_USER_MTDUTILS_NANDTEST $CONFIG_USER_MTDUTILS
+dep_bool '  nandwrite'      CONFIG_USER_MTDUTILS_NANDWRITE $CONFIG_USER_MTDUTILS
+dep_bool '  nftldump'       CONFIG_USER_MTDUTILS_NFTLDUMP $CONFIG_USER_MTDUTILS
+dep_bool '  nftl_format'    CONFIG_USER_MTDUTILS_NFTL_FORMAT $CONFIG_USER_MTDUTILS
+dep_bool '  recv_image'     CONFIG_USER_MTDUTILS_RECV_IMAGE $CONFIG_USER_MTDUTILS
+dep_bool '  rfddump'        CONFIG_USER_MTDUTILS_RFDDUMP $CONFIG_USER_MTDUTILS
+dep_bool '  rfdformat'      CONFIG_USER_MTDUTILS_RFDFORMAT $CONFIG_USER_MTDUTILS
+dep_bool '  serve_image'    CONFIG_USER_MTDUTILS_SERVE_IMAGE $CONFIG_USER_MTDUTILS
+dep_bool '  sumtool'        CONFIG_USER_MTDUTILS_SUMTOOL $CONFIG_USER_MTDUTILS
+dep_bool '  mkfs.ubifs'     CONFIG_USER_MTDUTILS_MKFSUBIFS $CONFIG_USER_MTDUTILS
+dep_bool '  mtdinfo'        CONFIG_USER_MTDUTILS_MTDINFO $CONFIG_USER_MTDUTILS
+dep_bool '  ubiattach'      CONFIG_USER_MTDUTILS_UBIATTACH $CONFIG_USER_MTDUTILS
+dep_bool '  ubicrc32'       CONFIG_USER_MTDUTILS_UBICRC32 $CONFIG_USER_MTDUTILS
+dep_bool '  ubidetach'      CONFIG_USER_MTDUTILS_UBIDETACH $CONFIG_USER_MTDUTILS
+dep_bool '  ubiformat'      CONFIG_USER_MTDUTILS_UBIFORMAT $CONFIG_USER_MTDUTILS
+dep_bool '  ubimkvol'       CONFIG_USER_MTDUTILS_UBIMKVOL $CONFIG_USER_MTDUTILS
+dep_bool '  ubinfo'         CONFIG_USER_MTDUTILS_UBINFO $CONFIG_USER_MTDUTILS
+dep_bool '  ubinize'        CONFIG_USER_MTDUTILS_UBINIZE $CONFIG_USER_MTDUTILS
+dep_bool '  ubirename'      CONFIG_USER_MTDUTILS_UBIRENAME $CONFIG_USER_MTDUTILS
+dep_bool '  ubirmvol'       CONFIG_USER_MTDUTILS_UBIRMVOL $CONFIG_USER_MTDUTILS
+dep_bool '  ubirsvol'       CONFIG_USER_MTDUTILS_UBIRSVOL $CONFIG_USER_MTDUTILS
+dep_bool '  ubiupdatevol'   CONFIG_USER_MTDUTILS_UBIUPDATEVOL $CONFIG_USER_MTDUTILS
+
+
+if [ "$CONFIG_USER_MTDUTILS" = "y" ]; then
+	define_bool CONFIG_LIB_ZLIB_FORCE y
+	define_bool CONFIG_LIB_LZO_FORCE y
+	define_bool CONFIG_LIB_E2FSPROGS_FORCE y
+fi
+
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Network Applications'
+
+bool '3G connection (usb_modeswitch, comgt, pppd, sdparm, and dial-up scripts)' CONFIG_USER_3G
+
+if [ "$CONFIG_USER_3G" = "y" ]; then
+	define_bool CONFIG_RT2880_SCRIPTS y
+	define_bool CONFIG_USER_PPPD y
+	define_bool CONFIG_USER_COMGT y
+	define_bool CONFIG_USER_USBMODESWITCH y
+	define_bool CONFIG_USER_SDPARM y
+fi
+
+if [ "$CONFIG_DEFAULTS_RALINK_RT2880" != "y" ]; then
+bool 'accel-pptp'		  CONFIG_USER_ACCEL_PPTP
+if [ "$CONFIG_USER_ACCEL_PPTP" = "y" ]; then
+	define_bool CONFIG_USER_PPPD_WITH_PPTP y
+fi
+fi
+bool 'arptables'		  CONFIG_USER_ARPTABLES
+bool 'bridge utils'		  CONFIG_USER_BRCTL_BRCTL
+bool 'bigpond'			  CONFIG_USER_BIGPOND
+bool 'bluetooth utils'	  	  CONFIG_USER_BT_UTILS
+dep_bool ' avinfo'		  CONFIG_USER_BT_AVINFO		$CONFIG_USER_BT_UTILS
+dep_bool ' bccmd'		  CONFIG_USER_BT_BCCMD		$CONFIG_USER_BT_UTILS
+dep_bool ' ciptool'		  CONFIG_USER_BT_CIPTOOL	$CONFIG_USER_BT_UTILS
+dep_bool ' hciconfig'		  CONFIG_USER_BT_HCICONFIG	$CONFIG_USER_BT_UTILS
+dep_bool ' hciattach'		  CONFIG_USER_BT_HCIATTACH	$CONFIG_USER_BT_UTILS
+dep_bool ' hcisecfilter'	  CONFIG_USER_BT_HCISECFILTER	$CONFIG_USER_BT_UTILS
+dep_bool ' hcitool'		  CONFIG_USER_BT_HCITOOL	$CONFIG_USER_BT_UTILS
+dep_bool ' l2ping'		  CONFIG_USER_BT_L2PING		$CONFIG_USER_BT_UTILS
+dep_bool ' ppporc'		  CONFIG_USER_BT_PPPORC		$CONFIG_USER_BT_UTILS
+dep_bool ' sdptool'		  CONFIG_USER_BT_SDPTOOL	$CONFIG_USER_BT_UTILS
+if [ "$CONFIG_USER_BT_UTILS" = "y" ]; then
+	define_bool CONFIG_LIB_LIBBT_FORCE y
+fi
+bool 'ctorrent (lightweigth BitTorrent Client)'	CONFIG_USER_CTORRENT
+if [ "$CONFIG_USER_CTORRENT" = "y" ]; then
+	define_bool CONFIG_LIB_LIBM_FORCE y
+fi
+bool 'cpu (simple CPU usage reporting tool)'	CONFIG_USER_CPU
+bool 'dhcp6'					CONFIG_USER_DHCP6
+dep_bool '  dhcp6 server'			CONFIG_USER_DHCP6_SERVER $CONFIG_USER_DHCP6
+dep_bool '  dhcp6 client'			CONFIG_USER_DHCP6_CLIENT $CONFIG_USER_DHCP6
+bool 'wide dhcpv6'				CONFIG_USER_WIDE_DHCPV6
+bool 'ISC DHCP'					CONFIG_USER_ISC_DHCP
+bool 'dropbear (SSH server)'			CONFIG_USER_DROPBEAR
+if [ "$CONFIG_USER_DROPBEAR" = "y" ]; then
+	define_bool CONFIG_LIB_UTIL_FORCE y
+fi
+bool 'dnsmasq (DNS forwarder, DHCP server)'	CONFIG_USER_DNSMASQ
+bool 'disktype(detect format of a disk)'	CONFIG_USER_DISKTYPE
+bool 'echo server'				CONFIG_USER_ECHO_SERVER
+bool 'ebtables'					CONFIG_USER_EBTABLES
+bool 'storage(enable chmod, fdisk in busybox)'	CONFIG_USER_STORAGE
+#dep_bool '  stupid ftpd'			CONFIG_USER_STUPID_FTPD $CONFIG_USER_STORAGE
+dep_bool '  proftpd (FTP Server)'               CONFIG_USER_PROFTPD $CONFIG_USER_STORAGE
+if [ "$CONFIG_USER_PROFTPD" = "y" ]; then
+	define_bool CONFIG_LIB_CRYPT_FORCE y
+fi
+dep_bool '  Samba Server'			CONFIG_USER_SAMBA $CONFIG_USER_STORAGE
+if [ "$CONFIG_USER_SAMBA" = "y" ]; then
+if [ "$CONFIG_UCLIBC_0_9_33_2" = "y" ]; then
+        choice ' Samba version'  " v3.0.2 CONFIG_SAMBA_3_0_2 \
+                                   v4.0.24 CONFIG_SAMBA_4_0_24
+                                 " v3.0.2
+else
+	define_bool CONFIG_SAMBA_3_0_2 y
+fi
+fi
+
+if [ "$CONFIG_USER_SAMBA" = "y" ]; then
+	define_bool CONFIG_LIB_NSL_FORCE y
+	dep_bool '    only NMBD(NetBIOS name server)' CONFIG_USER_NMBD_ONLY $CONFIG_USER_SAMBA
+		if [ "$CONFIG_USER_NMBD_ONLY" = "n" ]; then
+			define_bool CONFIG_USER_SAMBA_ALL y
+		fi
+fi
+dep_bool '  Minidlna'				CONFIG_USER_MINIDLNA $CONFIG_USER_STORAGE
+if [ "$CONFIG_USER_MINIDLNA" = "y" ]; then
+	define_bool CONFIG_LIB_LIBFFMPEG_FORCE y
+	define_bool CONFIG_LIB_LIBID3TAG_FORCE y
+	define_bool CONFIG_LIB_LIBSQLITE3_FORCE y
+	define_bool CONFIG_LIB_LIBEXIF_FORCE y
+	define_bool CONFIG_LIB_LIBOGG_FORCE y
+	define_bool CONFIG_LIB_LIBVORBIS_FORCE y
+	define_bool CONFIG_LIB_LIBFLAC_FORCE y
+	define_bool CONFIG_LIB_LIBJPEG_FORCE y
+	define_bool CONFIG_LIB_ZLIB_FORCE y
+fi
+
+bool 'Lighttpd webserver'			CONFIG_USER_LIGHTY
+if [ "$CONFIG_USER_LIGHTY" = "y" ]; then
+	define_bool CONFIG_LIB_PCRE_FORCE y
+    	define_bool CONFIG_LIB_ZLIB_FORCE y
+fi
+
+bool 'ecmh (IPv6 multicast forwarding/MLD daemon)'	CONFIG_USER_ECMH
+bool 'igmp proxy (RFC4605)'			CONFIG_USER_IGMP_PROXY
+bool 'inadyn (DDNS Client)'     		CONFIG_USER_INADYN
+bool 'iptables'					CONFIG_USER_IPTABLES_IPTABLES
+if [ "$CONFIG_USER_IPTABLES_IPTABLES" = "y" ]; then
+	define_bool CONFIG_LIB_LIBM_FORCE y
+fi
+bool 'ip6tables'				CONFIG_USER_IPTABLES_IP6TABLES
+bool 'iproute2'					CONFIG_USER_IPROUTE2
+dep_bool '  ss'		  CONFIG_USER_IPROUTE2_SS	$CONFIG_USER_IPROUTE2
+dep_bool '  arpd'		  CONFIG_USER_IPROUTE2_ARPD		$CONFIG_USER_IPROUTE2
+dep_bool '  nstat'        CONFIG_USER_IPROUTE2_NSTAT	$CONFIG_USER_IPROUTE2
+dep_bool '  ifstat'       CONFIG_USER_IPROUTE2_IFSTAT	$CONFIG_USER_IPROUTE2
+dep_bool '  rtacct'       CONFIG_USER_IPROUTE2_RTACCT	$CONFIG_USER_IPROUTE2
+dep_bool '  lnstat'       CONFIG_USER_IPROUTE2_LNSTAT	$CONFIG_USER_IPROUTE2
+dep_bool '  ip'		  CONFIG_USER_IPROUTE2_IP	$CONFIG_USER_IPROUTE2
+dep_bool '  rtmon'        CONFIG_USER_IPROUTE2_RTMON	$CONFIG_USER_IPROUTE2
+dep_bool '  tc'		  CONFIG_USER_IPROUTE2_TC	$CONFIG_USER_IPROUTE2
+if [ "$CONFIG_USER_IPROUTE2" = "y" ]; then
+	define_bool CONFIG_LIB_LIBM_FORCE y
+fi
+
+bool 'matrixssl'				CONFIG_USER_MATRIXSSL
+bool 'miniupnpd'				CONFIG_USER_MINIUPNPD
+bool 'mkdosfs (DOS file system utilty)'		CONFIG_USER_MKDOSFS
+bool 'ntpclient: Ntpclient'			CONFIG_USER_NTPCLIENT_NTPCLIENT
+bool 'ntpclient: Adjtimex'			CONFIG_USER_NTPCLIENT_ADJTIMEX
+bool 'openssl'					CONFIG_USER_OPENSSL
+bool 'openl2tp'					CONFIG_USER_OPENL2TP
+if [ "$CONFIG_USER_OPENL2TP" = "y" ]; then
+	define_bool CONFIG_USER_PPPD_WITH_L2TP y
+	define_bool CONFIG_LIB_FLEX_FORCE y
+fi
+bool 'openswan-apps'  CONFIG_USER_OPENSWAN
+if [ "$CONFIG_USER_OPENSWAN" = "y" ]; then
+      bool '  pluto'          CONFIG_USER_OPENSWAN_PLUTO_PLUTO
+      bool '  whack'          CONFIG_USER_OPENSWAN_PLUTO_WHACK
+      bool '  ranbits'        CONFIG_USER_OPENSWAN_UTILS_RANBITS
+      bool '  rsasigkey'      CONFIG_USER_OPENSWAN_UTILS_RSASIGKEY
+      bool '  eroute'         CONFIG_USER_OPENSWAN_KLIPS_EROUTE
+      bool '  klipsdebug'     CONFIG_USER_OPENSWAN_KLIPS_KLIPSDEBUG
+      bool '  spi'            CONFIG_USER_OPENSWAN_KLIPS_SPI
+      bool '  spigrp'         CONFIG_USER_OPENSWAN_KLIPS_SPIGRP
+      bool '  tncfg'          CONFIG_USER_OPENSWAN_KLIPS_TNCFG
+define_bool CONFIG_LIB_LIBGMP_FORCE $CONFIG_USER_OPENSWAN
+define_bool CONFIG_LIB_CRYPT_FORCE $CONFIG_USER_OPENSWAN
+define_bool CONFIG_LIB_RESOLV_FORCE $CONFIG_USER_OPENSWAN
+fi
+
+bool 'p910nd (small printer daemon)'            CONFIG_USER_P910ND
+bool 'parprouted (Proxy ARP)'	CONFIG_USER_PARPROUTED
+if [ "$CONFIG_USER_PARPROUTED" = "y" ]; then
+	define_bool CONFIG_USER_IPROUTE2 y
+	define_bool CONFIG_USER_IPROUTE2_IP y
+fi
+bool 'pppd'					CONFIG_USER_PPPD
+dep_bool '  pppoe client'                       CONFIG_USER_PPPD_WITH_PPPOE $CONFIG_USER_PPPD
+dep_bool '  l2tp client'                        CONFIG_USER_PPPD_WITH_L2TP $CONFIG_USER_PPPD
+dep_bool '  pptp client'                        CONFIG_USER_PPPD_WITH_PPTP $CONFIG_USER_PPPD
+dep_bool '  ppp status'                         CONFIG_USER_PPPD_PPPSTATS $CONFIG_USER_PPPD
+dep_bool '  ppp dump'                           CONFIG_USER_PPPD_PPPDUMP $CONFIG_USER_PPPD
+dep_bool '  ppp chat'                           CONFIG_USER_PPPD_PPPCHAT $CONFIG_USER_PPPD
+bool 'pppoe relay'                              CONFIG_USER_RPPPPOE_RELAY
+bool 'pppoe sniffer'                            CONFIG_USER_RPPPPOE_SNIFF
+bool 'pppoecd (pppoe client)'			CONFIG_USER_PPPOECD
+bool 'pptp'                                     CONFIG_USER_PPTP_CLIENT
+bool 'ripd-zebra (RIP)' 			CONFIG_USER_ZEBRA
+if [ "$CONFIG_USER_ZEBRA" = "y" ]; then
+    define_bool CONFIG_LIB_LIBZEBRA_FORCE y
+fi
+if [ "$CONFIG_USER_ZEBRA" = "n" ]; then
+    define_bool CONFIG_LIB_LIBZEBRA_FORCE n
+fi
+
+bool 'rp-l2tp'                                  CONFIG_USER_RP_L2TP
+bool 'radvd (Router Advertisement Daemon)'	CONFIG_USER_RADVD
+dep_bool '  radvd dump'			        CONFIG_USER_RADVD_DUMP $CONFIG_USER_RADVD
+bool 'rt2860apd (802.1x Authenticator)'		CONFIG_USER_802_1X
+bool 'rt61apd (Legacy 802.1x Authenticator)'	CONFIG_USER_RT2561_802_1X
+bool 'Snort (IDS)'				CONFIG_USER_SNORT
+if [ "$CONFIG_USER_SNORT" = "y" ]; then
+	define_bool CONFIG_LIB_PCRE_FORCE y
+	define_bool CONFIG_LIB_LIBPCAP_FORCE y
+fi
+
+bool 'snmpd(v1)'				CONFIG_USER_SNMPD
+
+bool 'totd (DNS proxy)'				CONFIG_USER_TOTD
+bool 'uvc_stream'				CONFIG_USER_UVC_STREAM
+bool 'linux-igd'				CONFIG_USER_UPNP_IGD
+bool 'wpa-supplicant'				CONFIG_USER_WPA_SUPPLICANT
+if [ "$CONFIG_USER_WPA_SUPPLICANT" = "y" ]; then
+	define_bool CONFIG_USER_OPENSSL y
+fi
+
+bool 'wscd (WSC/WPS)'				CONFIG_USER_WSC
+if [ "$CONFIG_USER_UPNP_IGD" = "y" -o "$CONFIG_USER_WSC" = "y" ]; then
+	define_bool CONFIG_LIB_LIBPTHREAD_FORCE y
+	define_bool CONFIG_LIB_LIBUPNP_FORCE y
+fi
+
+comment 'Wireless-tools'
+bool 'wireless_tools support'	CONFIG_USER_WIRELESS_TOOLS
+if [ "$CONFIG_USER_WIRELESS_TOOLS" = "y" ]; then
+	bool '  iwconfig'	CONFIG_USER_WIRELESS_TOOLS_IWCONFIG
+	bool '  iwgetid'	CONFIG_USER_WIRELESS_TOOLS_IWGETID
+	bool '  iwlist'		CONFIG_USER_WIRELESS_TOOLS_IWLIST
+	bool '  iwpriv'		CONFIG_USER_WIRELESS_TOOLS_IWPRIV
+	bool '  iwspy'		CONFIG_USER_WIRELESS_TOOLS_IWSPY
+	bool '  iwevent'	CONFIG_USER_WIRELESS_TOOLS_IWEVENT
+fi
+bool '802.11f/802.11r/802.11k daemon'	CONFIG_USER_RALINKIAPPD
+
+comment 'Bluetooth-apps'
+if [ "$CONFIG_DEFAULTS_MEDIATEK_MT7628" = "y" -o "$CONFIG_DEFAULTS_MEDIATEK_MT7621" = "y" -o "$CONFIG_DEFAULTS_MEDIATEK_MT7623" = "y" ]; then
+bool 'BlueAngel Support'	CONFIG_USER_BLUEANGEL
+dep_bool '   mtkbt'		CONFIG_USER_BLUEANGEL_MTKBT $CONFIG_USER_BLUEANGEL
+dep_bool '   btcli'		CONFIG_USER_BLUEANGEL_BTCLI $CONFIG_USER_BLUEANGEL
+dep_bool '      bt default on'  CONFIG_USER_BTCLI_ON $CONFIG_USER_BLUEANGEL_BTCLI
+dep_bool '   relayer'		CONFIG_USER_BLUEANGEL_RELAYER $CONFIG_USER_BLUEANGEL
+if [ "$CONFIG_ARCH_MT7623" = "y" ]; then
+dep_bool '   autobt'		CONFIG_USER_BLUEANGEL_AUTOBT $CONFIG_USER_BLUEANGEL
+fi
+
+fi
+
+endmenu
+
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Miscellaneous Applications'
+
+bool 'busybox'                  CONFIG_USER_BUSYBOX_BUSYBOX
+bool 'bonnie++'			CONFIG_USER_BONNIE
+bool 'cachebench'		CONFIG_USER_CACHEBENCH
+if [ "$CONFIG_USER_CACHEBENCH" = "y" ]; then
+	define_bool CONFIG_LIB_RT_FORCE y
+fi
+bool 'ethtool'			CONFIG_USER_ETHTOOL
+bool 'dhrystone'		CONFIG_DHRYSTONE
+bool 'dhcpfwd'			CONFIG_DHCPFWD
+bool 'gdbreplay'		CONFIG_USER_GDBREPLAY
+bool 'gdbserver'		CONFIG_USER_GDBSERVER
+bool 'IXIA Endpoint'		CONFIG_USER_IXIA_ENDPOINT
+if [ "$CONFIG_USER_IXIA_ENDPOINT" = "y" ]; then
+choice ' IXIA Endpoint'  " v6.7(Chariot_5.x)       CONFIG_USER_IXIA_ENDPOINT_670 \
+                           v7.3(Chariot_6.x_above) CONFIG_USER_IXIA_ENDPOINT_730SP1
+                         " v6.7
+fi
+bool 'iperf'			CONFIG_USER_IPERF
+if [ "$CONFIG_USER_IPERF" = "y" ]; then
+	define_bool CONFIG_LIB_LIBM_FORCE y
+fi
+bool 'i2c-tools'		CONFIG_USER_I2C_TOOLS
+bool 'lmbench'			CONFIG_USER_LMBENCH3
+bool 'mtd write'		CONFIG_USER_MTD_WRITE
+bool 'mpstat'			CONFIG_USER_MPSTAT
+bool 'nbench'                   CONFIG_USER_NBENCH
+bool 'netcat'                   CONFIG_USER_NETCAT
+bool 'netstat-nat'              CONFIG_USER_NETSTAT_NAT
+bool 'ntfs-3g'			CONFIG_USER_NTFS3G
+bool 'ntfsprogs'		CONFIG_USER_NTFSPROGS
+if [ "$CONFIG_USER_NTFS3G" = "y" ]; then
+	define_bool CONFIG_LIB_LIBNTFS3G_FORCE y
+	define_bool CONFIG_LIB_LIBPTHREAD_FORCE y
+fi
+if [ "$CONFIG_USER_NTFS3G" = "n" ]; then
+	define_bool CONFIG_LIB_LIBNTFS3G_FORCE n
+fi
+bool 'strace'			CONFIG_USER_STRACE_STRACE
+bool 'tcpdump (Binary Only)'	CONFIG_USER_TCPDUMP
+bool 'taskset (Binary Only)'	CONFIG_USER_TASKSET
+bool 'lspci'			CONFIG_USER_PCIUTIL_LSPCI
+bool 'setpci'			CONFIG_USER_PCIUTIL_SETPCI
+if [ "$CONFIG_USER_PCIUTIL_LSPCI" = "y" -o "$CONFIG_USER_PCIUTIL_SETPCI" = "y" ]; then
+    define_bool CONFIG_LIB_ZLIB_FORCE y
+fi
+bool 'lsusb'			CONFIG_USER_LSUSB
+if [ "$CONFIG_USER_LSUSB" = "y" ]; then
+	define_bool CONFIG_LIB_USB100_FORCE y
+fi
+bool 'usb_modeswitch'		CONFIG_USER_USBMODESWITCH
+if [ "$CONFIG_USER_USBMODESWITCH" = "y" ]; then
+	define_bool CONFIG_LIB_USB0112_FORCE y
+fi
+bool 'comgt'			CONFIG_USER_COMGT
+bool 'sdparm'			CONFIG_USER_SDPARM
+bool 'watchdog'			CONFIG_USER_WATCHDOG
+bool 'vmstat'			CONFIG_USER_VMSTAT
+if [ "$CONFIG_SOUND" = "y" ]; then
+	bool 'ALSA Util'	CONFIG_USER_ALSA_UTIL_1_0_27_2
+	define_bool CONFIG_LIB_LIBPTHREAD_FORCE y
+	define_bool CONFIG_LIB_RT_FORCE y
+fi
+
+bool 'MoCAd2'			CONFIG_USER_MOCAD2
+if [ "$CONFIG_USER_MOCAD2" = "y" ]; then
+	define_bool CONFIG_LIB_LIBPCAP_FORCE y
+	define_bool CONFIG_LIB_LIBPTHREAD_FORCE y
+	define_bool CONFIG_LIB_LIBSTDC_PLUS_FORCE y
+fi
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Proprietary Application'
+
+bool 'Proprietary Application'	CONFIG_RALINKAPP
+if [ "$CONFIG_RALINKAPP" = "y" ]; then
+bool 'ATE Agent'		CONFIG_RALINKAPP_ATED
+bool 'Register R/W'		CONFIG_RALINKAPP_REG_RW
+bool 'CSR'			CONFIG_RALINKAPP_CSR
+bool 'Flash'			CONFIG_RALINKAPP_FLASH
+dep_bool '   flash Tool'	CONFIG_FLASH_TOOL $CONFIG_RALINKAPP_FLASH
+dep_bool '   eth_mac Tool'	CONFIG_ETHMAC_TOOL $CONFIG_RALINKAPP_FLASH
+bool 'HW NAT'			CONFIG_RALINKAPP_HWNAT
+bool 'MiiMgr '			CONFIG_RALINKAPP_MII_MGR
+bool 'NVRAM'			CONFIG_RALINKAPP_NVRAM
+if [ "$CONFIG_RALINKAPP_NVRAM" = "y" ]; then
+	define_bool CONFIG_LIB_LIBNVRAM_FORCE y
+fi
+bool 'Layer2 Management'	CONFIG_RALINKAPP_L2_MANAGE
+if [ "$CONFIG_DEFAULTS_MEDIATEK_MT7623" = "y" ]; then
+   bool 'GPIO'      CONFIG_MEDIATEKAPP_GPIO
+else
+   bool 'GPIO'			CONFIG_RALINKAPP_GPIO
+fi
+bool 'SPI Command'		CONFIG_RALINKAPP_SPI
+bool 'I2C Command'		CONFIG_RALINKAPP_I2C
+bool 'QoS Support'    CONFIG_USER_QOS
+if [ "$CONFIG_DEFAULTS_MEDIATEK_MT7621" = "y" -o "$CONFIG_DEFAULTS_MEDIATEK_MT7623" = "y" -o  "$CONFIG_DEFAULTS_MEDIATEK_MT7622" = "y" ]; then
+if [ "$CONFIG_USER_QOS" = "y" ]; then
+        choice 'QoS'    " Hardware CONFIG_RALINKAPP_HWQOS \
+                          Software CONFIG_RALINKAPP_SWQOS
+                                 " Hardware
+fi
+else
+   bool 'Software QoS'    CONFIG_RALINKAPP_SWQOS
+fi
+if [ "$CONFIG_RALINKAPP_SWQOS" = "y" ]; then
+	define_bool CONFIG_USER_IPROUTE2 y
+	define_bool CONFIG_USER_IPROUTE2_TC y
+fi
+if [ "$CONFIG_RALINKAPP_HWQOS" = "y" ]; then
+	define_bool CONFIG_USER_IPROUTE2 y
+fi
+bool 'Super DMZ'		CONFIG_RALINKAPP_SUPERDMZ
+
+if [ "$CONFIG_DEFAULTS_RALINK_RT3052" = "y" -o "$CONFIG_DEFAULTS_RALINK_RT3352" = "y" -o "$CONFIG_DEFAULTS_RALINK_RT5350" = "y" -o "$CONFIG_DEFAULTS_RALINK_RT6855" = "y" -o "$CONFIG_DEFAULTS_RALINK_RT6855A" = "y" -o "$CONFIG_DEFAULTS_MEDIATEK_MT7620" = "y" -o "$CONFIG_DEFAULTS_MEDIATEK_MT7621" = "y" -o "$CONFIG_DEFAULTS_MEDIATEK_MT7628" = "y" -o "$CONFIG_DEFAULTS_MEDIATEK_MT7623" = "y" ]; then
+bool 'Embedded Switch Command'		CONFIG_RALINKAPP_SWITCH
+fi
+
+if [ "$CONFIG_DEFAULTS_MEDIATEK_MT7621" = "y" -o "$CONFIG_DEFAULTS_MEDIATEK_MT7623" = "y" -o  "$CONFIG_DEFAULTS_MEDIATEK_MT7622" = "y" ]; then
+bool 'QDMA Command'          CONFIG_RALINKAPP_QDMA
+fi
+
+
+if [ "$CONFIG_DEFAULTS_MEDIATEK_MT7621" = "y" -o "$CONFIG_DEFAULTS_MEDIATEK_MT7623" = "y" -o "$CONFIG_GE_RGMII_MT7530_P0_AN" = "y" -o "$CONFIG_GE_RGMII_MT7530_P4_AN" = "y" -o "$CONFIG_P5_RGMII_TO_MT7530_MODE" = "y" ]; then
+define_bool CONFIG_RALINKAPP_SMART_SPEED y
+fi
+
+
+if [ "$CONFIG_DEFAULTS_MEDIATEK_MT7628" = "y" ]; then
+bool 'Long Loop Detection'          CONFIG_RALINKAPP_LONG_LOOP
+fi
+
+if [ "$CONFIG_DEFAULTS_RALINK_RT2880" != "y" ]; then
+bool 'I2S Command'		    CONFIG_RALINKAPP_I2S
+bool 'PCM Command'		    CONFIG_RALINKAPP_PCM
+bool 'SPDIF Command'                CONFIG_RALINKAPP_SPDIF
+fi
+bool 'PCI-E PHY Command'        CONFIG_RALINKAPP_PCIE_PHY
+bool 'Video Flow Classification Command'        CONFIG_RALINKAPP_CLS
+bool 'Configuration Scripts'	CONFIG_RALINKAPP_SCRIPTS
+bool 'Bus Arbiter'              CONFIG_RALINKAPP_BUSARB
+bool 'Kprofile'			CONFIG_RALINKAPP_KPROFILE
+bool 'NFC Service Daemon'	CONFIG_USER_NFCSD
+bool 'NFC Handover Daemon'	CONFIG_USER_NFCHOD
+fi
+
+endmenu
+
+##############################################################################
+
+mainmenu_option next_comment
+comment 'Windows Rally Program'
+bool 'Link Layer Topology Discovery Protocol'	CONFIG_USER_LLTD
+endmenu
+
+##############################################################################
+mainmenu_option next_comment
+comment 'Phone Management'
+bool 'VoIP Application'	CONFIG_MTK_VOIP
+endmenu
+
+##############################################################################
+mainmenu_option next_comment
+comment 'Remote Management'
+bool 'TR069 Application' CONFIG_MTK_TR069
+endmenu
+

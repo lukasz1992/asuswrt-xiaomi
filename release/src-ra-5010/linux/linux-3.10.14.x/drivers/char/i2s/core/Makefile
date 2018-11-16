@@ -1,0 +1,92 @@
+#EXTRA_CFLAGS += -Werror
+KBUILD_CFLAGS += -I$(srctree)
+
+obj-$(CONFIG_RALINK_I2S)  += ralink_i2s.o
+
+ralink_i2s-objs       		:= i2s_ctrl.o i2s_debug.o
+
+
+#ccflags-y += -I$(srctree)/../mediatek/platform/mt7623/kernel/drivers/i2c
+
+ifeq ($(CONFIG_RALINK_RT3052),y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8751
+endif
+
+ifeq ($(CONFIG_RALINK_RT2883),y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8751
+endif
+
+ifeq ($(CONFIG_RALINK_RT3350),y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8751
+endif
+
+ifeq ($(CONFIG_RALINK_RT3883),y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8750
+endif
+
+ifeq ($(CONFIG_RALINK_RT3352),y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8750
+endif
+
+ifeq ($(CONFIG_RALINK_RT5350),y)
+ifeq ($(CONFIG_RALINK_I2C_WM8960), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8960
+endif
+ifeq ($(CONFIG_RALINK_I2C_WM8750), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8750
+endif
+endif
+
+ifeq ($(CONFIG_RALINK_RT6855),y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8750
+endif
+
+ifeq ($(CONFIG_RALINK_RT6855A),y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8750
+endif
+
+ifeq ($(CONFIG_RALINK_MT7620),y)
+ifeq ($(CONFIG_RALINK_I2C_WM8960), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8960
+endif
+ifeq ($(CONFIG_RALINK_I2C_WM8750), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8750
+endif
+endif
+
+ifeq ($(CONFIG_RALINK_MT7621),y)
+ifeq ($(CONFIG_RALINK_I2C_WM8960), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8960
+endif
+ifeq ($(CONFIG_RALINK_I2C_WM8750), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8750
+endif
+endif
+
+ifeq ($(CONFIG_RALINK_MT7628),y)
+ifeq ($(CONFIG_RALINK_I2C_WM8960), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8960
+endif
+ifeq ($(CONFIG_RALINK_I2C_WM8750), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8750
+endif
+endif
+
+ifeq ($(CONFIG_ARCH_MT7623),y)
+ifeq ($(CONFIG_RALINK_I2C_WM8960), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8960
+endif
+ifeq ($(CONFIG_RALINK_I2C_WM8750), y)
+EXTRA_CFLAGS += -DCONFIG_I2S_WM8750
+endif
+endif
+
+
+#ifeq ($(CONFIG_I2S_WITH_AEC),m)
+#EXTRA_CFLAGS += -DCONFIG_I2S_WITH_AEC
+#endif
+
+clean:
+	rm -rf ./*.mod.* ./*.ko ./*.o ./*.bak ./.*.cmd
+	rm -fr modules.order
+	rm -ff modules.builtin

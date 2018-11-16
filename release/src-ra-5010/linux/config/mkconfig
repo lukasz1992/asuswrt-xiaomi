@@ -1,0 +1,152 @@
+#! /bin/sh
+#############################################################################
+#
+# Generate the vendor/product menu entries for the top level config
+#
+# davidm@snapgear.com
+#
+#############################################################################
+
+fix_name()
+{
+	echo $1 | tr '[\-\.\/\+a-z]' '[____A-Z]'
+}
+
+#############################################################################
+#
+# the header of the config
+#
+
+echo "mainmenu_name 'Ralink Embedded Linux Configuration'"
+
+#############################################################################
+#
+# Figure out the vendor/products dynamically, allows people to add there
+# own without messin with the config.in file
+#
+
+echo "mainmenu_option next_comment"
+echo "comment 'Select the Product you wish to target'"
+
+echo "choice 'Ralink Products' \"MT7620 CONFIG_DEFAULTS_MEDIATEK_MT7620\\"
+echo "                           MT7621 CONFIG_DEFAULTS_MEDIATEK_MT7621\\"
+echo "                           MT7628 CONFIG_DEFAULTS_MEDIATEK_MT7628\\"
+echo "                           MT7623 CONFIG_DEFAULTS_MEDIATEK_MT7623"
+echo "                         \""
+
+echo "if [ \$CONFIG_DEFAULTS_MEDIATEK_MT7620 = \"y\" ]; then"
+echo "choice   'Default Configuration File'\\"
+echo "         \"2M/16M(AP)	  CONFIG_DEFSETTING_2M16M\\"
+echo "           4M/32M(AP+NAS)	  CONFIG_DEFSETTING_4M32M\\"
+echo "           8M/64M(VOIP/TR069)	  CONFIG_DEFSETTING_8M32M_VOIP\\"
+echo "           8M/64M(FULL)	  CONFIG_DEFSETTING_8M64M"
+echo "	  \"" 
+echo "elif [ \$CONFIG_DEFAULTS_MEDIATEK_MT7621 = \"y\" ]; then"
+echo "choice   'Default Configuration File'\\"
+echo "         \"8M/32M(STA)		CONFIG_DEFSETTING_8M32M\\"
+echo "           8M/64M(AP)		CONFIG_DEFSETTING_8M64M\\"
+echo "           8M/64M(VOIP/TR069)	CONFIG_DEFSETTING_8M16M\\"
+echo "           8M/128M(MT7621+MT7615)	CONFIG_DEFSETTING_8M128M\\"
+echo "           128M/128M(AP+NAS)	CONFIG_DEFSETTING_128M128M"
+echo "	  \"" 
+echo "elif [ \$CONFIG_DEFAULTS_MEDIATEK_MT7628 = \"y\" ]; then"
+echo "choice   'Default Configuration File'\\"
+echo "         \"2M/8M(MT7628KN)  CONFIG_DEFSETTING_2M8M\\"
+echo "           4M/16M(AP)	  CONFIG_DEFSETTING_4M16M\\"
+echo "           4M/32M(AP+NAS)	  CONFIG_DEFSETTING_4M32M\\"
+echo "           8M/64M(FULL)	  CONFIG_DEFSETTING_8M64M"
+echo "	  \"" 
+echo "elif [ \$CONFIG_DEFAULTS_MEDIATEK_MT7623 = \"y\" ]; then"
+echo "choice   'Default Configuration File'\\"
+echo "          \"128M/128M(MT7623A+MT7615_NAND)	CONFIG_DEFSETTING_128M128M\\"
+echo "            256M/256M(MT7623A+MT7615_eMMC)	CONFIG_DEFSETTING_256M256M\\"
+echo "            8G/1G(MT7623N+MT7615_eMMC)	CONFIG_DEFSETTING_8G1G"
+echo "	  \"" 
+echo "fi"
+echo "endmenu"
+
+#############################################################################
+
+echo "mainmenu_option next_comment"
+echo "comment 'Kernel/Library/Defaults Selection'"
+
+echo "if [ \$CONFIG_DEFAULTS_MEDIATEK_MT7620 = \"y\" ]; then"
+echo "choice   'Linux Kernel Version'\\"
+echo "         \"2.6.36 CONFIG_DEFAULTS_KERNEL_2_6_36\\"
+echo "           3.10.14 CONFIG_DEFAULTS_KERNEL_3_10_14 "
+echo "    \"2.6.36 "
+echo "elif [ \$CONFIG_DEFAULTS_MEDIATEK_MT7621 = \"y\" ]; then"
+#echo " define_bool CONFIG_DEFAULTS_KERNEL_2_6_36 y" 
+echo "choice   'Linux Kernel Version'\\"
+echo "         \"2.6.36 CONFIG_DEFAULTS_KERNEL_2_6_36\\"
+echo "           3.10.14 CONFIG_DEFAULTS_KERNEL_3_10_14 "
+echo "    \"2.6.36 "
+echo "elif [ \$CONFIG_DEFAULTS_MEDIATEK_MT7628 = \"y\" ]; then"
+#echo " define_bool CONFIG_DEFAULTS_KERNEL_2_6_36 y" 
+echo "choice   'Linux Kernel Version'\\"
+echo "         \"2.6.36 CONFIG_DEFAULTS_KERNEL_2_6_36\\"
+echo "           3.10.14 CONFIG_DEFAULTS_KERNEL_3_10_14 "
+echo "    \"2.6.36 "
+echo "elif [ \$CONFIG_DEFAULTS_MEDIATEK_MT7623 = \"y\" ]; then"
+echo " define_bool CONFIG_DEFAULTS_KERNEL_3_10_20 y" 
+echo "fi"
+
+#############################################################################
+#
+# the rest of the config
+#
+
+# echo "mainmenu_option next_comment"
+# echo "comment 'Configuration Overrides'"
+
+echo "if [ \$CONFIG_DEFAULTS_KERNEL_3_10_14 = \"y\" -o \$CONFIG_DEFAULTS_MEDIATEK_MT7621 = \"y\" -o \$CONFIG_DEFAULTS_MEDIATEK_MT7628 = \"y\" ]; then"
+echo "define_bool CONFIG_UCLIBC_0_9_33_2 y"
+echo "comment 'uClibc version: 0.9.33.2'"
+echo "define_string CONFIG_CROSS_COMPILER_PATH /opt/buildroot-gcc463/usr/bin"
+echo "comment 'Cross Compiler Path: /opt/buildroot-gcc463/usr/bin'"
+
+echo "elif [ \$CONFIG_DEFAULTS_MEDIATEK_MT7623 = \"y\" ]; then"
+echo "define_bool CONFIG_UCLIBC_0_9_33_2 y"
+echo "comment 'uClibc version: 0.9.33.2'"
+echo "define_string CONFIG_CROSS_COMPILER_PATH /opt/buildroot-gcc483_arm/usr/bin"
+echo "comment 'Cross Compiler Path: /opt/buildroot-gcc483_arm/usr/bin'"
+
+echo "elif [ \$CONFIG_DEFAULTS_MEDIATEK_MT7620 = \"y\" -a \$CONFIG_DEFSETTING_8M32M = \"y\" ]; then"
+echo "define_bool CONFIG_UCLIBC_0_9_33_2 y"
+echo "comment 'uClibc version: 0.9.33.2'"
+echo "define_string CONFIG_CROSS_COMPILER_PATH /opt/buildroot-gcc463/usr/bin"
+echo "comment 'Cross Compiler Path: /opt/buildroot-gcc463/usr/bin'"
+echo "elif [ \$CONFIG_DEFAULTS_MEDIATEK_MT7620 = \"y\" -a \$CONFIG_DEFSETTING_8M32M_VOIP = \"y\" ]; then"
+echo "define_bool CONFIG_UCLIBC_0_9_33_2 y"
+echo "comment 'uClibc version: 0.9.33.2'"
+echo "define_string CONFIG_CROSS_COMPILER_PATH /opt/buildroot-gcc463/usr/bin"
+echo "else "
+echo "define_bool CONFIG_UCLIBC_0_9_28 y"
+echo "comment 'uClibc version: 0.9.28'"
+echo "define_string CONFIG_CROSS_COMPILER_PATH /opt/buildroot-gcc342/bin"
+echo "comment 'Cross Compiler Path: /opt/buildroot-gcc342/bin'"
+echo "fi"
+
+echo "bool 'Have glibc only Apps'       CONFIG_HAVE_GLIBC_APP"
+echo "if [ \$CONFIG_HAVE_GLIBC_APP = \"y\" ]; then"
+echo "if [ \$CONFIG_DEFAULTS_MEDIATEK_MT7623 = \"y\" ]; then"
+echo "define_string CONFIG_CROSS_GLIBC_COMPILER_PATH /opt/buildroot-gcc492_arm_glibc/usr/bin"
+echo "comment 'glibc Cross-Compiler Path: /opt/buildroot-gcc492_arm_glibc/usr/bin'"
+echo "else"
+echo "define_string CONFIG_CROSS_GLIBC_COMPILER_PATH /opt/buildroot-gcc491_mips_glibc/usr/bin"
+echo "comment 'glibc Cross-Compiler Path: /opt/buildroot-gcc491_mips_glibc/usr/bin'"
+echo "fi"
+echo "fi"
+
+echo "comment ' '"
+echo "bool 'Default all settings (lose changes)'	CONFIG_DEFAULTS_OVERRIDE"
+echo "bool 'Customize Kernel Settings'			CONFIG_DEFAULTS_KERNEL"
+echo "bool 'Customize Vendor/User Settings'		CONFIG_DEFAULTS_VENDOR"
+echo "bool 'Customize Busybox Settings'			CONFIG_DEFAULTS_BUSYBOX"
+echo "bool 'Customize uClibc Settings'			CONFIG_DEFAULTS_UCLIBC"
+echo "bool 'Customize uClibc++ Settings'		CONFIG_DEFAULTS_UCLIBC_PLUS_PLUS"
+echo "bool 'Update Default Vendor Settings'		CONFIG_DEFAULTS_VENDOR_UPDATE"
+echo "endmenu"
+
+############################################################################
+
