@@ -479,7 +479,7 @@ obj-y += wireless_tools
 
 obj-y += $(if $(RTN65U),rt2880_app,flash)
 ifeq ($(RTN65U),)
-obj-y += $(if $(or $(RTN14U),$(RTAC52U),$(RTAC51U),$(RTN11P),$(RTN300),$(RTN54U),$(RTAC1200HP),$(RTN56UB1),$(RTN56UB2),$(RTAC54U),$(RTAC51UP),$(RTAC53),$(RTAC1200),$(RTAC1200GA1),$(RTAC1200GU),$(RTN600),$(RTN11PB1),$(RPAC87),$(RTAC85U),$(RTN800HP)),reg,hw_nat)
+obj-y += $(if $(or $(RTN14U),$(RTAC52U),$(RTAC51U),$(RTN11P),$(RTN300),$(RTN54U),$(RTAC1200HP),$(RTN56UB1),$(RTN56UB2),$(RTAC54U),$(RTAC51UP),$(RTAC53),$(RTAC1200),$(RTAC1200GA1),$(RTAC1200GU),$(RTN600),$(RTN11PB1),$(RPAC87),$(RTAC85U),$(RTMIR3G),$(RTN800HP)),reg,hw_nat)
 obj-y += $(if $(RTCONFIG_ATED122),ated_1.2.2,ated)
 endif
 obj-y += $(if $(RTCONFIG_MII_MGR),mii_mgr)
@@ -977,6 +977,10 @@ obj-$(NEED_SAMBA3) += $(if $(RTCONFIG_SAMBA36X),samba-3.6.x,samba3)
 endif
 else
 obj-$(NEED_SAMBA3) += samba3
+endif
+
+ifeq ($(RTMIR3G),y)
+obj-y += mt76xx
 endif
 
 ifeq ($(RTCONFIG_NTFS),y)
@@ -5624,6 +5628,13 @@ tuxera:
 tuxera-install:
 	@echo [tuxera-install]
 	@[ ! -d tuxera ] || $(MAKE) -C tuxera install INSTALLDIR=$(INSTALLDIR)/tuxera
+
+mt76xx:
+	@echo "do nothing"
+
+mt76xx-install:
+	@echo [mt76xx-install]
+	@[ ! -d mt76xx ] || $(MAKE) -C mt76xx install INSTALLDIR=$(INSTALLDIR)/mt76xx
 
 netstat-nat-clean:
 	-@$(MAKE) -C netstat-nat clean

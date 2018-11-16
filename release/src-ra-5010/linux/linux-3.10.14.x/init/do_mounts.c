@@ -375,7 +375,7 @@ void __init mount_block_root(char *name, int flags)
 	struct page *page = alloc_page(GFP_KERNEL |
 					__GFP_NOTRACK_FALSE_POSITIVE);
 	char *fs_names = page_address(page);
-	char *p;
+	char *p, i;
 #ifdef CONFIG_BLOCK
 	char b[BDEVNAME_SIZE];
 #else
@@ -413,6 +413,18 @@ retry:
 		       "explicit textual name for \"root=\" boot option.\n");
 #endif
 		panic("VFS: Unable to mount root fs on %s", b);
+	}
+
+    // for MIR3G - try also RootFS2 and RootFS-default
+	for (i = 7; i < 11; i += 3) {
+		create_dev(name, MKDEV(31, i));
+		if (!do_mount_root(name, "squashfs", flags | MS_RDONLY, root_mount_data)) {
+			if (i == 7)
+				printk("WARNING: Mounted RootFS2 as RootFS is broken\n");
+			else
+				printk("WARNING: New trx image\n");
+			goto out;
+		}
 	}
 
 	printk("List of all partitions:\n");

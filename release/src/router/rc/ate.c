@@ -1434,14 +1434,14 @@ int asus_ate_command(const char *command, const char *value, const char *value2)
 		return asuscfe(value, WIF_5G);
 	}
 #endif	/* RTCONFIG_HAS_5G */
-	else if (!strcmp(command, "Set_SwitchPort_LEDs")) {
+	/*else if (!strcmp(command, "Set_SwitchPort_LEDs")) {
 		if (Set_SwitchPort_LEDs(value, value2) < 0)
 		{
 			puts("ATE_ERROR");
 			return EINVAL;
 		}
 		return 0;
-	}
+	}*/
 #endif
 #endif
 #ifdef RTCONFIG_WIRELESS_SWITCH
@@ -2124,7 +2124,8 @@ int ate_get_fw_upgrade_state(void) {
 #ifdef CONFIG_BCMWL5
                 if (!factory_debug() && !nvram_match(ATE_UPGRADE_MODE_STR(), "1"))
 #else
-                if (!IS_ATE_FACTORY_MODE() && !nvram_match(ATE_UPGRADE_MODE_STR(), "1"))
+//                if (!IS_ATE_FACTORY_MODE() && !nvram_match(ATE_UPGRADE_MODE_STR(), "1"))
+		if(0)
 #endif
 		{
 			puts("ATEMODE ONLY");

@@ -1582,13 +1582,16 @@ void stop_if_misc(void)
 
 int mssid_mac_validate(const char *macaddr)
 {
+
 	unsigned char mac_binary[6];
 	unsigned long long macvalue;
 	char macbuf[13];
 
 	if (!macaddr || !strlen(macaddr))
 		return 0;
-
+#if defined(RTMIR3G)
+	return 1;
+#endif
 	ether_atoe(macaddr, mac_binary);
 	sprintf(macbuf, "%02X%02X%02X%02X%02X%02X",
 		mac_binary[0],

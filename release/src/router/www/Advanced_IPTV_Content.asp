@@ -107,7 +107,7 @@ function initial(){
 		document.getElementById("voip_port3").innerHTML = "LAN port 4"; //P3
 		document.getElementById("iptv_port4").innerHTML = "LAN port 8"; //P4
 	}
-	else if(based_modelid == "RT-AC53"){
+	else if(based_modelid == "RT-AC53" || based_modelid == "RT-MIR3G"){
 		document.getElementById("switch_stb_x").options[3].text = "LAN1";
 		document.getElementById("switch_stb_x").options[4].text = "LAN2";
 		document.getElementById("switch_stb_x").options[6].text = "LAN1 & LAN2";

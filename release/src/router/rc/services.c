@@ -8817,7 +8817,7 @@ again:
 		kill(1, SIGTERM);
 #endif
 	}
-	else if(strcmp(script, "upgrade_ate") == 0) {
+	else if(0 && strcmp(script, "upgrade_ate") == 0) {
 		FILE *fp;
 		int ate_upgrade_reboot;
 		int ate_upgrade_reset;
@@ -8835,7 +8835,8 @@ again:
 #ifdef CONFIG_BCMWL5
 		if (!factory_debug() && !nvram_match(ATE_UPGRADE_MODE_STR(), "1"))
 #else
-		if (!IS_ATE_FACTORY_MODE() && !nvram_match(ATE_UPGRADE_MODE_STR(), "1"))
+//		if (!IS_ATE_FACTORY_MODE() && !nvram_match(ATE_UPGRADE_MODE_STR(), "1"))
+		if (0)
 #endif
 		{
 			_dprintf("Only support under ATE test mode, Skip...\n");
@@ -9264,6 +9265,7 @@ again:
 #endif
 				if (!(r = build_temp_rootfs(TMP_ROOTFS_MNT_POINT)))
 					sw = 1;
+#if !defined(RTMIR3G)
 #ifdef RTCONFIG_DUAL_TRX
 				if (!nvram_match("nflash_swecc", "1"))
 				{
@@ -9315,6 +9317,74 @@ again:
 #endif /* RTCONFIG_REALTEK */
 #endif // RTAC1200G
 				}
+#else   // RTMIR3G - do the magic update
+        {
+            FILE *fr;
+            // allocate memory of block size
+            unsigned char *data = malloc(0x20000);
+            int offset, i, j1, j2, stage = 1;
+            if (data == NULL)
+                goto err;
+            // get size of header and verify value
+            fr = fopen(upgrade_file, "rb");
+            if (fr == NULL)
+                goto err;
+            fread(data, 64, 1, fr);
+            if (data[60] != 169)
+                goto err;
+            offset = data[63] + data[62] * 0x100 + data[61] * 0x10000;
+            if (offset < 0x100000 || offset > 0x200000)
+                goto err;
+            // seek to squashfs and check signature
+            if (fseek(fr, offset, 0))
+                goto err;
+            fread(data, 4, 1, fr);
+            if (data[0] != 'h' || data[1] != 's' || data[2] != 'q' || data[3] != 's')
+                goto err;
+            j1 = open("/dev/mtdblock6", O_WRONLY | O_SYNC, DEFFILEMODE);
+            j2 = open("/dev/mtdblock7", O_WRONLY | O_SYNC, DEFFILEMODE);
+            // OK, start upgrade
+            _dprintf("MIR3G: Flashing (1/2)...\n");
+            led_control(0, 0);
+            led_control(1, 1);
+write_job:
+            fseek(fr, 0, 0);
+            nvram_set_int("flash_stage", stage);
+            nvram_commit();
+            for (i = 0; i < 32; i++) {
+                if ((i << 17) < offset) {
+                    fread(data, 0x20000, 1, fr);
+                    if (((i + 1) << 17) > offset)
+                        memset(&data[offset % 0x20000], 0xFF, 0x20000 - (offset % 0x20000));
+                } else
+                    memset(data, 0xFF, 0x20000);
+                write(j1, data, 0x20000);
+            }
+            close(j1);
+            fseek(fr, offset, 0);
+            for (i = 0; i < 240; i++) {
+                memset(data, 0xFF, 0x20000);
+                if (!feof(fr))
+                    fread(data, 0x20000, 1, fr);
+                write(j2, data, 0x20000);
+            }
+            close(j2);
+            if (stage++ == 1) {
+                j1 = open("/dev/mtdblock4", O_WRONLY | O_SYNC, DEFFILEMODE);
+                j2 = open("/dev/mtdblock5", O_WRONLY | O_SYNC, DEFFILEMODE);
+                _dprintf("MIR3G: Flashing (2/2)...\n");
+                goto write_job;
+            } else
+                goto ok;
+    err:
+            kill(1, SIGTERM);
+    ok:
+            fclose(fr);
+            _dprintf("MIR3G: Rebooting...\n");
+            nvram_set_int("flash_stage", 0);
+            nvram_commit();
+        }
+#endif
 				/* erase trx and free memory on purpose */
 				unlink(upgrade_file);
 				if (sw) {

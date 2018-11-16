@@ -50,6 +50,7 @@ static const struct model_s model_list[] = {
 	{ "RP-AC87", MODEL_RPAC87},	
 	{ "RT-AC85U", MODEL_RTAC85U},
 	{ "RT-AC65U", MODEL_RTAC85U},
+   	{ "RT-MIR3G", MODEL_RTMIR3G},
     { "RT-N800HP",  MODEL_RTN800HP},
 #elif defined(RTCONFIG_QCA)
 	{ "RT-AC55U",	MODEL_RTAC55U	},
@@ -185,6 +186,7 @@ int get_fwver(char *buildno, char *extendno) {
  * result is cached for safe multiple use */
 int get_model(void)
 {
+	return MODEL_RTMIR3G;
 	static int model = MODEL_UNKNOWN;
 	char *pid;
 	const struct model_s *p;

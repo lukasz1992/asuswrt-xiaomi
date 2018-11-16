@@ -2230,7 +2230,7 @@ int mtk_nand_exec_write_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize
     PFM_BEGIN(pfm_time_write);
     if (((u32) pPageBuf % 16) && local_buffer_16_align)
     {
-        printk(KERN_INFO "Data buffer not 16 bytes aligned: %p\n", pPageBuf);
+        //printk(KERN_INFO "Data buffer not 16 bytes aligned: %p\n", pPageBuf);
         memcpy(local_buffer_16_align, pPageBuf, mtd->writesize);
         buf = local_buffer_16_align;
     } else
@@ -4814,238 +4814,36 @@ int mtk_nand_probe()
     }
 #endif
 
-#ifdef PMT
-    nand_chip->chipsize -= (PMT_POOL_SIZE) << nand_chip->phys_erase_shift;
-    mtd->size = nand_chip->chipsize;	
-    part_init_pmt(mtd, (u8 *) & g_exist_Partition[0]);
-#if defined (__KERNEL_NAND__)	
-	err = add_mtd_partitions(mtd, g_exist_Partition, part_num);	
-	//err = mtd_device_register(mtd, g_exist_Partition, part_num);
-#endif	
-#else
 #if defined (__KERNEL_NAND__)
-	/* modify partition table */
-#if 1	//+++++ asus add
-    g_pasStatic_Partition[0].size = LARGE_MTD_BOOT_PART_SIZE;		//Bootloader partition
-    g_pasStatic_Partition[1].size = LARGE_MTD_CONFIG_PART_SIZE;		//nvram partition
-    g_pasStatic_Partition[2].size = LARGE_MTD_FACTORY_PART_SIZE;	//Factory partition
-    g_pasStatic_Partition[3].size = LARGE_MTD_FACTORY_PART_SIZE;	//Factory2 partition
-#else
-	g_pasStatic_Partition[1].size = LARGE_MTD_BOOT_PART_SIZE;
-    g_pasStatic_Partition[2].size = LARGE_MTD_CONFIG_PART_SIZE;
-    g_pasStatic_Partition[3].size = LARGE_MTD_FACTORY_PART_SIZE;
-#endif
-#ifdef CONFIG_RT2880_ROOTFS_IN_FLASH
-	//g_pasStatic_Partition[4].size = CONFIG_MTD_KERNEL_PART_SIZ;
-	g_pasStatic_Partition[5].size = IMAGE1_SIZE - (LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE \
-			                    + LARGE_MTD_FACTORY_PART_SIZE + CONFIG_MTD_KERNEL_PART_SIZ) - MTD_ROOTFS_RESERVED_BLOCK;
-#ifdef RW_ROOTFS
-	g_pasStatic_Partition[5].size = IMAGE1_SIZE - (LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE \
-			                    + LARGE_MTD_FACTORY_PART_SIZE + CONFIG_MTD_KERNEL_PART_SIZ) - MTD_ROOTFS_RESERVED_BLOCK - (FACT_BBT_POOL_SIZE * mtd->erasesize);
-	g_pasStatic_Partition[6].offset = (LARGE_MTD_BOOT_PART_SIZE +  LARGE_MTD_CONFIG_PART_SIZE + LARGE_MTD_FACTORY_PART_SIZE);
-	g_pasStatic_Partition[6].size = g_pasStatic_Partition[4].size + g_pasStatic_Partition[5].size + MTD_ROOTFS_RESERVED_BLOCK;
-	// calculate how many bad blocks in kernel partition
-	{
-		int i;
-		int kn_size = CONFIG_MTD_KERNEL_PART_SIZ;   // kernel size
-		int bad_block_no = 0;    // bad block number
-
-		for (i = (LARGE_MTD_BOOT_PART_SIZE +  LARGE_MTD_CONFIG_PART_SIZE + LARGE_MTD_FACTORY_PART_SIZE); kn_size > 0; i += mtd->erasesize)
-		{
-			if (mtk_nand_block_bad(mtd, i, 0))
-				bad_block_no++;
-			else
-				kn_size -= mtd->erasesize;
-		}
-		if (bad_block_no)
-		{
-			printk("the bad block number of kernel is %x\n", bad_block_no);
-			if ((bad_block_no * mtd->erasesize) <= MTD_ROOTFS_RESERVED_BLOCK)
-			{
-				g_pasStatic_Partition[4].size += bad_block_no * mtd->erasesize;
-
-			}
-			else
-				printk("Error! Bad block exceed reserve block size, bad block number= %d\n", bad_block_no);
-		}
-	}
-
-#endif
-
-#ifndef CONFIG_SUPPORT_OPENWRT
-#ifdef CONFIG_ROOTFS_IN_FLASH_NO_PADDING
-#error "No code to handle this case in MTK NAND Driver.."	
-#endif
-#endif
-
-#else	//CONFIG_RT2880_ROOTFS_IN_RAM
-	g_pasStatic_Partition[4].size = IMAGE1_SIZE - (LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE \
-			                    + LARGE_MTD_FACTORY_PART_SIZE);
-#endif
-#ifdef CONFIG_DUAL_IMAGE
-	g_pasStatic_Partition[5].size = g_pasStatic_Partition[4].size;
-	g_pasStatic_Partition[5].offset = IMAGE1_SIZE + (LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE \
-			                    + LARGE_MTD_FACTORY_PART_SIZE);
-#ifdef CONFIG_RT2880_ROOTFS_IN_FLASH
-#error "No cpde to handle this case in MTK NAND Driver..."
-#endif		
-#endif
-#if 0
-//+++++  asus add
-    MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-    offs = LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + LARGE_MTD_FACTORY_PART_SIZE;
-    //offs = 0x140000; //firmware partition start address
-    //ramtd_read(NULL, offs, sizeof(hdr), (size_t *)&i, (u_char *)(&hdr));
-    u8 *p = NULL;
-    p = (u8 *)kmalloc(sizeof(hdr) +1, GFP_KERNEL);
-    int len = 0;
-    u8 *block_buf;
-    //int ret;
-    //char* buffers;
-
-    len =  ranand_read((u_char *)(&hdr), offs, sizeof(hdr));
-
-   
-#if 0
-     for (j = 0; j < len; j++) {
-	MSG(INIT, "%d: %02x \t",j, p[j]);
-     }
-#endif
-    /* Looking for rootfilesystem offset */
-    MSG(INIT, "[mtk_nand] start find root file system!\n");
-    u.rfs_offset_net_endian = 0;
-
-
-    for (j = 0; j < (MAX_VER*2); ++j, ++hw2) {
-        MSG(INIT, "[mtk_nand] Line = %d  hw2->major = %02x!\n", __LINE__,  hw2->major);                   
-
-        if (hw2->major != ROOTFS_OFFSET_MAGIC){
-            MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);                   
+    // magic for newly flashed MIR3G
+    part_num--;
+    for (i = 0; i < 2; i++) {
+        u_char data[4];
+        int offset = 0;
+        // check if there is a new trx image
+        if (ranand_read(data, 0x60003c - 0x400000 * i, 4) != 4)
+            continue; // something bad happened
+        if (data[0] != 169)
             continue;
+        offset = data[3] + data[2] * 256 + data[1] * 65536;
+        if (offset < 1048576 || offset > 2097152)
+            continue;
+        offset += 0x600000 - 0x400000 * i;
+        if (ranand_read(data, offset, 4) != 4)
+            continue;
+        if (data[0] != 'h' || data[1] != 's' || data[2] != 'q' || data[3] != 's')
+            continue;
+        // new trx image
+        g_pasStatic_Partition[10].offset = offset;
+        part_num++;
+        if (!i) { // image flashed to 2nd partition, swap linux and linux2
+            g_pasStatic_Partition[6].offset -= 0x400000;
+            g_pasStatic_Partition[4].offset += 0x400000;
         }
-        MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);        
-        u.p[1] = hw2->minor;
-        hw2++;
-        u.p[2] = hw2->major;
-        u.p[3] = hw2->minor;
-        MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);        
-        rfs_offset = ntohl(u.rfs_offset_net_endian);
-        MSG(INIT, "[mtk_nand] Line = %d rfs_offset = %08X!\n", __LINE__, rfs_offset);
+        break;
     }
-    MSG(INIT, "[mtk_nand] Line = %d LARGE_MTD_BOOT_PART_SIZE = %08X  LARGE_MTD_CONFIG_PART_SIZE= %08X  LARGE_MTD_FACTORY_PART_SIZE=%08X!\n", __LINE__, LARGE_MTD_BOOT_PART_SIZE, LARGE_MTD_CONFIG_PART_SIZE, LARGE_MTD_FACTORY_PART_SIZE);
-
-    if (rfs_offset != 0) {
-        MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-        g_pasStatic_Partition[4].offset = LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + LARGE_MTD_FACTORY_PART_SIZE + rfs_offset;
-        g_pasStatic_Partition[4].mask_flags |= MTD_WRITEABLE;
-        //g_pasStatic_Partition[4].offset = 0x140000 + rfs_offset;
-        //g_pasStatic_Partition[4].mask_flags |= MTD_WRITEABLE;
-        g_pasStatic_Partition[4].size = g_pasStatic_Partition[4].size - rfs_offset;
-       
-        if (mtd->size > 0x800000) {
-            MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-            g_pasStatic_Partition[3].size = mtd->size - (LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + LARGE_MTD_FACTORY_PART_SIZE) - MTD_JFFS2_PART_SIZE;
-            g_pasStatic_Partition[4].size = mtd->size - g_pasStatic_Partition[4].offset - MTD_JFFS2_PART_SIZE;
-            g_pasStatic_Partition[5].offset = mtd->size - MTD_JFFS2_PART_SIZE;
-        } else {
-            MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-#if 0    
-            g_pasStatic_Partition[3].size = mtd->size - (MTD_BOOT_PART_SIZE + MTD_CONFIG_PART_SIZE + MTD_FACTORY_PART_SIZE);
-            g_pasStatic_Partition[4].size = mtd->size - g_pasStatic_Partition[4].offset;
-            g_pasStatic_Partition[5].name = g_pasStatic_Partition[6].name;
-            g_pasStatic_Partition[5].size = g_pasStatic_Partition[6].size;
-            g_pasStatic_Partition[5].offset = g_pasStatic_Partition[6].offset;
-#endif  
-            //  g_pasStatic_Partition[4].size = mtd->size - (MTD_BOOT_PART_SIZE + MTD_CONFIG_PART_SIZE + MTD_FACTORY_PART_SIZE);
-            g_pasStatic_Partition[4].size = mtd->size - g_pasStatic_Partition[5].offset;
-            g_pasStatic_Partition[4].name = g_pasStatic_Partition[6].name;
-            // g_pasStatic_Partition[5].offset = g_pasStatic_Partition[6].offset;          
-        }
-        MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-        MSG(INIT, "partion 3: %x %x\n", (unsigned int)g_pasStatic_Partition[3].offset, (unsigned int)g_pasStatic_Partition[3].size);
-        MSG(INIT, "partion 4: %x %x\n", (unsigned int)g_pasStatic_Partition[4].offset, (unsigned int)g_pasStatic_Partition[4].size);
-    }
-    MSG(INIT, "[mtk_nand] end find root file system!\n");
-//----- asus add
-#endif
-
-//+++++  asus add
-    MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-
-    for(i = 0; i < TRX_FW_NUM; i++) {
-    	int len = 0, shift = 0, trx_firmware_size = 0;
-
-	loff_t offs;
-	struct __image_header {
-		uint8_t unused[60];
-		uint32_t ih_ksz;
-	};
-
-	int j;
-	image_header_t hdr;
-	version_t *hw2 = &hdr.u.tail.hw[0];
-	uint32_t rfs_offset = 0;
-	union {
-		uint32_t rfs_offset_net_endian;
-		uint8_t p[4];
-	} u;
-    
-	shift = i * 2;	/* for partition index shift */
-
-        if (i)
-	    trx_firmware_size = TRX_FIRMWARE_SIZE * i;
-
-        offs = LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + (LARGE_MTD_FACTORY_PART_SIZE*2) + trx_firmware_size;
-
-        len =  ranand_read((u_char *)(&hdr), offs, sizeof(hdr));
-   
-        /* Looking for rootfilesystem offset */
-        MSG(INIT, "[mtk_nand] start find root file system!\n");
-        u.rfs_offset_net_endian = 0;
-
-        for (j = 0; j < (MAX_VER*2); ++j, ++hw2) {
-            MSG(INIT, "[mtk_nand] Line = %d  hw2->major = %02x!\n", __LINE__,  hw2->major);                   
-
-            if (hw2->major != ROOTFS_OFFSET_MAGIC){
-                MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);                   
-                continue;
-            }
-            MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);        
-            u.p[1] = hw2->minor;
-            hw2++;
-            u.p[2] = hw2->major;
-            u.p[3] = hw2->minor;
-            MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);        
-            rfs_offset = ntohl(u.rfs_offset_net_endian);
-            MSG(INIT, "[mtk_nand] Line = %d rfs_offset = %08X!\n", __LINE__, rfs_offset);
-        }
-    
-        if (rfs_offset != 0) {
-            MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-    	    g_pasStatic_Partition[4 + shift].offset = LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + (LARGE_MTD_FACTORY_PART_SIZE*2) + trx_firmware_size;
-            g_pasStatic_Partition[5 + shift].offset = LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + (LARGE_MTD_FACTORY_PART_SIZE*2) + trx_firmware_size + rfs_offset;
-            g_pasStatic_Partition[5 + shift].mask_flags |= MTD_WRITEABLE;
-       
-            if (mtd->size > 0x800000) {
-                MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-                g_pasStatic_Partition[4 + shift].size = TRX_FIRMWARE_SIZE;
-                g_pasStatic_Partition[5 + shift].size = TRX_FIRMWARE_SIZE - rfs_offset;
-                if (i)
-		    g_pasStatic_Partition[6 + shift].offset = mtd->size - MTD_JFFS2_PART_SIZE;       
-            }
-            MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-            MSG(INIT, "partition %d: %x %x\n", 4 + shift, (unsigned int)g_pasStatic_Partition[4 + shift].offset, (unsigned int)g_pasStatic_Partition[4 + shift].size);
-            MSG(INIT, "partition %d: %x %x\n", 5 + shift, (unsigned int)g_pasStatic_Partition[5 + shift].offset, (unsigned int)g_pasStatic_Partition[5 + shift].size);
-        }
-        MSG(INIT, "[mtk_nand] end find root file system!\n");
-    }
-//----- asus add
-
 	err = add_mtd_partitions(mtd, g_pasStatic_Partition, part_num);
-	//err = mtd_device_register(mtd, g_pasStatic_Partition, part_num);
 #endif
-#endif
-
 
 #ifdef _MTK_NAND_DUMMY_DRIVER_
     dummy_driver_debug = 0;

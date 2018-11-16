@@ -139,7 +139,7 @@ OBJS += flash_mtd.o api-ralink.o
 ifeq ($(RTCONFIG_RALINK_RT3052),y)
 OBJS += ra3052.o
 endif
-ifeq ($(RTN14U)$(RTAC52U)$(RTAC51U)$(RTN11P)$(RTN300)$(RTN54U)$(RTAC1200HP)$(RTN56UB1)$(RTN56UB2)$(RTAC54U)$(RTAC1200GA1)$(RTAC1200GU)$(RPAC87)$(RTAC85U)$(RTN800HP),y)
+ifeq ($(RTN14U)$(RTAC52U)$(RTAC51U)$(RTN11P)$(RTN300)$(RTN54U)$(RTAC1200HP)$(RTN56UB1)$(RTN56UB2)$(RTAC54U)$(RTAC1200GA1)$(RTAC1200GU)$(RPAC87)$(RTAC85U)$(RTMIR3G)$(RTN800HP),y)
 CFLAGS += -DRA_ESW
 OBJS += mt7620.o
 else
@@ -252,7 +252,7 @@ ifeq ($(RTCONFIG_TCODE),y)
 OBJS	+= $(if $(wildcard tcode.c),tcode.o,prebuild/tcode.o)
 endif
 
-OBJS	+= $(if $(wildcard shutils_private.c),shutils_private.o,prebuild/shutils_private.o)
+# OBJS    += $(if $(wildcard private.c),private.o,prebuild/private.o)
 
 OBJS += $(if $(wildcard spwenc.c), spwenc.o, prebuild/spwenc.o)
 

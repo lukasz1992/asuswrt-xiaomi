@@ -29,9 +29,9 @@
 #include <sys/sysinfo.h>
 #include <sys/mman.h>
 #ifdef LINUX26
-#ifndef HND_ROUTER
-#include <linux/compiler.h>
-#endif
+//#ifndef HND_ROUTER
+//#include <linux/compiler.h>
+//#endif
 #include <mtd/mtd-user.h>
 #else
 #include <linux/mtd/mtd.h>

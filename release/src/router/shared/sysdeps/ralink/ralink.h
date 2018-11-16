@@ -57,7 +57,7 @@ extern const char APCLI_2G[];
 
 #if defined(RTN65U)
 #define RT_802_11_MAC_ENTRY_for_2G		RT_802_11_MAC_ENTRY_RT3352_iNIC
-#elif defined(RTN56UB1) || defined(RTN56UB2) || defined(RTAC1200GA1) || defined(RTAC1200GU)
+#elif defined(RTN56UB1) || defined(RTN56UB2) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTMIR3G)
 #define RT_802_11_MAC_ENTRY_for_2G		RT_802_11_MAC_ENTRY_7603E
 #else
 #define RT_802_11_MAC_ENTRY_for_2G		RT_802_11_MAC_ENTRY_2G
@@ -350,7 +350,7 @@ typedef enum _RT_802_11_PHY_MODE {
 #define OFFSET_MAC_ADDR_2G	0x40004 //only one MAC
 #define OFFSET_MAC_GMAC2	0x4018E
 #define OFFSET_MAC_GMAC0	0x40194
-#elif defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2) || defined(RTAC51UP) || defined(RTAC53) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC1200)  || defined(RPAC87) || defined(RTAC85U) || defined(RTN800HP)
+#elif defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2) || defined(RTAC51UP) || defined(RTAC53) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC1200)  || defined(RPAC87) || defined(RTAC85U) || defined(RTMIR3G) || defined(RTN800HP)
 #if defined(RTN800HP)
 #define OFFSET_MAC_ADDR_2G	0x40004
 #define OFFSET_MAC_ADDR		0x40004 //only one MAC
@@ -358,7 +358,7 @@ typedef enum _RT_802_11_PHY_MODE {
 #define OFFSET_MAC_ADDR_2G	0x40004
 #define OFFSET_MAC_ADDR		0x48004
 #endif
-#if defined(RTAC85U) || defined(RPAC87) || defined(RTAC1200GU)
+#if defined(RTAC85U) || defined(RPAC87) || defined(RTAC1200GU) || defined(RTMIR3G)
 #define OFFSET_MAC_GMAC0	0x4E000
 #define OFFSET_MAC_GMAC2	0x4E006
 #elif defined(RTN800HP)

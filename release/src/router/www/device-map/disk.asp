@@ -53,7 +53,7 @@ function initial(){
 	if(noaidisk_support)
 		document.getElementById("aidisk_hyperlink").style.display = "none";
 	
-	if((based_modelid == "RT-AC87U" || based_modelid == "RT-AC5300" || based_modelid == "RT-AC88U" || based_modelid == "RT-AC86U" || based_modelid == "AC2900" || based_modelid == "RT-AC3100" || based_modelid == "RT-AC58U" || based_modelid == "RT-AC82U" || based_modelid == "MAP-AC3000" || based_modelid == "RT-AC85U" || based_modelid == "RT-AC65U") && parent.currentUsbPort == 0){
+	if((based_modelid == "RT-AC87U" || based_modelid == "RT-AC5300" || based_modelid == "RT-AC88U" || based_modelid == "RT-AC86U" || based_modelid == "AC2900" || based_modelid == "RT-AC3100" || based_modelid == "RT-AC58U" || based_modelid == "RT-AC82U" || based_modelid == "MAP-AC3000" || based_modelid == "RT-AC85U" || based_modelid == "RT-AC65U" || based_modelid == "RT-MIR3G") && parent.currentUsbPort == 0){
 		document.getElementById('reduce_usb3_table').style.display = "";
 	}
 

@@ -27,7 +27,7 @@
 
 typedef uint32_t __u32;
 
-#if defined(RTN14U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2) ||defined(RTAC54U) || defined(RTAC51UP)|| defined(RTAC53) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC1200) || defined(RTN11P_B1) || defined(RPAC87) || defined(RTAC85U) || defined(RTAC65U) || defined(RTN800HP)
+#if defined(RTN14U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2) ||defined(RTAC54U) || defined(RTAC51UP)|| defined(RTAC53) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC1200) || defined(RTN11P_B1) || defined(RPAC87) || defined(RTAC85U) || defined(RTAC65U) || defined(RTMIR3G) || defined(RTN800HP)
 const char WIF_5G[]	= "rai0";
 const char WIF_2G[]	= "ra0";
 const char WDSIF_5G[]	= "wdsi";
@@ -319,7 +319,7 @@ typedef struct CountryCodeToCountryRegion {
 
 COUNTRY_CODE_TO_COUNTRY_REGION allCountry[] = {
 	/* {Country Number, ISO Name, Country Name, Support 11A, 11A Country Region, Support 11G, 11G Country Region} */
-	{"DB", A_BAND_REGION_7, G_BAND_REGION_5},
+	{"DB", A_BAND_REGION_21, G_BAND_REGION_1},
 	{"AL", A_BAND_REGION_0, G_BAND_REGION_1},
 	{"DZ", A_BAND_REGION_0, G_BAND_REGION_1},
 #ifdef RTCONFIG_LOCALE2012
@@ -683,7 +683,7 @@ void led_onoff(int unit)
 char *get_lan_mac_name(void)
 {
 	/* TODO: handle exceptional model */
-	return "et0macaddr";
+	return "eth2macaddr";
 }
 
 /* Return nvram variable name, e.g. et1macaddr, which is used to repented as WAN MAC.
@@ -692,7 +692,7 @@ char *get_lan_mac_name(void)
 char *get_wan_mac_name(void)
 {
 	/* TODO: handle exceptional model */
-	return "et1macaddr";
+	return "eth3macaddr";
 }
 
 char *get_2g_hwaddr(void)
@@ -708,13 +708,13 @@ char *get_label_mac()
 char *get_lan_hwaddr(void)
 {
 	/* TODO: handle exceptional model */
-        return nvram_safe_get("et0macaddr");
+        return nvram_safe_get("eth2macaddr");
 }
 
 char *get_wan_hwaddr(void)
 {
 	/* TODO: handle exceptional model */
-        return nvram_safe_get("et1macaddr");
+        return nvram_safe_get("eth3macaddr");
 }
 
 /**

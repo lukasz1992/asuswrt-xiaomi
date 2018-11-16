@@ -292,7 +292,7 @@ function initial(){
 		if(	based_modelid == "RT-AC3200" ||
 			based_modelid == "RT-AC56S" || based_modelid == "RT-AC56U" ||
 			based_modelid == "RT-AC68U" || based_modelid == "RT-AC68A" || based_modelid == "DSL-AC68U" || based_modelid == "4G-AC68U" ||
-			based_modelid == "RT-AC87U" || based_modelid == "EA-AC87" ||
+			based_modelid == "RT-AC87U" || based_modelid == "EA-AC87" || based_modelid == "RT-MIR3G" ||
 			based_modelid == "RT-AC88U" || based_modelid == "RT-AC86U" || based_modelid == "AC2900" || based_modelid == "RT-AC3100" ||
 			based_modelid == "RT-AC5300" || based_modelid == "GT-AC5300")
 		{
@@ -341,7 +341,7 @@ function initial(){
 			document.getElementById("wl_plcphdr_field").style.display = "none";
 		}
 
-		if(based_modelid == "RT-AC85U" || based_modelid == "RT-AC65U"){
+		if(based_modelid == "RT-AC85U" || based_modelid == "RT-AC65U" || based_modelid == "RT-MIR3G"){
 			document.getElementById('wl_txbf_desc').innerHTML = "<#WLANConfig11b_x_ExpBeam#>";
 			inputCtrl(document.form.wl_txbf, 1);
 		}

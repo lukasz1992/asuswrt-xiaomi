@@ -51,7 +51,7 @@ ifeq ($(RTN14U),y)
 CFLAGS += -DBAND_2G_ONLY
 endif
 
-ifeq ($(RTN14U)$(RTAC52U)$(RTAC51U)$(RTN11P)$(RTN300)$(RTN54U)$(RTAC1200HP)$(RTN56UB1)$(RTN56UB2)$(RTAC54U)$(RTAC1200)$(RTAC1200GA1)$(RTAC1200GU),y)
+ifeq ($(RTN14U)$(RTAC52U)$(RTAC51U)$(RTN11P)$(RTN300)$(RTN54U)$(RTAC1200HP)$(RTN56UB1)$(RTN56UB2)$(RTMIR3G)$(RTAC54U)$(RTAC1200)$(RTAC1200GA1)$(RTAC1200GU),y)
 CFLAGS += -DRA_ESW
 endif
 
@@ -126,6 +126,7 @@ OBJS += $(if $(wildcard pwenc.c), pwenc.o, prebuild/pwenc.o)
 endif
 
 OBJS += $(if $(wildcard web_hook.c), web_hook.o, prebuild/web_hook.o)
+OBJS += $(if $(wildcard shutils_private.c), shutils_private.o, prebuild/shutils_private.o)
 
 LIBS = -L$(TOP)/nvram${BCMEX}$(EX7) -lnvram -L$(TOP)/shared -lshared
 ifeq ($(HND_ROUTER),y)
@@ -286,6 +287,8 @@ pwenc.o:
 endif
 web_hook.o:
 	@-cp -f ./prebuild/web_hook.o .
+shutils_private.o:
+	@-cp -f ./prebuild/shutils_private.o .
 endif
 
 %.o: %.c .%.depend

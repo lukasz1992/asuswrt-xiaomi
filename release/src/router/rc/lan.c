@@ -1214,7 +1214,15 @@ gen_ra_config(const char* wif)
 			else if (!strcmp(word, nvram_safe_get("wl1_ifname"))) // 5G
 			{
 				if (!strncmp(word, "rai", 3))	// iNIC
+#if defined(RTMIR3G)
+                                   {
+                                        gen_ralink_config(1, 1);
+                                        if  (!strcmp("1", nvram_safe_get("wl1_itxbf")))
+                                            system("sed s/ITxBfEn=0/ITxBfEn=1/ -i /etc/Wireless/iNIC/iNIC_ap.dat");
+                                   }
+#else
 					gen_ralink_config(1, 1);
+#endif
 				else
 					gen_ralink_config(1, 0);
 			}
@@ -3464,7 +3472,7 @@ NEITHER_WDS_OR_PSTA:
 		if(!strncmp(interface, "eth2", 4))
 			return;
 
-#if defined(RTN67U) || defined(RTN36U3) || defined(RTN56U) || defined(RTN56UB1) || defined(RTN56UB2)
+#if defined(RTN67U) || defined(RTN36U3) || defined(RTN56U) || defined(RTN56UB1) || defined(RTN56UB2) || defined(RTMIR3G)
 		/* eth3 may be used as WAN on some Ralink/MTK platform. */
 		if(!strncmp(interface, "eth3", 4))
 			return;
