@@ -1,0 +1,19 @@
+Installing snarf
+----------------
+     First of all, run "./configure". This will build a Makefile for
+you.
+
+     If you are root, just type "make". If it compiles without
+any errors, type "make install". 
+
+     As I don't think I use any terribly system-specific stuff, it
+should be able to compile on just about anything.
+
+
+In case of trouble...
+---------------------
+     Send email to me (xach@mint.net) describing the type of system
+you are on and the error message you are getting.
+
+
+

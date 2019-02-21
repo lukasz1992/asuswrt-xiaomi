@@ -1,0 +1,550 @@
+#! /bin/sh
+
+PATH=/bin:/sbin:/usr/sbin:/usr/bin:/opt/bin
+
+APPS_DEV=`nvram get apps_dev`
+APPS_MOUNTED_PATH=`nvram get apps_mounted_path`
+APPS_INSTALL_FOLDER=`nvram get apps_install_folder`
+APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+APPS_PATH=${APPS_MOUNTED_PATH:9}
+APPS_SERVER=`nvram get apps_ipkg_old`
+is_arm_machine=`uname -m |grep arm`
+is_i686_machine=`uname -m |grep i686`
+IPKG_ERROR=""
+
+
+echo "check DM2 start"
+#S50asuslighttpd check
+if [ ! -f "$APPS_INSTALL_PATH/etc/init.d/S50asuslighttpd" ]; then
+	cp -f $APPS_INSTALL_PATH/etc/asus_script/dm2_* $APPS_INSTALL_PATH/tmp/
+	echo "asuslighttpd_ipk is error,we must reinstall it"
+	LIGHTTPD_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/asuslighttpd.control" | grep Version`
+	LIGHTTPD_VER=${LIGHTTPD_VER:9}
+	LIGHTTPD_VERTGZ=${LIGHTTPD_VER//./-}
+	ipkg remove asuslighttpd -force-depends
+	IPKG_ERROR="asuslighttpd"
+	if [ -n $is_arm_machine ]; then
+		wget -c -q -t 2 -T 30 http://nw-dlcdnet.asus.com/asusware/arm/stable/asuslighttpd_"$LIGHTTPD_VER"_arm.ipk -O /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_arm.ipk
+		ipkg install /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_arm.ipk
+		rm -f /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_arm.ipk
+		mv -f $APPS_INSTALL_PATH/tmp/dm2_* $APPS_INSTALL_PATH/etc/asus_script/
+	elif [ -n $is_i686_machine ]; then
+		wget -c -q -t 2 -T 30 http://nw-dlcdnet.asus.com/asusware/i686/stable/asuslighttpd_"$LIGHTTPD_VER"_i686.ipk -O /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_i686.ipk
+		ipkg install /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_i686.ipk
+		rm -f /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_i686.ipk
+		mv -f $APPS_INSTALL_PATH/tmp/dm2_* $APPS_INSTALL_PATH/etc/asus_script/
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -c -q -t 2 -T 30 http://dlcdnet.asus.com/pub/ASUS/wireless/ASUSWRT/asuslighttpd_"$LIGHTTPD_VERTGZ"_mipsel.tgz -O /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_mipsel.ipk
+		else
+			wget -c -q -t 2 -T 30 http://nw-dlcdnet.asus.com/asusware/mipsel/stable/asuslighttpd_"$LIGHTTPD_VER"_mipsel.ipk -O /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_mipsel.ipk
+		rm -f /opt/tmp/asuslighttpd_"$LIGHTTPD_VER"_mipsel.ipk
+		mv -f $APPS_INSTALL_PATH/tmp/dm2_* $APPS_INSTALL_PATH/etc/asus_script/
+	fi
+fi
+#bin and shell script check
+if [ -f "$APPS_INSTALL_PATH/bin/dm2_amulecmd" ] && [ -f "$APPS_INSTALL_PATH/bin/dm2_amuled" ] && [ -f "$APPS_INSTALL_PATH/bin/dm2_detect" ] && [ -f "$APPS_INSTALL_PATH/bin/dm2_nzbget" ] && [ -f "$APPS_INSTALL_PATH/bin/dm2_snarf" ] && [ -f "$APPS_INSTALL_PATH/bin/dm2_snarfmaster" ] && [ -f "$APPS_INSTALL_PATH/bin/dm2_transmission-daemon" ] && [ -f "$APPS_INSTALL_PATH/etc/asus_script/dm2_backup" ] && [ -f "$APPS_INSTALL_PATH/etc/asus_script/dm2_check_general" ] && [ -f "$APPS_INSTALL_PATH/etc/asus_script/dm2_usbget" ]; then
+	echo "dm2_ipk is OK"
+else
+	
+	echo "dm2_ipk is error,we must reinstall it"
+	DM2_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/downloadmaster.control" | grep Version`
+	DM2_VER=${DM2_VER:9}
+	DM2_VERTGZ=${DM2_VER//./-}
+	ipkg remove downloadmaster
+	IPKG_ERROR="downloadmaster"
+	if [ -n $is_arm_machine ]; then
+		wget -c -q -t 2 -T 30 http://nw-dlcdnet.asus.com/asusware/arm/stable/downloadmaster_"$DM2_VER"_arm.ipk -O /opt/tmp/downloadmaster_"$DM2_VER"_arm.ipk
+		ipkg install /opt/tmp/downloadmaster_"$DM2_VER"_arm.ipk
+		rm -f /opt/tmp/downloadmaster_"$DM2_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -c -q -t 2 -T 30 http://nw-dlcdnet.asus.com/asusware/i686/stable/downloadmaster_"$DM2_VER"_i686.ipk -O /opt/tmp/downloadmaster_"$LIGHTTPD_VER"_i686.ipk
+		ipkg install /opt/tmp/downloadmaster_"$DM2_VER"_i686.ipk
+		rm -f /opt/tmp/downloadmaster_"$DM2_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -c -q -t 2 -T 30 http://dlcdnet.asus.com/pub/ASUS/wireless/ASUSWRT/downloadmaster_"$DM2_VERTGZ"_mipsel.tgz -O /opt/tmp/downloadmaster_"$DM2_VER"_mipsel.ipk
+		else
+			wget -c -q -t 2 -T 30 http://nw-dlcdnet.asus.com/asusware/mipsel/stable/downloadmaster_"$DM2_VER"_mipsel.ipk -O /opt/tmp/downloadmaster_"$DM2_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/downloadmaster_"$DM2_VER"_mipsel.ipk
+		rm -f /opt/tmp/downloadmaster_"$DM2_VER"_mipsel.ipk
+	fi
+######################################
+	APP_UCLIBC_VERSION=0.9.28
+
+	LANGUAGE_R=`nvram get preferred_lang`
+	PRODUCTID=`nvram get productid`
+	LAN_IP=`nvram get lan_ipaddr`
+	MISCR_HTTPPORT_X=`nvram get misc_httpport_x`
+	MISCR_HTTP_X=`nvram get misc_http_x`
+	HTTP_PASSWD=`nvram get http_passwd`
+	WAN_IP=`nvram get wan0_ipaddr`
+	DDNS_ENABLE_X=`nvram get ddns_enable_x`
+	DDNS_HOSTNAME_X=`nvram get ddns_hostname_x`
+	RFW_ENABLE_X=`nvram get fw_enable_x`
+
+	chmod -R 777 $APPS_INSTALL_PATH/bin/
+	chmod -R 777 $APPS_INSTALL_PATH/etc
+
+	if [ ! -d "$APPS_MOUNTED_PATH/Download2" ]; then
+	mkdir -p $APPS_MOUNTED_PATH/Download2
+	fi
+
+	if [ ! -d "$APPS_MOUNTED_PATH/Download2/Complete" ]; then
+	mkdir -p $APPS_MOUNTED_PATH/Download2/Complete
+	fi
+
+	if [ ! -d "$APPS_MOUNTED_PATH/Download2/config" ]; then
+	mkdir -p $APPS_MOUNTED_PATH/Download2/config
+	fi
+
+	if [ ! -d "$APPS_MOUNTED_PATH/Download2/InComplete" ]; then
+	mkdir -p $APPS_MOUNTED_PATH/Download2/InComplete
+	fi
+
+	if [ ! -d "$APPS_MOUNTED_PATH/Download2/.logs" ]; then
+	mkdir -p $APPS_MOUNTED_PATH/Download2/.logs
+	fi
+
+	if [ ! -d "$APPS_MOUNTED_PATH/Download2/Seeds" ]; then
+	mkdir -p $APPS_MOUNTED_PATH/Download2/Seeds
+	fi
+
+	if [ ! -d "/tmp/asus_app" ]; then
+	mkdir -p /tmp/asus_app
+	fi
+
+	chmod -R 777 $APPS_MOUNTED_PATH/Download2
+	chmod -R 777 $APPS_MOUNTED_PATH/Download2/Complete
+	chmod -R 777 $APPS_MOUNTED_PATH/Download2/config
+	chmod -R 777 $APPS_MOUNTED_PATH/Download2/InComplete
+	chmod -R 777 $APPS_MOUNTED_PATH/Download2/.logs
+	chmod -R 777 $APPS_MOUNTED_PATH/Download2/Seeds
+	chmod -R 777 /tmp/asus_app
+
+	#sh /tmp/APPS/DM2/Script/dm2_usbget start
+	#killall -SIGUSR1 asus_lighttpd&
+	sh /tmp/APPS/DM2/Script/dm2_check_general general-check
+
+	dir_control_file=$APPS_INSTALL_PATH/etc/dm2_general.conf
+
+	dir_btcontrol_file=$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+	NVRAM_CHECK_TRS=`nvram get trs_peer_port`
+	if [ ! -f "$dir_btcontrol_file" ]; then
+		if [ -z $NVRAM_CHECK_TRS ]; then
+	#echo "The $dir_btcontrol_file is not installed yet!"
+			echo "Peer_port=51413">$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Auth_type=1">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Max_torrent_peer=60">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Max_peer=240">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Enable_dht=1">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Down_limit=0">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Down_rate=100">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Up_limit=0">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Up_rate=100">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Enable_pex=1">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			echo "Enable_peer_port=0">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf	
+			apps_dl_share_port="51413"
+			sh /tmp/APPS/DM2/Script/dm2_backup nvram-save
+		else
+		#echo "The $dir_btcontrol_file is installed yet!"
+			sh /tmp/APPS/DM2/Script/dm2_backup nvram-recover
+			apps_dl_share_port=`nvram get trs_peer_port`
+		fi
+	else
+		if [ ! -z $NVRAM_CHECK_TRS ]; then
+			sh /tmp/APPS/DM2/Script/dm2_backup nvram-backup
+		else
+			sh /tmp/APPS/DM2/Script/dm2_backup nvram-save
+		fi
+		apps_dl_share_port_TMP=`cat "$dir_btcontrol_file" |grep "Peer_port="`
+		apps_dl_share_port=${apps_dl_share_port_TMP:10}
+	fi
+
+	dir_ed2k_file=$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+	NVRAM_CHECK_ED2K=`nvram get ed2k_ip`
+	if [ ! -f "$dir_ed2k_file" ]; then
+		if [ -z $NVRAM_CHECK_ED2K ]; then
+			echo "server_ip=176.103.48.36">$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+			echo "server_port=4184">>$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+			ED2K_SERVER_IP="176.103.48.36"
+			ED2K_SERVER_PORT="4184"
+			sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvramsave
+		else
+			sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvramrecover
+			ED2K_SERVER_IP=`nvram get ed2k_ip`
+			ED2K_SERVER_PORT=`nvram get ed2k_port`
+		fi
+	else
+		if [ ! -z $NVRAM_CHECK_ED2K ]; then
+			sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvrambackup
+		else
+			sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvramsave
+		fi
+		ED2K_SERVER_IP=`nvram get ed2k_ip`
+		ED2K_SERVER_PORT=`nvram get ed2k_port`
+	fi
+
+	while [ ! -f "$dir_control_file" ]
+	do
+		sleep 2
+	done
+
+	DEVICE_TYPE_CHECK_TMP=`cat "$dir_control_file" |grep "DEVICE_TYPE="`
+	while [ "$DEVICE_TYPE_CHECK_TMP" == "" ]
+	do
+		DEVICE_TYPE_CHECK_TMP=`cat "$dir_control_file" |grep "DEVICE_TYPE="`
+		sleep 2
+	done
+
+	BASE_PATH=${APPS_MOUNTED_PATH:9}
+	MISC_HTTP_X_TMP=`cat "$dir_control_file" |grep "MISC_HTTP_X="`
+	MISC_HTTP_X=${MISC_HTTP_X_TMP:12}
+	APPS_DL_SHARE_TMP=`cat "$dir_control_file" |grep "APPS_DL_SHARE="`
+	APPS_DL_SHARE=${APPS_DL_SHARE_TMP:14}
+	DM_PORT_TMP=`cat "$dir_control_file" |grep "DM_PORT="`
+	DM_PORT=${DM_PORT_TMP:8}
+	DOWNLOAD_PATH_TMP=`cat "$dir_control_file" |grep "Download_dir="`
+	DOWNLOAD_PATH=${DOWNLOAD_PATH_TMP:13}
+	DOWNLOAD_PATH_ED2K=`echo $DOWNLOAD_PATH|sed -n 's/\//\\\\\//pg'`
+
+	sh /tmp/APPS/DM2/Script/dm2_backup generalnvram-save
+	NZB_TEST=`nvram get nzb_host`
+	if [ -f "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" ]; then
+		if [ -z $NZB_TEST ]; then
+			sh /tmp/APPS/DM2/Script/dm2_backup nzb-nvramsave
+		else
+			sh /tmp/APPS/DM2/Script/dm2_backup nzb-nvrambackup
+		fi
+	else
+		if [ ! -z $NZB_TEST ]; then
+			sh /tmp/APPS/DM2/Script/dm2_backup nzb-nvramrecover		
+		fi
+	fi
+fi
+#wxbase
+WXBASE=`ls $APPS_INSTALL_PATH/lib/ |grep libwx_baseu-`
+WXBASE_EXIST=0
+for wxbaseobj in $WXBASE; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$wxbaseobj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$wxbaseobj" ]; then
+		WXBASE_EXIST=1;
+		break;
+	fi
+done
+WXBASENET=`ls $APPS_INSTALL_PATH/lib/ |grep libwx_baseu_net-`
+WXBASENET_EXIST=0
+for wxbasenetobj in $WXBASENET; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$wxbasenetobj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$wxbasenetobj" ]; then
+		WXBASENET_EXIST=1
+		break;
+	fi
+done
+if [ $WXBASE_EXIST -eq 0 ] || [ $WXBASENET_EXIST -eq 0 ]; then
+	echo "WXBASE_IPKG is error, we must reinstall it"
+	WX_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/wxbase.control" | grep Version`
+	WX_VER=${WX_VER:9}
+	IPKG_ERROR="wxbase"
+	if [ -n $is_arm_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/arm/stable/wxbase_"$WX_VER"_arm.ipk
+		ipkg install /opt/tmp/wxbase_"$WX_VER"_arm.ipk
+		rm -f /opt/tmp/wxbase_"$WX_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/i686/stable/wxbase_"$WX_VER"_i686.ipk
+		ipkg install /opt/tmp/wxbase_"$WX_VER"_i686.ipk
+		rm -f /opt/tmp/wxbase_"$WX_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -q -P /opt/tmp http://ipkg.nslu2-linux.org/feeds/optware/oleg/cross/stable/wxbase_"$WX_VER"_mipsel.ipk
+		else
+			wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/mipsel/stable/wxbase_"$WX_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/wxbase_"$WX_VER"_mipsel.ipk
+		rm -f /opt/tmp/wxbase_"$WX_VER"_mipsel.ipk
+	fi
+fi
+#libreadline
+READLINE=`ls $APPS_INSTALL_PATH/lib/ |grep libreadline.so`
+READLINE_EXIST=0
+for readlineobj in $READLINE; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$readlineobj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$readlineobj" ]; then
+		READLINE_EXIST=1;
+		break;
+	fi
+done
+if [ $READLINE_EXIST -eq 0 ]; then
+	echo "READLINE_IPKG is error, we must reinstall it"
+	READLINE_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/readline.control" | grep Version`
+	READLINE_VER=${READLINE_VER:9}
+	IPKG_ERROR="readline"
+	if [ -n $is_arm_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/arm/stable/readline_"$READLINE_VER"_arm.ipk
+		ipkg install /opt/tmp/readline_"$READLINE_VER"_arm.ipk
+		rm -f /opt/tmp/readline_"$READLINE_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/i686/stable/readline_"$READLINE_VER"_i686.ipk
+		ipkg install /opt/tmp/readline_"$READLINE_VER"_i686.ipk
+		rm -f /opt/tmp/readline_"$READLINE_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -q -P /opt/tmp http://ipkg.nslu2-linux.org/feeds/optware/oleg/cross/stable/readline_"$READLINE_VER"_mipsel.ipk
+		else
+			wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/mipsel/stable/readline_"$READLINE_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/readline_"$READLINE_VER"_mipsel.ipk
+		rm -f /opt/tmp/readline_"$READLINE_VER"_mipsel.ipk
+	fi
+fi
+#expat
+EXPAT=`ls $APPS_INSTALL_PATH/lib/ |grep libexpat.so`
+EXPAT_EXIST=0
+for expatobj in $EXPAT; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$expatobj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$expatobj" ]; then
+		EXPAT_EXIST=1;
+		break;
+	fi
+done
+if [ $EXPAT_EXIST -eq 0 ]; then
+	echo "EXPAT_IPKG is error,we must reinstall it"
+	EXPAT_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/expat.control" | grep Version`
+	EXPAT_VER=${EXPAT_VER:9}
+	IPKG_ERROR="expat"
+	if [ -n $is_arm_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/arm/stable/expat_"$EXPAT_VER"_arm.ipk
+		ipkg install /opt/tmp/expat_"$EXPAT_VER"_arm.ipk
+		rm -f /opt/tmp/expat_"$EXPAT_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/i686/stable/expat_"$EXPAT_VER"_i686.ipk
+		ipkg install /opt/tmp/expat_"$EXPAT_VER"_i686.ipk
+		rm -f /opt/tmp/expat_"$EXPAT_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -q -P /opt/tmp http://ipkg.nslu2-linux.org/feeds/optware/oleg/cross/stable/expat_"$EXPAT_VER"_mipsel.ipk
+		else
+			wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/mipsel/stable/expat_"$EXPAT_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/expat_"$EXPAT_VER"_mipsel.ipk
+		rm -f /opt/tmp/expat_"$EXPAT_VER"_mipsel.ipk
+	fi
+fi
+#libcurl
+CURL=`ls $APPS_INSTALL_PATH/lib/ |grep libcurl.so`
+CURL_EXIST=0
+for curlobj in $CURL; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$curlobj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$curlobj" ]; then
+		CURL_EXIST=1; 
+		break;
+	fi
+done
+if [ $CURL_EXIST -eq 0 ]; then
+	echo "CURL_IPKG is error, we must reinstall it"
+	CURL_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/asuslibcurl.control" | grep Version`
+	CURL_VER=${CURL_VER:9}
+	CURL_VERGZ=${CURL_VER//./-}
+	IPKG_ERROR="asuslibcurl"
+	if [ -n $is_arm_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/arm/stable/asuslibcurl_"$CURL_VER"_arm.ipk
+		ipkg install /opt/tmp/asuslibcurl_"$CURL_VER"_arm.ipk
+		rm -f /opt/tmp/asuslibcurl_"$CURL_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/i686/stable/asuslibcurl_"$CURL_VER"_i686.ipk
+		ipkg install /opt/tmp/asuslibcurl_"$CURL_VER"_i686.ipk
+		rm -f /opt/tmp/asuslibcurl_"$CURL_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -c -q -t 2 -T 30 http://dlcdnet.asus.com/pub/ASUS/wireless/ASUSWRT/asuslibcurl_"$CURL_VERGZ"_mipsel.tgz -O /opt/tmp/asusware/asuslibcurl_"$CURL_VER"_mipsel.ipk
+		else
+			wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/mipsel/stable/asuslibcurl_"$CURL_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/asuslibcurl_"$CURL_VER"_mipsel.ipk
+		rm -f /opt/tmp/asuslibcurl_"$CURL_VER"_mipsel.ipk
+	fi
+fi
+#libevent
+EVENT=`ls $APPS_INSTALL_PATH/lib/ |grep libevent-`
+EVENT_EXIST=0
+for eventobj in $EVENT; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$eventobj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$eventobj" ]; then
+		EVENT_EXIST=1;
+		break;
+	fi
+done
+if [ $EVENT_EXIST -eq 0 ]; then
+	echo "EVENT_IPKG is error, we must reinstall it"
+	EVENT_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/libevent.control" | grep Version`
+	EVENT_VER=${EVENT_VER:9}
+	IPKG_ERROR="libevent"
+	if [ -n $is_arm_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/arm/stable/libevent_"$EVENT_VER"_arm.ipk
+		ipkg install /opt/tmp/libevent_"$EVENT_VER"_arm.ipk
+		rm -f /opt/tmp/libevent_"$EVENT_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/i686/stable/libevent_"$EVENT_VER"_i686.ipk
+		ipkg install /opt/tmp/libevent_"$EVENT_VER"_i686.ipk
+		rm -f /opt/tmp/libevent_"$EVENT_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -q -P /opt/tmp http://ipkg.nslu2-linux.org/feeds/optware/oleg/cross/stable/libevent_"$EVENT_VER"_mipsel.ipk
+		else
+			wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/mipsel/stable/libevent_"$EVENT_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/libevent_"$EVENT_VER"_mipsel.ipk
+		rm -f /opt/tmp/libevent_"$EVENT_VER"_mipsel.ipk
+	fi
+fi
+#libpar2
+PAR2=`ls $APPS_INSTALL_PATH/lib/ |grep libpar2.so`
+PAR2_EXIST=0
+for par2obj in $PAR2; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$par2obj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$par2obj" ]; then
+		PAR2_EXIST=1;
+		break;
+	fi
+done
+if [ $PAR2_EXIST -eq 0 ]; then
+	echo "PAR2_IPKG is error, we must reinstall it"
+	PAR2_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/libpar2.control" | grep Version`
+	PAR2_VER=${PAR2_VER:9}
+	IPKG_ERROR="libpar2"
+	if [ -n $is_arm_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/arm/stable/libpar2_"$PAR2_VER"_arm.ipk
+		ipkg install /opt/tmp/libpar2_"$PAR2_VER"_arm.ipk
+		rm -f /opt/tmp/libpar2_"$PAR2_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/i686/stable/libpar2_"$PAR2_VER"_i686.ipk
+		ipkg install /opt/tmp/libpar2_"$PAR2_VER"_i686.ipk
+		rm -f /opt/tmp/libpar2_"$PAR2_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -q -P /opt/tmp http://ipkg.nslu2-linux.org/feeds/optware/oleg/cross/stable/libpar2_"$PAR2_VER"_mipsel.ipk
+		else
+			wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/mipsel/stable/libpar2_"$PAR2_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/libpar2_"$PAR2_VER"_mipsel.ipk
+		rm -f /opt/tmp/libpar2_"$PAR2_VER"_mipsel.ipk
+	fi
+fi
+#libsigc++
+SIGC=`ls $APPS_INSTALL_PATH/lib/ |grep libsigc`
+SIGC_EXIST=0
+for sigcobj in $SIGC; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$sigcobj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$sigcobj" ]; then
+		SIGC_EXIST=1;
+		break;
+	fi
+done
+if [ $SIGC_EXIST -eq 0 ]; then
+	echo "SIGC_IPKG is error, we must reinstall it"
+	SIGC_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/libsigc++.control" | grep Version`
+	SIGC_VER=${SIGC_VER:9}
+	IPKG_ERROR="sigc"
+	if [ -n $is_arm_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/arm/stable/libsigc++_"$SIGC_VER"_arm.ipk
+		ipkg install /opt/tmp/libsigc++_"$SIGC_VER"_arm.ipk
+		rm -f /opt/tmp/libsigc++_"$SIGC_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/i686/stable/libsigc++_"$SIGC_VER"_i686.ipk
+		ipkg install /opt/tmp/libsigc++_"$SIGC_VER"_i686.ipk
+		rm -f /opt/tmp/libsigc++_"$SIGC_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -q -P /opt/tmp http://ipkg.nslu2-linux.org/feeds/optware/oleg/cross/stable/libsigc++_"$SIGC_VER"_mipsel.ipk
+		else
+			wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/mipsel/stable/libsigc++_"$SIGC_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/libsigc++_"$SIGC_VER"_mipsel.ipk
+		rm -f /opt/tmp/libsigc++_"$SIGC_VER"_mipsel.ipk
+	fi
+fi
+#libxml
+XML=`ls $APPS_INSTALL_PATH/lib/ |grep libxml2.so`
+XML_EXIST=0
+for xmlobj in $XML; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$xmlobj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$xmlobj" ]; then
+		XML_EXIST=1;
+		break;
+	fi
+done
+if [ $XML_EXIST -eq 0 ]; then
+	echo "XML_IPKG is error, we must reinstall it"
+	XML_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/libxml2.control" | grep Version`
+	XML_VER=${XML_VER:9}
+	IPKG_ERROR="libxml2"
+	if [ -n $is_arm_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/arm/stable/libxml2_"$XML_VER"_arm.ipk
+		ipkg install /opt/tmp/libxml2_"$XML_VER"_arm.ipk
+		rm -f /opt/tmp/libxml2_"$XML_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/i686/stable/libxml2_"$XML_VER"_i686.ipk
+		ipkg install /opt/tmp/libxml2_"$XML_VER"_i686.ipk
+		rm -f /opt/tmp/libxml2_"$XML_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -q -P /opt/tmp http://ipkg.nslu2-linux.org/feeds/optware/oleg/cross/stable/libxml2_"$XML_VER"_mipsel.ipk
+		else
+			wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/mipsel/stable/libxml2_"$XML_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/libxml2_"$XML_VER"_mipsel.ipk
+		rm -f /opt/tmp/libxml2_"$XML_VER"_mipsel.ipk
+	fi
+fi
+#ncurses
+NCURSES=`ls $APPS_INSTALL_PATH/lib/ | grep libncurses.so`
+NCURSES_EXIST=0
+for ncursesobj in $NCURSES; do
+	if [ -L "$APPS_INSTALL_PATH/lib/$ncursesobj" ]; then
+		continue;
+	elif [ -f "$APPS_INSTALL_PATH/lib/$ncursesobj" ]; then
+		NCURSES_EXIST=1;
+		break;
+	fi
+done
+if [ $NCURSES_EXIST -eq 0 ]; then
+	echo "NCURSES_IPKG is error, we must reinstall it"
+	NCURSES_VER=`cat "$APPS_INSTALL_PATH/lib/ipkg/info/ncurses.control" | grep Version`
+	NCURSES_VER=${NCURSES_VER:9}
+	IPKG_ERROR="ncurses"
+	if [ -n $is_arm_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/arm/stable/ncurses_"$NCURSES_VER"_arm.ipk
+		ipkg install /opt/tmp/ncurses_"$NCURSES_VER"_arm.ipk
+		rm -f /opt/tmp/ncurses_"$NCURSES_VER"_arm.ipk
+	elif [ -n $is_i686_machine ]; then
+		wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/i686/stable/ncurses_"$NCURSES_VER"_i686.ipk
+		ipkg install /opt/tmp/ncurses_"$NCURSES_VER"_i686.ipk
+		rm -f /opt/tmp/ncurses_"$NCURSES_VER"_i686.ipk
+	else
+		if [ $APPS_SERVER -eq 1 ]; then
+			wget -q -P /opt/tmp http://ipkg.nslu2-linux.org/feeds/optware/oleg/cross/stable/ncurses_"$NCURSES_VER"_mipsel.ipk
+		else
+			wget -q -P /opt/tmp http://nw-dlcdnet.asus.com/asusware/mipsel/stable/ncurses_"$NCURSES_VER"_mipsel.ipk
+		fi
+		ipkg install /opt/tmp/ncurses_"$NCURSES_VER"_mipsel.ipk
+		rm -f /opt/tmp/ncurses_"$NCURSES_VER"_mipsel.ipk
+	fi
+fi
+if [ -n "$IPKG_ERROR" ]; then
+	app_base_link.sh
+	app_base_library.sh
+	app_move_to_pool.sh $APPS_DEV
+fi
+echo "check DM2 end"

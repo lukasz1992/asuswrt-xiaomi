@@ -1,0 +1,18 @@
+# $Id: Makefile.in 42385 2006-10-25 06:51:10Z RD $
+
+CONTRIB_SUBDIRS=fl gizmos mmedia ogl plot stc svg #deprecated #applet
+
+all:
+	@for d in $(CONTRIB_SUBDIRS); do (cd $$d && $(MAKE)); done
+
+clean:
+	@for d in $(CONTRIB_SUBDIRS); do (cd $$d && $(MAKE) clean); done
+
+install:
+	@for d in $(CONTRIB_SUBDIRS); do (cd $$d && $(MAKE) install); done
+
+uninstall:
+	@for d in $(CONTRIB_SUBDIRS); do (cd $$d && $(MAKE) uninstall); done
+
+.PHONY: all clean install uninstall
+

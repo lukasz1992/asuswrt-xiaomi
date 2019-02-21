@@ -1,0 +1,14 @@
+Package: asuslibcurl
+Architecture: mipsel
+Priority: optional
+Section: net
+Version: 7.58.0-1
+OptionalUtility:
+Maintainer: ASUS
+Source: http://127.0.0.1/
+URL: http://www.asusnetwork.net:8081/index.asp
+Description: web server
+Depends: zlib
+Suggests: 
+Conflicts: 
+Enabled: yes

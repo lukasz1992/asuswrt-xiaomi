@@ -1,0 +1,17 @@
+report(ERR, "`%s' is not a valid URL");
+report(ERR, "bad url `%s'", argv[i]);
+report(WARN, "ignoring `%s' for outfile", argv[i]);
+report(WARN, "you already have all of `%s', skipping", rsrc->outfile);
+report(WARN, "unknown option `%c', ignoring", optstring[i]);
+report(ERR, "redirection max count exceeded (looping redirect?)");
+report(ERR, "no host specified");
+report(ERR, "bad proxy `%s'", rsrc->proxy);
+report(ERR, "opening %s: %s", rsrc->outfile, strerror(errno));
+report(WARN, "server does not support resume, try again with -n (no resume)");
+report(ERR, "HTTP error from server: %s", raw_header);
+report(WARN, "unable to determine remote file size, try again with -n (no resume)");
+
+report(ERR, "bad server greeting: %s");
+report(ERR, "bad/unexpected response: %s", line);
+report(ERR, "login failed");
+report(ERR, "server does not support FTP resume, try again without -r");

@@ -1,0 +1,128 @@
+.\" $Id: snarf.1,v 1.1.1.1 2011/03/15 08:39:21 magic_pan Exp $
+.TH snarf 1 "17 Jun 2000"
+.IX snarf
+.SH NAME
+snarf - Simple Non-interactive All-purpose Resource Fetcher
+.SH SYNOPSIS
+.B snarf
+.RB [ -avqprzm ]
+.B URL 
+.RB [ outfile ]
+.B ...
+.PP
+
+.SH DESCRIPTION
+Retrieves data from a variety of protocols, namely 
+.BR http ,
+.BR ftp ,
+and
+.BR gopher .
+
+.SH USAGE
+.B snarf
+is invoked with any number of URLs and outfiles. If an outfile is not
+specified, snarf preserves the remote file name when saving.
+.PP
+For example,
+.B snarf http://foo.bar.com/images/face.gif
+will retrieve the file ``face.gif'' to the local system.  In the event
+that there is no filename (the url ends in a slash), the data is
+retrieved and stored in the file
+.B index.html
+for http URLs, 
+.B ftpindex.txt
+for ftp URLs, or
+.B gopherindex.txt
+for gopher URLs.
+
+Using a dash, "-", as the outfile causes
+.B snarf
+to send its output to stdout rather than a file.
+.PP
+To log in to an ftp server or website that requires a username and
+password, use the syntax http://username:password@site.com/. If you
+omit the password, you will be prompted for it.
+.PP
+Snarf has a built-in option to download the latest version of itself;
+simply run
+.B snarf
+.BR LATEST .
+
+
+.SS OPTIONS
+.TP
+.I "\-a"
+Causes snarf to use "active" ftp. By default, snarf uses passive ftp, 
+and, if the server does not support it, falls back to active
+ftp. Using the \-a option will avoid the initial passive attempt.
+.TP
+.I "\-r"
+Resumes an interrupted ftp or http transfer by 
+checking if there is a local file
+with the same name as the remote file, and starting the transfer at the
+end of the local file and continuing until finished. This option only
+works with HTTP servers that understand HTTP/1.1 and ftp servers that
+support the REST command. snarf uses this option automatically if the
+outfile already exists.
+.TP
+.I "\-n"
+Don't resume; ignore the outfile if it exists and re-transfer it in
+its entirety.
+.TP
+.I "\-q"
+Don't print progress bars.
+.TP
+.I "\-p"
+Forces printing of progress bars. Snarf has a compile-time option for
+whether progress bars print by default or not. The \-p option
+overrides the \-q option. In addition, if progress bars are enabled by
+default, snarf suppresses them when standard output is not a
+terminal. Using
+.I \-p
+will override this behavior.
+.TP
+.I "\-v"
+Prints all messages that come from the server to stderr.
+.TP
+.I "\-z"
+Send a user-agent string similar to what Netscape Navigator 4.0 uses.
+.TP
+.I "\-m"
+Send a user-agent string similar to what Microsoft Internet Explorer
+uses.
+.PP
+Each option only affects the URL that immediately follows it. To have
+an option affect all URLs that follow it, use an uppercase letter for
+the option, e.g. \-Q instead of \-q.
+
+.SH ENVIRONMENT
+Snarf checks several environment variables when deciding what to use
+for a proxy. It checks a service-specific variable first, then
+.BR SNARF_PROXY ,
+then
+.BR PROXY .
+.PP
+The service-specific variables are
+.BR HTTP_PROXY ,
+.BR FTP_PROXY ,
+and
+.BR GOPHER_PROXY .
+
+.PP
+Snarf also checks the
+.B SNARF_HTTP_USER_AGENT
+environment variable and will use it when reporting its user-agent
+string to an HTTP server. In the same spirit, it also uses the
+.B SNARF_HTTP_REFERER
+environment variable to spoof a Referer to the web server.
+
+.SH BUGS
+Bugs? What bugs? If you find 'em, report 'em. 
+.SH AUTHOR
+Copyright (C) 2000 Zachary Beane (xach@xach.com)
+.\" Permission to use, copy, modify and distribute this software and its
+.\" documentation for any purpose and without fee is hereby granted, provided
+.\" that the above copyright notice appear in all copies and that both that
+.\" copyright notice and this permission notice appear in supporting
+.\" documentation.  This software is provided "as is" without express or
+.\" implied warranty.

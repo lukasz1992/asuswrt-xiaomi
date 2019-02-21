@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9531" systemVersion="15B42" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9531"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="StatusBarController">
+            <connections>
+                <outlet property="fStatusButton" destination="3" id="18"/>
+                <outlet property="fTotalDLField" destination="7" id="19"/>
+                <outlet property="fTotalDLImageView" destination="4" id="21"/>
+                <outlet property="fTotalULField" destination="6" id="20"/>
+                <outlet property="fTotalULImageView" destination="5" id="42"/>
+                <outlet property="view" destination="2" id="17"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customView id="2" userLabel="StatusBar" customClass="StatusBarView">
+            <rect key="frame" x="0.0" y="0.0" width="400" height="21"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
+            <subviews>
+                <popUpButton verticalHuggingPriority="750" id="3">
+                    <rect key="frame" x="5" y="2" width="103" height="17"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                    <popUpButtonCell key="cell" type="recessed" title="status menu" bezelStyle="recessed" imagePosition="left" alignment="left" controlSize="small" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" tag="-1" inset="2" pullsDown="YES" arrowPosition="noArrow" selectedItem="33" id="12">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES" changeBackground="YES" changeGray="YES"/>
+                        <font key="font" metaFont="smallSystem"/>
+                        <menu key="menu" title="OtherViews" id="13">
+                            <items>
+                                <menuItem title="status menu" image="YingYangTemplate" tag="-1" hidden="YES" id="33"/>
+                                <menuItem title="Total Ratio" id="34">
+                                    <connections>
+                                        <action selector="setStatusLabel:" target="-2" id="41"/>
+                                    </connections>
+                                </menuItem>
+                                <menuItem title="Session Ratio" tag="1" id="35">
+                                    <connections>
+                                        <action selector="setStatusLabel:" target="-2" id="38"/>
+                                    </connections>
+                                </menuItem>
+                                <menuItem title="Total Transfer" tag="2" id="36">
+                                    <connections>
+                                        <action selector="setStatusLabel:" target="-2" id="39"/>
+                                    </connections>
+                                </menuItem>
+                                <menuItem title="Session Transfer" tag="3" id="37">
+                                    <connections>
+                                        <action selector="setStatusLabel:" target="-2" id="40"/>
+                                    </connections>
+                                </menuItem>
+                            </items>
+                        </menu>
+                    </popUpButtonCell>
+                </popUpButton>
+                <imageView id="4">
+                    <rect key="frame" x="247" y="5" width="8" height="12"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMinX="YES"/>
+                    <imageCell key="cell" refusesFirstResponder="YES" alignment="left" animates="YES" image="DownArrowTemplate" id="11"/>
+                </imageView>
+                <imageView id="5">
+                    <rect key="frame" x="325" y="5" width="8" height="12"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMinX="YES"/>
+                    <imageCell key="cell" refusesFirstResponder="YES" alignment="left" image="UpArrowTemplate" id="10"/>
+                </imageView>
+                <textField verticalHuggingPriority="750" id="6">
+                    <rect key="frame" x="336" y="4" width="64" height="14"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMinX="YES"/>
+                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="left" title="999.9 KB/s" id="9">
+                        <font key="font" metaFont="smallSystem"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField verticalHuggingPriority="750" id="7">
+                    <rect key="frame" x="258" y="4" width="64" height="14"/>
+                    <autoresizingMask key="autoresizingMask" flexibleMinX="YES"/>
+                    <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="left" title="999.9 KB/s" id="8">
+                        <font key="font" metaFont="smallSystem"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+            </subviews>
+        </customView>
+    </objects>
+    <resources>
+        <image name="DownArrowTemplate" width="8" height="12"/>
+        <image name="UpArrowTemplate" width="8" height="12"/>
+        <image name="YingYangTemplate" width="10" height="12"/>
+    </resources>
+</document>

@@ -1,0 +1,6 @@
+wxUSE_GUI=no
+wxWITH_SUBDIRS=no
+wxUSE_REGEX=builtin
+wxUSE_ZLIB=sys
+wxUSE_EXPAT=sys
+wxUSE_UNICODE=yes

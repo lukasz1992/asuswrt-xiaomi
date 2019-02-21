@@ -1,0 +1,227 @@
+#! /bin/sh
+
+is_arm_machine=`uname -m |grep arm`
+
+APP_UCLIBC_VERSION=0.9.28
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin:/opt/bin
+
+APPS_MOUNTED_PATH=`nvram get apps_mounted_path`
+APPS_INSTALL_FOLDER=`nvram get apps_install_folder`
+APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+APPS_DEV=`nvram get apps_dev`
+APPS_PATH=${APPS_MOUNTED_PATH:9}
+
+LANGUAGE_R=`nvram get preferred_lang`
+
+PRODUCTID=`nvram get productid`
+LAN_IP=`nvram get lan_ipaddr`
+MISCR_HTTPPORT_X=`nvram get misc_httpport_x`
+MISCR_HTTP_X=`nvram get misc_http_x`
+WAN_IP=`nvram get wan0_ipaddr`
+DDNS_ENABLE_X=`nvram get ddns_enable_x`
+DDNS_HOSTNAME_X=`nvram get ddns_hostname_x`
+RFW_ENABLE_X=`nvram get fw_enable_x`
+LOCAL_DOMAIN=`nvram get local_domain`
+
+DM_HTTP_PORT=`nvram get dm_http_port`
+DM_HTTPS_PORT=`nvram get dm_https_port`
+
+if [ ! -d "/tmp/APPS/Lighttpd/Script/" ]; then
+	mkdir -p /tmp/APPS/Lighttpd/Script/
+fi
+if [ ! -d "/tmp/APPS/Lighttpd/Config/" ]; then
+	mkdir -p /tmp/APPS/Lighttpd/Config/
+fi
+if [ ! -d " /tmp/APPS/Lighttpd/compress/" ]; then
+	mkdir -p /tmp/APPS/Lighttpd/compress/
+fi
+
+if [ "$1" == "start" ] || [ "$1" == "restart" ]; then
+	rm -rf /tmp/asus_router.conf
+	cp -rf /opt/etc/asus_script/asus* /tmp/APPS/Lighttpd/Script/
+	cp -rf /opt/etc/asus_lighttpd.conf /tmp/APPS/Lighttpd/Config/asus_lighttpd.conf
+	cp -rf /opt/etc/init.d/S50asuslighttpd /tmp/APPS/Lighttpd/Script/S50asuslighttpd
+	if [ ! -x "/tmp/APPS/Lighttpd" ] || [ ! -x "/tmp/APPS" ]; then
+		chmod -R 777 /tmp/APPS
+	fi
+	if [ ! -f "/opt/etc/asus_lighttpd/server.pem" ]; then
+		sh /opt/etc/asus_script/gencert.sh
+	fi
+fi
+
+if [ "$1" == "start" ] || [ "$1" == "restart" ]; then
+	sh /tmp/APPS/Lighttpd/Script/asus_check_general general-check
+fi
+
+if [ ! -f "/opt/lib/ipkg/info/bzip2.control" ];then
+	ipkg install /rom/bzip2_1.0.6-1_mipsel.ipk
+	sleep 2	
+	cp -rf /opt/lib/libbz2.so.1.0.6 $APPS_INSTALL_PATH/lib
+fi
+
+dir_control_file=$APPS_INSTALL_PATH/etc/dm2_general.conf
+	BASE_PATH=${APPS_MOUNTED_PATH:9}
+
+	if [ ! -f "$dir_control_file" ]; then
+		echo $dir_control_file
+	else
+	MISC_HTTP_X_TMP=`cat "$dir_control_file" |grep "MISC_HTTP_X="`
+	MISC_HTTP_X=${MISC_HTTP_X_TMP:12}
+	APPS_DL_SHARE_TMP=`cat "$dir_control_file" |grep "APPS_DL_SHARE="`
+	APPS_DL_SHARE=${APPS_DL_SHARE_TMP:14}
+	DM_PORT_TMP=`cat "$dir_control_file" |grep "DM_PORT="`
+	DM_PORT=${DM_PORT_TMP:8}
+	fi
+
+	if [ ! -f "$APPS_INSTALL_PATH/etc/asus_lighttpd.conf" ]; then
+		sh /tmp/APPS/Lighttpd/Script/asus_lighttpd_backup recover
+	else
+		CONFIG_PORT=`cat "$APPS_INSTALL_PATH/etc/asus_lighttpd.conf" | grep "server.port"`
+		CONFIG_PORT=${CONFIG_PORT:14}
+		CONFIG_HTTPS_PORT=`cat "$APPS_INSTALL_PATH/etc/asus_lighttpd.conf" | grep "\$SERVER"`
+		CONFIG_HTTPS_PORT=${CONFIG_HTTPS_PORT:23:4}
+		if [ -n "$DM_HTTP_PORT" ]&&[ "$DM_HTTP_PORT" != "$CONFIG_PORT" ]; then
+			sed -i "96s/^.*$/server.port = $DM_HTTP_PORT/" $APPS_INSTALL_PATH/etc/asus_lighttpd.conf
+			cp -rf $APPS_INSTALL_PATH/etc/asus_lighttpd.conf /tmp/APPS/Lighttpd/Config/asus_lighttpd.conf
+		fi
+		if [ -n "$DM_HTTPS_PORT" ]&&[ "$DM_HTTPS_PORT" != "$CONFIG_HTTPS_PORT" ]; then
+			sed -i "413s/^.*$/\$SERVER[\"socket\"] == \":$DM_HTTPS_PORT\" {/" $APPS_INSTALL_PATH/etc/asus_lighttpd.conf
+			cp -rf $APPS_INSTALL_PATH/etc/asus_lighttpd.conf /tmp/APPS/Lighttpd/Config/asus_lighttpd.conf
+		fi
+	fi
+
+case "$1" in
+  start|force-reload|restart)
+	sh /tmp/APPS/Lighttpd/Script/asuslighttpd_check
+
+	if [ -z "$APPS_MOUNTED_PATH" ]; then
+		nvram set apps_state_error=2
+		exit 1
+	fi
+
+	APP_BIN=$APPS_INSTALL_PATH/bin
+	APP_LIB=$APPS_INSTALL_PATH/lib
+
+	APP_LINK_DIR=/tmp/opt
+	APP_LINK_BIN=$APP_LINK_DIR/bin
+	APP_LINK_LIB=$APP_LINK_DIR/lib
+
+	rm -rf /tmp/getdiskinfo_lock&
+	rm -rf /tmp/APPS/DM2/Status/cgi_running&
+	rm -rf /tmp/APPS/Lighttpd/compress/downloadmaster&
+
+	APPS_MOUNTED_TYPE=`mount |grep "/dev/$APPS_DEV on " |awk '{print $5}'`
+	if [ "$APPS_MOUNTED_TYPE" != "vfat" ] && [ "$APPS_MOUNTED_TYPE" != "tfat" ]; then
+		if [ ! -f "$APP_LIB/libpcre.so.1" ] && [ ! -f "$APP_LIB/libpcre.so.1.*" ]; then
+			ln -sf 	$APP_LIB/libpcre.so.0.0.1 $APP_LIB/libpcre.so.1
+		fi
+		if [ ! -f "$APP_LIB/libpcre.so.0" ] && [ ! -f "$APP_LIB/libpcre.so.0.0.1" ]; then
+				PCER_VER=`ls $APP_LIB/libpcre.so.1.* |awk 'BEGIN{FS=".so.1."}{print $2}'`
+				ln -sf 	$APP_LIB/libpcre.so.1.$PCER_VER $APP_LIB/libpcre.so.0
+		fi
+		killall -SIGTERM asus_lighttpd&
+		sleep 3
+
+		cd  /opt/bin
+		./asus_lighttpd -Df /opt/etc/asus_lighttpd.conf&
+		exit 0
+	fi
+
+	# openssl
+	OPENSSL_VER=`ls $APP_LIB/libcrypto.so.* |awk 'BEGIN{FS="libcrypto.so."}{print $2}'`
+	ln -sf $APP_LIB/libcrypto.so.$OPENSSL_VER $APP_LINK_LIB/libcrypto.so.0
+	ln -sf $APP_LIB/libcrypto.so.$OPENSSL_VER $APP_LINK_LIB/libcrypto.so
+	ln -sf $APP_LIB/libssl.so.$OPENSSL_VER $APP_LINK_LIB/libssl.so.0
+	ln -sf $APP_LIB/libssl.so.$OPENSSL_VER $APP_LINK_LIB/libssl.so
+
+	# zlib
+	ZLIB_VER=`ls $APP_LIB/libz.so.* |awk 'BEGIN{FS="libz.so."}{print $2}'`
+	ln -sf $APP_LIB/libz.so.$ZLIB_VER $APP_LINK_LIB/libz.so.1
+	ln -sf $APP_LIB/libz.so.$ZLIB_VER $APP_LINK_LIB/libz.so
+
+	# bzip2
+	BZIP2_VER=`ls $APP_LIB/libbz2.so.* |awk 'BEGIN{FS="libbz2.so."}{print $2}'`
+	ln -sf $APP_LIB/libbz2.so.$BZIP2_VER $APP_LINK_LIB/libbz2.so.1.0
+	ln -sf $APP_LIB/libbz2.so.$BZIP2_VER $APP_LINK_LIB/libbz2.so
+
+	# ncurses
+	NCURSES_VER=`ls $APP_LIB/libform.so.* |awk 'BEGIN{FS="libform.so."}{print $2}'`
+	ln -sf $APP_LIB/libform.so.$NCURSES_VER $APP_LINK_LIB/libform.so.5
+	ln -sf $APP_LIB/libform.so.$NCURSES_VER $APP_LINK_LIB/libform.so
+	ln -sf $APP_LIB/libmenu.so.$NCURSES_VER $APP_LINK_LIB/libmenu.so.5
+	ln -sf $APP_LIB/libmenu.so.$NCURSES_VER $APP_LINK_LIB/libmenu.so
+	ln -sf $APP_LIB/libncurses.so.$NCURSES_VER $APP_LINK_LIB/libncurses.so.5
+	ln -sf $APP_LIB/libncurses.so.$NCURSES_VER $APP_LINK_LIB/libncurses.so
+	ln -sf $APP_LIB/libpanel.so.$NCURSES_VER $APP_LINK_LIB/libpanel.so.5
+	ln -sf $APP_LIB/libpanel.so.$NCURSES_VER $APP_LINK_LIB/libpanel.so
+	ln -sf $APP_LIB/../share/terminfo $APP_LINK_LIB/terminfo
+
+	if [ -z "$is_arm_machine" ]; then
+		# libuclibc++
+		LIBCPLUS_VER=`ls $APP_LIB/libuClibc++-* |awk 'BEGIN{FS="libuClibc++"}{print $2}' |awk 'BEGIN{FS="-"}{print $2}' |awk 'BEGIN{FS=".so"}{print $1}'`
+		ln -sf $APP_LIB/libuClibc++-$LIBCPLUS_VER.so $APP_LINK_LIB/libuClibc++.so.0
+		ln -sf $APP_LIB/libuClibc++-$LIBCPLUS_VER.so $APP_LINK_LIB/libuClibc++.so
+	fi
+
+	# pcre
+	PCRE1_VER=`ls $APP_LIB/libpcre.so.* |awk 'BEGIN{FS="libpcre.so."}{print $2}'`
+	ln -sf $APP_LIB/libpcre.so.$PCRE1_VER $APP_LINK_LIB/libpcre.so.1
+	ln -sf $APP_LIB/libpcre.so.$PCRE1_VER $APP_LINK_LIB/libpcre.so.0
+	ln -sf $APP_LIB/libpcre.so.$PCRE1_VER $APP_LINK_LIB/libpcre.so
+	PCRE2_VER=`ls $APP_LIB/libpcrecpp.so.* |awk 'BEGIN{FS="libpcrecpp.so."}{print $2}'`
+	ln -sf $APP_LIB/libpcrecpp.so.$PCRE2_VER $APP_LINK_LIB/libpcrecpp.so.1
+	ln -sf $APP_LIB/libpcrecpp.so.$PCRE2_VER $APP_LINK_LIB/libpcrecpp.so.0
+	ln -sf $APP_LIB/libpcrecpp.so.$PCRE2_VER $APP_LINK_LIB/libpcrecpp.so
+	PCRE3_VER=`ls $APP_LIB/libpcreposix.so.* |awk 'BEGIN{FS="libpcreposix.so."}{print $2}'`
+	ln -sf $APP_LIB/libpcreposix.so.$PCRE3_VER $APP_LINK_LIB/libpcreposix.so.1
+	ln -sf $APP_LIB/libpcreposix.so.$PCRE3_VER $APP_LINK_LIB/libpcreposix.so.0
+	ln -sf $APP_LIB/libpcreposix.so.$PCRE3_VER $APP_LINK_LIB/libpcreposix.so
+
+	killall -SIGTERM asus_lighttpd&
+	sleep 3
+	cd  /opt/bin
+	./asus_lighttpd -Df /opt/etc/asus_lighttpd.conf&
+
+
+    ;;
+  stop)
+
+	killall -SIGTERM asus_lighttpd&
+
+    ;;
+
+  lighttpd-restart)
+	killall -SIGTERM asus_lighttpd&
+	rm -rf /tmp/getdiskinfo_lock&
+	rm -rf /tmp/APPS/DM2/Status/cgi_running&
+	rm -rf /tmp/APPS/DM2/Config/dm2_general_protected &
+	rm -rf /tmp/APPS/DM2/Config/dm2_detect_protected &
+	rm -rf /tmp/APPS/Lighttpd/compress/downloadmaster&
+	sleep 2
+	cd /opt/bin && ./asus_lighttpd -Df /opt/etc/asus_lighttpd.conf &
+    ;;
+
+  firewall-start|firewall-restart)
+	if [ -f "/tmp/asus_router.conf" ]; then
+		LAN_IP_TMP=`cat "/tmp/asus_router.conf" | grep "LAN_IP" | awk 'BEGIN{FS="="} {print $2}'`
+		if [ "$LAN_IP" != "$LAN_IP_TMP" ];then
+			killall -SIGTERM asus_lighttpd&
+			rm -rf /tmp/getdiskinfo_lock&
+			rm -rf /tmp/APPS/DM2/Status/cgi_running&
+			rm -rf /tmp/APPS/DM2/Config/dm2_general_protected &
+			rm -rf /tmp/APPS/DM2/Config/dm2_detect_protected &
+			rm -rf /tmp/APPS/Lighttpd/compress/downloadmaster&
+			sleep 2
+			killall -9 asus_lighttpd
+
+			cd /opt/bin && ./asus_lighttpd -Df /opt/etc/asus_lighttpd.conf &
+		fi
+	fi
+    ;;
+
+  *)
+
+    exit 1
+    ;;
+esac

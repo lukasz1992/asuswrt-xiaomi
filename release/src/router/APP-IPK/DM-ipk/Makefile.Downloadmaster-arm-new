@@ -1,0 +1,415 @@
+export  SRCBASE := $(shell pwd)
+BUILD := i386-pc-linux-gnu
+HOSTCC := gcc
+PLATFORM := arm-buildroot-linux
+CROSS_COMPILE := arm-buildroot-linux-uclibcgnueabi-
+TOOLCHAIN := $(shell cd $(dir $(shell which $(CROSS_COMPILE)gcc)) && pwd)
+CONFIGURE := ./configure --host=arm-linux --build=$(BUILD)
+export IPKG_TOOLS := $(shell cd $(dir $(shell which $(CROSS_COMPILE)gcc))/../../ipkg-utils-1.7 && pwd)
+export LD_DIR := $(shell cd $(dir $(shell which $(CROSS_COMPILE)gcc))/../ && pwd)
+export LIBPREF=$(LD_DIR)
+
+
+export CC := $(CROSS_COMPILE)gcc
+export AR := $(CROSS_COMPILE)ar
+export AS := $(CROSS_COMPILE)as
+export LD := $(CROSS_COMPILE)ld
+export NM := $(CROSS_COMPILE)nm
+export RANLIB := $(CROSS_COMPILE)ranlib
+export STRIP := $(CROSS_COMPILE)strip
+export SIZE := $(CROSS_COMPILE)size
+export CXX := $(CROSS_COMPILE)g++
+
+
+# libpasswd:
+export LDFLAGS_P := -L$(TOOLCHAIN)/../arm-buildroot-linux-uclibcgnueabi/sysroot/usr/lib -lcrypt  -Wl,-rpath,/opt/lib
+export	CFLAGS_P := -Os -Wall  -fPIC
+#
+# standard packages
+#
+obj-y += mkdir
+obj-y += DM-UI
+obj-y += CGI
+obj-y += dm2_detect
+obj-y += snarf
+obj-y += zlib
+obj-y += ncurses
+obj-y += libpng
+obj-y += pcre
+obj-y += libxml2
+obj-y += openssl
+obj-y += nzbget
+obj-y += libevent
+obj-y += libcurl
+obj-y += libpasswd
+obj-y += nvram-encrypt
+obj-y += transmission-2.92
+obj-y += readline
+obj-y += expat
+obj-y += wxbase
+obj-y += crypto
+obj-y += amule
+obj-y += DownloadMaster-ipk
+obj-y += openssl-ipk
+obj-y += libcurl-ipk
+
+all: $(obj-y)
+
+clean:libpasswd-clean nvram-encrypt-clean
+
+	@$(MAKE) -C CGI2.1 clean
+	@$(MAKE) -C dm2_detect clean
+	@$(MAKE) -C snarf-7.0 clean
+	-rm zlib/stamp-h2
+	-@$(MAKE) -C zlib clean
+	@$(MAKE) -C ncurses clean
+	@$(MAKE) -C libpng clean
+	@$(MAKE) -C pcre clean
+	@$(MAKE) -C libxml2 clean
+	@$(MAKE) -C openssl clean
+	@$(MAKE) -C nzbget-0.7.0 clean
+	@$(MAKE) -C libevent distclean
+	@$(MAKE) -C libcurl clean
+	@$(MAKE) -C transmission-2.92 clean
+	@$(MAKE) -C readline clean
+	@$(MAKE) -C expat clean
+	@$(MAKE) -C wxbase clean
+	@$(MAKE) -C crypto++ clean
+	@$(MAKE) -C amuled clean
+
+mkdir:
+	-mkdir -p openssl-ipk-2.1/opt/tmp/bin/
+	-mkdir -p openssl-ipk-2.1/opt/tmp/lib/
+	-mkdir -p DownloadMaster-ipk-2.1/opt/etc/downloadmaster/downloadmaster
+	-mkdir -p DownloadMaster-ipk-2.1/opt/tmp/bin/
+	-mkdir -p openssl-ipk-2.1/opt/tmp/share/openssl/
+	-mkdir -p libcurl-ipk-2.1/opt/tmp/bin/
+	-mkdir -p libcurl-ipk-2.1/opt/tmp/lib/
+	-mkdir -p DownloadMaster-ipk-2.1/opt/etc/init.d/
+
+
+distclean:clean
+	rm -rf DownloadMaster-ipk-2.1/opt/etc/downloadmaster/downloadmaster/*
+	rm -rf DownloadMaster-ipk-2.1/opt/tmp/bin/*
+	rm -rf $(SRCBASE)/DownloadMaster-ipk-2.1/opt/etc/init.d/S50downloadmaster
+	rm -rf $(SRCBASE)/DownloadMaster-ipk-2.1/CONTROL/control
+	rm -rf openssl-ipk-2.1/opt/tmp/share/openssl/*
+	rm -rf openssl-ipk-2.1/opt/tmp/lib/*
+	rm -rf $(SRCBASE)/openssl-ipk-2.1/CONTROL/control
+	rm -rf $(SRCBASE)/libcurl-ipk-2.1/CONTROL/control
+	rm -rf $(SRCBASE)/libcurl-ipk-2.1/opt/tmp/bin/*
+	rm -rf $(SRCBASE)/libcurl-ipk-2.1/opt/tmp/lib/*
+
+DM-UI:
+	rm -rf DownloadMaster-ipk-2.1/opt/etc/downloadmaster/downloadmaster
+	cp -rf downloadmaster-UI DownloadMaster-ipk-2.1/opt/etc/downloadmaster/downloadmaster
+	
+CGI:
+	@$(MAKE) -C CGI2.1 clean
+	@$(MAKE) -C CGI2.1 all LDFLAGS=" -L$(SRCBASE)/opt/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1" CFLAGS="-I$(TOOLCHAIN)/../arm-buildroot-linux-uclibcgnueabi/sysroot/usr/include"
+	$(STRIP) CGI2.1/*.cgi
+	cp -rf CGI2.1/*.cgi DownloadMaster-ipk-2.1/opt/etc/downloadmaster/downloadmaster/
+dm2_detect/stamp-h2:
+	cd dm2_detect \
+	touch stamp-h2;	
+
+.PHONY: dm2_detect/stamp-h2
+
+dm2_detect:dm2_detect/stamp-h2
+	@$(MAKE) -C dm2_detect clean	
+	@$(MAKE) -C dm2_detect all NEW_ARM=y
+	$(STRIP) dm2_detect/dm2_detect
+	cp -rf dm2_detect/dm2_detect DownloadMaster-ipk-2.1/opt/tmp/bin/
+
+snarf:
+	@$(MAKE) -C snarf-7.0 all
+	$(STRIP) snarf-7.0/dm2_snarf
+	$(STRIP) snarf-7.0/dm2_snarfmaster
+	cp -rf snarf-7.0/dm2_snarf DownloadMaster-ipk-2.1/opt/tmp/bin/dm2_snarf
+	cp -rf snarf-7.0/dm2_snarfmaster DownloadMaster-ipk-2.1/opt/tmp/bin/dm2_snarfmaster
+zlib/stamp-h2: 
+		cd zlib \
+		touch stamp-h2;	
+zlib: zlib/stamp-h2
+	cd zlib && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+		prefix=$(SRCBASE)/opt \
+		./configure \
+		--shared
+	@$(MAKE) -C  zlib all
+	cd zlib && \
+	$(MAKE) install
+
+
+ncurses/stamp-h2: 
+		cd ncurses \
+		touch stamp-h2;	
+
+ncurses: ncurses/stamp-h2
+	cd ncurses && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+	./configure --host=arm-linux --build=i386-pc-linux-gnu --prefix=$(SRCBASE)/opt --with-shared --enable-symlinks --disable-big-core --with-build-cc=gcc --without-cxx-binding --without-ada
+	@$(MAKE) -C  ncurses all
+	cd ncurses && \
+	$(MAKE) install
+libpng/stamp-h2:
+	cd libpng \
+	touch stamp-h2;
+
+.PHONY: libpng/stamp-h2
+
+libpng:libpng/stamp-h2
+	cd libpng && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+		CPPFLAGS="-O2   -pipe  -I$(SRCBASE)/opt/include " \
+		LDFLAGS=" -L$(SRCBASE)/opt/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1 -ldl" \
+		./configure \
+		--build=i386-pc-linux-gnu \
+		--host=arm-linux \
+		--target=arm-linux \
+		--prefix=$(SRCBASE)/opt \
+		--disable-nls \
+		--disable-static
+	@$(MAKE) -C  libpng all
+	cd libpng && \
+	$(MAKE) install
+pcre/stamp-h2:
+	cd pcre \
+	touch stamp-h2;
+pcre:pcre/stamp-h2
+	cd pcre && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+	./configure --prefix=$(SRCBASE)/opt --host=$(PLATFORM)  
+	@$(MAKE) -C  pcre all 
+	cd pcre && \
+	$(MAKE) install
+
+libxml2/stamp-h2:
+	cd libxml2 &&\
+		touch stamp-h2;
+
+.PHONY: libxml2/stamp-h2 
+
+libxml2: libxml2/stamp-h2
+	cd libxml2 && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+	./configure --prefix=$(SRCBASE)/opt --host=$(PLATFORM)  --without-python
+	@$(MAKE) -C  libxml2 all
+	 cd libxml2 && \
+	$(MAKE) install
+
+sqlite:
+	cd sqlite-3.7.3 && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+	./configure --build=i386-pc-linux-gnu --prefix=$(SRCBASE)/opt --host=$(PLATFORM)   --enable-shared --enable-static \
+	--disable-readline  --enable-threadsafe
+	@$(MAKE) -C sqlite-3.7.3 all 
+	cd sqlite-3.7.3 && \
+	$(MAKE) install
+                       
+openssl/stamp-h1: 
+		cd openssl \
+		touch stamp-h1;	
+
+
+openssl: openssl/stamp-h1
+	cd openssl && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) LDFLAGS=" -L$(SRCBASE)/opt/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1 -ldl" \
+	./Configure shared no-zlib -O2 -pipe  -I$(SRCBASE)/opt/include --openssldir=/opt/share/openssl --prefix=/opt --install_prefix=$(SRCBASE) linux-generic32
+	cd openssl && sed -i "s|^SHARED_LDFLAGS=|SHARED_LDFLAGS=-Wl,-rpath,\/opt\/lib -Wl,-rpath-link,$(SRCBASE)\/opt\/lib -Wl,-dynamic-linker=\/opt\/lib\/ld-uClibc.so.1|" Makefile
+	@$(MAKE) -C openssl \
+	EX_LIBS=" -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1 -ldl"
+	cp -rf openssl/apps/openssl openssl-ipk-2.1/opt/tmp/bin/
+	cp -rf openssl/apps/openssl.cnf openssl-ipk-2.1/opt/tmp/share/openssl/
+	cp -rf openssl/libssl.so.1.0.0 openssl-ipk-2.1/opt/tmp/lib/
+	cp -rf openssl/libssl.so openssl-ipk-2.1/opt/tmp/lib/
+	cp -rf openssl/libcrypto.so.1.0.0 openssl-ipk-2.1/opt/tmp/lib/
+	cp -rf openssl/libcrypto.so openssl-ipk-2.1/opt/tmp/lib/
+	cd openssl && \
+	$(MAKE) install
+
+#nzbget:		
+#	@$(MAKE) -C nzbget-0.7.0 all
+#	$(STRIP) nzbget-0.7.0/dm2_nzbget
+#	cp -rf nzbget-0.7.0/dm2_nzbget DownloadMaster-ipk-2.1/opt/tmp/bin/
+	
+nzbget/stamp-h2:
+	cd nzbget-0.7.0 &&\
+		touch stamp-h2;
+
+nzbget:  nzbget/stamp-h2
+	cd nzbget-0.7.0 && \
+	LIBPREF=$(LD_DIR) \
+	CPPFLAGS="-O2   -pipe  -I$(SRCBASE)/opt/include " \
+	LDFLAGS=" -L$(SRCBASE)/opt/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1" \
+	LIBS="-lcrypto" \
+	./configure --build=i386-pc-linux-gnu --host=arm-linux --disable-parcheck --prefix=$(SRCBASE)/opt --with-libxml2-includes=$(SRCBASE)/libxml2/include --with-openssl-includes=$(SRCBASE)/openssl/include --with-libxml2-libraries=$(SRCBASE)/libxml2/.libs/ --with-openssl-libraries=$(SRCBASE)/openssl --with-libcurses-includes=$(SRCBASE)/ncurses/include --with-libcurses-libraries=$(SRCBASE)/ncurses/lib
+	@$(MAKE) -C nzbget-0.7.0 all
+	$(STRIP) nzbget-0.7.0/nzbget
+	cp -rf nzbget-0.7.0/nzbget DownloadMaster-ipk-2.1/opt/tmp/bin/dm2_nzbget
+	
+libevent/stamp-h2:
+	cd libevent \
+	touch stamp-h2;
+
+libevent:libevent/stamp-h2
+	cd libevent && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+	./configure --build=i386-pc-linux-gnu --host=arm-linux --target=arm-linux --prefix=$(SRCBASE)/opt
+	@$(MAKE) -C libevent all
+	 cd libevent && \
+	$(MAKE) install
+libcurl/stamp-h2:
+	cd libcurl \
+	touch stamp-h2;
+libcurl:libcurl/stamp-h2
+	cd libcurl && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+	CFLAGS="-I$(SRCBASE)/opt/include" \
+	LDFLAGS="-L$(SRCBASE)/opt/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1" \
+	./configure --build=i386-pc-linux-gnu --host=arm-linux --target=arm-linux --prefix=$(SRCBASE)/opt --disable-thread --enable-shared --disable-static --enable-ares --enable-cookies --enable-crypto-auth --enable-nonblocking --enable-file --enable-ftp --enable-http --enable-ipv6 --enable-tftp --disable-nls --disable-ares --disable-dict --disable-debug --disable-gopher --disable-ldap --disable-manual --disable-telnet --disable-verbose --with-random=/dev/urandom --with-ssl=$(SRCBASE)/opt/lib --without-gnutls --without-krb4 --without-libidn --with-zlib=$(SRCBASE) --with-ca-bundle=$(SRCBASE)/opt/share/curl/curl-ca-bundle.crt
+	#LDFLAGS="-L$(SRCBASE)/opt/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1"
+	#cd libcurl && sed -i "s|^LDFLAGS =|LDFLAGS=-L$(SRCBASE)/opt/lib -Wl,-rpath,\/opt\/lib -Wl,-rpath-link,$(SRCBASE)\/opt\/lib -Wl,-dynamic-linker=\/opt\/lib\/ld-uClibc.so.1|" Makefile
+	@$(MAKE) -C libcurl all 
+	 cd libcurl && \
+	$(MAKE) install
+	cp -rf $(SRCBASE)/opt/bin/curl $(SRCBASE)/libcurl-ipk-2.1/opt/tmp/bin/
+	#cp -rf $(SRCBASE)/opt/bin/curl-config libcurl-ipk-2.1/opt/tmp/bin/
+	cp -rf $(SRCBASE)/opt/lib/libcurl.so $(SRCBASE)/libcurl-ipk-2.1/opt/tmp/lib/
+	cp -rf $(SRCBASE)/opt/lib/libcurl.so.4 $(SRCBASE)/libcurl-ipk-2.1/opt/tmp/lib/
+	cp -rf $(SRCBASE)/opt/lib/libcurl.so.4.5.0 $(SRCBASE)/libcurl-ipk-2.1/opt/tmp/lib/
+
+
+transmission-2.92/stamp-h2:
+	cd transmission-2.92 \
+	touch stamp-h2;
+
+transmission-2.92:libpasswd nvram-encrypt transmission-2.92/stamp-h2
+	cd transmission-2.92 && \
+	LDFLAGS="-L$(SRCBASE)/opt/lib -lpasswd -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1" \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+	OPENSSL_CFLAGS='-I$(SRCBASE)/opt/include  ' OPENSSL_LIBS='-Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1 -L$(SRCBASE)/opt/lib -lssl -lcrypto -ldl  ' LIBCURL_CFLAGS='-I$(SRCBASE)/opt/include  ' LIBCURL_LIBS='-L$(SRCBASE) -lcurl  ' LIBEVENT_LIBS='-L$(SRCBASE) -levent  ' LIBEVENT_CFLAGS='-I$(SRCBASE)/opt/include  '  ZLIB_LIBS='-L$(SRCBASE) -lz  ' ZLIB_CFLAGS='-I$(SRCBASE)/opt/include  ' \
+	./configure --without-gtk --host=arm-linux --target=arm-linux --prefix=/opt --libdir=/opt/lib/
+	@$(MAKE) -C transmission-2.92 all
+	$(STRIP) transmission-2.92/daemon/transmission-daemon
+	cp -rf transmission-2.92/daemon/transmission-daemon DownloadMaster-ipk-2.1/opt/tmp/bin/dm2_transmission-daemon
+
+readline/stamp-h2:
+	cd readline \
+	touch stamp-h2;
+readline:readline/stamp-h2
+	cd readline && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+	./configure --build=i386-pc-linux-gnu --host=arm-linux --target=arm-linux --prefix=$(SRCBASE)/opt --disable-nls --disable-static --with-curses
+	@$(MAKE) -C readline all
+	 cd readline && \
+	$(MAKE) install \
+
+expat/stamp-h2:
+	cd expat \
+	touch stamp-h2;
+expat:expat/stamp-h2
+	cd expat && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+	./configure --build=i386-pc-linux-gnu --host=arm-linux --target=arm-linux --disable-static --prefix=$(SRCBASE)/opt --disable-nls
+	@$(MAKE) -C expat all
+	 cd expat && \
+	$(MAKE) install
+
+wxbase/stamp-h2: 
+		cd wxbase \
+		touch stamp-h2;	
+
+wxbase: wxbase/stamp-h2
+	cd wxbase && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+		CPPFLAGS="-O2   -pipe  -I$(SRCBASE)/opt/include " \
+		LDFLAGS=" -L$(SRCBASE)/opt/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1 -ldl" \
+		ac_cv_path_SDL_CONFIG=no \
+		./configure \
+		--prefix=$(SRCBASE)/opt \
+		--build=i386-pc-linux-gnu \
+		--host=arm-linux \
+		--target=arm-linux \
+		--disable-precomp-headers \
+		--disable-gui \
+		--without-subdirs \
+		--with-regex=builtin \
+		--with-zlib=sys \
+		--with-expat=sys \
+		--enable-largefile \
+		--without-sdl \
+		--disable-sdltest \
+		--enable-unicode 
+	@$(MAKE) -C wxbase all
+	 cd wxbase && \
+	$(MAKE) install 
+
+crypto/stamp-h2:
+	cd crypto++ \
+	touch stamp-h2;
+#2016.06.14 sherry add CXXFLAGS="-fpermissive"
+crypto:crypto/stamp-h2
+	@$(MAKE) -C crypto++ \
+		AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+		CXXFLAGS="-fpermissive -O2 -pipe -I$(SRCBASE)/opt/include" \
+		LDFLAGS=" -L$(SRCBASE)/opt/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1 -ldl"
+		mkdir -p $(SRCBASE)/opt/include/cryptopp
+		chmod -R 777 $(SRCBASE)/opt/include/cryptopp
+		cd crypto++ && \
+		cp -rf *.h $(SRCBASE)/opt/include/cryptopp &&\
+		cp -rf *.a $(SRCBASE)/opt/lib
+
+#2016.06.14 sherry add CXXFLAGS="-fpermissive"
+amule:
+	cd amuled && \
+	AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \
+		CXXFLAGS="-fpermissive -O2 -pipe -I$(SRCBASE)/opt/include" \
+		LDFLAGS=" -L$(SRCBASE)/opt/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/opt/lib -Wl,-dynamic-linker=/opt/lib/ld-uClibc.so.1 -ldl" \
+		ac_cv_func_malloc_0_nonnull=yes ac_cv_func_realloc_0_nonnull=yes \
+		./configure \
+		--build=i386-pc-linux-gnu --host=arm-linux --target=arm-linux --prefix=/opt --disable-debug --enable-optimize --enable-alcc --enable-amule-daemon --enable-webserver --enable-amulecmd --enable-upnp --disable-monolithic --disable-alc --disable-amulecmdgui --disable-cas --disable-wxcas --disable-systray --with-curl-config=$(SRCBASE)/bin/curl-config --with-gdlib-prefix=$(SRCBASE)/opt --with-libpng-prefix=$(SRCBASE)/opt --with-libupnp-prefix=$(SRCBASE)/opt --with-wxbase-config=$(SRCBASE)/opt/bin/wx-config --with-wx-config=$(SRCBASE)/opt/bin/wx-config --with-wx-prefix=$(SRCBASE)/opt --with-crypto-prefix=$(SRCBASE)/opt --with-zlib=$(SRCBASE)/opt --disable-nls --disable-static --disable-webserver
+	@$(MAKE) -C amuled HOSTCC=gcc 
+	$(STRIP) amuled/src/dm2_amule*
+	cp -rf amuled/src/dm2_amuled DownloadMaster-ipk-2.1/opt/tmp/bin/
+	cp -rf amuled/src/dm2_amulecmd DownloadMaster-ipk-2.1/opt/tmp/bin/
+
+libpasswd-clean:
+	-cd libpasswd &&  make clean
+	-rm libpasswd/stamp-h2
+libpasswd/stamp-h2:
+	cd libpasswd \
+	touch stamp-h2;
+libpasswd:libpasswd/stamp-h2
+	cd libpasswd &&  make install
+	#cp -rf libpasswd/libpasswd.so DownloadMaster-ipk-2.1/opt/tmp/lib
+
+nvram-encrypt-clean:
+	-cd nvram-encrypt &&  make clean
+	-rm nvram-encrypt/stamp-h2
+nvram-encrypt/stamp-h2:
+	cd nvram-encrypt \
+	touch stamp-h2;
+nvram-encrypt:nvram-encrypt/stamp-h2
+	cd nvram-encrypt &&  make 
+	cp -rf nvram-encrypt/spwenc.o transmission-2.92/libtransmission
+
+DownloadMaster-ipk:
+	cp -rf $(SRCBASE)/DownloadMaster-ipk-tmp/opt/etc/asus_script/arm_i686_mipsel/* 		$(SRCBASE)/DownloadMaster-ipk-2.1/opt/etc/asus_script/
+	cp -rf $(SRCBASE)/DownloadMaster-ipk-tmp/opt/etc/init.d/S50downloadmaster-arm-new 	$(SRCBASE)/DownloadMaster-ipk-2.1/opt/etc/init.d/S50downloadmaster
+	cp -rf $(SRCBASE)/DownloadMaster-ipk-tmp/CONTROL/control-downloadmaster-arm-new		$(SRCBASE)/DownloadMaster-ipk-2.1/CONTROL/control
+	cp -rf $(SRCBASE)/DownloadMaster-ipk-tmp/CONTROL/preinst-arm-mipsel 				$(SRCBASE)/DownloadMaster-ipk-2.1/CONTROL/preinst
+	cp -rf $(SRCBASE)/DownloadMaster-ipk-tmp/CONTROL/postinst-arm-mipsel-misbig 		$(SRCBASE)/DownloadMaster-ipk-2.1/CONTROL/postinst
+	$(STRIP) DownloadMaster-ipk-2.1/opt/tmp/bin/*
+	@$(IPKG_TOOLS)/ipkg-build DownloadMaster-ipk-2.1 ./
+
+openssl-ipk:
+	cp -rf $(SRCBASE)/DownloadMaster-ipk-tmp/CONTROL/control-asusopenssl-arm-new $(SRCBASE)/openssl-ipk-2.1/CONTROL/control
+	$(STRIP) openssl-ipk-2.1/opt/tmp/bin/*
+	$(STRIP) openssl-ipk-2.1/opt/tmp/lib/*
+	@$(IPKG_TOOLS)/ipkg-build openssl-ipk-2.1 ./
+libcurl-ipk:
+	cp -rf $(SRCBASE)/DownloadMaster-ipk-tmp/CONTROL/control-asuslibcurl-arm-new $(SRCBASE)/libcurl-ipk-2.1/CONTROL/control
+	$(STRIP) $(SRCBASE)/libcurl-ipk-2.1/opt/tmp/bin/*
+	$(STRIP) $(SRCBASE)/libcurl-ipk-2.1/opt/tmp/lib/*
+	@$(IPKG_TOOLS)/ipkg-build libcurl-ipk-2.1 ./

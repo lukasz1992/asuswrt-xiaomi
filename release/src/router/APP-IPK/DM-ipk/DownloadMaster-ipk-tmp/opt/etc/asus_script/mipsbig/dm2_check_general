@@ -1,0 +1,817 @@
+#! /bin/sh
+APP_UCLIBC_VERSION=0.9.28
+
+#PATH=/sbin:/usr/sbin:/bin:/usr/bin:/opt/bin
+PATH=$APPS_PATH/usr/bin:$APPS_PATH/bin:$APPS_PATH/usr/sbin:$APPS_PATH/sbin:$PATH
+unset LD_LIBRARY_PATH
+unset LD_PRELOAD
+
+if [ -f "/userfs/bin/tcapi" ];then
+PAHTN=`cat /tmp/dm_mount_path_n | awk 'BEGIN{FS="="}{print $2}'`
+#USBPAHTN=path${PATHN}
+ACT=usb_path${PAHTN}_act
+SERIAL=usb_path${PAHTN}_serial
+PID=usb_path${PAHTN}_pid
+VID=usb_path${PAHTN}_vid
+USB_ACT=`/userfs/bin/tcapi get USB_Entry $ACT`
+USB_SERIAL=`/userfs/bin/tcapi get USB_Entry $SERIAL`
+USB_PID=`/userfs/bin/tcapi get USB_Entry $PID`
+USB_VID=`/userfs/bin/tcapi get USB_Entry $VID`
+else
+PAHTN=`cat /tmp/dm_mount_path_n | awk 'BEGIN{FS="="}{print $2}'`
+#USBPAHTN=path${PATHN}
+ACT=usb_path${PAHTN}_act
+SERIAL=usb_path${PAHTN}_serial
+PID=usb_path${PAHTN}_pid
+VID=usb_path${PAHTN}_vid
+USB_ACT=`nvram get $ACT`
+USB_SERIAL=`nvram get $SERIAL`
+USB_PID=`nvram get $PID`
+USB_VID=`nvram get $VID`
+
+fi
+
+if [ -f "/userfs/bin/tcapi" ];then
+APPS_DEV=`/userfs/bin/tcapi get Apps_Entry apps_dev`
+APPS_MOUNTED_PATH=`/userfs/bin/tcapi get Apps_Entry apps_mounted_path`
+APPS_INSTALL_FOLDER=`/userfs/bin/tcapi get Apps_Entry apps_install_folder`
+APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+APPS_PATH=`/userfs/bin/tcapi show Apps_Entry |grep "apps_mounted_path" |awk 'BEGIN{FS="="}{print $2}'`
+
+MEMORY_TOTAL=`free | head -2 |tail -1 |awk '{print $2}'`
+
+LANGUAGE_RNUM=`/userfs/bin/tcapi get LanguageSwitch_Entry Type`
+	if [ "$LANGUAGE_RNUM" = "1" ]; then 
+		LANGUAGE_R="EN"
+	elif [ "$LANGUAGE_RNUM" = "2" ]; then
+		LANGUAGE_R="BR"
+	elif [ "$LANGUAGE_RNUM" = "3" ]; then
+		LANGUAGE_R="CN"
+	elif [ "$LANGUAGE_RNUM" = "4" ]; then
+		LANGUAGE_R="CZ"
+	elif [ "$LANGUAGE_RNUM" = "5" ]; then
+		LANGUAGE_R="DA"
+	elif [ "$LANGUAGE_RNUM" = "6" ]; then
+		LANGUAGE_R="DE"
+	elif [ "$LANGUAGE_RNUM" = "7" ]; then
+		LANGUAGE_R="ES"
+	elif [ "$LANGUAGE_RNUM" = "8" ]; then
+		LANGUAGE_R="FI"
+	elif [ "$LANGUAGE_RNUM" = "9" ]; then
+		LANGUAGE_R="FR"
+	elif [ "$LANGUAGE_RNUM" = "10" ]; then
+		LANGUAGE_R="IT"
+	elif [ "$LANGUAGE_RNUM" = "11" ]; then
+		LANGUAGE_R="MS"
+	elif [ "$LANGUAGE_RNUM" = "12" ]; then
+		LANGUAGE_R="NO"
+	elif [ "$LANGUAGE_RNUM" = "13" ]; then
+		LANGUAGE_R="PL"
+	elif [ "$LANGUAGE_RNUM" = "14" ]; then
+		LANGUAGE_R="RU"
+	elif [ "$LANGUAGE_RNUM" = "15" ]; then
+		LANGUAGE_R="SV"
+	elif [ "$LANGUAGE_RNUM" = "16" ]; then
+		LANGUAGE_R="TH"
+	elif [ "$LANGUAGE_RNUM" = "17" ]; then
+		LANGUAGE_R="TR"
+	elif [ "$LANGUAGE_RNUM" = "18" ]; then
+		LANGUAGE_R="TW"
+	elif [ "$LANGUAGE_RNUM" = "19" ]; then
+		LANGUAGE_R="UK"
+	else
+		LANGUAGE_R="EN"
+	fi
+PRODUCTID=`/userfs/bin/tcapi get SysInfo_Entry ProductName`
+LAN_IP=`/userfs/bin/tcapi get Lan_Entry IP`
+MISCR_HTTPPORT_X=`/userfs/bin/tcapi get Firewall_Entry misc_httpport_x`
+MISCR_HTTP_X=`/userfs/bin/tcapi get Firewall_Entry misc_http_x`
+HTTP_PASSWD=`/userfs/bin/tcapi get Account_Entry0 web_passwd`
+#get Wan ip in DSL-wrt, by judging the dualwan status to get the real ip
+	DualWan=`/userfs/bin/tcapi get Dualwan_Entry wans_dualwan`
+	if [ -n "$DualWan" ] || [ "$DualWan" != "no attribute information" ] || [ "$DualWan" != "none" ]
+	then
+		Pri_Wan=`echo $DualWan | awk '{printf("%s\n", $1);}'`
+		Sec_Wan=`echo $DualWan | awk '{printf("%s\n", $2);}'`
+	
+		#get the first wan type
+		if [ "$Pri_Wan" = "lan" ]; then
+			Pri_unit=12
+		elif [ "$Pri_Wan" = "usb" ]; then
+			Pri_unit=11
+		elif [ "$Pri_Wan" = "wan" ]; then
+			Pri_unit=10
+		elif [ "$Pri_Wan" = "dsl" ]; then
+			DSLMode=`/userfs/bin/tcapi get Wan_Common DSLMode`
+			if [ "$DSLMode" = "VDSL" ]
+			then
+				Pri_unit=8
+			else 
+				Pri_unit=0
+			fi
+		fi
+		Pri_Wan_IP=`/userfs/bin/tcapi get Wanduck_Common wan"$Pri_unit"_ipaddr`
+		#get sec wan type, if sec_wan=none then jump this
+		if [ "$Sec_Wan" != "none" ]; then
+			if [ "$Sec_Wan" = "lan" ]; then
+				Sec_unit=12
+			elif [ "$Sec_Wan" = "usb" ]; then
+				Sec_unit=11
+			elif [ "$Sec_Wan" = "wan" ]; then
+				Sec_unit=10
+			elif [ "$Sec_Wan" = "dsl" ]; then
+				DSLMode2=`/userfs/bin/tcapi get Wan_Common DSLMode`
+				if [ "$DSLMode2" = "VDSL" ]
+				then
+					Sec_unit=8
+				else
+					Sec_unit=0
+				fi
+			fi
+
+			Sec_Wan_IP=`/userfs/bin/tcapi get Wanduck_Common wan"$Sec_unit"_ipaddr`
+	
+			if [ -z "$Pri_Wan_IP" ] || [ "$Pri_Wan_IP" = "no attribute information" ] \
+			|| [ "$Pri_Wan_IP" = "0.0.0.0" ]
+			then
+				#use 0.0.0.0 instead of "no attribute information"
+				if [ -z "$Sec_Wan_IP" ] || [ "$Sec_Wan_IP" = "no attribute information" ]
+				then
+					WAN_IP="0.0.0.0"
+				else
+					WAN_IP=$Sec_Wan_IP
+				fi
+			else
+				WAN_IP=$Pri_Wan_IP
+			fi
+		else
+		#use 0.0.0.0 instead of "no attribute information"
+			if [ -z "$Pri_Wan_IP" ] || [ "$Pri_Wan_IP" = "no attribute information" ]
+			then
+				WAN_IP="0.0.0.0"
+			else
+				WAN_IP=$Pri_Wan_IP
+			fi
+		fi
+	else
+		unit=`/userfs/bin/tcapi get Wanduck_Common wan_primary`
+		WAN_IP=`/userfs/bin/tcapi get Wanduck_Common wan"$unit"_ipaddr`
+		if [ -z "$Pri_Wan_IP" ] || [ "$Pri_Wan_IP" = "no attribute information" ]
+		then
+			WAN_IP="0.0.0.0"
+		fi
+	fi
+
+DDNS_ENABLE_X=`/userfs/bin/tcapi get Ddns_Entry Active`
+DDNS_HOSTNAME_X=`/userfs/bin/tcapi get Ddns_Entry MYHOST`
+RFW_ENABLE_X=`/userfs/bin/tcapi get Firewall_Entry fw_enable_x`
+LOCAL_DOMAIN=`/userfs/bin/tcapi get SysInfo_Entry local_domain`
+
+else
+	APPS_MOUNTED_PATH=`nvram get apps_mounted_path`
+	APPS_INSTALL_FOLDER=`nvram get apps_install_folder`
+	APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+	APPS_DEV=`nvram get apps_dev`
+	APPS_PATH=`nvram get apps_mounted_path |awk 'BEGIN{FS="/tmp/mnt/"}{print $2}'`
+	MEMORY_TOTAL=`free | head -2 |tail -1 |awk '{print $2}'`
+
+	LANGUAGE_R=`nvram get preferred_lang`
+
+	PRODUCTID=`nvram get productid`
+	LAN_IP=`nvram get lan_ipaddr`
+	MISCR_HTTPPORT_X=`nvram get misc_httpport_x`
+	MISCR_HTTP_X=`nvram get misc_http_x`
+	HTTP_PASSWD=`nvram get http_passwd`
+	WAN_IP=`nvram get wan0_ipaddr`
+	DDNS_ENABLE_X=`nvram get ddns_enable_x`
+	DDNS_HOSTNAME_X=`nvram get ddns_hostname_x`
+	RFW_ENABLE_X=`nvram get fw_enable_x`
+	LOCAL_DOMAIN=`nvram get local_domain`
+fi
+
+dir_control_file=$APPS_INSTALL_PATH/etc/dm2_general.conf
+dir_control_file_bak=$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+
+dir_router_file=/tmp/asus_router.conf
+
+APPS_MOUNTED_TYPE=`mount |grep "/dev/$APPS_DEV on " |awk '{print $5}'`
+
+APP_OWNER_ASUS="/opt/lib/ipkg/lists/optware.asus"
+#Utility_Ver_CHECK=`cat "$APP_OWNER_ASUS" |grep "Filename: DM2_"`
+#Utility_Ver=${Utility_Ver_CHECK:10}
+Utility_Ver=`cat "$APP_OWNER_ASUS" |grep "Filename: DM2_" |awk 'BEGIN{FS=": "}{print $2}'`
+Utility_CHECK_TMP_1=`cat "$dir_router_file" |grep "Utility_Ver"`
+LOCAL_DOMAIN_TMP_1=`cat "$dir_router_file" |grep "local_domain"`
+dir_lighttpd_file=$APPS_INSTALL_PATH/etc/asus_lighttpd.conf
+if [  -f "$dir_lighttpd_file" ]; then
+	#lighttpd_port_tmp=`cat "$dir_lighttpd_file" |grep "server.port"`
+	#lighttpd_port=${lighttpd_port_tmp:14}
+	lighttpd_port=`cat "$dir_lighttpd_file" |grep "server.port" |awk 'BEGIN{FS="= "}{print $2}'`
+else
+	lighttpd_port="8081"
+fi
+
+if [  -f "$dir_lighttpd_file" ]; then
+	#lighttpd_https_port_tmp=`cat "$dir_lighttpd_file" |grep '$SERVER'`
+	#lighttpd_https_port=${lighttpd_https_port_tmp:23:4}
+	#cat /tmp/mnt/sda1/asusware.big/etc/asus_lighttpd.conf  |grep '$SERVE' |awk '{FS="\":";print $2}'|awk '{FS="\"";print $1}'
+	lighttpd_https_port=`cat "$dir_lighttpd_file" |grep '$SERVE' |awk 'BEGIN{FS="\":"}{print $2}'|awk 'BEGIN{FS="\""}{print $1}'`
+else
+	lighttpd_https_port="8481"
+fi
+case "$1" in
+  
+  general-create)
+	echo "Enable_time=0">$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "Start_hour=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "Start_minute=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "End_hour=23">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "End_minute=59">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "Day=1111111">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "Download_dir=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "Refresh_rate=5">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "\$MAINDIR=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "\$EX_MAINDIR=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "EX_DOWNLOAD_PATH=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "BASE_PATH=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "MISC_HTTP_X=0">>$APPS_INSTALL_PATH/etc/dm2_general.conf	
+	echo "APPS_DL_SHARE=1">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "LAN_IP=$LAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "MISCR_HTTPPORT_X=$MISCR_HTTPPORT_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "MISCR_HTTP_X=$MISCR_HTTP_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	#echo "DM_PORT=8081">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "DM_PORT=$lighttpd_port">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "LANGUAGE=$LANGUAGE_R">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "PRODUCTID=$PRODUCTID">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "APPS_DEV=$APPS_DEV">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "WAN_IP=$WAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "DDNS_ENABLE_X=$DDNS_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "DDNS_HOSTNAME_X=$DDNS_HOSTNAME_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	if [ $MEMORY_TOTAL -gt 200000 ];  then
+		echo "MAX_ON_HEAVY=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "MAX_ON_ED2K=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	elif [ $MEMORY_TOTAL -lt 200000 ] &&  [ $MEMORY_TOTAL -gt 64000 ];  then
+		echo "MAX_ON_HEAVY=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "MAX_ON_ED2K=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	elif [ $MEMORY_TOTAL -lt 64000 ];  then
+		echo "MAX_ON_HEAVY=2">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "MAX_ON_ED2K=2">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	fi
+	echo "RFW_ENABLE_X=$RFW_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "DEVICE_TYPE=$APPS_MOUNTED_TYPE">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "dm_radio_time_x=00002359">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "dm_radio_time2_x=00002359">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "serial=000000">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "vonder=0000000">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "product=0000000">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	echo "partition=0">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+	# echo "create bak"
+	echo "Enable_time=0">$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "Start_hour=">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "Start_minute=">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "End_hour=">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "End_minute=">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "Day=1111111">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "Download_dir=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "Refresh_rate=5">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "\$MAINDIR=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "\$EX_MAINDIR=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "EX_DOWNLOAD_PATH=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "BASE_PATH=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "MISC_HTTP_X=0">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf	
+	echo "APPS_DL_SHARE=1">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "LAN_IP=$LAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "MISCR_HTTPPORT_X=$MISCR_HTTPPORT_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "MISCR_HTTP_X=$MISCR_HTTP_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	#echo "DM_PORT=8081">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "DM_PORT=$lighttpd_port">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "LANGUAGE=$LANGUAGE_R">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "PRODUCTID=$PRODUCTID">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "APPS_DEV=$APPS_DEV">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "WAN_IP=$WAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "DDNS_ENABLE_X=$DDNS_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "DDNS_HOSTNAME_X=$DDNS_HOSTNAME_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	if [ $MEMORY_TOTAL -gt 200000 ];  then
+		echo "MAX_ON_HEAVY=10">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "MAX_ON_ED2K=10">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	elif [ $MEMORY_TOTAL -lt 200000 ] &&  [ $MEMORY_TOTAL -gt 64000 ];  then
+		echo "MAX_ON_HEAVY=4">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "MAX_ON_ED2K=4">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	elif [ $MEMORY_TOTAL -lt 64000 ];  then
+		echo "MAX_ON_HEAVY=2">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "MAX_ON_ED2K=2">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	fi
+	echo "RFW_ENABLE_X=$RFW_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "DEVICE_TYPE=$APPS_MOUNTED_TYPE">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "dm_radio_time_x=00002359">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "dm_radio_time2_x=00002359">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "serial=000000">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "vonder=0000000">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "product=0000000">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "partition=0">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "MISC_SEEDING_X=1">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	echo "DM_HTTPS_PORT=$lighttpd_https_port">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+	cp -rf $APPS_INSTALL_PATH/etc/dm2_general.conf /tmp/APPS/DM2/Config/dm2_general.conf
+	cp -rf $APPS_INSTALL_PATH/etc/dm2_general_bak.conf /tmp/APPS/DM2/Config/dm2_general_bak.conf
+    ;;
+
+  general-check)
+
+if [ -f "/userfs/bin/tcapi" ];then
+	GENERAL_ENABLE_TIME_TMP=`/userfs/bin/tcapi get Apps_Entry gen_enable_time`
+	GENERAL_DAY_TMP=`/userfs/bin/tcapi get Apps_Entry gen_day`
+	GENERAL_DL_DIR_TMP=`/userfs/bin/tcapi get Apps_Entry gen_dl_dir`
+	GENERAL_REFRESH_RATE_TMP=`/userfs/bin/tcapi get Apps_Entry gen_refresh_rate`
+	GENERAL_HTTP_TMP=`/userfs/bin/tcapi get Apps_Entry gen_http_x`
+	GENERAL_PORT_TMP=`/userfs/bin/tcapi get Apps_Entry dm_http_port`
+	GENERAL_HTTPS_PORT_TMP=`/userfs/bin/tcapi get Apps_Entry dm_https_port`
+	GENERAL_LANG_TMP=`/userfs/bin/tcapi get Apps_Entry gen_lang`
+	GENERAL_TIME_BEGIN_TMP=`/userfs/bin/tcapi get Apps_Entry gen_time_begin`
+	GENERAL_TIME_END_TMP=`/userfs/bin/tcapi get Apps_Entry gen_time_end`
+	GENERAL_SERIAL_TMP=`/userfs/bin/tcapi get Apps_Entry gen_serial`
+	GENERAL_VONDER_TMP=`/userfs/bin/tcapi get Apps_Entry gen_vonder`
+	GENERAL_PRODUCT_TMP=`/userfs/bin/tcapi get Apps_Entry gen_product`
+	GENERAL_PARTITION_TMP=`/userfs/bin/tcapi get Apps_Entry gen_partition`
+	USB_ACT=`/userfs/bin/tcapi get USB_Entry $ACT`
+	USB_SERIAL=`/userfs/bin/tcapi get USB_Entry $SERIAL`
+	USB_PID=`/userfs/bin/tcapi get USB_Entry $PID`
+	USB_VID=`/userfs/bin/tcapi get USB_Entry $VID`
+
+
+	GENERAL_MISC_SEEDING_X_TMP=`/userfs/bin/tcapi get Apps_Entry gen_misc_seeding_x`
+	if [ "$GENERAL_SERIAL_TMP" = "no attribute information" ]; then
+		/userfs/bin/tcapi set Apps_Entry gen_serial 000000
+		/userfs/bin/tcapi set Apps_Entry gen_vonder 0000000
+		/userfs/bin/tcapi set Apps_Entry gen_product 0000000
+		/userfs/bin/tcapi set Apps_Entry gen_partition 0
+		gen_dl_dir_tmp=$APPS_MOUNTED_PATH/Download2/Complete
+		#/userfs/bin/tcapi commit Apps
+		#/userfs/bin/tcapi save
+	elif [ "$USB_SERIAL" = "$GENERAL_SERIAL_TMP" ] && [ "$USB_PID" = "$GENERAL_PRODUCT_TMP" ] && [ "$USB_VID" = "$GENERAL_VONDER_TMP" ]; then
+		actname=/dev/$USB_ACT$GENERAL_PARTITION_TMP
+		diskname=`cat /proc/mounts | grep "$actname" | awk '{print $2}'`
+		checkdisk=`echo $GENERAL_DL_DIR_TMP | grep "$diskname"`
+		if [ -z "$checkdisk" ]; then
+			dlfolder=`echo $checkdisk | cut -d '/' -f 5-`
+			gen_dl_dir_tmp=$diskname/$dlfolder
+		else
+			#if [ ! -d $GENERAL_DL_DIR_TMP ]; then 
+				#gen_dl_dir_tmp=$APPS_MOUNTED_PATH/Download2/Complete
+			#else
+				gen_dl_dir_tmp=$GENERAL_DL_DIR_TMP
+			#fi
+		fi
+	else
+		gen_dl_dir_tmp=$APPS_MOUNTED_PATH/Download2/Complete
+	fi
+	/userfs/bin/tcapi set Apps_Entry gen_dl_dir "$gen_dl_dir_tmp"
+	/userfs/bin/tcapi commit Apps
+	/userfs/bin/tcapi save
+else
+	GENERAL_ENABLE_TIME_TMP=`nvram get gen_enable_time`
+	GENERAL_DAY_TMP=`nvram get gen_day`
+	GENERAL_DL_DIR_TMP=`nvram get gen_dl_dir`
+	GENERAL_REFRESH_RATE_TMP=`nvram get gen_refresh_rate`
+	GENERAL_HTTP_TMP=`nvram get gen_http_x`
+	GENERAL_PORT_TMP=`nvram get dm_http_port`
+	GENERAL_HTTPS_PORT_TMP=`nvram get dm_https_port`
+	GENERAL_LANG_TMP=`nvram get gen_lang`
+	GENERAL_TIME_BEGIN_TMP=`nvram get gen_time_begin`
+	GENERAL_TIME_END_TMP=`nvram get gen_time_end`
+	GENERAL_SERIAL_TMP=`nvram get gen_serial`
+	GENERAL_VONDER_TMP=`nvram get gen_vonder`
+	GENERAL_PRODUCT_TMP=`nvram get gen_product`
+	GENERAL_PARTITION_TMP=`nvram get gen_partition`
+	USB_ACT=`nvram get $ACT`
+	USB_SERIAL=`nvram get $SERIAL`
+	USB_PID=`nvram get $PID`
+	USB_VID=`nvram get $VID`
+	GENERAL_MISC_SEEDING_X_TMP=`nvram get gen_misc_seeding_x`
+	if [ -z "$GENERAL_SERIAL_TMP" ]; then
+		nvram set gen_serial=000000
+		nvram set gen_vonder=0000000
+		nvram set gen_product=0000000
+		nvram set gen_partition=0
+		gen_dl_dir_tmp=$APPS_MOUNTED_PATH/Download2/Complete
+		##nvram commit
+	elif [ "$USB_SERIAL" == "$GENERAL_SERIAL_TMP" ] && [ "$USB_PID" == "$GENERAL_PRODUCT_TMP" ] && [ "$USB_VID" == "$GENERAL_VONDER_TMP" ]; then
+		actname=/dev/$USB_ACT$GENERAL_PARTITION_TMP
+		diskname=`cat /proc/mounts | grep "$actname" | awk '{print $2}'`
+		checkdisk=`echo $GENERAL_DL_DIR_TMP | grep "$diskname"`
+		if [ -z "$checkdisk" ]; then
+			dlfolder=`echo $checkdisk | cut -d '/' -f 5-`
+			gen_dl_dir_tmp=$diskname/$dlfolder
+		else 
+			#if [ ! -d $GENERAL_DL_DIR_TMP ]; then 
+				#gen_dl_dir_tmp=$APPS_MOUNTED_PATH/Download2/Complete
+			#else
+				gen_dl_dir_tmp=$GENERAL_DL_DIR_TMP
+			#fi
+		fi
+	else
+		gen_dl_dir_tmp=$APPS_MOUNTED_PATH/Download2/Complete
+	fi
+	nvram set gen_dl_dir="$gen_dl_dir_tmp"
+	nvram commit
+fi	
+if [ -f "/userfs/bin/tcapi" ];then
+	if [ "$Utility_CHECK_TMP_1" = "" ] || [ "$LOCAL_DOMAIN_TMP_1" = "" ]; then
+		rm -rf /tmp/asus_router.conf
+	fi
+else
+	if [ "$Utility_CHECK_TMP_1" == "" ] || [ "$LOCAL_DOMAIN_TMP_1" == "" ]; then
+		rm -rf /tmp/asus_router.conf
+	fi
+fi
+
+	if [ ! -f "$dir_router_file" ]; then
+		echo "\$EX_MAINDIR=$APPS_MOUNTED_PATH">/tmp/asus_router.conf
+		echo "BASE_PATH=$APPS_MOUNTED_PATH">>/tmp/asus_router.conf
+		echo "LAN_IP=$LAN_IP">>/tmp/asus_router.conf
+		echo "MISCR_HTTPPORT_X=$MISCR_HTTPPORT_X">>/tmp/asus_router.conf
+		echo "MISCR_HTTP_X=$MISCR_HTTP_X">>/tmp/asus_router.conf
+		echo "PRODUCTID=$PRODUCTID">>/tmp/asus_router.conf
+		echo "APPS_DEV=$APPS_DEV">>/tmp/asus_router.conf
+		echo "WAN_IP=$WAN_IP">>/tmp/asus_router.conf
+		echo "DDNS_ENABLE_X=$DDNS_ENABLE_X">>/tmp/asus_router.conf
+		echo "DDNS_HOSTNAME_X=$DDNS_HOSTNAME_X">>/tmp/asus_router.conf
+		echo "RFW_ENABLE_X=$RFW_ENABLE_X">>/tmp/asus_router.conf
+		echo "DEVICE_TYPE=$APPS_MOUNTED_TYPE">>/tmp/asus_router.conf
+		echo "Utility_Ver=$Utility_Ver">>/tmp/asus_router.conf	
+		if [ -z "$LOCAL_DOMAIN" ]; then	
+			echo "local_domain=www.asusnetwork.net">>/tmp/asus_router.conf
+		else
+			echo "local_domain=$LOCAL_DOMAIN">>/tmp/asus_router.conf
+		fi
+	fi
+if [ -f "/userfs/bin/tcapi" ];then
+	if [ ! -f "$dir_control_file" ]; then
+		if [ "$GENERAL_ENABLE_TIME_TMP"  != "no attribute information" ] && [ "$GENERAL_DAY_TMP"  != "no attribute information" ]; then
+			echo "Enable_time=$GENERAL_ENABLE_TIME_TMP">$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Start_hour=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Start_minute=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "End_hour=23">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "End_minute=59">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Day=$GENERAL_DAY_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Download_dir=$GENERAL_DL_DIR_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Refresh_rate=$GENERAL_REFRESH_RATE_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "\$MAINDIR=$GENERAL_DL_DIR_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "\$EX_MAINDIR=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "EX_DOWNLOAD_PATH=$GENERAL_DL_DIR_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "BASE_PATH=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MISC_HTTP_X=$GENERAL_HTTP_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "APPS_DL_SHARE=1">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "LAN_IP=$LAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MISCR_HTTPPORT_X=$MISCR_HTTPPORT_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MISCR_HTTP_X=$MISCR_HTTP_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			if [ "$GENERAL_PORT_TMP"  != "no attribute information" ] && [ "$GENERAL_PORT_TMP"  != "" ]; then 
+				echo "DM_PORT=$GENERAL_PORT_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			else
+				echo "DM_PORT=$lighttpd_port">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+			echo "LANGUAGE=$GENERAL_LANG_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "PRODUCTID=$PRODUCTID">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "APPS_DEV=$APPS_DEV">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "WAN_IP=$WAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "DDNS_ENABLE_X=$DDNS_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "DDNS_HOSTNAME_X=$DDNS_HOSTNAME_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			if [ $MEMORY_TOTAL -gt 200000 ];  then
+				echo "MAX_ON_HEAVY=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_ON_ED2K=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			elif [ $MEMORY_TOTAL -lt 200000 ] &&  [ $MEMORY_TOTAL -gt 64000 ];  then
+				echo "MAX_ON_HEAVY=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_ON_ED2K=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			elif [ $MEMORY_TOTAL -lt 64000 ];  then
+				echo "MAX_ON_HEAVY=2">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_ON_ED2K=2">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+			echo "RFW_ENABLE_X=$RFW_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "DEVICE_TYPE=$APPS_MOUNTED_TYPE">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "dm_radio_time_x=$GENERAL_TIME_BEGIN_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "dm_radio_time2_x=$GENERAL_TIME_END_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "serial=$GENERAL_SERIAL_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "vonder=$GENERAL_VONDER_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "product=$GENERAL_PRODUCT_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "partition=$GENERAL_PARTITION_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			if [ "$GENERAL_MISC_SEEDING_X_TMP"  != "no attribute information" ] && [ "$GENERAL_MISC_SEEDING_X_TMP" != "" ];then
+				echo "MISC_SEEDING_X=$GENERAL_MISC_SEEDING_X_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			else
+				echo "MISC_SEEDING_X=1">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+			if [ "$GENERAL_HTTPS_PORT_TMP" != "no attribute information"  ]; then 
+				echo "DM_HTTPS_PORT=$GENERAL_HTTPS_PORT_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			else
+				echo "DM_HTTPS_PORT=$lighttpd_https_port">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+			cp -rf $APPS_INSTALL_PATH/etc/dm2_general.conf /tmp/APPS/DM2/Config/dm2_general.conf
+		fi
+	fi
+else
+	if [ ! -f "$dir_control_file" ]; then
+		if [ ! -z "$GENERAL_ENABLE_TIME_TMP" ] && [ ! -z "$GENERAL_DAY_TMP" ]; then
+			echo "Enable_time=$GENERAL_ENABLE_TIME_TMP">$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Start_hour=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Start_minute=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "End_hour=23">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "End_minute=59">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Day=$GENERAL_DAY_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Download_dir=$GENERAL_DL_DIR_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "Refresh_rate=$GENERAL_REFRESH_RATE_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "\$MAINDIR=$GENERAL_DL_DIR_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "\$EX_MAINDIR=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "EX_DOWNLOAD_PATH=$GENERAL_DL_DIR_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "BASE_PATH=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MISC_HTTP_X=$GENERAL_HTTP_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "APPS_DL_SHARE=1">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "LAN_IP=$LAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MISCR_HTTPPORT_X=$MISCR_HTTPPORT_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MISCR_HTTP_X=$MISCR_HTTP_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			if [ ! -z "$GENERAL_PORT_TMP" ]; then 
+				echo "DM_PORT=$GENERAL_PORT_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			else
+				echo "DM_PORT=$lighttpd_port">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+			echo "LANGUAGE=$GENERAL_LANG_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "PRODUCTID=$PRODUCTID">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "APPS_DEV=$APPS_DEV">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "WAN_IP=$WAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "DDNS_ENABLE_X=$DDNS_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "DDNS_HOSTNAME_X=$DDNS_HOSTNAME_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			if [ $MEMORY_TOTAL -gt 200000 ];  then
+				echo "MAX_ON_HEAVY=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_ON_ED2K=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			elif [ $MEMORY_TOTAL -lt 200000 ] &&  [ $MEMORY_TOTAL -gt 64000 ];  then
+				echo "MAX_ON_HEAVY=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_ON_ED2K=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			elif [ $MEMORY_TOTAL -lt 64000 ];  then
+				echo "MAX_ON_HEAVY=2">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MAX_ON_ED2K=2">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+			echo "RFW_ENABLE_X=$RFW_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "DEVICE_TYPE=$APPS_MOUNTED_TYPE">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "dm_radio_time_x=$GENERAL_TIME_BEGIN_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "dm_radio_time2_x=$GENERAL_TIME_END_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "serial=$GENERAL_SERIAL_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "vonder=$GENERAL_VONDER_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "product=$GENERAL_PRODUCT_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "partition=$GENERAL_PARTITION_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			if [ ! -z $GENERAL_MISC_SEEDING_X_TMP ];then
+				echo "MISC_SEEDING_X=$GENERAL_MISC_SEEDING_X_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			else
+				echo "MISC_SEEDING_X=1">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+			if [ "$GENERAL_HTTPS_PORT_TMP" != "no attribute information"  ]; then 
+				echo "DM_HTTPS_PORT=$GENERAL_HTTPS_PORT_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			else
+				echo "DM_HTTPS_PORT=$lighttpd_https_port">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+			cp -rf $APPS_INSTALL_PATH/etc/dm2_general.conf /tmp/APPS/DM2/Config/dm2_general.conf
+		fi
+	fi
+fi
+	if [ ! -f "$dir_control_file" ] && [ ! -f "$dir_control_file_bak" ]; then
+		echo "Enable_time=0">$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "Start_hour=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "Start_minute=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "End_hour=23">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "End_minute=59">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "Day=1111111">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "Download_dir=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "Refresh_rate=5">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "\$MAINDIR=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "\$EX_MAINDIR=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "EX_DOWNLOAD_PATH=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "BASE_PATH=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "MISC_HTTP_X=0">>$APPS_INSTALL_PATH/etc/dm2_general.conf	
+		echo "APPS_DL_SHARE=1">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "LAN_IP=$LAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "MISCR_HTTPPORT_X=$MISCR_HTTPPORT_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "MISCR_HTTP_X=$MISCR_HTTP_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		#echo "DM_PORT=8081">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "DM_PORT=$lighttpd_port">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "LANGUAGE=$LANGUAGE_R">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "PRODUCTID=$PRODUCTID">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "APPS_DEV=$APPS_DEV">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "WAN_IP=$WAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "DDNS_ENABLE_X=$DDNS_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "DDNS_HOSTNAME_X=$DDNS_HOSTNAME_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		if [ $MEMORY_TOTAL -gt 200000 ];  then
+			echo "MAX_ON_HEAVY=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MAX_ON_ED2K=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		elif [ $MEMORY_TOTAL -lt 200000 ] &&  [ $MEMORY_TOTAL -gt 64000 ];  then
+			echo "MAX_ON_HEAVY=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MAX_ON_ED2K=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		elif [ $MEMORY_TOTAL -lt 64000 ];  then
+			echo "MAX_ON_HEAVY=2">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			echo "MAX_ON_ED2K=2">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		fi
+		echo "RFW_ENABLE_X=$RFW_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "DEVICE_TYPE=$APPS_MOUNTED_TYPE">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "dm_radio_time_x=00002359">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "dm_radio_time2_x=00002359">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "serial=000000">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "vonder=0000000">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "product=0000000">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		echo "partition=0">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		if [ -f "/userfs/bin/tcapi" ];then
+			if [ "$GENERAL_MISC_SEEDING_X_TMP"  != "no attribute information" ] && [ "$GENERAL_MISC_SEEDING_X_TMP" != "" ];then
+				echo "MISC_SEEDING_X=$GENERAL_MISC_SEEDING_X_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			else
+				echo "MISC_SEEDING_X=1">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+		else
+			if [ ! -z $GENERAL_MISC_SEEDING_X_TMP ];then
+				echo "MISC_SEEDING_X=$GENERAL_MISC_SEEDING_X_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			else
+				echo "MISC_SEEDING_X=1">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+			fi
+		fi
+		echo "DM_HTTPS_PORT=$lighttpd_https_port">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+		cp -rf $APPS_INSTALL_PATH/etc/dm2_general.conf /tmp/APPS/DM2/Config/dm2_general.conf
+		#BASE_PATH_CHANGE=${APPS_MOUNTED_PATH:9}
+		#sed -i "32s/^.*$/IncomingDir=\/tmp\/mnt\/$BASE_PATH_CHANGE\/Download2\/Complete/" /opt/etc/dm2_amule/dm2_amule.conf
+
+		# echo "create bak"
+		echo "Enable_time=0">$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "Start_hour=00">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "Start_minute=00">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "End_hour=23">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "End_minute=59">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "Day=1111111">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "Download_dir=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "Refresh_rate=5">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "\$MAINDIR=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "\$EX_MAINDIR=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "EX_DOWNLOAD_PATH=$APPS_MOUNTED_PATH/Download2/Complete">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "BASE_PATH=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "MISC_HTTP_X=0">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf	
+		echo "APPS_DL_SHARE=1">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "LAN_IP=$LAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "MISCR_HTTPPORT_X=$MISCR_HTTPPORT_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "MISCR_HTTP_X=$MISCR_HTTP_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		#echo "DM_PORT=8081">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "DM_PORT=$lighttpd_port">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "LANGUAGE=$LANGUAGE_R">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "PRODUCTID=$PRODUCTID">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "APPS_DEV=$APPS_DEV">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "WAN_IP=$WAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "DDNS_ENABLE_X=$DDNS_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "DDNS_HOSTNAME_X=$DDNS_HOSTNAME_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		if [ $MEMORY_TOTAL -gt 200000 ];  then
+			echo "MAX_ON_HEAVY=10">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			echo "MAX_ON_ED2K=10">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		elif [ $MEMORY_TOTAL -lt 200000 ] &&  [ $MEMORY_TOTAL -gt 64000 ];  then
+			echo "MAX_ON_HEAVY=4">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			echo "MAX_ON_ED2K=4">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		elif [ $MEMORY_TOTAL -lt 64000 ];  then
+			echo "MAX_ON_HEAVY=2">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			echo "MAX_ON_ED2K=2">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		fi
+		echo "RFW_ENABLE_X=$RFW_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "DEVICE_TYPE=$APPS_MOUNTED_TYPE">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "dm_radio_time_x=00002359">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "dm_radio_time2_x=00002359">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "serial=000000">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "vonder=0000000">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "product=0000000">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		echo "partition=0">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf	
+		if [ -f "/userfs/bin/tcapi" ];then
+			if [ "$GENERAL_MISC_SEEDING_X_TMP"  != "no attribute information" ] && [ "$GENERAL_MISC_SEEDING_X_TMP" != "" ];then
+				echo "MISC_SEEDING_X=$GENERAL_MISC_SEEDING_X_TMP">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			else
+				echo "MISC_SEEDING_X=1">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			fi
+		else
+			if [ ! -z $GENERAL_MISC_SEEDING_X_TMP ];then
+			echo "MISC_SEEDING_X=$GENERAL_MISC_SEEDING_X_TMP">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			else
+			echo "MISC_SEEDING_X=1">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			fi	
+		fi
+		echo "DM_HTTPS_PORT=$lighttpd_https_port">>$APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		cp -rf $APPS_INSTALL_PATH/etc/dm2_general_bak.conf /tmp/APPS/DM2/Config/dm2_general_bak.conf
+	else
+		if [ ! -f "$dir_control_file_bak" ]; then
+			cp -rf 	/opt/etc/dm2_general.conf /opt/etc/dm2_general_bak.conf
+			cp -rf  /opt/etc/dm2_general_bak.conf /tmp/APPS/DM2/Config/dm2_general_bak.conf
+		fi
+	
+		Enable_time_CHECK=`cat "$dir_control_file" |grep "Enable_time="`
+		Start_hour_CHECK=`cat "$dir_control_file" |grep "Start_hour="`
+		Start_minute_CHECK=`cat "$dir_control_file" |grep "Start_minute="`
+		End_hour_CHECK=`cat "$dir_control_file" |grep "End_hour="`
+		End_minute_CHECK=`cat "$dir_control_file" |grep "End_minute="`
+		Day_CHECK=`cat "$dir_control_file" |grep "Day="`
+		Download_dir_CHECK=`cat "$dir_control_file" |grep "Download_dir="`
+		Refresh_rate_CHECK=`cat "$dir_control_file" |grep "Refresh_rate="`
+		MAINDIR_CHECK=`cat "$dir_control_file" |grep "\$MAINDIR="`
+		EX_MAINDIR_CHECK=`cat "$dir_control_file" |grep "\$EX_MAINDIR="`
+		EX_DOWNLOAD_PATH_CHECK=`cat "$dir_control_file" |grep "EX_DOWNLOAD_PATH="`
+		BASE_PATH_CHECK=`cat "$dir_control_file" |grep "BASE_PATH="`
+		MISC_HTTP_X_CHECK=`cat "$dir_control_file" |grep "MISC_HTTP_X="`
+		APPS_DL_SHARE_CHECK=`cat "$dir_control_file" |grep "APPS_DL_SHARE="`
+		LAN_IP_CHECK=`cat "$dir_control_file" |grep "LAN_IP="`
+		MISCR_HTTPPORT_X_CHECK=`cat "$dir_control_file" |grep "MISCR_HTTPPORT_X="`
+		MISCR_HTTP_X_CHECK=`cat "$dir_control_file" |grep "MISCR_HTTP_X="`
+		DM_PORT_CHECK=`cat "$dir_control_file" |grep "DM_PORT="`
+		LANGUAGE_CHECK=`cat "$dir_control_file" |grep "LANGUAGE="`
+		PRODUCTID_CHECK=`cat "$dir_control_file" |grep "PRODUCTID="`
+		APPS_DEV_CHECK=`cat "$dir_control_file" |grep "APPS_DEV="`
+		WAN_IP_CHECK=`cat "$dir_control_file" |grep "WAN_IP="`
+		DDNS_ENABLE_X_CHECK=`cat "$dir_control_file" |grep "DDNS_ENABLE_X="`
+		DDNS_HOSTNAME_X_CHECK=`cat "$dir_control_file" |grep "DDNS_HOSTNAME_X="`
+		MAX_ON_HEAVY_CHECK=`cat "$dir_control_file" |grep "MAX_ON_HEAVY="`
+		MAX_QUEUES_CHECK=`cat "$dir_control_file" |grep "MAX_QUEUES="`
+		MAX_ON_ED2K_CHECK=`cat "$dir_control_file" |grep "MAX_ON_ED2K="`
+		RFW_ENABLE_X_CHECK=`cat "$dir_control_file" |grep "RFW_ENABLE_X="`
+		DEVICE_TYPE_CHECK=`cat "$dir_control_file" |grep "DEVICE_TYPE="`
+		dm_radio_time_x_CHECK=`cat "$dir_control_file" |grep "dm_radio_time_x="`
+		dm_radio_time2_x_CHECK=`cat "$dir_control_file" |grep "dm_radio_time2_x="`
+		MISC_SEEDING_X_CHECK=`cat "$dir_control_file" |grep "MISC_SEEDING_X="`
+		DM_HTTPS_PORT_CHECK=`cat "$dir_control_file" |grep "DM_HTTPS_PORT="`
+		if [ "$Enable_time_CHECK" = "" ] || [ "$Start_hour_CHECK" = "" ] || [ "$Start_minute_CHECK" = "" ] || [ "$End_hour_CHECK" = "" ] || [ "$End_minute_CHECK" = "" ] || [ "$Day_CHECK" = "" ] || [ "$Download_dir_CHECK" = "" ] || [ "$Refresh_rate_CHECK" = "" ]  || [ "$MAINDIR_CHECK" = "" ] || [ "$EX_MAINDIR_CHECK" = "" ] || [ "$EX_DOWNLOAD_PATH_CHECK" = "" ] || [ "$BASE_PATH_CHECK" = "" ] || [ "$MISC_HTTP_X_CHECK" = "" ] || [ "$APPS_DL_SHARE_CHECK" = "" ] || [ "$LAN_IP_CHECK" = "" ] || [ "$MISCR_HTTPPORT_X_CHECK" = "" ] || [ "$MISCR_HTTP_X_CHECK" = "" ] || [ "$DM_PORT_CHECK" = "" ] || [ "$LANGUAGE_CHECK" = "" ] || [ "$PRODUCTID_CHECK" = "" ] || [ "$APPS_DEV_CHECK" = "" ] || [ "$WAN_IP_CHECK" = "" ] || [ "$DDNS_ENABLE_X_CHECK" = "" ] || [ "$DDNS_HOSTNAME_X_CHECK" = "" ] || [ "$MAX_ON_HEAVY_CHECK" = "" ] || [ "$MAX_QUEUES_CHECK" = "" ] || [ "$MAX_ON_ED2K_CHECK" = "" ] || [ "$RFW_ENABLE_X_CHECK" = "" ] || [ "$DEVICE_TYPE_CHECK" = ""  ] || [ "$dm_radio_time_x_CHECK" = ""  ] || [ "$dm_radio_time2_x_CHECK" = ""  ] || [ "$DM_HTTPS_PORT_CHECK" == ""  ] ; then
+			rm -rf /opt/etc/dm2_general.conf
+			cp -rf 	/opt/etc/dm2_general_bak.conf /opt/etc/dm2_general.conf	
+			cp -rf  /opt/etc/dm2_general.conf /tmp/APPS/DM2/Config/dm2_general.conf
+				
+		fi
+		#PRODUCTID_CHECK_TMP=`cat "$dir_control_file" |grep "PRODUCTID="`
+		#PRODUCTID_CHECK=${PRODUCTID_CHECK_TMP:10}
+		PRODUCTID_CHECK=`cat "$dir_control_file" |grep "PRODUCTID=" |awk 'BEGIN{FS="="}{print $2}'`
+		if [ "$PRODUCTID_CHECK" != "$PRODUCTID" ]; then
+			sed -i "20s/^.*$/PRODUCTID=$PRODUCTID/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+			sed -i "20s/^.*$/PRODUCTID=$PRODUCTID/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			if [ $MEMORY_TOTAL -gt 200000 ];  then
+				sed -i "25s/^.*$/MAX_ON_HEAVY=10/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+				sed -i "26s/^.*$/MAX_QUEUES=30/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+				sed -i "27s/^.*$/MAX_ON_ED2K=10/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+				sed -i "25s/^.*$/MAX_ON_HEAVY=10/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+				sed -i "26s/^.*$/MAX_QUEUES=30/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+				sed -i "27s/^.*$/MAX_ON_ED2K=10/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			elif [ $MEMORY_TOTAL -lt 200000 ] &&  [ $MEMORY_TOTAL -gt 64000 ];  then
+				sed -i "25s/^.*$/MAX_ON_HEAVY=4/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+				sed -i "26s/^.*$/MAX_QUEUES=30/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+				sed -i "27s/^.*$/MAX_ON_ED2K=4/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+				sed -i "25s/^.*$/MAX_ON_HEAVY=4/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+				sed -i "26s/^.*$/MAX_QUEUES=30/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+				sed -i "27s/^.*$/MAX_ON_ED2K=4/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			elif [ $MEMORY_TOTAL -lt 64000 ];  then
+				sed -i "25s/^.*$/MAX_ON_HEAVY=2/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+				sed -i "26s/^.*$/MAX_QUEUES=30/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+				sed -i "27s/^.*$/MAX_ON_ED2K=2/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+				sed -i "25s/^.*$/MAX_ON_HEAVY=2/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+				sed -i "26s/^.*$/MAX_QUEUES=30/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+				sed -i "27s/^.*$/MAX_ON_ED2K=2/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+			fi
+			sh /tmp/APPS/Lighttpd/Script/asus_check_general router-general-renew&
+		fi
+	fi
+	gen_dl_dir_tmp=`echo $gen_dl_dir_tmp|sed -n 's/\//\\\\\//pg'`
+	base_path_tmp=`echo $APPS_MOUNTED_PATH |sed -n 's/\//\\\\\//pg'`
+	if [ -f "$dir_control_file" ]; then
+		sed -i "7s/^.*$/Download_dir=$gen_dl_dir_tmp/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+		sed -i "7s/^.*$/Download_dir=$gen_dl_dir_tmp/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		sed -i "9s/^.*$/\$MAINDIR=$gen_dl_dir_tmp/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+		sed -i "9s/^.*$/\$MAINDIR=$gen_dl_dir_tmp/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		sed -i "10s/^.*$/\$EX_MAINDIR=$base_path_tmp/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+		sed -i "10s/^.*$/\$EX_MAINDIR=$base_path_tmp/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		sed -i "11s/^.*$/EX_DOWNLOAD_PATH=$gen_dl_dir_tmp/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+		sed -i "11s/^.*$/EX_DOWNLOAD_PATH=$gen_dl_dir_tmp/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		sed -i "12s/^.*$/BASE_PATH=$base_path_tmp/" $APPS_INSTALL_PATH/etc/dm2_general.conf
+		sed -i "12s/^.*$/BASE_PATH=$base_path_tmp/" $APPS_INSTALL_PATH/etc/dm2_general_bak.conf
+		cp -rf  /opt/etc/dm2_general.conf /tmp/APPS/DM2/Config/dm2_general.conf
+		cp -rf  /opt/etc/dm2_general_bak.conf /tmp/APPS/DM2/Config/dm2_general_bak.conf
+	fi
+    ;;
+
+  general-renew)
+    ;;
+
+
+
+  *)
+
+
+
+    #echo "Usage: /opt/etc/init.d/dm {start|stop|restart|force-reload|firewall-start|firewall-stop|firewall-restart|lighttpd-restart|general-renew}"
+    exit 1
+    ;;
+esac

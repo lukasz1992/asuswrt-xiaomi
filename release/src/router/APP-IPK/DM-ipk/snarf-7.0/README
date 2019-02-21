@@ -1,0 +1,53 @@
+This program is FREE SOFTWARE. See the file COPYING for details.
+
+==================
+snarf version 2.0
+October 1, 1998
+==================
+
+Description
+-----------
+     Snarf is a utility I wrote to retrieve documents via the http and
+ftp protocols. It supports http redirect, http and ftp resume, http
+and ftp authentication, and other neat things.
+
+Usage
+-----
+     To use snarf to download a file from an url, type 
+"snarf <your url>". This will transfer the file from the remote
+location to your computer. You can have as many URLs on the command
+line as you want: "snarf <URL> <URL> <URL>" will download three
+files. By default, it saves the file with the same name it had on the
+remote system; if you want to change this, you can do 
+"snarf <URL> <filename>" and it will save your URL to the filename you 
+provide.
+
+     To use the HTTP proxy feature, set the SNARF_PROXY, HTTP_PROXY,
+or FTP_PROXY environment variables to the address of your proxy, such
+as "proxy.mycompany.de:1080".
+
+     If you run snarf without any arguments, it prints some usage
+information.
+
+Notes
+-----
+     I wrote this in three days four years ago and it was majorly
+klugy, but it worked, and pretty niftily. I rewrote it from scratch
+over the past few days and I'm pleased to say that it's much nicer and 
+cleaner inside, and this cleanliness has made it easy to add some
+features I always wanted to add to the old version.
+
+Version 2.0.3:
+
+     This version has a configure option of
+"--with-guess-winsize". This feature uses ioctl to determine what your
+operating system things the width of your terminal is. It's not
+enabled by default, because I don't know how well it works on all
+platforms. It's safe to enable on Linux and Solaris. If you manage to
+get it to work somewhere else, let me know.
+
+Email: xach@xach.com
+
+Snail mail: Zachary Beane, 17 Talmadge Rd., Waite, ME 04492, USA
+
+

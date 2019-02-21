@@ -1,0 +1,462 @@
+#! /bin/sh
+APP_UCLIBC_VERSION=0.9.28
+
+PATH=/bin:/sbin:/usr/sbin:/usr/bin:/opt/bin
+
+APPS_MOUNTED_PATH=`nvram get apps_mounted_path`
+APPS_INSTALL_FOLDER=`nvram get apps_install_folder`
+APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+APPS_DEV=`nvram get apps_dev`
+APPS_PATH=${APPS_MOUNTED_PATH:9}
+
+case "$1" in
+	nvram-recover)
+		#echo "nvram recover"
+		PEER_PORT=`nvram get trs_peer_port`
+		echo "Peer_port=$PEER_PORT">$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		AUTH_TYPE=`nvram get trs_auth_type`
+		echo "Auth_type=$AUTH_TYPE">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		MAX_TORRENT_PEER=`nvram get trs_max_torrent_peer`
+		echo "Max_torrent_peer=$MAX_TORRENT_PEER">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		MAX_PEER=`nvram get trs_max_peer`
+		echo "Max_peer=$MAX_PEER">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		ENABLE_DHT=`nvram get trs_enable_dht`
+		echo "Enable_dht=$ENABLE_DHT">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		DOWN_LIMIT=`nvram get trs_down_limit`
+		echo "Down_limit=$DOWN_LIMIT">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		DOWN_RATE=`nvram get trs_down_rate`
+		echo "Down_rate=$DOWN_RATE">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		UP_LIMIT=`nvram get trs_up_limit`
+		echo "Up_limit=$UP_LIMIT">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		UP_RATE=`nvram get trs_up_rate`
+		echo "Up_rate=$UP_RATE">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		ENABLE_PEX=`nvram get trs_enable_pex`
+		echo "Enable_pex=$ENABLE_PEX">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+		ENABLE_PEER_PORT=`nvram get trs_enable_peer_port`
+		echo "Enable_peer_port=$ENABLE_PEER_PORT">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf	
+		cp -rf 	$APPS_INSTALL_PATH/etc/dm2_transmission.conf	/tmp/APPS/DM2/Config/dm2_transmission.conf
+	;;
+	nvram-save)
+		#echo "nvram save"
+		if [ ! -f "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" ]; then
+			nvram set trs_peer_port=51413
+			nvram set trs_auth_type=1
+			nvram set trs_max_torrent_peer=60
+			nvram set trs_max_peer=240
+			nvram set trs_enable_dht=1
+			nvram set trs_down_limit=0
+			nvram set trs_down_rate=100
+			nvram set trs_up_limit=0
+			nvram set trs_up_rate=100
+			nvram set trs_enable_pex=1
+			nvram set trs_enable_peer_port=0
+			#nvram commit
+		else
+			PEER_PORT=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Peer_port="`
+			PEER_PORT=${PEER_PORT:10}
+			nvram set trs_peer_port=$PEER_PORT
+			AUTH_TYPE=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Auth_type="`
+			AUTH_TYPE=${AUTH_TYPE:10}
+			nvram set trs_auth_type=$AUTH_TYPE
+			MAX_TORRENT_PEER=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Max_torrent_peer="`
+			MAX_TORRENT_PEER=${MAX_TORRENT_PEER:17}
+			nvram set trs_max_torrent_peer=$MAX_TORRENT_PEER
+			MAX_PEER=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Max_peer="`
+			MAX_PEER=${MAX_PEER:9}
+			nvram set trs_max_peer=$MAX_PEER
+			ENABLE_DHT=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Enable_dht="`
+			ENABLE_DHT=${ENABLE_DHT:11}
+			nvram set trs_enable_dht=$ENABLE_DHT
+			DOWN_LIMIT=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Down_limit="`
+			DOWN_LIMIT=${DOWN_LIMIT:11}
+			nvram set trs_down_limit=$DOWN_LIMIT
+			DOWN_RATE=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Down_rate="`
+			DOWN_RATE=${DOWN_RATE:10}
+			nvram set trs_down_rate=$DOWN_RATE
+			UP_LIMIT=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Up_limit="`
+			UP_LIMIT=${UP_LIMIT:9}
+			nvram set trs_up_limit=$UP_LIMIT
+			UP_RATE=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Up_rate="`
+			UP_RATE=${UP_RATE:8}
+			nvram set trs_up_rate=$UP_RATE
+			ENABLE_PEX=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Enable_pex="`
+			ENABLE_PEX=${ENABLE_PEX:11}
+			nvram set trs_enable_pex=$ENABLE_PEX
+			ENABLE_PEER_PORT=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Enable_peer_port="`
+			ENABLE_PEER_PORT=${ENABLE_PEER_PORT:17}
+			nvram set trs_enable_peer_port=$ENABLE_PEER_PORT
+			##nvram commit
+		fi
+	;;
+	nvram-backup)
+		#echo "nvram-backup"
+		transmission_changed="0"
+		PEER_PORT_TMP=`nvram get trs_peer_port`
+		PEER_PORT_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Peer_port="`
+		PEER_PORT_TEMP=${PEER_PORT_TEMP:10}
+		if [ $PEER_PORT_TMP != $PEER_PORT_TEMP ]; then
+			sed -i "1s/^.*/Peer_port=$PEER_PORT_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+
+		AUTH_TYPE_TMP=`nvram get trs_auth_type`
+		AUTH_TYPE_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Auth_type="`
+		AUTH_TYPE_TEMP=${AUTH_TYPE_TEMP:10}
+		if [ $AUTH_TYPE_TMP != $AUTH_TYPE_TEMP ]; then
+			sed -i "2s/^.*$/Auth_type=$AUTH_TYPE_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+
+		MAX_TORRENT_PEER_TMP=`nvram get trs_max_torrent_peer`
+		MAX_TORRENT_PEER_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Max_torrent_peer="`
+		MAX_TORRENT_PEER_TEMP=${MAX_TORRENT_PEER_TEMP:17}
+		if [ $MAX_TORRENT_PEER_TMP != $MAX_TORRENT_PEER_TEMP ]; then
+			sed -i "3s/^.*$/Max_torrent_peer=$MAX_TORRENT_PEER_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+		
+		MAX_PEER_TMP=`nvram get trs_max_peer`
+		MAX_PEER_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Max_peer="`
+		MAX_PEER_TEMP=${MAX_PEER_TEMP:9}
+		if [ $MAX_PEER_TMP != $MAX_PEER_TEMP ]; then
+			sed -i "4s/^.*/Max_peer=$MAX_PEER_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+
+		ENABLE_DHT_TMP=`nvram get trs_enable_dht`
+		ENABLE_DHT_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Enable_dht="`
+		ENABLE_DHT_TEMP=${ENABLE_DHT_TEMP:11}
+		if [ $ENABLE_DHT_TMP != $ENABLE_DHT_TEMP ]; then
+			sed -i "5s/^.*/Enable_dht=$ENABLE_DHT_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+
+		DOWN_LIMIT_TMP=`nvram get trs_down_limit`
+		DOWN_LIMIT_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Down_limit="`
+		DOWN_LIMIT_TEMP=${DOWN_LIMIT_TEMP:11}
+		if [ $DOWN_LIMIT_TMP != $DOWN_LIMIT_TEMP ]; then
+			sed -i "6s/^.*/Down_limit=$DOWN_LIMIT_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+
+		DOWN_RATE_TMP=`nvram get trs_down_rate`
+		DOWN_RATE_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Down_rate="`
+		DOWN_RATE_TEMP=${DOWN_RATE_TEMP:10}
+		if [ $DOWN_RATE_TMP != $DOWN_RATE_TEMP ]; then
+			sed -i "7s/^.*/Down_rate=$DOWN_RATE_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+
+		UP_LIMIT_TMP=`nvram get trs_up_limit`
+		UP_LIMIT_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Up_limit="`
+		UP_LIMIT_TEMP=${UP_LIMIT_TEMP:9}
+		if [ $UP_LIMIT_TMP != $UP_LIMIT_TEMP ]; then
+			sed -i "8s/^.*/Up_limit=$UP_LIMIT_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+
+		UP_RATE_TMP=`nvram get trs_up_rate`
+		UP_RATE_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Up_rate="`
+		UP_RATE_TEMP=${UP_RATE_TEMP:8}
+		if [ $UP_RATE_TMP != $UP_RATE_TEMP ]; then
+			sed -i "9s/^.*/Up_rate=$UP_RATE_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+
+		ENABLE_PEX_TMP=`nvram get trs_enable_pex`
+		ENABLE_PEX_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Enable_pex="`
+		ENABLE_PEX_TEMP=${ENABLE_PEX_TEMP:11}
+		if [ $ENABLE_PEX_TEMP != $ENABLE_PEX_TMP ]; then
+			sed -i "10s/^.*/Enable_pex=$ENABLE_PEX_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+
+		ENABLE_PEER_PORT_TMP=`nvram get trs_enable_peer_port`
+		ENABLE_PEER_PORT_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_transmission.conf" | grep "Enable_peer_port="`
+		ENABLE_PEER_PORT_TEMP=${ENABLE_PEER_PORT_TEMP:17}
+		if [ $ENABLE_PEER_PORT_TEMP != $ENABLE_PEER_PORT_TMP ]; then
+			sed -i "11s/^.*/Enable_peer_port=$ENABLE_PEER_PORT_TMP/" $APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			transmission_changed="1"
+		fi
+		if [ $transmission_changed == "1" ];then
+			cp -rf $APPS_INSTALL_PATH/etc/dm2_transmission.conf /tmp/APPS/DM2/Config/dm2_transmission.conf
+		fi
+		
+	;;
+	generalnvram-save)
+		GENERAL_ENABLE_TIME=`cat "$APPS_INSTALL_PATH/etc/dm2_general.conf" | grep "Enable_time="`
+		GENERAL_ENABLE_TIME=${GENERAL_ENABLE_TIME:12}
+		#echo "enable time="$GENERAL_ENABLE_TIME
+		nvram set gen_enable_time=$GENERAL_ENABLE_TIME
+
+		GENERAL_DAY=`cat "$APPS_INSTALL_PATH/etc/dm2_general.conf" | grep "Day="`
+		GENERAL_DAY=${GENERAL_DAY:4}
+		#echo "day="$GENERAL_DAY
+		nvram set gen_day=$GENERAL_DAY
+
+		#GENERAL_DL_DIR=`cat "$APPS_INSTALL_PATH/etc/dm2_general.conf" | grep "Download_dir="`
+		#GENERAL_DL_DIR=${GENERAL_DL_DIR:13}
+		#echo "dl dir="$GENERAL_DL_DIR
+		#nvram set gen_dl_dir=$GENERAL_DL_DIR
+
+		GENERAL_REFRESH_RATE=`cat "$APPS_INSTALL_PATH/etc/dm2_general.conf" | grep "Refresh_rate="`
+		GENERAL_REFRESH_RATE=${GENERAL_REFRESH_RATE:13}
+		#echo "refresh rate="$GENERAL_REFRESH_RATE
+		nvram set gen_refresh_rate=$GENERAL_REFRESH_RATE
+
+		GENERAL_HTTP=`cat "$APPS_INSTALL_PATH/etc/dm2_general.conf" | grep "MISC_HTTP_X="`
+		GENERAL_HTTP=${GENERAL_HTTP:12}
+		#echo "http_x="$GENERAL_HTTP
+		nvram set gen_http_x=$GENERAL_HTTP
+
+		GENERAL_PORT=`cat "$APPS_INSTALL_PATH/etc/dm2_general.conf" | grep "DM_PORT="`
+		GENERAL_PORT=${GENERAL_PORT:8}
+		#echo "dm port="$GENERAL_PORT
+		nvram set dm_http_port=$GENERAL_PORT
+
+		GENERAL_LANG=`cat "$APPS_INSTALL_PATH/etc/dm2_general.conf" | grep "LANGUAGE="`
+		GENERAL_LANG=${GENERAL_LANG:9}
+		#echo "language="$GENERAL_LANG
+		nvram set gen_lang=$GENERAL_LANG
+
+		GENERAL_TIME_BEGIN=`cat "$APPS_INSTALL_PATH/etc/dm2_general.conf" | grep "dm_radio_time_x="`
+		GENERAL_TIME_BEGIN=${GENERAL_TIME_BEGIN:16}
+		#echo "time begin="$GENERAL_TIME_BEGIN
+		nvram set gen_time_begin=$GENERAL_TIME_BEGIN
+		
+		GENERAL_TIME_END=`cat "$APPS_INSTALL_PATH/etc/dm2_general.conf" | grep "dm_radio_time2_x="`
+		GENERAL_TIME_END=${GENERAL_TIME_END:17}
+		#echo "time end="$GENERAL_TIME_END
+		nvram set gen_time_end=$GENERAL_TIME_END
+
+		#nvram commit
+	;;
+	generalnvram-recover)
+		GENERAL_ENABLE_TIME_TMP=`nvram get gen_enable_time`
+		GENERAL_DAY_TMP=`nvram get gen_day`
+		GENERAL_DL_DIR_TMP=`nvram get gen_dl_dir`
+		GENERAL_REFRESH_RATE_TMP=`nvram get gen_refresh_rate`
+		GENERAL_HTTP_TMP=`nvram get gen_http_x`
+		GENERAL_PORT_TMP=`nvram get dm_http_port`
+		GENERAL_LANG_TMP=`nvram get gen_lang`
+		GENERAL_TIME_BEGIN_TMP=`nvram get gen_time_begin`
+		GENERAL_TIME_END_TMP=`nvram get gen_time_end`
+		LAN_IP=`nvram get lan_ipaddr`
+		MISCR_HTTPPORT_X=`nvram get misc_httpport_x`
+		MISCR_HTTP_X=`nvram get misc_http_x`
+		PRODUCTID=`nvram get productid`
+		APPS_DEV=`nvram get apps_dev`
+		WAN_IP=`nvram get wan0_ipaddr`
+		DDNS_ENABLE_X=`nvram get ddns_enable_x`
+		DDNS_HOSTNAME_X=`nvram get ddns_hostname_x`
+		RFW_ENABLE_X=`nvram get fw_enable_x`
+		MEMORY_TOTAL=`free | head -2 |tail -1 |awk '{print $2}'`
+		APPS_MOUNTED_TYPE=`mount |grep "/dev/$APPS_DEV on " |awk '{print $5}'`
+
+		if [ ! -f "$APPS_INSTALL_PATH/etc/dm2_general.conf" ]; then
+			if [ ! -z "$GENERAL_ENABLE_TIME_TMP" ] && [ ! -z "$GENERAL_DAY_TMP" ]; then
+				echo "Enable_time=$GENERAL_ENABLE_TIME_TMP">$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "Start_hour=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "Start_minute=00">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "End_hour=23">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "End_minute=59">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "Day=$GENERAL_DAY_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "Download_dir=$GENERAL_DL_DIR_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "Refresh_rate=$GENERAL_REFRESH_RATE_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "\$MAINDIR=$GENERAL_DL_DIR_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "\$EX_MAINDIR=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "EX_DOWNLOAD_PATH=$GENERAL_DL_DIR_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "BASE_PATH=$APPS_MOUNTED_PATH">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MISC_HTTP_X=$GENERAL_HTTP_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf	
+				echo "APPS_DL_SHARE=1">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "LAN_IP=$LAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MISCR_HTTPPORT_X=$MISCR_HTTPPORT_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "MISCR_HTTP_X=$MISCR_HTTP_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "DM_PORT=$GENERAL_PORT_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "LANGUAGE=$GENERAL_LANG_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "PRODUCTID=$PRODUCTID">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "APPS_DEV=$APPS_DEV">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "WAN_IP=$WAN_IP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "DDNS_ENABLE_X=$DDNS_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "DDNS_HOSTNAME_X=$DDNS_HOSTNAME_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				if [ $MEMORY_TOTAL -lt 200000 ];  then
+					echo "MAX_ON_HEAVY=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+					echo "MAX_QUEUES=20">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+					echo "MAX_ON_ED2K=4">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				else
+					echo "MAX_ON_HEAVY=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+					echo "MAX_QUEUES=30">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+					echo "MAX_ON_ED2K=10">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				fi
+				echo "RFW_ENABLE_X=$RFW_ENABLE_X">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "DEVICE_TYPE=$APPS_MOUNTED_TYPE">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "dm_radio_time_x=$GENERAL_TIME_BEGIN_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				echo "dm_radio_time2_x=$GENERAL_TIME_END_TMP">>$APPS_INSTALL_PATH/etc/dm2_general.conf
+				cp -rf $APPS_INSTALL_PATH/etc/dm2_general.conf /tmp/APPS/DM2/Config/dm2_general.conf
+			fi
+		fi
+	;;
+	ed2k-nvramsave)
+		if [ ! -f "$APPS_INSTALL_PATH" ]; then
+			nvram set ed2k_ip=176.103.48.36
+			nvram set ed2k_port=4184
+			#nvram commit
+		else
+			ED2K_IP=`cat "$APPS_INSTALL_PATH/etc/dm2_ed2k.conf" | grep "server_ip="`
+			ED2K_IP=${ED2K_IP:10}
+			nvram set ed2k_ip=$ED2K_IP
+			ED2K_PORT=`cat "$APPS_INSTALL_PATH/etc/dm2_ed2k.conf" | grep "server_port="`
+			ED2K_PORT=${ED2K_PORT:12}
+			nvram set ed2k_port=$ED2K_PORT
+			#nvram commit
+		fi
+	;;
+	ed2k-nvramrecover)
+		ED2K_IP=`nvram get ed2k_ip`
+		#echo "ed2k_ip="$ED2K_IP
+		echo "server_ip=$ED2K_IP">$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+		
+		ED2K_PORT=`nvram get ed2k_port`
+		#echo "ed2k_port="$ED2K_PORT
+		echo "server_port=$ED2K_PORT">>$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+		cp -rf $APPS_INSTALL_PATH/etc/dm2_ed2k.conf /tmp/APPS/DM2/Config/dm2_ed2k.conf
+	;;
+	ed2k-nvrambackup)
+		ED2K_IP_TMP=`nvram get ed2k_ip`
+		ED2K_PORT_TMP=`nvram get ed2k_port`
+		ED2K_IP_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_ed2k.conf" | grep "server_ip="`
+		ED2K_IP_TEMP=${ED2K_IP_TEMP:10}
+		ed2k_changed="0"
+		if [ $ED2K_IP_TMP != $ED2K_IP_TEMP ]; then
+			sed -i  "1s/^.*/server_ip=$ED2K_IP_TMP/" $APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+			ed2k_changed="1"
+		fi
+		ED2K_PORT_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_ed2k.conf" | grep "server_port="`
+		ED2K_PORT_TEMP=${ED2K_PORT_TEMP:12}
+		if [ $ED2K_PORT_TMP != $ED2K_PORT_TEMP ]; then
+			sed -i "2s/^.*/server_port=$ED2K_PORT_TMP/" $APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+			ed2k_changed="1"
+		fi
+		if [ $ed2k_changed=="1" ];then
+			cp -rf $APPS_INSTALL_PATH/etc/dm2_ed2k.conf /tmp/APPS/DM2/Config/dm2_ed2k.conf
+		fi
+	;;
+	nzb-nvramsave)
+		if [ -f "/opt/etc/dm2_nzbget_EX.conf" ]; then
+			NZB_HOST=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Host="`
+			NZB_HOST=${NZB_HOST:13}
+			#echo "host="$NZB_HOST
+			nvram set nzb_host=$NZB_HOST
+
+			NZB_PORT=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Port="`
+			NZB_PORT=${NZB_PORT:13}
+			#echo "port="$NZB_PORT
+			nvram set nzb_port=$NZB_PORT
+		
+			NZB_SSL=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Encryption="`
+			NZB_SSL=${NZB_SSL:19}
+			#echo "ssl="$NZB_SSL
+			nvram set nzb_ssl=$NZB_SSL
+
+			NZB_NAME=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Username="`
+			NZB_NAME=${NZB_NAME:17}
+			#echo "username="$NZB_NAME
+			nvram set nzb_name=$NZB_NAME
+
+			NZB_PW=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Password="`
+			NZB_PW=${NZB_PW:17}
+			#echo "password="$NZB_PW
+			nvram set nzb_pw=$NZB_PW
+
+			NZB_CONNECT=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Connections="`
+			NZB_CONNECT=${NZB_CONNECT:20}
+			#echo "connection="$NZB_CONNECT
+			nvram set nzb_connect=$NZB_CONNECT
+
+			NZB_RATE=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "DownloadRate="`
+			NZB_RATE=${NZB_RATE:13}
+			#echo "downloadrate="$NZB_RATE
+			nvram set nzb_rate=$NZB_RATE
+			
+			#nvram commit
+		fi		
+	;;
+	nzb-nvramrecover)
+		NZB_HOST_TMP=`nvram get nzb_host`
+		NZB_PORT_TMP=`nvram get nzb_port`
+		NZB_SSL_TMP=`nvram get nzb_ssl`
+		NZB_NAME_TMP=`nvram get nzb_name`
+		NZB_PW_TMP=`nvram get nzb_pw`
+		NZB_CONNECT_TMP=`nvram get nzb_connect`
+		NZB_RATE_TMP=`nvram get nzb_rate`
+		if [ ! -z $NZB_HOST_TMP ] && [ ! -z $NZB_NAME_TMP ] && [ ! -z $NZB_PW_TMP ]; then
+			echo "Server1.Host=$NZB_HOST_TMP">$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			echo "Server1.Port=$NZB_PORT_TMP">>$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			echo "Server1.Encryption=$NZB_SSL_TMP">>$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			echo "Server1.Username=$NZB_NAME_TMP">>$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			echo "Server1.Password=$NZB_PW_TMP">>$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			echo "Server1.Connections=$NZB_CONNECT_TMP">>$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			echo "DownloadRate=$NZB_RATE_TMP">>$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			cp -rf $APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf /tmp/APPS/DM2/Config/dm2_nzbget_EX.conf
+		fi
+	;;
+	nzb-nvrambackup)
+		NZB_HOST_TMP=`nvram get nzb_host`
+		NZB_PORT_TMP=`nvram get nzb_port`
+		NZB_SSL_TMP=`nvram get nzb_ssl`
+		NZB_NAME_TMP=`nvram get nzb_name`
+		NZB_PW_TMP=`nvram get nzb_pw`
+		NZB_CONNECT_TMP=`nvram get nzb_connect`
+		NZB_RATE_TMP=`nvram get nzb_rate`
+		NZB_HOST_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Host="`
+		NZB_HOST_TEMP=${NZB_HOST_TEMP:13}
+		nzb_changed="0"
+		if [ $NZB_HOST_TMP != $NZB_HOST_TEMP ]; then
+			sed -i "1s/^.*/Server1.Host=$NZB_HOST_TMP/" $APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			nzb_changed="1"
+		fi
+		NZB_PORT_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Port="`
+		NZB_PORT_TEMP=${NZB_PORT_TEMP:13}
+		if [ $NZB_PORT_TMP != $NZB_PORT_TEMP ]; then
+			sed -i "2s/^.*/Server1.Port=$NZB_PORT_TMP/" $APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			nzb_changed="1"
+		fi
+		NZB_SSL_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Encryption="`
+		NZB_SSL_TEMP=${NZB_SSL_TEMP:19}
+		if [ $NZB_SSL_TMP != $NZB_SSL_TEMP ]; then
+			sed -i "3s/^.*/Server1.Encryption=$NZB_SSL_TMP/" $APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			nzb_changed="1"
+		fi
+		NZB_NAME_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Username="`
+		NZB_NAME_TEMP=${NZB_NAME_TEMP:17}
+		if [ $NZB_NAME_TMP != $NZB_NAME_TEMP ]; then
+			sed -i "4s/^.*/Server1.Username=$NZB_NAME_TMP/" $APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			nzb_changed="1"
+		fi
+		NZB_PW_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Password="`
+		NZB_PW_TEMP=${NZB_PW_TEMP:17}
+		if [ $NZB_PW_TMP != $NZB_PW_TEMP ]; then
+			sed -i "5s/^.*/Server1.Password=$NZB_PW_TMP/" $APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			nzb_changed="1"
+		fi
+		NZB_CONNECT_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "Server1.Connections="`
+		NZB_CONNECT_TEMP=${NZB_CONNECT_TEMP:20}
+		if [ $NZB_CONNECT_TMP != $NZB_CONNECT_TEMP ]; then
+			sed -i "6s/^.*/Server1.Connections=$NZB_CONNECT_TMP/" $APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			nzb_changed="1"
+		fi
+		NZB_RATE_TEMP=`cat "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" | grep "DownloadRate="`
+		NZB_RATE_TEMP=${NZB_RATE_TEMP:13}
+		if [ $NZB_RATE_TMP != $NZB_RATE_TEMP ]; then
+			sed -i "7s/^.*/DownloadRate=$NZB_RATE_TMP/" $APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf
+			nzb_changed="1"
+		fi
+		if [ $nzb_changed=="1" ];then
+		cp -rf $APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf /tmp/APPS/DM2/Config/dm2_nzbget_EX.conf
+		fi
+	;;
+   *)
+exit 1
+    ;;
+esac
+

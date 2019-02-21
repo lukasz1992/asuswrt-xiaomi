@@ -1,0 +1,34 @@
+menu "ASUS Miscellaneous options"
+
+config  MODEL_RTAC85U
+	bool "RT-AC85U"
+	default n
+
+config  MODEL_RTAC85P
+	bool "RT-AC85P"
+	default n
+
+config  MODEL_RTACRH26
+	bool "RT-ACRH26"
+	default n
+
+config  MODEL_RPAC87
+	bool "RP-AC87"
+	default n
+
+config  MODEL_RTAC65U
+	bool "RT-AC65U"
+	default n
+config  MODEL_RTN800HP
+    bool "RT-N800HP"
+    default n
+
+config  SINGLE_SKU_IN_DRIVER
+	bool "Single sku in driver, not file"
+	default n
+
+config  DUAL_TRX
+	bool "Dual trx supported"
+	default n
+
+endmenu

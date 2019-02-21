@@ -1,0 +1,3 @@
+# This file is used by aMule to store ipfilter lists downloaded
+# through the auto-update functionality. Do not save ipfilter-
+# ranges here that should not be overwritten by aMule.

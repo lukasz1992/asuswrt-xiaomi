@@ -1,0 +1,3969 @@
+#
+# Format of this file: description<nl>variable<nl>  helptext<nl>...<nl><nl>.
+# If the question being documented is of type "choice", we list
+# only the first occurring config variable. The help texts
+# must not contain empty lines. No variable should occur twice; if it
+# does, only the first occurrence will be used by Configure. The lines
+# in a help text should be indented two positions. Lines starting with
+# `#' are ignored. To be nice to menuconfig, limit your lines to 70
+# characters. Use emacs' kfill.el to edit this file or you lose.
+#
+
+Prompt to override the current config settings
+CONFIG_DEFAULTS_OVERRIDE
+  Set the defaults for building to the settings that are stored in the
+  vendors/Vendor/Board directory.  If you have previously changed/customised
+  the build your changes will be lost.  This setting always is always set
+  to 'N' when you run the config.
+
+Prompt to customize the kernel settings
+CONFIG_DEFAULTS_KERNEL
+  Do you want to fine tune the kernel config.  You should be aware that an
+  incorrect kernel config may stop your board from booting.
+
+Prompt to customise the externally built modules
+CONFIG_DEFAULTS_MODULES
+  Do you want to fine tune the additional modules that are built
+  for this target.
+
+Prompt to customize the final product configuration
+CONFIG_DEFAULTS_VENDOR
+  Do you want to fine tune the user programs and library settings that are
+  built/installed into your image.
+
+Current config replaces vendor settings
+CONFIG_DEFAULTS_VENDOR_UPDATE
+  Do you want the configuration you have just selected to replace
+  the default configuration for this vendor.  You should only select this
+  if you have confirmed that your config good and that you board is
+  functioning as expected after the changes you have made.
+
+Include init
+CONFIG_USER_INIT_INIT
+  Include the init executable (highly recommended).
+  Approx. binary size: 14k
+
+Simple init configuration
+CONFIG_USER_INIT_CONF
+  Read and process simple configuration from /etc/config/init.conf
+  or /etc/init.conf.  The format of the file is as follows (this is also all
+  the current config options).  Any lines that are not understood are
+  ignored.
+
+    testtime=90  # Threshold time for detecting "fast" spawning processes
+    maxspawn=5   # Number of rapid respawns that counts as too fast
+    maxdelay=595 # Maximum delay between runs
+    delaytime=5  # Time between successive runs of a process
+
+RAM image size
+CONFIG_USER_RAMIMAGE_NONE
+  Select the size of the RAM filesystem you will need for config
+  files.
+
+Generic CGI demo
+CONFIG_USER_CGI_GENERIC
+  A generic CGI demo program
+  Approx. binary size: 10k
+
+Use the cgihtml library
+CONFIG_USER_CGIHTML
+  Some CGI sources that can for instance be used for file uploads
+  via HTTP.
+  ATTENTION! There are security bugs in that version! Don't use that
+  version on an exposed host!
+
+CONFIG_USER_CGI_NO_SERIAL
+  Disable serial port support in the CGI's
+
+CONFIG_USER_CGI_NO_COM2
+  Disable COM2 support in the CGI's
+
+CONFIG_USER_CGI_COM2_MODEM
+  COM2 is actually a modem
+
+CONFIG_USER_CGI_NO_DIALIN
+  Disable Dialin support in the CGI's
+
+CONFIG_USER_CGI_CUSTOM_HTML
+  Allow html files in /etc/config/ to be
+  accessable via cgi-bin/config?custom=X
+
+CONFIG_USER_CGI_DMZ
+  Enable DMZ support in the CGI's
+
+CONFIG_USER_CGI_GUEST
+  Enable support for Guest network interfaces in the CGI's
+
+CONFIG_USER_CGI_LOAD_BALANCING
+  Enable load balancing support in the CGI's
+
+CONFIG_USER_CGI_HIGHAVAIL
+  Enable high availability support in the CGI's
+
+CONFIG_USER_CGI_FAILOVER
+  Enable failover support in the CGI's
+
+CONFIG_USER_CGI_ETH1_BRIDGE
+  Allow the user to securely bridge eth0 with eth1.
+  This option allows menus to be disabled, for use
+  in default_bridging mode, like on the PCI units
+
+CONFIG_USER_CGI_PRIMARY_ETHERNET
+  The index of the primary ethernet interface.
+  Usually this will be 0, meaning eth0.
+
+CONFIG_USER_CGI_FIXED_PRIMARY_MEDIA
+  Does the primary ethernet interface have fixed media,
+  such as on the PCI63x.
+
+CONFIG_USER_CGI_NO_AUTO_DUPLEX
+  Set this if the unit does not support advertising a
+  set speed with a negotiated duplex (SG300).
+
+CONFIG_USER_CGI_NO_100BASET4
+  Set this if the unit does not support 100baseT4 (SG300).
+
+CONFIG_USER_CGI_ETH_GENERIC
+  Enable generic port names (Port A, Port B, etc).
+  Also allows any port to be configured with any function.
+
+CONFIG_USER_CGI_WIZARD
+  Enable the Quick Setup Wizard.
+
+CONFIG_USER_CGI_NO_SUPPORT_REPORT
+  Don't display the Support link in the menu.
+
+CONFIG_USER_CGI_NO_FW_RULES
+  Don't display the Rules link in the menu.
+
+CONFIG_USER_CGI_NO_EDIT_CONFIG
+  Don't display the Configuration Files link on the Advanced page.
+
+CONFIG_USER_CGI_ROOT_ONLY
+  Don't display the User link in the menu, display the Password link
+  (change root password only) instead.
+
+CONFIG_USER_CGI_NO_TZO_AD
+  Don't display the TZO graphic and link on the Network Setup ->
+  Advanced page.
+
+CONFIG_USER_CGI_SGC_SET_KEY
+  Don't allow the user to enter a key to encrypt remote config
+  backup files (.sgc), use the value below instead.
+
+CONFIG_USER_CGI_SGC_KEY
+  The key used to encrypt remote config backup files (.sgc).
+
+CONFIG_USER_CGI_MAX_IPSEC_TUNNELS
+  Limit the number of tunnels (disabled or enabled) that can be added
+  through the GUI.  Note that this does not prevent more tunnels being
+  added by manually editing the IPSec config files.
+
+CONFIG_USER_CGI_RECOVERY
+  Run a limited CGI gui for a recover mode image. This gui omits things
+  like creating users.
+
+CONFIG_USER_CXXTEST_CXXTEST
+  Applications to test the c++ build environment.
+
+CONFIG_USER_IOD
+  The SnapGear IO daemon.  This daemon allows the SGIO kernel driver to
+  be accessed via ASCII commands.
+  Approx. binary size: 16k
+
+CONFIG_USER_DEMO_MORSE
+  The SnapGear Morse demo.  This demo program outputs a simple message
+  in morse code using the SGIO driver to drive a binary output.
+  Approx. binary size: 2k
+
+CONFIG_USER_DEMO_BUTTON
+  The SnapGear Button Daemon.  This daemon uses the SGIO driver to poll
+  the state of an input and to debounce and display the state whenever
+  it changes.
+  Approx. binary size: 1k
+
+CONFIG_USER_DROPBEAR_DROPBEAR
+  Dropbear-SSH ist a small sshd-replacement, that does not depend on
+  foreign Libraries. It is configured to be statically linked, without
+  zlib and most features disabled. It is configured to be invoked from
+  inetd and may therefore need a few seconds to answer a connection.
+  Approx. binary size: 100k
+
+CONFIG_USER_SASH_SH
+  Select one of the following shells:
+    Sash - The SASH Shell. (Approx. binary size: 44k)
+    nwsh - The NEW shell (Approx. binary size: 25k)
+    minix-shell - The Minix Shell. (Approx. binary size: 108k)
+    msh - A little linux shell (small)
+    bash - The Bourne-Again Shell. (large)
+    Other - You will select a shell from somewhere else in the configuration.
+
+  CONFIG_USER_OTHER_SH
+    You will select a shell from somewhere else in the configuration.
+
+CONFIG_USER_SASH_HISTORY
+  Support simple command history in SASH.
+
+CONFIG_USER_APPWEB_APPWEB
+  Secure, fast, modular embedded web server supporting Embedded Server Pages.
+  Approx. binary size: 110-400k
+
+CONFIG_USER_APPWEB_CGI
+  Fast Common Gateway Interface (CGI). AppWeb also has better alternatives
+  such as Embedded Server Pages.
+
+CONFIG_USER_APPWEB_SSL
+  Do you want AppWeb to support SSL. AppWeb can support both standard HTTP 
+  and secure HTTPS/SSL at the same time on different virtual hosts.
+
+CONFIG_USER_APPWEB_MULTITHREAD
+  Build AppWeb as a multithreaded application. This allows multiple 
+  requests to be served concurrently.
+
+CONFIG_USER_APPWEB_DYNAMIC
+  Build AppWeb with the ability to dynamically load AppWeb modules. 
+  AppWeb modules are a convenient way to add your application code 
+  to AppWeb.
+
+CONFIG_USER_AGETTY_AGETTY
+  Install "agetty" in /bin
+  Approx. binary size: 19k
+
+CONFIG_USER_CHAT_CHAT
+  The chat command is used for PPP and other processes that need
+  to talk to modems.
+  Approx. binary size: 29k
+
+CONFIG_USER_E2FSPROGS_E2FSCK_E2FSCK
+  Filesystem fsck,  for checking damaged filesystems.
+  Approx. binary size: 121k
+
+CONFIG_USER_DOSFSTOOLS_MKDOSFS
+  MSDOS filesystem creation utility for FAT12, FAT16 & FAT32
+
+CONFIG_USER_DOSFSTOOLS_DOSFSCK
+  MSDOS filesystem checking utility for FAT12, FAT16 & FAT32
+
+CONFIG_USER_GRE_GRE
+  Program for starting, stopping and configuring GRE interfaces.
+
+CONFIG_USER_BR_BR
+  Program for controlling the bridges on the SnapGear.
+
+CONFIG_USER_BRCTL_BRCTL
+  Program for configuring the bridge.  Use this on 2.4 kernels for generic
+  bridging (not ATM-ethernet) and for GRE bridges.
+
+CONFIG_USER_INIT_EXPAND
+  A simple filesystem decompressor.
+  Approx. binary size: 5k
+
+CONFIG_USER_INIT_EXPAND_NOZEROES
+  If your RAM disk or device you are expanding to assumes
+  that all blocks are initialised to zero,  you can enable
+  this option.  This is particularly good for the RAM disk
+  driver on 2.4.  With this option off it allocates the
+  maximum amount of memory for the filesystem because we
+  write every byte with zero initially.  Enabling this
+  option may save you a lot of memory on mostly empty ram disks.
+
+CONFIG_USER_FLASH_FLASH
+  A tool for simplifying the command lines necessary for
+  netflash and flashw.  This tool allows flash segments
+  to be specified symbolicly and the appropriate segment
+  offsets and other flags are automatically determined
+  and passed to the appropriate flashing program.
+  Approx. binary size: 6k
+
+CONFIG_USER_FLASHW_FLASHW
+  A tool for writing to the non-volatile FLASH chips.
+  Approx. binary size: 10k
+
+CONFIG_USER_FLATFSD_FLATFSD
+  This program saves RAM filesystems back to FLASH.
+  Approx. binary size: 12k
+
+CONFIG_USER_FLATFSD_AUTO
+  Auto:        Determine the config filesystem type based on the platform settings.
+               This will be the correct choice for most platforms.
+
+  Filesystem:  Use the existing FLASH (or other writable) filesystem, instead of creating a
+               flat FS.  Requires a writable FS (JFFS/JFFS2/DoC/ext2, etc.).
+
+  Disklike:    /dev/flash/config is a disk-like device
+
+CONFIG_USER_FLATFSD_COMPRESSED
+  Use deflate to compress the flat filesystem to flash.  This is particularly useful for
+  situations where you have a few large files in your configuration filesystem.
+
+CONFIG_USER_FLATFSD_HAS_RTC
+  If the device does *not* have a real time clock, flatfsd helps keep time increasing
+  by storing the time when it saves the config and restores it upon boot.
+
+CONFIG_USER_FLTHDR_FLTHDR
+  FLAT binary format header manipulation program.
+
+CONFIG_USER_GETTYD_GETTYD
+  Another getty program.
+  Approx. binary size: 16k
+
+CONFIG_USER_MGETTY_MGETTY
+  Another getty program. Capable of operating concurrently with 
+  dial-out software.
+  Approx. binary size: 80k
+
+CONFIG_USER_LOGIN_LOGIN
+  A login program.
+  Approx. binary size: 8k
+
+CONFIG_USER_OLD_PASSWORDS
+  Support root password in /etc/config/config.  This option is for
+  backwards compatibility with older firmware.  New/changed passwords
+  still live in /etc/config/passwd.
+
+CONFIG_USER_ONLY_ROOT
+  Only allow root to login.  All other users will be denied login access.
+
+CONFIG_USER_LOGIN_PAM
+  Use PAM as a means to authentication logins and manage login sessions.
+
+CONFIG_USER_E2FSPROGS_MISC_MKE2FS
+  Make a filesystem.
+  Approx. binary size: 62k
+
+CONFIG_USER_MOUNT_MOUNT
+  Mount a filesystem.  You need this to access NFS and SMB filesystems.
+  Approx. binary size: 63k
+
+CONFIG_USER_SASH_REBOOT
+  Command to reboot the system.
+  Approx. binary size: 8k
+
+CONFIG_USER_SASH_REBOOT_SNAPGEAR
+  Use a simple script to send flatfsd a SIGHUP in place of reboot.
+  Requires busybox killall command (turned on automatically).
+
+CONFIG_USER_SASH_SHUTDOWN
+  Command to shutdown the system.
+  Approx. binary size: 5k
+
+CONFIG_USER_SASH_PS
+  Command to display process status.
+
+CONFIG_USER_SETSERIAL_SETSERIAL
+  User level serial port configuration tool.
+  Approx binary size: 18k
+
+CONFIG_USER_STTY_STTY
+  Command to change the settings on serial devices.  For example
+  you can change the baud rate,  flow control and so on.
+  Approx. binary size: 29k
+
+CONFIG_USER_TIP_TIP
+  A small terminal emulator for connecting to modems and serial devices.
+  Approx. binary size: 11k
+
+CONFIG_USER_MOUNT_UMOUNT
+  Unmount a filesystem.
+
+CONFIG_USER_VCONFIG_VCONFIG
+  Tool to allow configuration of VLANs.
+
+CONFIG_USER_VERSION_VERSION
+  Print the version of the system software.
+  Approx. binary size: 6k
+
+CONFIG_USER_QSPITEST_RX
+  A small testbed for receiving data from an MCP3202 device (a small
+  two-channel ADC) on the qspi bus of a Motorola Coldfire 5272 using
+  the mcf_qspi kernel driver.
+
+CONFIG_USER_QSPITEST_TEST
+  A small testbed for receiving data from an MCP3202 device (a small
+  two-channel ADC) on the qspi bus of a Motorola Coldfire 5272 to
+  determine whether data is being correctly received on the qspi bus.
+
+CONFIG_USER_LEVEE_VI
+  A small version of 'vi' for editing files.
+
+CONFIG_USER_BOA_SRC_BOA
+  A small webserver.
+  Approx. binary size: 54k
+
+CONFIG_USER_FNORD_HTTPD
+  A small, fast webserver which is an alternative to boa. Since fnord
+  runs under inetd, you will need to enable inetd to run it.  Also,
+  fnord doesn't support SSL natively. You will need to enable sslwrap.
+
+CONFIG_USER_FNORD_NOAUTH
+  Disables user authentication in fnord. This is useful if ALL of your
+  cgi programs do their own authentication.
+
+CONFIG_USER_FNORD_PAM
+  Uses PAM to authenticate users in fnord.
+
+CONFIG_USER_BPALOGIN_BPALOGIN
+  Telstra Bigpond broadband internet authentication program.
+  Approx. binary size: 39k
+
+CONFIG_USER_BR2684CTL_BR2684CTL
+  ATM to ethernet bridging helper program.
+  Approx. binary size: 28k
+
+CONFIG_USER_CTORRENT_CTORRENT
+  Bit torrent client written in C.  It is much smaller than most
+  other torrent clients, but it can't act as a tracker.
+
+CONFIG_USER_DHCPCD_DHCPCD
+  The DHCP client daemon,  used to get an IP address from a DHCP server.
+  Approx. binary size: 37k
+
+CONFIG_USER_DHCPCD_LLIP
+  Compile in Link-local Auto IP configuration option, -A into dhcpcd. Auto IP addressing will take place if the client is unable to configure the interface with an address from a dhcp server. Auto IP addresses are used by win & mac machines for local area network application such as IrDA links and networks without dhcp servers.
+  If this option is not compiled in, dhcpcd will just ignore the -A command line option, noting that it was ignored in the system log.
+
+CONFIG_USER_DHCPCD_NEW_DHCPCD
+  The DHCP client daemon,  used to get an IP address from a DHCP server.
+  This version works on 2.0 and 2.4 kernels.
+
+CONFIG_USER_DHCPD_DHCPD
+  A small DHCP server,  suitable for small office networks.
+  Approx. binary size: 27k
+
+CONFIG_USER_DIALD_DIALD
+  The dial-on-demand daemon.
+  Approx. binary size: 80k
+
+CONFIG_USER_DISCARD_DISCARD
+  A utility which listens on the discard port,  suitable for testing
+  network performance.
+  Approx. binary size: 1k
+
+CONFIG_USER_DISCARD_NO_INSTALL
+  Stop discard from installing an entry into inetd.conf
+
+CONFIG_USER_DISCARD_INETD_ECHO
+  An echo utility.
+
+CONFIG_USER_DISCARD_ECHO_NO_INSTALL
+  Stop echo from installing an entry into inetd.conf
+
+CONFIG_USER_GDB_GDBSERVER
+  gdbserver is used to remotely debug user applications running on the
+  server.
+  ** NEED TO ENABLE 'PTHREADS_DEBUG_SUPPORT' in uClibc config **
+
+CONFIG_USER_GDB_GDBREPLAY
+  install gdbreplay onto target.
+  ** NEED TO ENABLE 'PTHREADS_DEBUG_SUPPORT' in uClibc config ** 
+
+CONFIG_USER_GDB_TARGET
+  A full gdb which runs on the target.
+  ** NEED TO ENABLE 'PTHREADS_DEBUG_SUPPORT' in uClibc config **
+
+CONFIG_USER_GDB_HOST
+  The host-side gdb which can connect to the gdbserver on the target.
+
+CONFIG_USER_GDBSERVER_GDBSERVER
+  gdbserver is used to remotely debug user applications running on the
+  server. (old version - mk68k targets only)
+  Approx. binary size: 14k
+
+CONFIG_USER_GREP_GREP
+  GNU grep, egrep and fgrep
+
+CONFIG_USER_INETD_INETD
+  Starts network daemons as required.
+  Approx. binary size: 11k
+
+CONFIG_USER_IPSENTINEL_IPSENTINEL
+  Tool that attempts to prevent unauthorised use of "dead" address
+  space on a network by providing invalid MAC addresses in response to
+  ARP requests.
+
+CONFIG_USER_IPFWADM_IPFWADM
+  Tool for configuring forwarding/masquerading rules.
+  Approx. binary size: 38k
+
+CONFIG_USER_IPPORTFW_IPPORTFW
+  Tool for configuring port forwarding.
+  Approx. binary size: 13k
+
+CONFIG_USER_NETFLASH_NETFLASH
+  Tool to upgrade the firmware of the server across the network.
+  Approx. binary size: 29k
+
+CONFIG_USER_NETFLASH_WITH_FTP
+  Add ftp to the mechanisms that netflash may use to download
+  new flash images.
+
+CONFIG_USER_NETFLASH_WITH_CGI
+  Add support for netflash to run as a CGI executable.
+  This allows netflash to be invoked directly as part of a POST request
+  to upgrade the firmware with minimal overhead.
+
+CONFIG_USER_NETFLASH_VERSION
+  Check the version information on the end of the image downloaded to the
+  device.
+
+CONFIG_USER_NETFLASH_VERSION_ALLOW_CURRENT
+  Allow upgrading to images where the version string matches that of the
+  currently running firmware.
+
+CONFIG_USER_NETFLASH_VERSION_ALLOW_OLDER
+  Allow upgrading to images where the version string is older than that
+  of the currently running firmware.
+
+CONFIG_USER_NETFLASH_DECOMPRESS
+  Add option to decompress images before writing them to flash.
+
+CONFIG_USER_NETFLASH_AUTODECOMPRESS
+  Netflash automatically decompresses images if they have a gzip header.
+
+CONFIG_USER_NETFLASH_CRYPTO
+  Netflash requires a public key authentication to be attached to an image
+  and won't commit an image without this or with an invalid authentication.
+
+CONFIG_USER_NETFLASH_CRYPTO_OPTIONAL
+  Netflash will commit images with or without public key authentication
+  but won't commit an image with an invalid authentication.
+
+CONFIG_USER_CRON_CRON
+  Daemon to execute scheduled commands
+  Approx. binary size: 27k
+
+CONFIG_USER_RTC_M41T11
+  Command line utility to support the M41T11 real time clock chip.
+  This command lets you set the system time from the clock chip, set
+  the time in the clock chip from the system clock and read and
+  write values into the battery backed RAM on the clock chip.
+  This utility requires the kernel to support MBUS.
+  Approx. binary size: 12k
+
+CONFIG_USER_OPENSSL_APPS
+  OpenSSL is a cryptography toolkit implementing the Secure Sockets Layer
+  (SSL v2/v3) and Transport Layer Security (TLS v1) network protocols and
+  related cryptography standards required by them.
+  The openssl program is a command line tool for using the various cryp-
+  tography functions of OpenSSL's crypto library from the shell.  It can
+  be used for
+   o  Creation of RSA, DH and DSA key parameters
+   o  Creation of X.509 certificates, CSRs and CRLs
+   o  Calculation of Message Digests
+   o  Encryption and Decryption with Ciphers
+   o  SSL/TLS Client and Server Tests
+   o  Handling of S/MIME signed or encrypted mail
+
+CONFIG_USER_OPENSWAN
+  The Openswan tools and applications
+
+CONFIG_USER_PING_PING
+  Diagnostic tool for testing network connections.
+  Approx. binary size: 27k
+
+CONFIG_USER_PKTDELAY_PKTDELAY
+  Queue up packets from netfilter for the specified amount of time and then
+  release them.  Requires the netfilter user space packet queueing
+  (CONFIG_IP_NF_QUEUE)
+
+CONFIG_USER_PPPD_PPPD_PPPD
+  Dialup networking daemon.
+  Approx. binary size: 151k
+
+CONFIG_USER_PPTPD_PPTPCTRL
+  PPTP VPN controller.
+  Approx. binary size: 30k
+
+CONFIG_USER_PPTPD_PPTPD
+  PPTP VPN daemon.
+  Approx. binary size: 31k
+
+CONFIG_USER_PPTP_CLIENT_PPTP
+  PPTP Client for establishing VPN's.
+  Approx. binary size: 34k
+
+CONFIG_USER_PPTP_CLIENT_PPTP_CALLMGR
+  PPTP Call manager for the PPTP client.
+  Approx. binary size: 30k
+
+CONFIG_USER_RDATE_RDATE
+  Remote date print/set program.  Conforms to RFC 868.
+
+CONFIG_USER_PERL_PERL
+  The PERL scripting language.
+
+CONFIG_USER_PYTHON_PYTHON
+  The Python scripting language.
+
+CONFIG_USER_RADVD_RADVD
+  The router advertisement daemon (radvd) is run by Linux or BSD systems acting
+  as IPv6 routers. It sends Router Advertisement messages, specified by RFC 2461,
+  to a local Ethernet LAN periodically and when requested by a node sending a 
+  Router Solicitation message. These messages are required for IPv6 stateless 
+  autoconfiguration.
+
+CONFIG_USER_RADAUTH_RADAUTH
+  Simple command-line based radius client for testing authentication settings
+
+CONFIG_USER_RSYNC_RSYNC
+  network file copying utility that copies only the differences between files
+  Approx. binary size on SH4: 255k
+
+CONFIG_USER_SMBMOUNT_SMBMOUNT
+  mount an SMB filesystem.
+  Approx. binary size: 22k
+
+CONFIG_USER_SMBMOUNT_SMBUMOUNT
+  un-mount  and SMB filesystem.
+  Approx. binary size: 6k
+
+CONFIG_USER_TELNETD_TELNETD
+  Allow remote users to login to the system using telnet.
+  Approx. binary size: 20k
+
+CONFIG_USER_TELNETD_DOES_NOT_USE_OPENPTY
+  Force telnetd to use its own internal method of opening a pty, rather than
+  relying upon libc's openpty().  This is included as a work-around to file
+  permission issues when using uClibc and ROMFS filesystems.
+
+  Unless you are using uClibc and a ROMFS-based system, you probably want
+  to say N here.
+
+CONFIG_USER_TELNET_TELNET
+  A telnet client application.
+  Approx. binary size: 76k
+
+CONFIG_USER_TFTPD_TFTPD
+  A tftp server.
+  Approx. binary size: 19k
+
+CONFIG_USER_TRACEROUTE_TRACEROUTE
+  A tool for tracing the route packets take on the network.
+  Approx. binary size: 32k
+
+CONFIG_USER_UPNPD
+  Universal Plug and Play Discovery daemon. Make sure that CONFIG_IP_MULTICAST is enabled in your kernel networking options.
+  Approx. binary size: 30k
+
+CONFIG_USER_DEBUG
+  Build all user application with debug symbols and reduced optimisation
+  levels.  See also debug build option in force library building.  Without
+  this option debug symbols are still included, however the optimisation
+  level is increased and this can lead to problematic debugging.
+
+CONFIG_LIB_DEBUG
+  Build all libraries with debug symbols and reduced optimisations.
+  See also debug build option in core applications.  Without this option
+  debug symbols are still included, however the optimisation level is
+  increased and this can lead to problematic debugging.
+
+CONFIG_LIB_LIBDES_FORCE
+  DESLite library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_LIBAES_FORCE
+  AES library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_LIBSSL_FORCE
+  SSL library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_LIBGMP_FORCE
+  GMP Library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_LIBLDAP_FORCE
+  OpenLDAP Library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_LIBPCRE_FORCE
+  Perl Compatible Regular Expressions library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_LIBNET_FORCE
+  Archaic version of libnet required for snort inline operation.
+  See: http://www.packetfactory.net/libnet/
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_ZLIB_FORCE
+  Data compression library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_LIBBZ2_FORCE
+  Data compression library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_LIBATM_FORCE
+  ATM support library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_LIBUPNP_FORCE
+  UPnP support library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_NCURSES_FORCE
+  CRT screen handling library.
+  Only enable this if you want to force the library to be built.  The
+  Config will make sure this library is built if it is needed.
+
+CONFIG_LIB_STLPORT
+  A replacement to libstdc++.  It is smaller than the gcc version.
+
+CONFIG_LIB_STLPORT_SHARED
+  Build a shared library version of libstdc++.
+
+CONFIG_LIB_EXPAT
+  An xml parsing library, libexpat, written in C.
+
+CONFIG_LIB_EXPAT_FORCE
+  Force libexpat to be built.
+
+CONFIG_LIB_ADNS_FORCE
+  An asyncrhonous resolver with more features than the uClibc resolver.
+
+CONFIG_LIB_ARES_FORCE
+  An asynchronous resolver with more features than the uClibc resolver.
+
+CONFIG_LIB_LIBIDN_FORCE
+  GNU libidn the internationalised domain name resolver.
+
+CONFIG_LIB_LIBCURL_FORCE
+  The curl library for resolving URLs.
+  This library requires (and enables) SSL, zlib and libidn.
+
+CONFIG_LIB_UC_LIBC_TIMEZONE
+  Enable this if you want simpleinit to set the time zone environment
+  variables on system startup.  This option also forces uC-libc to
+  support time zone information.  Without this, UTC will be the assumed
+  time zone when using uC-libc.
+
+CONFIG_LIB_UC_LIBC_TZ_FROM_FILE
+  Enable this if you want uC-libc to always read the TZ file for its
+  itme zone information instead of relying on the environment variable
+  set up by init during system boot.  This means that changes to the
+  time zone take effect immediately instead of requiring a reboot.
+
+CONFIG_USER_BOA_EMERG
+  If enabled, boa will syslog all messages at the emergency level
+
+CONFIG_USER_BOA_WITH_SSL
+  Do you want BOA to use SSL for all connections.
+
+CONFIG_USER_FREESWAN
+  The FreeSwan tools and applications
+
+CONFIG_USER_FREESWAN_PLUTO_PLUTO
+  Freeswan pluto.
+  Approx. binary size: 255k
+
+CONFIG_USER_FREESWAN_PLUTO_WHACK
+  Freeswan whack.
+  Approx. binary size: 38k
+
+CONFIG_USER_FREESWAN_UTILS_RANBITS
+  Freeswan ranbits.
+  Approx. binary size: 12k
+
+CONFIG_USER_FREESWAN_UTILS_RSASIGKEY
+  Freeswan rsasigkey.
+  Approx. binary size: 71k
+
+CONFIG_USER_FREESWAN_KLIPS_EROUTE
+  Freeswan eroute.
+  Approx. binary size: 64k
+
+CONFIG_USER_FREESWAN_KLIPS_KLIPSDEBUG
+  Freeswan klipsdebug.
+  Approx. binary size: 43k
+
+CONFIG_USER_FREESWAN_KLIPS_SPI
+  Freeswan spi.
+  Approx. binary size: 68k
+
+CONFIG_USER_FREESWAN_KLIPS_SPIGRP
+  Freeswan spigrp.
+  Approx. binary size: 53k
+
+CONFIG_USER_FREESWAN_KLIPS_TNCFG
+  Freeswan tncfg.
+  Approx. binary size: 15k
+
+CONFIG_USER_FSWCERT_FSWCERT
+  Application to extract private keys from certificates for ipsec
+
+CONFIG_USER_PAM_LDAP
+  PAM should support LDAP authentication.
+
+CONFIG_USER_PAM_TACACS
+  PAM should support TACACS authentication.
+
+CONFIG_USER_PAM_SMB
+  PAM should support SMB authentication.
+
+CONFIG_USER_PPPD_WITH_PAM
+  If you want PPP/PPTP to use PAM for user authentication.
+
+CONFIG_USER_PPPD_WITH_MPPE
+  If you want to run PPP/PPTP with encrypted connections, enable this.
+
+CONFIG_USER_RP_PPPOE_PPPOE
+  The Roaring Penguin PPPOE.
+  Approx. binary size: 38k
+
+CONFIG_USER_RP_PPPOE_PPPOE_SERVER
+  The Roaring Penguin PPPOE Server.
+
+CONFIG_USER_WGET
+  Web site downloading utility.
+  
+CONFIG_USER_ZEBRA_ZEBRA_ZEBRA
+  The GNU Zebra routing daemon server process.
+  Approx. binary size: 124k
+
+CONFIG_USER_ZEBRA_BGPD_BGPD
+  The GNU Zebra BGP daemon.
+  Approx. binary size: 329k
+
+CONFIG_USER_ZEBRA_OSPFD_OSPFD
+  The GNU Zebra OSPF daemon.
+  Approx. binary size: 270k
+
+CONFIG_USER_ZEBRA_RIPD_RIPD
+  The GNU Zebra RIP daemon.
+  Approx. binary size: 167k
+
+CONFIG_USER_QUAGGA_ZEBRA_ZEBRA
+  The Quagga (unofficial GNU Zebra replacement) routing daemon server process.
+
+CONFIG_USER_QUAGGA_BGPD_BGPD
+  The Quagga BGP daemon.
+
+CONFIG_USER_QUAGGA_OSPFD_OSPFD
+  The Quagga OSPF daemon.
+
+CONFIG_USER_QUAGGA_OSPF6D_OSPF6D
+  The Quagga OSPF6 daemon.
+
+CONFIG_USER_QUAGGA_RIPD_RIPD
+  The Quagga RIP daemon.
+
+CONFIG_USER_QUAGGA_RIPNGD_RIPNGD
+  The Quagga RIPNG daemon.
+
+CONFIG_USER_QUAGGA_WATCHQUAGGA_WATCHQUAGGA
+  The Quagga 'watchquagga' utility.
+
+CONFIG_USER_CAL_CAL
+  Calender program
+  Approx. binary size: 10k
+
+CONFIG_USER_CAL_DATE
+  Print the date
+  Approx. binary size: 5k
+
+CONFIG_USER_CAN_EXAMPLES
+  some example and test applications for the can4linux CAN driver
+
+CONFIG_USER_CAN_HORCH
+  advanced CAN bus analyzer
+
+CONFIG_USER_CAMSERV
+  Webcam daemon & cgi for serving streaming images off a V4L webcam.
+  see http://cserv.sourceforge.net/
+
+CONFIG_USER_CLOCK_CLOCK
+  Some kind of clock
+
+CONFIG_USER_CPU_CPU
+  cpu tool
+
+CONFIG_USER_DHCP_ISC_SERVER_DHCPD
+  A full featured DHCP daemon that can do almost anything.
+
+CONFIG_USER_DHCP_ISC_CLIENT_DHCLIENT
+  A DHCP client daemon that supports most everything.
+
+CONFIG_USER_DHCP_ISC_RELAY_DHCRELAY
+  A DHCP relay daemon.
+
+CONFIG_USER_DNSMASQ_DNSMASQ
+  DNS masquerading
+
+CONFIG_USER_E2FSPROGS_MISC_BADBLOCKS
+  A filesystem tool
+  Approx. binary size: 148k
+
+CONFIG_USER_E2FSPROGS_MISC_CHATTR
+  A filesystem tool
+  Approx. binary size: 11k
+
+CONFIG_USER_E2FSPROGS_MISC_DUMPE2FS
+  A filesystem tool
+  Approx. binary size: 42k
+
+CONFIG_USER_E2FSPROGS_MISC_E2LABEL
+  A filesystem tool
+  Approx. binary size: 6k
+
+CONFIG_USER_E2FSPROGS_MISC_FSCK
+  A filesystem tool
+  Approx. binary size: 18k
+
+CONFIG_USER_E2FSPROGS_MISC_LSATTR
+  A filesystem tool
+  Approx. binary size: 13k
+
+CONFIG_USER_E2FSPROGS_MISC_MKLOST_FOUND
+  A filesystem tool
+  Approx. binary size: 6k
+
+CONFIG_USER_E2FSPROGS_MISC_TUNE2FS
+  A filesystem tool
+  Approx. binary size: 36k
+
+CONFIG_USER_E2FSPROGS_MISC_UUIDGEN
+  A filesystem tool
+  Approx. binary size: 98k
+
+CONFIG_USER_ETHATTACH_ETHATTACH
+  A Network tool
+
+CONFIG_USER_ETHERWAKE
+  Scyld's (Donald Becker) Wake-On-LAN magic packet generator
+
+CONFIG_USER_ETHTOOL_ETHTOOL
+  ethtool is a small utility for examining and tuning your ethernet-based
+  network interface. (80k+)
+
+CONFIG_USER_FDISK_FDISK
+  Disk partitioning utility.
+  Approx. binary size: 70k
+
+CONFIG_USER_FILEUTILS_CAT
+  Print the contents of a file to the screen.
+  Approx. binary size: 5k
+
+CONFIG_USER_FILEUTILS_CHGRP
+  Change the group of a file
+  Approx. binary size: 7k
+
+CONFIG_USER_FILEUTILS_CHMOD
+  Change the permissions of a file
+  Approx. binary size: 5k
+
+CONFIG_USER_FILEUTILS_CHOWN
+  Change the owner of a file
+  Approx. binary size: 7k
+
+CONFIG_USER_FILEUTILS_CMP
+  compare two files
+  Approx. binary size: 6k
+
+CONFIG_USER_FILEUTILS_CP
+  copy files and directories
+  Approx. binary size: 6k
+
+CONFIG_USER_FILEUTILS_DD
+  dump files in various formats
+  Approx. binary size: 7k
+
+CONFIG_USER_FILEUTILS_GREP
+  find patterns in files
+  Approx. binary size: 8k
+
+CONFIG_USER_FILEUTILS_L
+  long file listing
+  Approx. binary size: 7k
+
+CONFIG_USER_FILEUTILS_LN
+  for linking files together
+  Approx. binary size: 3k
+
+CONFIG_USER_FILEUTILS_LS
+  list files
+  Approx. binary size: 14k
+
+CONFIG_USER_FILEUTILS_MKDIR
+  make directories
+  Approx. binary size: 2k
+
+CONFIG_USER_FILEUTILS_MKFIFO
+  make a FIFO
+  Approx. binary size: 1k
+
+CONFIG_USER_FILEUTILS_MKNOD
+  make a special file
+  Approx. binary size: 2k
+
+CONFIG_USER_FILEUTILS_MORE
+  a pager for looking at files
+  Approx. binary size: 4k
+
+CONFIG_USER_FILEUTILS_MV
+  move a file
+  Approx. binary size: 4k
+
+CONFIG_USER_FILEUTILS_RM
+  remove a file
+  Approx. binary size: 1k
+
+CONFIG_USER_FILEUTILS_RMDIR
+  remove a directory
+  Approx. binary size: 2k
+
+CONFIG_USER_FILEUTILS_SYNC
+  synchronise filesystem memory back to disk.
+  Approx. binary size: 1k
+
+CONFIG_USER_FILEUTILS_TOUCH
+  change the timestamp on a file
+  Approx. binary size: 1k
+
+CONFIG_USER_FTP_FTP_FTP
+  An ftp client
+  Approx. binary size: 8k
+
+CONFIG_USER_GDBSERVER_GDBREPLAY
+  The gdbserver replay client. (old version - mk68k targets only)
+  Approx. binary size: 13k
+
+CONFIG_USER_HTTPD_HTTPD
+  Another HTTPD
+
+CONFIG_USER_HTTPTUNNEL_CLIENT
+  Client side daemon for the httptunnel protocol that permits
+  the tunnelling of a network connection via the HTTP protocol
+  to a remote httptunnel server.
+
+CONFIG_USER_HTTPTUNNEL_SERVER
+  Server side daemon for the httptunnel protocol that permits
+  the tunnelling of a network connection via the HTTP protocol
+  from a remote httptunnel client.
+
+CONFIG_USER_IDB_IDB
+  Intrusion Dection and Blocking tool.  This utility allows a number
+  of TCP and UDP ports to be monitored for connection attempts.
+  Optionally, the hosts making such attempts can be forcibly blocked.
+  This option adds about 21k to the image.
+
+CONFIG_USER_IFATTACH_IFATTACH
+  Network interface attach
+
+CONFIG_USER_IPREDIR_IPREDIR
+  IP port redirector
+  Approx. binary size: 23k
+
+CONFIG_USER_JPEGVIEW_JPEGVIEW
+  View jpegs on a frame buffer
+
+CONFIG_USER_LCD_LCD
+  LCD program
+  Approx. binary size: 7k
+
+CONFIG_USER_L2TPD_L2TPD
+  Layer 2 Tunnelling Protocol Daemon
+  Approx. binary size: 70k
+
+CONFIG_USER_LISSA_LISSA
+  Lissa
+
+CONFIG_USER_LINUXIGD_LINUXIGD
+  Linux Internet Gateway Device. A UPnP-IGD NAT-based 
+  Daemon. 
+  Needs libupnp (turned on automatically) and pthreads. 
+  Approx. total binary size (including libupnp): 350k
+
+CONFIG_USER_LINUXIGD_DEFAULT
+  Use the unmodified default configuration files for the 
+  linux-igd daemon and not the snapgear customised files.
+
+CONFIG_USER_LOATTACH_LOATTACH
+  Loopback attach
+
+CONFIG_USER_LOGIN_PASSWD
+  The passwd program (for changing passwords)
+
+CONFIG_USER_LPR
+  The BSD printer spooler and associated utilities.
+
+CONFIG_USER_LRPSTAT_LRPSTAT
+  Real time bandwidth and CPU monitoring Java applet.
+
+CONFIG_USER_LUA_LUA
+  The lua programming language compiler and interpreter.
+  See http://www.lua.org/
+
+CONFIG_USER_NETCAT_NETCAT
+  The netcat utility. Netcat is a fully featured 
+  networking utility which reads and writes data 
+  across network connections. 
+  Approximate size: 22k
+
+CONFIG_USER_KLAXON_KLAXON
+  Klaxon is a utility that attempts to detect and log
+  probes against the host.  Only those services selected
+  will be detected.  Inetd must also be installed.
+  This option adds about 17.5k to the image.
+
+CONFIG_USER_KLAXON_RFC931
+  Use IDENT (RFC931) to attempt to find out the user
+  behind the probe.  This option adds an additional 3k to
+  the image.
+
+CONFIG_USER_KLAXON_CHARGEN
+  Configure klaxon to report connection attempts to the
+  CHARGEN (tcp & udp ports 19).
+
+CONFIG_USER_KLAXON_DISCARD
+  Configure klaxon to report connection attempts to the
+  DISCARD (tcp & udp ports 9).
+
+CONFIG_USER_KLAXON_ECHO
+  Configure klaxon to report connection attempts to the
+  ECHO (tcp & udp ports 7).
+
+CONFIG_USER_KLAXON_FTP
+  Configure klaxon to report connection attempts to the
+  FTP (tcp ports 20 & 21).
+
+CONFIG_USER_KLAXON_HTTP
+  Configure klaxon to report connection attempts to the
+  HTTP (tcp port 80).
+
+CONFIG_USER_KLAXON_SMTP
+  Configure klaxon to report connection attempts to the
+  SMTP (tcp port 25).
+
+CONFIG_USER_KLAXON_SNMP
+  Configure klaxon to report connection attempts to the
+  SNMP (tcp & udp ports 161).
+
+CONFIG_USER_KLAXON_SSH
+  Configure klaxon to report connection attempts to the
+  SSH (tcp port 22).
+
+CONFIG_USER_KLAXON_TELNET
+  Configure klaxon to report connection attempts to the
+  TELNET (tcp port 23).
+
+CONFIG_USER_KLAXON_TFTP
+  Configure klaxon to report connection attempts to the
+  TFTP (udp port 69).
+
+CONFIG_USER_MAIL_MAIL_IP
+  Some kind of mail proggy
+  Approx. binary size: 27k
+
+CONFIG_USER_MP3PLAY_MP3PLAY
+  Play MP3 files
+
+CONFIG_USER_MP3PLAY_SWAP_WD
+  Swap the meaning of the -w and -d command line options.
+
+CONFIG_USER_MUSICBOX_MUSICBOX
+  Front-end for mp3play and mixer
+
+CONFIG_USER_NULL_NULL
+  NULL
+  
+CONFIG_USER_PLAY_PLAY
+  Plays .wav files
+
+CONFIG_USER_PLUG_PLUG
+  This daemon acts as a dumb proxy forwarding a TCP/IP stream
+  from a port on one host to a possibly different port
+  on a separate host.
+  Approx. binary size: 23k
+
+CONFIG_USER_POP3PROXY_POP3PROXY
+  Simple transparent pop3 proxy server.
+
+CONFIG_USER_READPROFILE_READPROFILE
+  Tools for use with kernel profiling
+  Approx. binary size: 16k
+
+CONFIG_USER_ROOTLOADER_ROOTLOADER
+  The root loader
+  Approx. binary size: 9k
+
+CONFIG_USER_IPUTILS_IPUTILS
+  The iputils package of ip utilities :)
+  glibc is recommended.
+
+CONFIG_USER_IPUTILS_PING
+  Send IPv4 ICMP ECHO_REQUEST packets to network hosts.
+
+CONFIG_USER_IPUTILS_PING6
+  Send IPv6 ICMP ECHO_REQUEST packets to network hosts.
+
+CONFIG_USER_IPUTILS_TRACEROUTE6
+  Print the IPv6 route packets take to a network host.
+
+CONFIG_USER_IPUTILS_RDISC
+  Client side of the ICMP router discovery protocol.
+
+CONFIG_USER_IPUTILS_CLOCKDIFF
+  Measures the clock difference between the local host and
+  a remote host using either ICMP TIMESTAMP packets or the 
+  IP TIMESTAMP option in a ICMP ECHO.
+
+CONFIG_USER_IPUTILS_TFTPD
+  IPv4 TFTP server.
+
+CONFIG_USER_IPUTILS_TRACEPATH
+  Traces a path to a network host discovering MTU along the way.
+
+CONFIG_USER_IPUTILS_TRACEPATH6
+  Traces a path to a IPv6 network host discovering MTU 
+  along the way.
+
+CONFIG_USER_IPUTILS_ARPING
+  Send ARP REQUEST to a neighbouring host
+
+CONFIG_USER_IPUTILS_RARPD
+  Reverse Address Resolution Protocol (RARP) Daemon.
+
+CONFIG_USER_ROUTED_ROUTED
+  A RIPv1 routed
+
+CONFIG_USER_SER_SER
+  SIP Express Router is a configurable Session Initiation
+  Protocol router & proxy.
+
+CONFIG_USER_SER_RTPPROXY
+  A Real-Time Protocol proxy mechanism which can be used by SIP Express Router 
+  to allow symmetric clients to traverse a NAT firewall.
+
+CONFIG_USER_SHADOW_UTILS
+  A collection of shadow password file based utilities.
+  These are generally full featured with lots of flexibility.
+
+CONFIG_USER_SHADOW_SHAREDLIB
+  Enabling this option creates a shadow shared library and all the
+  various applications then use this library.  Enabling this option will
+  save space.  The cost of this space saving is the opening of a trivial
+  escalation from normal user privileges to super user ones.  You have
+  been warned.
+
+CONFIG_USER_SHADOW_PAM
+  Instead of using the shadow password file, authentication and session
+  control is managed by PAM the pluggable authentication framework.
+
+CONFIG_USER_SHADOW_CHAGE
+  Change user password expiry information.
+
+CONFIG_USER_SHADOW_CHFN
+  Change real user name and information.
+
+CONFIG_USER_SHADOW_CHPASSWD
+  Update passwords in batch mode.
+
+CONFIG_USER_SHADOW_CHSH
+  Change login shell.
+
+CONFIG_USER_SHADOW_EXPIRY
+  Check and enforce password expiration policy.
+
+CONFIG_USER_SHADOW_FAILLOG
+  Display faillog records or set login failure limits.
+
+CONFIG_USER_SHADOW_GPASSWD
+  Administer the groups file.
+
+CONFIG_USER_SHADOW_GROUPADD
+  Create a new group.
+
+CONFIG_USER_SHADOW_GROUPDEL
+  Delete a group.
+
+CONFIG_USER_SHADOW_GROUPMOD
+  Modify a group.
+
+CONFIG_USER_SHADOW_GROUPS
+  Print the groups a user is in.
+
+CONFIG_USER_SHADOW_GRPCK
+  Verify integrity of group files.
+
+CONFIG_USER_SHADOW_GRPCONV
+  Convert to and from shadow passwords and groups.
+
+CONFIG_USER_SHADOW_GRPUNCONV
+  Convert to and from shadow passwords and groups.
+
+CONFIG_USER_SHADOW_ID
+  Print real and effective UIDs and GIDs.
+
+CONFIG_USER_SHADOW_LASTLOG
+  Examine the lastlog file.
+  This file contains historic login information.
+
+CONFIG_USER_SHADOW_LOGIN
+  The shadow login program.
+  Generally fully featured login program that supports shadow passwords.
+
+CONFIG_USER_SHADOW_LOGOUTD
+  Enforce login time restrictions.
+
+CONFIG_USER_SHADOW_NEWGRP
+  Log in to a new group.
+
+CONFIG_USER_SHADOW_NEWUSERS
+  Update and create new users in batch.
+
+CONFIG_USER_SHADOW_NOLOGIN
+  Politely refuse a login.
+
+CONFIG_USER_SHADOW_PASSWD
+  The shadow passwd program that complements the shadow login by allowing
+  passwords to be changed.
+
+CONFIG_USER_SHADOW_PWCK
+  Verify integrity of password files.
+
+CONFIG_USER_SHADOW_PWCONV
+  Convert to and from shadow passwords and groups.
+
+CONFIG_USER_SHADOW_PWUNCONV
+  Convert to and from shadow passwords and groups.
+
+CONFIG_USER_SHADOW_SU
+  Change user ID or become super-user.
+
+CONFIG_USER_SHADOW_SULOGIN
+  Single-user login.
+
+CONFIG_USER_SHADOW_USERADD
+  Create a new user or update default new user information.
+
+CONFIG_USER_SHADOW_USERDEL
+  Delete a user account and related files.
+
+CONFIG_USER_SHADOW_USERMOD
+  Modify a user account.
+
+CONFIG_USER_SHADOW_VIPW
+  Edit the password, group, shadow-password or shadow-group file.
+
+CONFIG_USER_SHUTILS_BASENAME
+  SH utils
+  Approx. binary size: 1k
+
+CONFIG_USER_SHUTILS_DATE
+  SH utils
+  Approx. binary size: 52k
+
+CONFIG_USER_SHUTILS_DIRNAME
+  SH utils
+  Approx. binary size: 1k
+
+CONFIG_USER_SHUTILS_ECHO
+  SH utils
+  Approx. binary size: 1k
+
+CONFIG_USER_SHUTILS_FALSE
+  SH utils
+  Approx. binary size: 1k
+
+CONFIG_USER_SHUTILS_LOGNAME
+  SH utils
+  Approx. binary size: 3k
+
+CONFIG_USER_SHUTILS_PRINTENV
+  SH utils
+  Approx. binary size: 1k
+
+CONFIG_USER_SHUTILS_PWD
+  SH utils
+  Approx. binary size: 3k
+
+CONFIG_USER_SHUTILS_TRUE
+  SH utils
+  Approx. binary size: 1k
+
+CONFIG_USER_SHUTILS_UNAME
+  SH utils
+  Approx. binary size: 2k
+
+CONFIG_USER_SHUTILS_WHICH
+  SH utils
+  Approx. binary size: 44k
+
+CONFIG_USER_SHUTILS_WHOAMI
+  SH utils
+  Approx. binary size: 3k
+
+CONFIG_USER_SHUTILS_YES
+  SH utils
+  Approx. binary size: 1k
+
+CONFIG_USER_SLATTACH_SLATTACH
+  Slip attach
+
+CONFIG_USER_SMTP_SMTPCLIENT
+  Client which allows mail to be sent to other hosts that support SMTP
+
+CONFIG_USER_SNMPD_SNMPD
+  SNMP daemon
+  Approx. binary size: 20k with no modules
+
+CONFIG_USER_STP_STP
+  simple network time daemon
+  Approx. binary size: 19k
+
+CONFIG_USER_SYSUTILS_DF
+  print filesystem usage
+  Approx. binary size: 5k
+
+CONFIG_USER_SYSUTILS_FREE
+  SYS utils
+  Approx. binary size: 5k
+
+CONFIG_USER_SYSUTILS_HOSTNAME
+  print the hostname of the system
+  Approx. binary size: 3k
+
+CONFIG_USER_SYSUTILS_KILL
+  kill processes
+  Approx. binary size: 4k
+
+CONFIG_USER_SYSUTILS_PS
+  Show process status
+  Approx. binary size: 12k
+
+CONFIG_USER_SYSUTILS_REBOOT
+  reboot the system
+
+CONFIG_USER_SYSUTILS_SHUTDOWN
+  shutdown the system
+
+CONFIG_USER_TCPDUMP_TCPDUMP
+  Monitor network traffic
+  Approx. binary size: 22k
+
+CONFIG_USER_THTTPD_THTTPD
+  Tiny HTTPD
+  Approx. binary size: 52k
+
+CONFIG_USER_TRIPWIRE_TRIPWIRE
+  The tripwire file modification detection utility.
+
+CONFIG_USER_TRIPWIRE_SIGGEN
+  Cryptographic file signature utility.
+
+CONFIG_USER_NETSNMP_SNMPD
+  net-snmp (www.net-snmp.org) Simple Network Management Protocol implementation.
+  Build/Install the agent (snmpd).
+
+CONFIG_USER_NETSNMP_SNMPD_MINI
+  Build a minimal agent.
+
+CONFIG_USER_NETSNMP_APPS
+  Build the applications (snmpget, ...)
+
+CONFIG_USER_NETSNMP_APPS_BULKGET
+  Install snmpbulkget.
+
+CONFIG_USER_NETSNMP_APPS_BULKWALK
+  Install snmpbulkwalk.
+
+CONFIG_USER_NETSNMP_APPS_DELTA
+  Install snmpdelta.
+
+CONFIG_USER_NETSNMP_APPS_DF
+  Install snmpdf.
+
+CONFIG_USER_NETSNMP_APPS_GET
+  Install snmpget.
+
+CONFIG_USER_NETSNMP_APPS_GETNEXT
+  Install snmpgetnext.
+
+CONFIG_USER_NETSNMP_APPS_SET
+  Install snmpset.
+
+CONFIG_USER_NETSNMP_APPS_STATUS
+  Install snmpstatus.
+
+CONFIG_USER_NETSNMP_APPS_TABLE
+  Install snmptable.
+
+CONFIG_USER_NETSNMP_APPS_TEST
+  Install snmptest.
+
+CONFIG_USER_NETSNMP_APPS_TRANSLATE
+  Install snmptranslate.
+
+CONFIG_USER_NETSNMP_APPS_TRAP
+  Install snmptrap.
+
+CONFIG_USER_NETSNMP_APPS_TRAPD
+  Install snmptrapd.
+
+CONFIG_USER_NETSNMP_APPS_USM
+  Install snmpusm.
+
+CONFIG_USER_NETSNMP_APPS_VACM
+  Install snmpvacm.
+
+CONFIG_USER_NETSNMP_APPS_WALK
+  Install snmpwalk.
+
+CONFIG_USER_NETSNMP_APPS_NETSTAT
+  Install snmpnetstat.
+
+CONFIG_USER_NETSNMP_BUILDSTATIC
+  Link with static libraries.
+
+CONFIG_USER_NETSNMP_MANUALS
+  Install the manuals.
+
+CONFIG_USER_NETSNMP_SCRIPTS
+  Install the scripts (mib2c, ...).
+
+CONFIG_USER_NETSNMP_MIBS
+  Install the mib files.
+
+CONFIG_USER_NETSNMP_MIBLOADING
+  Include code that parses and manipulates the mib files.
+
+CONFIG_USER_NETSNMP_NOV1
+  Do not include code that implements SNMPv1.
+
+CONFIG_USER_NETSNMP_NOV2C
+  Do not include code that implements SNMPv2c.
+
+CONFIG_USER_NETSNMP_IPV6
+  Generate IPv6 ready version.
+
+CONFIG_USER_NETSNMP_NOTRANSPORTS
+  Exclude listed SNMP transports.
+  (UDP UDPIPv6 TCPIPv6 TCP Unix Callback AAL5PVC IPX)
+
+CONFIG_USER_NETSNMP_EXTRANSPORTS
+  Transports to exclude (space separated list).
+
+CONFIG_USER_NETSNMP_OPENSSL
+  Look for openssl in PATH/lib.
+
+CONFIG_USER_NETSNMP_OVRDEFAULTS
+  Override defaults for prompted values.
+
+CONFIG_USER_NETSNMP_DEFVERSION
+  Default version of SNMP to use.
+
+CONFIG_USER_NETSNMP_DEFSYSCONTACT
+  Default system contact.
+
+CONFIG_USER_NETSNMP_DEFSYSLOCATION
+  Default system location.
+
+CONFIG_USER_NETSNMP_DEFLOGFILE
+  Default log file location.
+
+CONFIG_USER_NETSNMP_DEFPERSISDIR
+  Default directory for persistent data storage.
+
+CONFIG_USER_NETSNMP_DEFENTERPRISEOID
+  The enterprise number assigned by IANA
+  (Warning: this should be used with caution.)
+
+CONFIG_USER_NETSNMP_ADDMIBS
+  Compile with additional MIB modules.
+
+CONFIG_USER_NETSNMP_ADDITIONALMIBS
+  Additional MIB modules (space spearated list).
+
+CONFIG_USER_VPNLED_VPNLED
+  Control the VPN led.
+  Approx. binary size: 5k
+
+CONFIG_USER_LEDCON_LEDCON
+  Control all the leds.
+  Approx. binary size: 10k
+
+CONFIG_USER_WINSD_WS
+  A WINS server for small networks.
+  Approx. binary size: 57k
+
+CONFIG_USER_MATH_TEST
+  A number of programs used to test the proper functioning of the maths
+  library.
+
+CONFIG_USER_MAWK_AWK
+  The mawk program is an interpreter for the AWK programming language.
+  The AWK language is useful for manipulation of data files, text
+  retrieval and provessing, for prototyping and experimenting with
+  algorithms and for general scripting.  The mawk program is installed
+  as /bin/awk.
+  Approx. binary size: 110k
+
+CONFIG_USER_MYSQL
+  Enable building the various mysql components.
+
+CONFIG_USER_MYSQL_CLIB
+  Build mysql client support library. This allows clients to
+  access a remote (or local) mysql database.
+
+CONFIG_USER_SNORT_SNORT
+  Snort is a network intrusion detection system.  It is capable of
+  performing real-time traffic analysis and packet logging on IP
+  networks.  It can perform protocol analysis, content searching and
+  can be used to detect a variety of attacks and probes, such as
+  buffer overflows, stealth port scans, CGI attacks, SMB probes,
+  OS fingerprinting attempts and much more.
+  Approx. binary size: 800k
+
+CONFIG_USER_SPEEDTOUCH_MODEM_RUN
+  Utility to configure Speed Touch USB ADSL modems.
+
+CONFIG_USER_SSH_SSHD
+  A secure shell server.  This one is the openssh variant and supports ssh
+  v1 and ssh v2. You probably want to include the tinylogin stuff, and a
+  passwd and group file in /etc/config so that this works properly.
+  Approx. binary size: 580k
+
+CONFIG_USER_SSH_SSH
+  A secure shell client.  You can set up a vpn connection using both the
+  client and the server.
+  Approx. binary size: 610k
+
+CONFIG_USER_SSH_SSHKEYGEN
+  This program generates and manages authentication keys for ssh and sshd.
+  Approx. binary size: 480k
+
+CONFIG_USER_TCPWRAP_TCPD
+  The tcpd program can be set up to monitor incoming requests for
+  telnet, finger, ftp, exec, rsh, rlogin, tftp, talk, comsat and other
+  services that have a one-to-one mapping onto executable files.  It also
+  provides some access control facilities for any monitored services.
+
+CONFIG_USER_TCPWRAP_FINGER
+  A safe finger client wrapper that protects against nasty stuff from finger
+  servers.
+
+CONFIG_USER_TCPWRAP_TCPDMATCH
+  This utility will explain what tcpd would do in a specific case.  It
+  examines the tcpd access control tables and prints out is conclusion.
+
+CONFIG_USER_TCPWRAP_TRYFROM
+  This program can be called via a remote shell command to find out if the
+  hostname and address are properly recognized, if username lookup works,
+  and (SysV only) if the TLI on top of IP heuristics work.
+
+CONFIG_USER_TCPWRAP_TCPDCHK
+  This utility examines your tcp wrapper configuration and reports all
+  potential and real problems that it can find.  The program examines
+  the tcpd access control files and compares the entries in these files
+  against entries in the inetd network configuration files.
+
+CONFIG_USER_IPCHAINS_IPCHAINS
+  An alternate method for configuring the firwall rules.  Note that you
+  must have ipchains configured in your kernel for this program to work.
+  Approx. binary size: 53k
+
+CONFIG_USER_IPERF_IPERF
+  An application for measuring network performance.
+
+CONFIG_USER_IPMASQADM_IPMASQADM
+  Tool for configuring port forwarding for Linux 2.2.x kernels.  You
+  must have port forwarding enabled in your kernel for this program to
+  work.
+
+CONFIG_USER_GAMES_ADVENT4
+  The Colossal Cave Adventure game.  To play, telnet to port 8898 or run
+  advent4 from the command line.
+
+CONFIG_USER_GAMES_DUNGEON
+  The Dungeon Adventure game.  To play, telnet to port 8899 or run
+  dungeon from the command line.
+
+CONFIG_USER_GAMES_RUBIK
+  Non-optimal rubik's cube solver.
+
+CONFIG_USER_PPPD_WITH_TACACS
+  TACACS+ authentication plugin for pppd.
+
+CONFIG_USER_PPPD_WITH_RADIUS
+  RADIUS authentication plugin for pppd.
+
+CONFIG_USER_PPPD_WITH_PPPOE
+  Allow kernel mode PPPOE support.
+
+CONFIG_USER_PPPD_WITH_PPPOA
+  Allow kernel mode PPPOATM support.
+
+CONFIG_USER_PALMBOT_PALMBOT
+  A half-baked app to drive the Palm Pilot robot.
+
+CONFIG_USER_BUSYBOX_BUSYBOX
+  BusyBox combines tiny versions of many common UNIX utilities into a single
+  small executable. It provides minimalist replacements for most of the utilities
+  you usually find in fileutils, shellutils, findutils, textutils, grep, gzip,
+  tar, etc.  Simply select those utilities and options you want.
+
+CONFIG_USER_BUSYBOX_ADJTIMEX
+  Reads and optionally sets system timebase parameters. See adjtimex(2).
+
+CONFIG_USER_BUSYBOX_AR
+  Extract or list files from an ar archive.
+
+CONFIG_USER_BUSYBOX_ADDGROUP
+  Utility for creating a new group account.
+
+CONFIG_USER_BUSYBOX_ADDUSER
+  Utility for creating a new user account.
+
+CONFIG_USER_BUSYBOX_BASENAME
+  Strips directory path and suffixes from FILE. If specified, also
+  removes any trailing SUFFIX.
+
+CONFIG_USER_BUSYBOX_CAT
+  Concatenates FILE(s) and prints them to stdout.
+
+CONFIG_USER_BUSYBOX_CHMOD
+  Change the access permissions of files.
+
+CONFIG_USER_BUSYBOX_CHOWN
+  Change the owner of files.
+
+CONFIG_USER_BUSYBOX_CHGRP
+  Change the group owner of files.
+
+CONFIG_USER_BUSYBOX_CHROOT
+  Run command with root directory set elsewhere.
+
+CONFIG_USER_BUSYBOX_CHVT
+  Changes the foreground virtual terminal.
+
+CONFIG_USER_BUSYBOX_CLEAR
+  Clear screen.
+
+CONFIG_USER_BUSYBOX_CMP
+  Compare files.
+
+CONFIG_USER_BUSYBOX_CP
+  Copy files.
+
+CONFIG_USER_BUSYBOX_CPIO
+  Copy files to and from archives.
+
+CONFIG_USER_BUSYBOX_CUT
+  Prints selected fields from input file to standard out.
+
+CONFIG_USER_BUSYBOX_DATE
+  Displays the current time or sets the system date.
+
+CONFIG_USER_BUSYBOX_DC
+  This is a Tiny RPN calculator that understands the following
+  operations: +, -, /, *, and, or, not, eor.
+
+CONFIG_USER_BUSYBOX_DD
+  Copy a file with formatting and conversions.
+
+CONFIG_USER_BUSYBOX_DEALLOCVT
+  Deallocate unused virtual terminal.
+
+CONFIG_USER_BUSYBOX_DELGROUP
+  Utility for deleting a group account.
+
+CONFIG_USER_BUSYBOX_DELUSER
+  Utility for deleting a user account.
+
+CONFIG_USER_BUSYBOX_DF
+  Print the filesystem space used and space available.
+
+CONFIG_USER_BUSYBOX_DIRNAME
+  Strips non-directory suffix from arguments.
+
+CONFIG_USER_BUSYBOX_DMESG
+  Prints or controls the kernel ring buffer.
+
+CONFIG_USER_BUSYBOX_DOS2UNIX
+  Converts a text file to/from dos format to unix format.
+
+CONFIG_USER_BUSYBOX_DPKG
+  WORK IN PROGRESS, only usefull for debian-installer.
+
+CONFIG_USER_BUSYBOX_DPKG_DEB
+  Perform actions on debian packages (.debs).
+
+CONFIG_USER_BUSYBOX_DUTMP
+  Dump utmp file format (pipe delimited).
+
+CONFIG_USER_BUSYBOX_DU
+  Summarizes disk space used for each file argument and/or directory. Disk
+  space is printed in units of 1024 bytes.
+
+CONFIG_USER_BUSYBOX_DUMPKMAP
+  Prints out a binary keyboard translation table to standard output.
+
+CONFIG_USER_BUSYBOX_ECHO
+  Prints arguments to stdout.
+
+CONFIG_USER_BUSYBOX_ENV
+  Prints the current environment or runs a program after setting up
+  the specified environment.
+
+CONFIG_USER_BUSYBOX_EXPR
+  Prints the value of an expression to standard output.
+
+CONFIG_USER_BUSYBOX_FBSET
+  Show and modify frame buffer settings.
+
+CONFIG_USER_BUSYBOX_FDFLUSH
+  Forces floppy disk drive to detect disk change
+
+CONFIG_USER_BUSYBOX_FIND
+  Search for files in a directory hierarchy.
+
+CONFIG_USER_BUSYBOX_FREE
+  Displays the amount of free and used system memory.
+
+CONFIG_USER_BUSYBOX_FREERAMDISK
+  Frees all memory used by the specified ramdisk.
+
+CONFIG_USER_BUSYBOX_FSCK_MINIX
+  Performs a consistency check for MINIX filesystems.
+
+CONFIG_USER_BUSYBOX_GETOPT
+  Parse command options.
+
+CONFIG_USER_BUSYBOX_GETTY
+  getty lets you log in on a tty, it is normally invoked by init.
+
+CONFIG_USER_BUSYBOX_GREP
+  Search for a pattern in each file or standard input.
+
+CONFIG_USER_BUSYBOX_GUNZIP
+  Uncompress files.
+
+CONFIG_USER_BUSYBOX_GZIP
+  Compress files.
+
+CONFIG_USER_BUSYBOX_HALT
+  Halt the system.
+
+CONFIG_USER_BUSYBOX_HDPARM
+  hdparm provides a command line interface to various hard disk ioctls
+  supported by the stock Linux ATA/IDE device driver subsystem.  Some
+  options may work correctly only with the latest kernels.
+
+CONFIG_USER_BUSYBOX_HDPARM_GET_IDENTITY
+  enable identity support
+
+CONFIG_USER_BUSYBOX_HDPARM_HDIO_SCAN_HWIF
+  enable scaning support
+
+CONFIG_USER_BUSYBOX_HDPARM_HDIO_UNREGISTER_HWIF
+  enable unregister device support
+
+CONFIG_USER_BUSYBOX_HDPARM_HDIO_DRIVE_RESET
+  enable reset support
+
+CONFIG_USER_BUSYBOX_HDPARM_HDIO_TRISTATE_HWIF
+  enable tristate support
+
+CONFIG_USER_BUSYBOX_HDPARM_HDIO_GETSET_DMA
+  enable DMA set/get state support
+
+CONFIG_USER_BUSYBOX_HEAD
+  Print first 10 lines of each file to standard output.
+
+CONFIG_USER_BUSYBOX_HOSTID
+  Print out a unique 32-bit identifier for the machine.
+
+CONFIG_USER_BUSYBOX_HOSTNAME
+  Get or set the hostname or DNS domain name.
+
+CONFIG_USER_BUSYBOX_ID
+  Print information for specific or current user.
+
+CONFIG_USER_BUSYBOX_IFCONFIG
+  Configure a network interface.
+
+CONFIG_USER_BUSYBOX_INIT
+  Init is the parent of all processes.
+
+CONFIG_USER_BUSYBOX_INSMOD
+  Loads the specified kernel modules into the kernel.
+
+CONFIG_USER_BUSYBOX_IPCALC
+  Busybox ipcalc program
+
+CONFIG_USER_BUSYBOX_IPCALC_FANCY
+  Fancy busybox ipcalc program
+
+CONFIG_USER_BUSYBOX_KILL
+  Send a signal to the specified process(es).
+
+CONFIG_USER_BUSYBOX_KILLALL
+  Send a signal to the specified process(es).
+
+CONFIG_USER_BUSYBOX_KLOGD
+  Kernel logger daemon.
+
+CONFIG_USER_BUSYBOX_LENGTH
+  Prints out the length of the specified string.
+
+CONFIG_USER_BUSYBOX_LN
+  Create a link between two files.
+
+CONFIG_USER_BUSYBOX_LOADACM
+  Loads an acm from standard input.
+
+CONFIG_USER_BUSYBOX_LOADFONT
+  Loads a console font from standard input.
+
+CONFIG_USER_BUSYBOX_LOADKMAP
+  Loads a binary keyboard translation table from standard input.
+
+CONFIG_USER_BUSYBOX_LOGGER
+  Write a message to the system log.
+
+CONFIG_USER_BUSYBOX_LOGIN
+  login is used when signing onto a system.
+
+CONFIG_USER_BUSYBOX_SECURETTY
+  The file  /etc/securetty  is used by (some versions of) login(1).
+  The file contains the device names of tty lines (one per line,
+  without leading /dev/) on which root is allowed to login.
+
+CONFIG_USER_BUSYBOX_SHADOWPASSWDS
+  Build support for shadow password in /etc/shadow.  This file is only
+  readable by root and thus the encrypted passwords are no longer
+  publicly readable.
+
+CONFIG_USER_BUSYBOX_LOGNAME
+  Print the name of the current user.
+
+CONFIG_USER_BUSYBOX_LS
+  List directory contents.
+
+CONFIG_USER_BUSYBOX_LSMOD
+  List the currently loaded kernel modules.
+
+CONFIG_USER_BUSYBOX_MAKEDEVS
+  Creates a range of block or character special files.
+
+CONFIG_USER_BUSYBOX_MD5SUM
+  Print or check MD5 checksums.
+
+CONFIG_USER_BUSYBOX_MKDIR
+  Create directory(ies), if they do not already exist.
+
+CONFIG_USER_BUSYBOX_MKFIFO
+  Creates a named pipe.
+
+CONFIG_USER_BUSYBOX_MKFS_MINIX
+  Make a MINIX filesystem.
+
+CONFIG_USER_BUSYBOX_MKNOD
+  Create a special file (block, character, or pipe).
+
+CONFIG_USER_BUSYBOX_MKSWAP
+  Prepare a disk partition to be used as a swap partition.
+
+CONFIG_USER_BUSYBOX_MKTEMP
+  Creates a temporary file.
+
+CONFIG_USER_BUSYBOX_MODPROBE
+  High level handling of loadable modules.
+
+CONFIG_USER_BUSYBOX_MORE
+  More is a filter for viewing a file one screenful at a time.
+
+CONFIG_USER_BUSYBOX_MOUNT
+  Mount a filesystem.
+
+CONFIG_USER_BUSYBOX_MT
+  Control magnetic tape drive operation.
+
+CONFIG_USER_BUSYBOX_MV
+  Move (rename) files.
+
+CONFIG_USER_BUSYBOX_NC
+  Netcat opens a pipe to a socket.
+
+CONFIG_USER_BUSYBOX_NSLOOKUP
+  Queries the nameserver for the IP address of the given host.
+
+CONFIG_USER_BUSYBOX_PIDOF
+  Find the process ID of a running program.
+
+CONFIG_USER_BUSYBOX_PING
+  Send ICMP ECHO_REQUEST packets to network hosts.
+
+CONFIG_USER_BUSYBOX_PIVOT_ROOT
+  Move the current root file system to put_old and make new_root the
+  new root file system.
+
+CONFIG_USER_BUSYBOX_POWEROFF
+  Halt the system and request that the kernel shut off the power.
+
+CONFIG_USER_BUSYBOX_PRINTF
+  Formats and prints argument(s) according to format, Where format
+        controls the output exactly as in C printf.
+
+CONFIG_USER_BUSYBOX_PS
+  Report process status. This version of ps accepts no options.
+
+CONFIG_USER_BUSYBOX_PWD
+  Print the full filename of the current working directory.
+
+CONFIG_USER_BUSYBOX_RDATE
+  Get and possibly set the system date and time from a remote host.
+
+CONFIG_USER_BUSYBOX_READLINK
+  Read a symbolic link.
+
+CONFIG_USER_BUSYBOX_REBOOT
+  Reboot the system.
+
+CONFIG_USER_BUSYBOX_RENICE
+  Changes priority of running processes. Allowed priorities range from
+  20 (the process runs only when nothing else is running) to 0
+  (default priority) to -20 (almost nothing else ever gets to run).
+
+CONFIG_USER_BUSYBOX_RESET
+  Resets the screen.
+
+CONFIG_USER_BUSYBOX_RM
+  Remove (unlink) the file(s). You may use '--' to indicate that all
+  following arguments are non-options.
+
+CONFIG_USER_BUSYBOX_RMDIR
+  Remove the directory(ies), if they are empty.
+
+CONFIG_USER_BUSYBOX_RMMOD
+  Unloads the specified kernel modules from the kernel.
+
+CONFIG_USER_BUSYBOX_ROUTE
+  Edit the kernel's routing tables.
+
+CONFIG_USER_BUSYBOX_RPM2CPIO
+  Convert an rpm archive to a cpio archive.
+
+CONFIG_USER_BUSYBOX_SED
+  Stream editor.
+
+CONFIG_USER_BUSYBOX_SETKEYCODES
+  Set entries into the kernel's scancode-to-keycode map, allowing
+  unusual keyboards to generate usable keycodes.
+
+CONFIG_USER_BUSYBOX_SHELL
+  Do you want to configure a busybox shell
+
+CONFIG_USER_BUSYBOX_ASH
+  The ASH shell (command interpreter)
+
+CONFIG_USER_BUSYBOX_SH_IS_ASH
+  /bin/sh will use the "ash" shell.
+
+CONFIG_USER_BUSYBOX_HUSH
+  The HUSH shell (command interpreter)
+
+CONFIG_USER_BUSYBOX_SH_IS_HUSH
+  /bin/sh will use the "hush" shell.
+
+CONFIG_USER_BUSYBOX_LASH
+  The BusyBox lame shell (command interpreter)
+
+CONFIG_USER_BUSYBOX_SH_IS_LASH
+  /bin/sh will use the "lash" shell.
+
+CONFIG_USER_BUSYBOX_MSH
+  The BusyBox Minix shell (command interpreter)
+
+CONFIG_USER_BUSYBOX_SH_IS_MSH
+  /bin/sh will use the "msh" shell.
+
+CONFIG_USER_BUSYBOX_SLEEP
+  Pause for a specified number of seconds.
+
+CONFIG_USER_BUSYBOX_SORT
+  Sorts lines of text in the specified files.
+
+CONFIG_USER_BUSYBOX_STRINGS
+  Extract printable strings from a binary file.
+
+CONFIG_USER_BUSYBOX_STTY
+  Print or modify prints baud rate, line discipline, and deviations
+  from stty sane.
+
+CONFIG_USER_BUSYBOX_SWAPONOFF
+  Stop swapping virtual memory pages on the given device.
+
+CONFIG_USER_BUSYBOX_SYNC
+  Write all buffered filesystem blocks to disk.
+
+CONFIG_USER_BUSYBOX_SYSLOGD
+  Linux system and kernel logging utility. Note that this version of
+  syslogd ignores /etc/syslog.conf.
+
+CONFIG_USER_BUSYBOX_TAIL
+  Print last 10 lines of each file to standard output. With more than
+  one file, precede each with a header giving the file name. With no
+  file, or when file is -, read standard input.
+
+CONFIG_USER_BUSYBOX_TAR
+  Create, extract, or list files from a tar file.
+
+CONFIG_USER_BUSYBOX_TEE
+  Copy standard input to each file, and also to standard output.
+
+CONFIG_USER_BUSYBOX_TELNET
+  Telnet is used to establish interactive communication with another
+  computer over a network using the TELNET protocol.
+
+CONFIG_USER_BUSYBOX_TEST
+  Checks file types and compares values returning an exit code
+  determined by the value of an expression.
+
+CONFIG_USER_BUSYBOX_TFTP
+  Transfers a file from/to a tftp server using "octet" mode.
+
+CONFIG_USER_BUSYBOX_TOUCH
+  Update the last-modified date on the given file[s].
+
+CONFIG_USER_BUSYBOX_TR
+  Translate, squeeze, and/or delete characters from standard input,
+  writing to standard output.
+
+CONFIG_USER_BUSYBOX_TRACEROUTE
+  Print the route packets take to a network host.
+
+CONFIG_USER_BUSYBOX_TRUE_FALSE
+  Return an exit code of TRUE (0) or FALSE (1).
+
+CONFIG_USER_BUSYBOX_TTY
+  Print the file name of the terminal connected to standard input.
+
+CONFIG_USER_BUSYBOX_UMOUNT
+  Unmount file systems.
+
+CONFIG_USER_BUSYBOX_UNAME
+  Print certain system information.
+
+CONFIG_USER_BUSYBOX_UNIQ
+  Discard all but one of successive identical lines from input (or
+  standard input), writing to output (or standard output).
+
+CONFIG_USER_BUSYBOX_UNIX2DOS
+  Convert files from unix format to DOS format.
+
+CONFIG_USER_BUSYBOX_UPDATE
+  Periodically flushes filesystem buffers.
+
+CONFIG_USER_BUSYBOX_UPTIME
+  Display the time since the last boot.
+
+CONFIG_USER_BUSYBOX_USLEEP
+  Pause for N microseconds.
+
+CONFIG_USER_BUSYBOX_UUDECODE
+  Uudecode a file that is uuencoded.
+
+CONFIG_USER_BUSYBOX_UUENCODE
+  Uuencode a file.
+
+CONFIG_USER_BUSYBOX_VI
+  Visual file editor.
+
+CONFIG_USER_BUSYBOX_WATCHDOGD
+  Periodically write to watchdog device.
+
+CONFIG_USER_BUSYBOX_WC
+  Print line, word, and byte counts for each file, and a total line if
+  more than one file is specified. with no file, read standard input.
+
+CONFIG_USER_BUSYBOX_WGET
+  Retrieves files via HTTP or FTP.
+
+CONFIG_USER_BUSYBOX_WHICH
+  Locates a command.
+
+CONFIG_USER_BUSYBOX_WHOAMI
+  Prints the user name associated with the current effective user id.
+
+CONFIG_USER_BUSYBOX_XARGS
+  Executes a command on every item given by standard input.
+
+CONFIG_USER_BUSYBOX_YES
+  Repeatedly outputs a line with all specified string(s), or 'y'.
+
+CONFIG_USER_BUSYBOX_BUFFERS_GO_ON_STACK
+  BusyBox will, by default, malloc space for its buffers.  This costs code
+  size for the call to xmalloc.  You can use the following feature to have
+  them put on the stack.  For some very small machines with limited stack
+  space, this can be deadly.  For most folks, this works just fine...
+
+CONFIG_USER_BUSYBOX_BUFFERS_GO_IN_BSS
+  The third alternative for buffer allocation is to use BSS.  This works
+  beautifully for computers with a real MMU (and OS support), but wastes
+  runtime RAM for uCLinux.  This behavior was the only one available for
+  BusyBox versions 0.48 and earlier.
+
+CONFIG_USER_BUSYBOX_USE_DEVPS_PATCH
+  Turn this on to use Erik's very cool devps, and devmtab kernel drivers,
+  thereby eliminating the need for the /proc filesystem and thereby saving
+  lots and lots memory for more important things.  NOTE:  If you enable this
+  feature, you _must_ have patched the kernel to include the devps patch that
+  is included in the busybox/kernel-patches directory.  You will also need to
+  create some device special files in /dev on your embedded system:
+         mknod /dev/mtab c 10 22
+         mknod /dev/ps c 10 21
+  I emailed Linus and this patch will not be going into the stock kernel.
+
+CONFIG_USER_BUSYBOX_VERBOSE_USAGE
+  Show verbose usage messages.  This consumes extra memory.
+
+CONFIG_USER_BUSYBOX_USE_TERMIOS
+  Use termios to manipulate the screen ('more' is prettier with this on)
+
+CONFIG_USER_BUSYBOX_AUTOWIDTH
+  Calculate terminal & column widths (for more and ls).
+
+CONFIG_USER_BUSYBOX_LS_USERNAME
+  Show username/groupnames for ls.
+
+CONFIG_USER_BUSYBOX_LS_TIMESTAMPS
+  Show file time stamps in ls.
+  
+CONFIG_USER_BUSYBOX_LS_FILETYPES
+  Allow ls to know about file types.
+
+CONFIG_USER_BUSYBOX_LS_SORTFILES
+  Allow ls to sort the file names.
+
+CONFIG_USER_BUSYBOX_LS_RECURSIVE
+  Enable ls -R
+
+CONFIG_USER_BUSYBOX_LS_FOLLOWLINKS
+  Enable ls -L
+
+CONFIG_USER_BUSYBOX_FANCY_PING
+  Disable for a smaller (but less functional) ping.
+
+CONFIG_USER_BUSYBOX_USE_INITTAB
+  Make init use a simplified /etc/inittab file (recommended).
+
+CONFIG_USER_BUSYBOX_LINUXRC
+  Enable init being called as /linuxrc.
+
+CONFIG_USER_BUSYBOX_INIT_COREDUMPS
+  Have init enable core dumping for child processes (for debugging only).
+
+CONFIG_USER_BUSYBOX_EXTRA_QUIET
+  Make sure nothing is printed to the console on boot
+
+CONFIG_USER_BUSYBOX_REMOTE_LOG
+  Enable syslogd -R remotehost
+
+CONFIG_USER_BUSYBOX_IPC_SYSLOG
+  Enable syslogd -C
+
+CONFIG_USER_BUSYBOX_FANCY_TAIL
+  Fancy tail implementation.
+
+CONFIG_USER_BUSYBOX_MOUNT_LOOP
+  Enable support for loop devices in mount
+
+CONFIG_USER_BUSYBOX_MTAB_SUPPORT
+  Enable support for a real /etc/mtab file instead of /proc/mounts
+
+CONFIG_USER_BUSYBOX_NFSMOUNT
+  Enable support for mounting remote NFS volumes.
+  You may need to mount with "-o nolock" if you are
+  not running a local portmapper daemon...
+
+CONFIG_USER_BUSYBOX_MOUNT_FORCE
+  Enable support forced filesystem unmounting
+  (i.e. in case of an unreachable NFS system).
+
+CONFIG_USER_BUSYBOX_TAR_CREATE
+  Enable support for creation of tar files.
+
+CONFIG_USER_BUSYBOX_TAR_EXCLUDE
+  Enable support for "--exclude" and "-X" for excluding files
+
+CONFIG_USER_BUSYBOX_TAR_GZIP
+  Enable support for tar -z option (currently only works for inflating)
+
+CONFIG_USER_BUSYBOX_SORT_REVERSE
+  Enable reverse sort
+
+CONFIG_USER_BUSYBOX_SORT_UNIQUE
+  Enable unique sort
+
+CONFIG_USER_BUSYBOX_COMMAND_EDITING
+  Enable command line editing in the shell.
+
+CONFIG_USER_BUSYBOX_TAB_COMPLETION
+  Enable tab completion in the shell.
+  This feature adds a bit over 4k.
+
+CONFIG_USER_BUSYBOX_USERNAME_COMPLETION
+  Attempts to match usernames in a ~-prefixed path
+
+CONFIG_USER_BUSYBOX_SH_STANDALONE_SHELL
+  Allow the shell to invoke all the compiled in BusyBox applets as if they
+  were shell builtins.  Nice for staticly linking an emergency rescue shell,
+  among other things.
+
+CONFIG_USER_BUSYBOX_SH_APPLETS_ALWAYS_WIN
+  When this is enabled, busybox shell applets can be called using full path
+  names.  This causes applets (i.e., most busybox commands) to override
+  real commands on the filesystem.  For example, if you run run /bin/cat, it
+  will use BusyBox cat even if /bin/cat exists on the filesystem and is _not_
+  busybox.  Some systems want this, others do not.  Choose wisely.  :-)
+
+CONFIG_USER_BUSYBOX_SH_FANCY_PROMPT
+  Some deeply embedded systems don't have usernames or even hostnames,
+  and the fancy prompt can look rather hideous on them. Enable this option
+  for a fancy prompt.
+
+CONFIG_USER_BUSYBOX_FBSET_FANCY
+  Turn on extra fbset options.
+
+CONFIG_USER_BUSYBOX_FBSET_READMODE
+  Turn on fbset readmode support.
+
+CONFIG_USER_BUSYBOX_2_2_MODULES
+  Support insmod/lsmod/rmmod for pre 2.1 kernels.
+
+CONFIG_USER_BUSYBOX_2_4_MODULES
+  Support insmod/lsmod/rmmod for 2.1 - 2.4 kernels.
+
+CONFIG_USER_BUSYBOX_2_6_MODULES
+  Support insmod/lsmod/rmmod for 2.6 and above kernels.
+
+CONFIG_USER_BUSYBOX_INSMOD_VERSION_CHECKING
+  Support module version checking.
+
+CONFIG_USER_BUSYBOX_INSMOD_LOADINKMEM
+  Support for uClinux memory usage optimization, which will load the image
+  directly into the kernel memory.  This divides memory requrements by three.
+  If you are not running uClinux (i.e., your CPU has an MMU) leave this
+  disabled...
+
+CONFIG_USER_BUSYBOX_MINIX2
+  Support for Minix filesystem, version 2
+
+CONFIG_USER_BUSYBOX_IFCONFIG_STATUS
+  Enable ifconfig status reporting output -- this feature adds 12k.
+
+CONFIG_USER_BUSYBOX_IFCONFIG_SLIP
+  Enable ifconfig slip-specific options "keepalive" and "outfill"
+
+CONFIG_USER_BUSYBOX_IFCONFIG_MEMSTART_IOADDR_IRQ
+  Enable ifconfig options "mem_start", "io_addr", and "irq".
+
+CONFIG_USER_BUSYBOX_IFCONFIG_HW
+  Enable ifconfig option "hw".  Currently works for only with "ether".
+
+CONFIG_USER_BUSYBOX_INSTALLER
+  Enable busybox --install [-s]
+  to create links (or symlinks) for all the commands that are
+  compiled into the binary.  (needs /proc filesystem)
+
+CONFIG_USER_BUSYBOX_WGET_STATUSBAR
+  Enable a nifty progress meter in wget (adds just under 2k)
+
+CONFIG_USER_BUSYBOX_WGET_AUTHENTICATION
+  Enable HTTP authentication in wget
+
+CONFIG_USER_BUSYBOX_U_W_TMP
+  The files /var/run/utmp and /var/run/wtmp can be used to track when
+  user's have logged into and logged out of the system, allowing programs
+  such as 'who' and 'last' to list who is currently logged in.
+
+CONFIG_USER_BUSYBOX_CLEAN_UP
+  Clean up all memory before exiting -- usually not needed
+  as the OS can clean up...  Don't enable this unless you
+  have a really good reason for cleaning things up manually.
+
+CONFIG_USER_BUSYBOX_HUMAN_READABLE
+  Support for human readable output by ls, du, etc.(example 13k, 23M, 235G)
+
+CONFIG_USER_BUSYBOX_FIND_TYPE
+  Support for the find -type option.
+
+CONFIG_USER_BUSYBOX_FIND_PERM
+  Support for the find -perm option.
+
+CONFIG_USER_BUSYBOX_FIND_MTIME
+  Support for the find -mtine option.
+
+CONFIG_USER_BUSYBOX_GREP_CONTEXT
+  Support for the -A -B and -C context flags in grep.
+
+CONFIG_USER_BUSYBOX_GREP_EGREP_ALIAS
+  Support for the EGREP applet (alias to the grep applet)
+
+CONFIG_USER_BUSYBOX_TFTP_PUT
+  Support the TFTP PUT command.
+
+CONFIG_USER_BUSYBOX_TFTP_GET
+  Support the TFTP GET command.
+
+CONFIG_USER_BUSYBOX_VI_COLON
+  ":" colon commands, no "ex" mode.
+
+CONFIG_USER_BUSYBOX_VI_YANKMARK
+  Yank/Put commands and Mark commands.
+
+CONFIG_USER_BUSYBOX_VI_SEARCH
+  Search and replace commands.
+
+CONFIG_USER_BUSYBOX_VI_USE_SIGNALS
+  Catch signals.
+
+CONFIG_USER_BUSYBOX_VI_DOT_CMD
+  Remember previous command and "." command.
+
+CONFIG_USER_BUSYBOX_VI_READONLY
+  Support "vi -r" and "view" mode.
+
+CONFIG_USER_BUSYBOX_VI_SETOPTS
+  Set-able options: ai ic showmatch.
+
+CONFIG_USER_BUSYBOX_VI_SET
+  Support :set
+
+CONFIG_USER_BUSYBOX_VI_WIN_RESIZE
+  Handle window resizes.
+
+CONFIG_USER_BUSYBOX_LOCALE_SUPPORT
+  Enable a if you system have setuped locale.
+
+CONFIG_USER_BUSYBOX_TELNET_TTYPE
+  Support for TELNET to pass TERM type to remote host.
+ 
+CONFIG_USER_BUSYBOX_PASSWD
+  passwd changes passwords for user and group accounts.  A normal user
+  may only change the password for his/her own account, the super user
+  may change the password for any account.  The administrator of a group
+  may change the password for the group.
+
+CONFIG_USER_BUSYBOX_SU
+  su is used to become another user during a login session.
+  Invoked without a username, su defaults to becoming the super user.
+
+CONFIG_USER_BUSYBOX_SULOGIN
+  sulogin is invoked when the system goes into single user
+  mode (this is done through an entry in inittab).
+
+CONFIG_USER_BUSYBOX_USE_BB_PWD_GRP
+  If you leave this disabled, busybox will use the system's password
+  and group functions.  And if you are using the GNU C library
+  (glibc), you will then need to install the /etc/nsswitch.conf
+  configuration file and the required /lib/libnss_* libraries in
+  order for the password and group functions to work.  This generally
+  makes your embedded system quite a bit larger.
+
+  Enabling this option will cause busybox to directly access the
+  system's /etc/password, /etc/group files (and your system will be
+  smaller, and I will get fewer emails asking about how glibc NSS
+  works).  When this option is enabled, you will not be able to use
+  PAM to access remote LDAP password servers and whatnot.  And if you
+  want hostname resolution to work with glibc, you still need the
+  /lib/libnss_* libraries.
+
+  If you enable this option, it will add about 1.5k to busybox.
+
+CONFIG_USER_BUSYBOX_USE_BB_SHADOW
+  If you leave this disabled, busybox will use the system's shadow
+  password handling functions.  And if you are using the GNU C library
+  (glibc), you will then need to install the /etc/nsswitch.conf
+  configuration file and the required /lib/libnss_* libraries in
+  order for the shadow password functions to work.  This generally
+  makes your embedded system quite a bit larger.
+
+  Enabling this option will cause busybox to directly access the
+  system's /etc/shadow file when handling shadow passwords.  This
+  makes your system smaller and I will get fewer emails asking about
+  how glibc NSS works).  When this option is enabled, you will not be
+  able to use PAM to access shadow passwords from remote LDAP
+  password servers and whatnot.
+
+CONFIG_USER_BUSYBOX_VLOCK
+  Build the "vlock" applet which allows you to lock (virtual) terminals.
+
+CONFIG_USER_BUSYBOX_INITRD
+  Allow init to be called from an initrd as linuxrc.
+
+CONFIG_USER_BUSYBOX_MESG
+  Mesg controls access to your terminal by others.  It is typically
+  used to allow or disallow other users to write to your terminal
+
+CONFIG_USER_BUSYBOX_FDFORMAT
+  fdformat is used to low-level format a floppy disk.
+
+CONFIG_USER_BUSYBOX_FDISK
+  The fdisk utility is used to divide hard disks into one or more
+  logical disks, which are generally called partitions.  This utility
+  can be used to list and edit the set of partitions or BSD style
+  'disk slices' that are defined on a hard drive.
+
+CONFIG_USER_BUSYBOX_AIX_LABEL
+  Enabling this option allows you to create or change AIX disklabels.
+  Most people can safely leave this option disabled.
+
+CONFIG_USER_BUSYBOX_FDISK_ADVANCED
+  Enabling this option allows you to do terribly unsafe things like
+  define arbitrary drive geometry, move the beginning of data in a
+  partition, and similarly evil things.  Unless you have a very good
+  reason you would be wise to leave this disabled.
+
+CONFIG_USER_BUSYBOX_FDISK_WRITABLE
+  Enabling this option allows you to create or change a partition table
+  and write those changes out to disk.  If you leave this option
+  disabled, you will only be able to view the partition table.
+
+CONFIG_USER_BUSYBOX_HWCLOCK_LONGOPTIONS
+  By default, the hwclock utility only uses short options.  If you
+  are overly fond of its long options, such as --hctosys, --utc, etc)
+  then enable this option.
+
+CONFIG_USER_BUSYBOX_OSF_LABEL
+  Enabling this option allows you to create or change BSD disklabels
+  and define and edit BSD disk slices.
+
+CONFIG_USER_BUSYBOX_SGI_LABEL
+  Enabling this option allows you to create or change SGI disklabels.
+  Most people can safely leave this option disabled.
+
+CONFIG_USER_BUSYBOX_SUN_LABEL
+  Enabling this option allows you to create or change SUN disklabels.
+  Most people can safely leave this option disabled.
+
+CONFIG_USER_BUSYBOX_HEXDUMP
+  The hexdump utility is used to display binary data in a readable
+  way that is comparable to the output from most hex editors.
+
+CONFIG_USER_BUSYBOX_HWCLOCK
+  The hwclock utility is used to read and set the hardware clock
+  on a system.  This is primarily used to set the current time on
+  shutdown in the hardware clock, so the hardware will keep the
+  correct time when Linux is _not_ running.
+
+CONFIG_USER_BUSYBOX_FDISK_SUPPORT_LARGE_DISKS
+  Enable this option to support large disks > 4GB.
+
+CONFIG_USER_BUSYBOX_CROND
+  Crond is a background daemon that parses individual crontab
+  files and executes commands on behalf of the users in question.
+  This is a port of dcron from slackware.  It uses files of the
+  format /var/spool/cron/crontabs/<username> files, for example:
+      $ cat /var/spool/cron/crontabs/root
+      # Run daily cron jobs at 4:40 every day:
+      40 4 * * * /etc/cron/daily > /dev/null 2>&1
+
+CONFIG_USER_BUSYBOX_CRONTAB
+  Crontab manipulates the crontab for a particular user.  Only
+  the superuser may specify a different user and/or crontab directory.
+
+CONFIG_USER_BUSYBOX_DEVFSD
+  Provides compatibility with old device names on a devfs systems.
+  You should set it to true if you have devfs enabled.
+  The following keywords in devsfd.conf are supported:
+  "CLEAR_CONFIG", "INCLUDE", "OPTIONAL_INCLUDE", "RESTORE",
+  "PERMISSIONS", "EXECUTE", "COPY", "IGNORE",
+  "MKOLDCOMPAT", "MKNEWCOMPAT","RMOLDCOMPAT", "RMNEWCOMPAT".
+
+  But only if they are written UPPERCASE!!!!!!!!
+
+CONFIG_USER_BUSYBOX_DEVFSD_FG_NP
+  -fg	Run the daemon in the foreground.
+  -np	Exit  after  parsing  the configuration file. Do not poll for events.
+
+CONFIG_USER_BUSYBOX_DEVFSD_MODLOAD
+  This actually doesn't work with busybox  modutils but needs the real modutils.
+
+CONFIG_USER_BUSYBOX_DEVFSD_VERBOSE
+  Increases logging to stderr or syslog.
+
+CONFIG_USER_BUSYBOX_CROND_CALL_SENDMAIL
+  Support calling /usr/sbin/sendmail for send cmd outputs.
+
+CONFIG_USER_BUSYBOX_LAST
+  'last' displays a list of the last users that logged into the system.
+
+CONFIG_USER_BUSYBOX_RX
+  Receive files using the Xmodem protocol.
+
+CONFIG_USER_BUSYBOX_ASH_ALIAS
+  Enable alias support in the ash shell.
+
+CONFIG_USER_BUSYBOX_ASH_CMDCMD
+  Enable support for the ash 'command' builtin, which allows
+  you to run the specified command with the specified arguments,
+  even when there is an ash builtin command with the same name.
+
+CONFIG_USER_BUSYBOX_ASH_GETOPTS
+  Enable builtin getopt in the ash shell.
+
+CONFIG_USER_BUSYBOX_ASH_JOB_CONTROL
+  Enable job control in the ash shell.
+
+CONFIG_USER_BUSYBOX_ASH_MAIL
+  Enable "check for new mail" in the ash shell.
+
+CONFIG_USER_BUSYBOX_ASH_MATH_SUPPORT
+  Enable math support in the ash shell.
+
+CONFIG_USER_BUSYBOX_ASH_MATH_SUPPORT_64
+  Enable 64-bit math support in the ash shell.  This will make
+  the shell slightly larger, but will allow computation with very
+  large numbers.
+
+CONFIG_USER_BUSYBOX_ASH_OPTIMIZE_FOR_SIZE
+  Compile ash for reduced size at price of speed.
+
+CONFIG_USER_BUSYBOX_ASH_RANDOM_SUPPORT
+  Enable pseudorandom generator and dynamic variable "$RANDOM".
+  Each read of "$RANDOM" will generate a new pseudorandom value.
+  You can reset the generator by using a specified start value.
+  After "unset RANDOM" then generator will switch off and this
+  variable will no longer have special treatment.
+
+CONFIG_USER_BUSYBOX_COMMAND_SAVEHISTORY
+  Enable history saving in ash shell.
+
+CONFIG_USER_BUSYBOX_COMMAND_TAB_COMPLETION
+  Enable tab completion in shell.
+
+CONFIG_USER_BUSYBOX_COMMAND_USERNAME_COMPLETION
+  Enable username completion in shell.
+
+CONFIG_USER_BUSYBOX_SH_EXTRA_QUIET
+  Remove the busybox introduction when starting a shell.
+
+CONFIG_USER_BUSYBOX_AWK
+  Awk is used as a pattern scanning and processing language.  This is
+  the BusyBox implementation of that programming language.
+
+CONFIG_USER_BUSYBOX_AWK_MATH
+  Enable math functions of the Awk programming language.
+  NOTE: This will require libm to be present for linking.
+
+CONFIG_USER_BUSYBOX_VI_OPTIMIZE_CURSOR
+  This will make the cursor movement faster, but requires more memory
+  and it makes the applet a tiny bit larger.
+
+CONFIG_USER_BUSYBOX_PATCH
+  Apply a unified diff formatted patch.
+
+CONFIG_USER_BUSYBOX_FIND_INUM
+  Support the 'find -inum' option for searching by inode number.
+
+CONFIG_USER_BUSYBOX_FIND_XDEV
+  This option will allow find to restrict searches to a single
+  filesystem.
+
+CONFIG_USER_BUSYBOX_GREP_FGREP_ALIAS
+          fgrep sees the search pattern as a normal string rather than
+  regular expressions.
+  grep -f is always builtin, this just creates the fgrep alias.
+
+CONFIG_USER_BUSYBOX_XARGS_SUPPORT_CONFIRMATION
+  Support prompt the user about whether to run each command
+  line and read a line from the terminal.
+
+CONFIG_USER_BUSYBOX_XARGS_SUPPORT_QUOTES
+  Default xargs unsupport single and double quotes
+  and backslash for can use aruments with spaces.
+
+CONFIG_USER_BUSYBOX_XARGS_SUPPORT_TERMOPT
+  Enable support exit if the size (see the -s or -n option)
+  is exceeded.
+
+CONFIG_USER_BUSYBOX_XARGS_SUPPORT_ZERO_TERM
+  Enable input filenames are terminated by a null character
+  instead of by whitespace, and the quotes and backslash
+  are not special.
+
+CONFIG_USER_BUSYBOX_CHECK_TAINTED_MODULE
+  Support checking for tainted modules.  These are usually binary
+  only modules that will make the linux-kernel list ignore your
+  support request.
+  This option is required to support GPLONLY modules.
+
+CONFIG_USER_BUSYBOX_INSMOD_KSYMOOPS_SYMBOLS
+  By adding module symbols to the kernel symbol table, Oops messages
+  occuring within kernel modules can be properly debugged.  By enabling
+  this feature, module symbols will always be added to the kernel symbol
+  table for properly debugging support.  If you are not interested in
+  Oops messages from kernel modules, say N.
+
+CONFIG_USER_BUSYBOX_INSMOD_LOAD_MAP
+  Enabling this, one would be able to get a load map
+  output on stdout. This makes kernel module debugging
+  easier.
+  If you don't plan to debug kernel modules, you
+  don't need this option.
+
+CONFIG_USER_BUSYBOX_INSMOD_LOAD_MAP_FULL
+  Without this option, -m will only output section
+  load map.  With this option, -m will also output
+  symbols load map.
+
+CONFIG_USER_BUSYBOX_DMALLOC
+  N/A
+
+CONFIG_USER_BUSYBOX_EFENCE
+  N/A
+
+CONFIG_USER_BUSYBOX_BUFFERS_USE_MALLOC
+  N/A
+
+CONFIG_USER_BUSYBOX_DEVFS
+  Enable if you want BusyBox to work with devfs.
+
+CONFIG_USER_BUSYBOX_DEVPTS
+  Enable if you want BusyBox to use Unix98 PTY support. If enabled,
+  busybox will use /dev/ptmx for the master side of the pseudoterminal
+  and /dev/pts/<number> for the slave side.  Otherwise, BSD style
+  /dev/ttyp<number> will be used. To use this option, you should have
+  devpts or devfs mounted.
+
+CONFIG_USER_BUSYBOX_SUID
+  Support SUID and SGID binaries.
+
+CONFIG_USER_BUSYBOX_SUID_CONFIG
+  Allow the SUID / SGID state of an applet to be determined runtime by
+  checking /etc/busybox.conf.  The format of this file is as follows:
+
+  <applet> = [Ssx-][Ssx-][x-] (<username>|<uid>).(<groupname>|<gid>)
+
+  An example might help:
+
+  [SUID]
+  su = ssx root.0 # applet su can be run by anyone and runs with euid=0/egid=0
+  su = ssx        # exactly the same
+
+  mount = sx- root.disk # applet mount can be run by root and members of group disk
+                        # and runs with euid=0
+
+  cp = --- # disable applet cp for everyone
+
+  Robert 'sandman' Griebl has more information here:
+  <url: http://www.softforge.de/bb/suid.html >.
+
+CONFIG_USER_BUSYBOX_SUID_CONFIG_QUIET
+  /etc/busybox.conf should be readable by the user needing the SUID, check
+  this option to avoid users to be notified about missing permissions.
+
+CONFIG_USER_BUSYBOX_LFS
+  If you want to build BusyBox with large file support, then enable
+  this option.  This will have no effect if your kernel or your C
+  library lacks large file support for large files.  Some of the
+  programs that can benefit from large file support include dd, gzip,
+  cp, mount, tar, and many others.  If you want to access files larger
+  than 2 Gigabytes, enable this option.  Otherwise, leave it set to 'N'.
+
+CONFIG_USER_BUSYBOX_SELINUX
+  Enable support for SE Linux in applets ls, ps, and id.  Also provide
+  the option of compiling in SE Linux applets.
+
+  If you do not have a complete SE Linux Full Userland installed, this
+  stuff will not compile.  Go visit
+	http://www.nsa.gov/selinux/index.html
+  to download the necessary stuff to allow busybox to compile with this
+  option enabled.
+
+  Most people will leave this set to 'N'.
+
+CONFIG_USER_BUSYBOX_STATIC
+  If you want to build a static BusyBox binary, which does not
+  use or require any shared libraries, then enable this option.
+  This can cause BusyBox to be considerably larger, so you should
+  leave this option false unless you have a good reason (i.e.
+  your target platform does not support shared libraries, or
+  you are building an initrd which doesn't need anything but
+  BusyBox, etc).
+
+  Most people will leave this set to 'N'.
+
+CONFIG_USER_BUSYBOX_BUNZIP2
+  bunzip2 is a compression utility using the Burrows-Wheeler block
+  sorting text compression algorithm, and Huffman coding.  Compression
+  is generally considerably better than that achieved by more
+  conventional LZ77/LZ78-based compressors, and approaches the
+  performance of the PPM family of statistical compressors.
+
+  The BusyBox bunzip2 applet is limited to de-compression only.
+  On an x86 system, this applet adds about 11K.
+
+  Unless you have a specific application which requires bunzip2, you
+  should probably say N here.
+
+CONFIG_USER_BUSYBOX_DEB_TAR_BZ2
+  This allows dpkg and dpkg-deb to extract deb's that are compressed internally
+  with bzip2 instead of gzip.
+
+  You only want this if you are creating your own custom debian packages that
+  use an internal control.tar.bz2 or data.tar.bz2.
+
+CONFIG_USER_BUSYBOX_DEB_TAR_GZ
+  This is the default compression method inside the debian ar file.
+
+  If you want compatibility with standard .deb's you should say yes here.
+
+CONFIG_USER_BUSYBOX_DPKG_DEB_EXTRACT_ONLY
+  This reduces dpkg-deb to the equivalent of "ar -p <deb> data.tar.gz | tar -zx".
+  However it saves space as none of the extra dpkg-deb, ar or tar options are
+  needed, they are linked to internally.
+
+CONFIG_USER_BUSYBOX_GUNZIP_UNCOMPRESS
+  Enable if you want gunzip to have the ability to decompress
+  archives created by the program compress (not much
+  used anymore).
+
+CONFIG_USER_BUSYBOX_TAR_BZIP2
+  If you enable this option you'll be able to extract
+  archives compressed with bzip2.
+
+CONFIG_USER_BUSYBOX_TAR_COMPRESS
+  If you enable this option tar will be able to call uncompress,
+  when extracting .tar.Z archives.
+
+CONFIG_USER_BUSYBOX_TAR_FROM
+  If you enable this option you'll be able to specify
+  a list of files to include or exclude from an archive.
+
+CONFIG_USER_BUSYBOX_TAR_GNU_EXTENSIONS
+  With this option busybox supports GNU long filenames and
+  linknames.
+
+CONFIG_USER_BUSYBOX_TAR_LONG_OPTIONS
+  Enable use of long options, increases size by about 400 Bytes
+
+CONFIG_USER_BUSYBOX_TAR_OLDGNU_COMPATABILITY
+  This option is required to unpack archives created in
+  the old GNU format; help to kill this old format by
+  repacking your ancient archives with the new format.
+
+CONFIG_USER_BUSYBOX_UNARCHIVE_TAPE
+  I don't think this is needed anymore.
+
+CONFIG_USER_BUSYBOX_UNCOMPRESS
+  uncompress is used to decompress archives created by compress.
+  Not much used anymore, replaced by gzip/gunzip.
+
+CONFIG_USER_BUSYBOX_SYSCTL
+  sysctl - configure kernel parameters at runtime
+
+CONFIG_USER_BUSYBOX_CPU_USAGE_PERCENTAGE
+  Make top display CPU usage.
+
+CONFIG_USER_BUSYBOX_LOGREAD_REDUCED_LOCKING
+  'logread' ouput to slow serial terminals can have
+  side effects on syslog because of the semaphore.
+  This option make logread to double buffer copy
+  from circular buffer, minimizing semaphore
+  contention at some minor memory expense.
+
+CONFIG_USER_BUSYBOX_DUMPLEASES
+  dumpleases displays the leases written out by the udhcpd server.
+  Lease times are stored in the file by time remaining in lease, or
+  by the absolute time that it expires in seconds from epoch.
+
+  See http://udhcp.busybox.net for further details.
+
+CONFIG_USER_BUSYBOX_UDHCP_DEBUG
+  If selected, udhcpd will output extra debugging output.  If using
+  this option, compile uDHCP with "-g", and do not fork the daemon to
+  the background.
+
+  See http://udhcp.busybox.net for further details.
+
+CONFIG_USER_BUSYBOX_UDHCP_SYSLOG
+  If selected, udhcpd will log all its messages to syslog, otherwise,
+  it will attempt to log them to stdout.
+
+  See http://udhcp.busybox.net for further details.
+
+CONFIG_USER_BUSYBOX_UDHCPC
+  uDHCPc is a DHCP client geared primarily toward embedded systems,
+  while striving to be fully functional and RFC compliant.
+
+  The udhcp client negotiates a lease with the DHCP server and
+  notifies a set of scripts when a lease is obtained or lost.
+
+  See http://udhcp.busybox.net for further details.
+
+CONFIG_USER_BUSYBOX_UDHCPD
+  uDHCPd is a DHCP server geared primarily toward embedded systems,
+  while striving to be fully functional and RFC compliant.
+
+  See http://udhcp.busybox.net for further details.
+
+CONFIG_USER_BUSYBOX_ARPING
+  Ping hosts by ARP packets
+
+CONFIG_USER_BUSYBOX_FANCY_PING6
+  Make the output from the ping6 applet include statistics, and at the
+  same time provide full support for ICMP packets.
+
+CONFIG_USER_BUSYBOX_HTTPD_AUTH_MD5
+  Enables basic per url authentication from /etc/httpd.conf
+  using md5 passwords.
+
+CONFIG_USER_BUSYBOX_HTTPD_BASIC_AUTH
+  Utilizes password settings from /etc/httpd.conf for basic
+  authentication on a per url basis.
+
+CONFIG_USER_BUSYBOX_HTTPD_CGI
+  This option allows scripts and executables to be invoked
+  when specific urls are requested.
+
+CONFIG_USER_BUSYBOX_HTTPD_CONFIG_WITH_MIME_TYPES
+  This option enables support for additional MIME types at
+  run-time to be specified in the configuration file.
+
+CONFIG_USER_BUSYBOX_HTTPD_ENCODE_URL_STR
+  After set, this option allows html encoding arbitrary
+  strings for display of the browser.  Output goes to stdout.
+  For example, httpd -e "<Hello World>" as
+  "&#60Hello&#32World&#62".
+
+CONFIG_USER_BUSYBOX_HTTPD_RELOAD_CONFIG_SIGHUP
+  This option enables processing of SIGHUP to reload cached
+  configuration settings.
+
+CONFIG_USER_BUSYBOX_HTTPD_SETUID
+  This option allows the server to run as a specific user
+  rather than defaulting to the user that starts the server.
+  Use of this option requires special privileges to change to a
+  different user.
+
+CONFIG_USER_BUSYBOX_HTTPD_SET_REMOTE_PORT_TO_ENV
+  Use of this option can assist scripts in generating
+  references that contain a unique port number.
+
+CONFIG_USER_BUSYBOX_HTTPD_USAGE_FROM_INETD_ONLY
+  This option disables uid and port options for the httpd applet
+  but requires inetd server daemon.
+
+CONFIG_USER_BUSYBOX_IFCONFIG_BROADCAST_PLUS
+  Setting this will make ifconfig attempt to find the broadcast
+  automatically if the value '+' is used.
+
+CONFIG_USER_BUSYBOX_INETD_SUPPORT_BILTIN_CHARGEN
+  Familiar character generator internal inetd service
+
+CONFIG_USER_BUSYBOX_INETD_SUPPORT_BILTIN_DAYTIME
+  Return human-readable time internal inetd service
+
+CONFIG_USER_BUSYBOX_INETD_SUPPORT_BILTIN_DISCARD
+  Internet /dev/null internal inetd service
+
+CONFIG_USER_BUSYBOX_INETD_SUPPORT_BILTIN_ECHO
+  Echo received data internal inetd service
+
+CONFIG_USER_BUSYBOX_INETD_SUPPORT_BILTIN_TIME
+  Return 32 bit time since 1900 internal inetd service
+
+CONFIG_USER_BUSYBOX_IPV6
+  Enable IPv6 support to busybox. This makes applets that talk IP
+  able to work with IPv6.
+
+CONFIG_USER_BUSYBOX_TELNETD_INETD
+  Selecting this will make telnetd only callable from inetd,
+  removing the standalone support.
+
+CONFIG_USER_BUSYBOX_TELNET_AUTOLOGIN
+  Setting this option will forward the USER environment variable to the
+  remote host you are connecting to. This is useful when you need to
+  log into a machine without telling the username (autologin). This
+  option enables `-a' and `-l USER' arguments.
+
+CONFIG_USER_BUSYBOX_TFTP_BLOCKSIZE
+  Allow the client to specify the desired block size for transfers.
+
+CONFIG_USER_BUSYBOX_TFTP_DEBUG
+  Enable debug settings for tftp.  This is useful if you're running
+  into problems with tftp as the protocol doesn't help you much when
+  you run into problems.
+
+CONFIG_USER_BUSYBOX_TRACEROUTE_VERBOSE
+  Add some verbosity to traceroute.  This includes amongst other things
+  hostnames and ICMP response types.
+
+CONFIG_USER_BUSYBOX_WGET_IP6_LITERAL
+  Support IPv6 address literal notation in URLs.
+
+source networking/udhcp/Config.in
+
+CONFIG_USER_BUSYBOX_FTPGET
+  Retrieve a remote file via FTP.
+
+CONFIG_USER_BUSYBOX_FTPPUT
+  Store a remote file via FTP.
+
+CONFIG_USER_BUSYBOX_HTTPD
+  Serve web pages via an HTTP server.
+
+CONFIG_USER_BUSYBOX_IFUPDOWN
+  Activate or deactivate the specified interfaces.  This applet makes
+  use of either "ifconfig" and "route" or the "ip" command to actually
+  configure network interfaces.  Therefore, you will probably also want
+  to enable either CONFIG_IFCONFIG and CONFIG_ROUTE, or enable
+  CONFIG_FEATURE_IFUPDOWN_IP and the various CONFIG_IP options.  Of
+  course you could use non-busybox versions of these programs, so
+  against my better judgement (since this will surely result in plenty
+  of support questions on the mailing list), I do not force you to
+  enable these additional options.  It is up to you to supply either
+  "ifconfig" and "route" or the "ip" command, either via busybox or via
+  standalone utilities.
+
+CONFIG_USER_BUSYBOX_INETD
+  Internet superserver daemon
+
+CONFIG_USER_BUSYBOX_IPADDR
+  Equivalent to selecting address support to "ip", above.
+
+CONFIG_USER_BUSYBOX_IPLINK
+  Equivalent to selecting link support to "ip", above.
+
+CONFIG_USER_BUSYBOX_IPROUTE
+  Equivalent to selecting route support to "ip", above.
+
+CONFIG_USER_BUSYBOX_IPTUNNEL
+  Equivalent to selecting tunnel support to "ip", above.
+
+CONFIG_USER_BUSYBOX_NAMEIF
+  nameif is used to rename network interface by its MAC address.
+  Renamed interfaces MUST be in the down state.
+  It is possible to use a file (default: /etc/mactab)
+  with list of new interface names and MACs.
+  Maximum interface name length: IF_NAMESIZE = 16
+  File fields are separated by space or tab.
+  File format:
+  # Comment
+  new_interface_name	XX:XX:XX:XX:XX:XX
+
+CONFIG_USER_BUSYBOX_NETSTAT
+  netstat prints information about the Linux networking subsystem.
+
+CONFIG_USER_BUSYBOX_PING6
+  This will give you a ping that can talk IPv6.
+
+CONFIG_USER_BUSYBOX_TELNETD
+  A daemon for the TELNET protocol, allowing you to log onto the host
+  running the daemon.  Please keep in mind that the TELNET protocol
+  sends passwords in plain text.  If you can't afford the space for
+  any SSH daemon and you trust your network, you may say 'y' here.
+
+CONFIG_USER_BUSYBOX_VCONFIG
+  Creates, removes, and configures VLAN interfaces
+
+CONFIG_USER_BUSYBOX_CAL
+  cal is used to display a monthly calender.
+
+CONFIG_USER_BUSYBOX_DATE_ISOFMT
+  Enable option (-I) to output an ISO-8601 compliant
+  date/time string.
+
+CONFIG_USER_BUSYBOX_DU_DEFALT_BLOCKSIZE_1K
+  Use a blocksize of (1K) instead of the default 512b.
+
+CONFIG_USER_BUSYBOX_FANCY_HEAD
+  This enables the head options (-c, -q, and -v).
+
+CONFIG_USER_BUSYBOX_FANCY_SLEEP
+  Allow sleep to pause for specified minutes, hours, and days.
+
+CONFIG_USER_BUSYBOX_LS_COLOR
+  Allow ls to use color when displaying files.
+
+CONFIG_USER_BUSYBOX_MD5_SHA1_SUM_CHECK
+  Enabling the -c options allows files to be checked
+  against pre-calculated hash values.
+
+  -s and -w are useful options when verifying checksums.
+
+CONFIG_USER_BUSYBOX_PRESERVE_HARDLINKS
+  Allow cp and mv to preserve hard links.
+
+CONFIG_USER_BUSYBOX_TEE_USE_BLOCK_IO
+  Enable this option for a faster tee, at expense of size.
+
+CONFIG_USER_BUSYBOX_TEST_64
+  Enable 64-bit support in test.
+
+CONFIG_USER_BUSYBOX_FOLD
+  Wrap text to fit a specific width.
+
+CONFIG_USER_BUSYBOX_OD
+  od is used to dump binary files in octal and other formats.
+
+CONFIG_USER_BUSYBOX_REALPATH
+  Return the canonicalized absolute pathname.
+  This isn't provided by GNU shellutils, but where else does it belong.
+
+CONFIG_USER_BUSYBOX_SEQ
+  print a sequence of numbers
+
+CONFIG_USER_BUSYBOX_SHA1SUM
+  Compute and check SHA1 message digest
+
+CONFIG_USER_BUSYBOX_PIPE_PROGRESS
+  Display a dot to indicate pipe activity.
+
+CONFIG_USER_BUSYBOX_RUN_PARTS
+  run-parts is a utility designed to run all the scripts in a directory.
+
+  It is useful to set up a directory like cron.daily, where you need to
+  execute all the scripts in that directory.
+
+  In this implementation of run-parts some features (such as report mode)
+  are not implemented.
+
+  Unless you know that run-parts is used in some of your scripts
+  you can safely say N here.
+
+CONFIG_USER_BUSYBOX_START_STOP_DAEMON
+  start-stop-daemon is used to control the creation and
+  termination of system-level processes, usually the ones
+  started during the startup of the system.
+
+CONFIG_USER_BUSYBOX_OPENVT
+  This program is used to start a command on an unused
+  virtual terminal.
+
+CONFIG_USER_MARADNS_MARADNS
+  The MaraDNS nameserver (UDP query daemon); see also zoneserver.
+  Approx. binary size: 55k
+
+CONFIG_USER_MARADNS_ZONESERVER
+  The MaraDNS TCP Zone Transfer daemon; see also maradns.
+  Approx. binary size: 41k
+
+CONFIG_USER_PORTMAP_PORTMAP
+  The portmapper service, needed for NFS under 2.4.
+  Approx. binary size: 49k
+
+CONFIG_USER_IPTABLES_IPTABLES
+  Iptables is the IP firewall administration tool for 2.4 linux.
+
+CONFIG_USER_CKSUM_CKSUM
+  Checksumming utility
+
+CONFIG_USER_CLAMAV_CLAMAV
+  Clam anti-virus checker.  This option builds the clam library but does not
+  install any of the executables.
+
+CONFIG_USER_CLAMAV_CLAMD
+  Build and install the clamd daemon.  This daemon accepts requests via a
+  socket and scans files based on these.
+
+CONFIG_USER_CLAMAV_CLAMDSCAN
+  Build a simple wrapper program that scans files and directories using clamd.
+
+CONFIG_USER_CLAMAV_FRESHCLAM
+  Build the clamav database update program which downloads the latest signature
+  files from the Internet automatically.
+
+CONFIG_USER_CLAMAV_SIGTOOL
+  Tool to help generate virus signatures.
+
+CONFIG_USER_CLAMAV_TESTS
+  Install the supplied clamav test files into the romfs at /etc/clamav/test/
+
+CONFIG_USER_CLAMAV_CLAMSMTP
+  Install the clamsmtp SMTP proxy server which can run both as a
+  transparent and a normal SMTP proxy.
+
+CONFIG_USER_PCMCIA_CS
+  PCMCIA Card Services package and all associated bits
+
+CONFIG_USER_LIRC
+  Build the LIRC (Linux Remote Control) tools/apps.
+
+CONFIG_USER_LIRC_LIRCD
+  The main LIRC daemon.
+
+CONFIG_USER_LIRC_IRRECORD
+  For creating new entries for a remote control.
+
+CONFIG_USER_LIRC_LIRCMD
+  Not sure.
+
+CONFIG_USER_LIRC_IREXEC
+  Run commands when you push a button on the remote.
+
+CONFIG_USER_LIRC_IRW
+  A test program.
+  
+CONFIG_USER_LIRC_MODE2
+  Not sure.
+
+CONFIG_USER_INIT_CONSOLE_SH
+  Init will automatically spawn a shell on the console.
+
+CONFIG_USER_INIT_RUN_FIREWALL
+  Init will automatically run the firewall script on start up.
+
+CONFIG_USER_BOOTTOOLS_LOADER
+  The uCsimm/uCdimm flash/ram loader.
+
+CONFIG_USER_BOOTTOOLS_HIMEMLOADER
+  The uCsimm/uCdimm himem loader.
+
+CONFIG_USER_BOOTTOOLS_PRINTBENV
+  The uCsimm/uCdimm tools.
+
+CONFIG_USER_BOOTTOOLS_SETBENV
+  The uCsimm/uCdimm tools.
+
+CONFIG_USER_BOOTTOOLS_RESET
+  The uCsimm/uCdimm tools.
+
+CONFIG_USER_TINYLOGIN_ADDUSER
+  Add a user to the system
+
+CONFIG_USER_TINYLOGIN_ADDGROUP
+  Add a group to the system
+
+CONFIG_USER_TINYLOGIN_DELUSER
+  Delete a user from the system
+
+CONFIG_USER_TINYLOGIN_DELGROUP
+  Delete a group from the system
+
+CONFIG_USER_TINYLOGIN_LOGIN
+  Begin a new session on the system
+
+CONFIG_USER_TINYLOGIN_SU
+  Change user id or become root
+
+CONFIG_USER_TINYLOGIN_SULOGIN
+  Single user login
+
+CONFIG_USER_TINYLOGIN_PASSWD
+  Change a user password
+
+CONFIG_USER_TINYLOGIN_GETTY
+  Opens a tty, prompts for a login name, then invokes login
+
+CONFIG_USER_TINYLOGIN_VLOCK
+  Lock a virtual terminal
+
+CONFIG_USER_TINYLOGIN_SHADOWPASSWDS
+  Enable using shadow passwords
+
+CONFIG_USER_TINYLOGIN_SECURETTY
+  Enable checking of /etc/securetty by login
+
+CONFIG_USER_TINYLOGIN_MD5_PASSWORDS
+  Enable using md5 passwords
+
+CONFIG_USER_TINYLOGIN_SHA1_PASSWORDS
+  Enable using sha passwords
+
+CONFIG_USER_TINYLOGIN_TRIVIAL_HELP
+  This compiles out everything but the most 
+  trivial --help usage information (i.e. reduces binary size)
+
+CONFIG_USER_TINYLOGIN_INSTALLER
+  Enable 'tinylogin --install [-s]' to allow tinylogin
+  to create links (or symlinks) at runtime for all the 
+  commands that are compiled into the binary.  This needs 
+  the /proc filesystem to work properly...
+
+CONFIG_LIB_TINYTCL
+  Core library which provides a Tcl implementation based
+  on Tcl 6.7 with some extensions for compatibility with
+  later versions.
+
+CONFIG_LIB_TINYTCL_STATIC
+  Build libtcl as a static library rather than the default shared library.
+
+CONFIG_USER_TINYTCL_TCLSH
+  An interactive Tcl shell, tclsh. This basically reads and executes Tcl scripts
+  interactively or from a file
+
+CONFIG_USER_RECOVER_RECOVER
+  Recovery application to allow programming of a new flash image
+  when the current flash image cannot boot.
+
+CONFIG_USER_RECOVER_ETHERNET_INTERFACE
+  Specify the ethernet interface that the recover application uses.
+
+CONFIG_USER_RECOVER_USE_STATIC_SERVER
+  Enable use of a static recovery TFTP server.  The default is to use
+  the DHCP server.
+
+CONFIG_USER_RECOVER_STATIC_SERVER
+  The IP address of the static recovery TFTP server.
+
+CONFIG_USER_NESSUS_NASL
+  The Nessus scripting language (NASL) interpreter.
+
+CONFIG_USER_MSNTP_MSNTP
+  Simple Network Time Protocol utility.
+  Approx. binary size: 66k
+
+CONFIG_USER_FROB_LED_FROB_LED
+  Utility to send commands to the ledman driver.
+
+CONFIG_USER_FROX_FROX
+  The frox ftp proxy daemon.
+
+CONFIG_USER_MINI_HTTPD_MINI_HTTPD
+  A small HTTP server.
+
+CONFIG_USER_STRACE_STRACE
+  Trace system calls and signals.
+
+CONFIG_USER_NETPERF_NETPERF
+  The client piece for a network performance measuring application 
+  with many options.
+
+CONFIG_USER_NETPERF_NETSERVER
+  The server piece for a network performance measuring application
+  with many options.
+
+CONFIG_USER_NET_TOOLS_ARP
+  Manipulate the system ARP cache.
+
+CONFIG_USER_NET_TOOLS_HOSTNAME
+  Show or set the system's host name.
+
+CONFIG_USER_NET_TOOLS_IFCONFIG
+  Configure a network interface.
+
+CONFIG_USER_NET_TOOLS_NAMEIF
+  Name network interfaces based on MAC addresses.
+
+CONFIG_USER_NET_TOOLS_NETSTAT
+  Print  network  connections,  routing  tables,
+  interface statistics, masquerade connections,  and
+  multicast memberships.
+
+CONFIG_USER_NET_TOOLS_PLIPCONFIG
+  Fine tune PLIP device parameters.
+
+CONFIG_USER_NET_TOOLS_RARP
+  Manipulate the system RARP table.
+
+CONFIG_USER_NET_TOOLS_ROUTE
+  Show / manipulate the IP routing table.
+
+CONFIG_USER_NET_TOOLS_SLATTACH
+  Attach a network interface to a serial line.
+
+CONFIG_USER_NET_TOOLS_MII_TOOL
+  Manipulate media-independent interface status.
+
+CONFIG_USER_NET_TOOLS_MII_TOOL_FEC
+   Manipulate media-independent interface status.
+   Specific to extensions for 5272 FEC driver
+
+CONFIG_USER_SSLWRAP_SSLWRAP
+  Allows plain services to be accessed via SSL.
+  Smaller and simpler than stunnel.
+
+CONFIG_USER_SQUID_SQUID
+  The Squid Web proxy cache.
+
+CONFIG_USER_DHRYSTONE_DHRYSTONE
+  The dhrystone CPU benchmark program.
+
+CONFIG_USER_WIRELESS_TOOLS
+  Enable building of the Wireless tools.
+  
+CONFIG_USER_WIRELESS_TOOLS_IWCONFIG
+  Wireless interface config tool
+
+CONFIG_USER_WIRELESS_TOOLS_IWGETID
+  Wireless getid
+
+CONFIG_USER_WIRELESS_TOOLS_IWLIST
+  List wireless interfaces.
+
+CONFIG_USER_WIRELESS_TOOLS_IWPRIV
+  Something cool.
+
+CONFIG_USER_WIRELESS_TOOLS_IWSPY
+  If its a spy tool it must be worth having.
+
+CONFIG_USER_IPROUTE2_TC_TC
+  Traffic shaper from iproute2 package.
+
+CONFIG_USER_IPROUTE2_IP_IFCFG
+  Prints interface configuration.  This script requires
+  advanced shell scripts and other iproute2 apps.
+
+CONFIG_USER_IPROUTE2_IP_IP
+  The core app for iproute2.
+
+CONFIG_USER_IPROUTE2_IP_ROUTEF
+  routef from the iproute2 package.
+
+CONFIG_USER_IPROUTE2_IP_ROUTEL
+  routel from the iproute2 package.
+
+CONFIG_USER_IPROUTE2_IP_RTACCT
+  rtacct from the iproute2 packe.
+
+CONFIG_USER_IPROUTE2_IP_RTMON
+  Route monitor.
+
+CONFIG_USER_IPROUTE2_IP_RTPR
+  Print routes.
+
+CONFIG_USER_LANG_A60
+  A relatively complete Algol 60 interpreter.  This
+  options adds about 99k to the image.
+
+CONFIG_USER_LANG_A60_EGS
+  Some example Algol 60 programs.  These will be installed
+  into /home/a60-examples.  This represents about 15k of text
+  files.
+
+CONFIG_USER_LANG_A60_TEST
+  A small test suite for the Algol 60 interpreter.
+  These will be installed into /home/a60-test.  This
+  represents about 45k of text files.
+
+CONFIG_USER_BZIP2_BZIP2
+  The bzip2 data compression program.
+  Features high compression rate but slower performance than
+  gzip and compress.
+
+CONFIG_USER_UNRAR_UNRAR
+  The unrar archive extraction program.
+
+CONFIG_USER_UNZIP_UNZIP
+  The unzip archive decompression and extraction program.
+
+CONFIG_USER_UNZIP_FUNZIP
+  Filter for extracting from a ZIP archive in a pipe.
+
+CONFIG_USER_UNZOO_UNZOO
+  The unzoo archive decompression and extraction program.
+  Can only extract and view contents of zoo archives.
+  
+CONFIG_USER_LHA_LHA
+  The lha archiving program for dealing with .lzh archives.
+
+CONFIG_USER_ARJ_ARJ
+  THe arj archiving program for dealing with .arj archives.
+
+CONFIG_USER_TCSH_TCSH
+  Enhanced C shell (csh).
+
+CONFIG_USER_EZIPUPDATE_EZIPUPDATE
+  Dynamic DNS IP update client.
+
+CONFIG_USER_FAKEIDENTD_IDENTD
+  A minimal ident/auth server that replies with a fixed username.
+
+CONFIG_USER_TIMEPEG_TPT
+  Timepeg monitoring tool.  This utility presents the information
+  gathered by the timepeg code located in the kernel in a meaningful
+  manner.
+  
+CONFIG_USER_SETHDLC_SETHDLC
+  Small utility for configuring HDLC network interfaces.
+
+CONFIG_USER_MTDUTILS_ERASE
+  A tool for erasing MTD partitions.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_ERASEALL
+  A tool for erasing entire MTD partitions.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_FTL_CHECK
+  Check the Flash Translation Layer.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_FTL_FORMAT
+  Format a Flash Translation Layer.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_NFTLDUMP
+  Dump a NAND flash.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_NFTL_FORMAT
+  Format a Flash Translation Layer on NAND flash.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_NANDDUMP
+  Dump a NAND device.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_NANDTEST
+  Test a NAND device.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_NANDWRITE
+  Write to a NAND device.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_DOC_LOADBIOS
+  Load the BIOS portion of a Disk On Chip.
+  This option adds approximately 40K to the image.
+
+CONFIG_USER_MTDUTILS_DOC_LOADIPL
+  Load an IPL into a DoC Millennium Plus
+  This option adds approximately 45K to the image.
+
+CONFIG_USER_LILO_LILO
+  The lilo boot loader (C version).
+  This option adds approximately 120K to the image.
+
+CONFIG_USER_NETSTAT_NAT_NETSTAT_NAT
+  Pretty print the ipfilter NAT translations.
+
+CONFIG_USER_CRAMFS_CRAMFSCK
+  cramfs fsck program.
+
+CONFIG_USER_CRAMFS_MKCRAMFS
+  cramfs fsck program.
+
+CONFIG_USER_CRAMFS_TEST
+  cramfs fsck extra tests which allow you to extract a cramfs to a directory.
+
+CONFIG_USER_NTPCLIENT_NTPCLIENT
+  Larry Doolittles ntpclient
+  http://doolittle.faludi.com/ntpclient/
+
+CONFIG_USER_NTPCLIENT_ADJTIMEX
+  Larry Doolittles adjtimex
+  http://doolittle.faludi.com/ntpclient/
+
+CONFIG_USER_NTPD_NTPD
+  Network time protocol daemon version 4.1.1.
+
+CONFIG_USER_NTPD_NTPDC
+  Private mode query program for ntpd.
+
+CONFIG_USER_NTPD_NTPDATE
+  Poll NTP server and set system date.  Part of the NTPD package.
+
+CONFIG_USER_NTPD_NTPQ
+  NTP utility.  Part of the NTPD package.
+
+CONFIG_USER_TQRECV_TQRECV
+  Tellique TelliNet Client Proxy 2.3.0
+
+CONFIG_USER_CGI_BRIDGE
+  Advanced bridging page for the cgi - WIP
+
+CONFIG_USER_CGI_VLAN
+  VLAN cgi page - WIP
+
+CONFIG_USER_RSYSLOGD_RSYSLOGD
+  Simple remote syslog receiver.
+
+CONFIG_USER_CRYPTO_TOOLS_CRYPTOTEST
+  OpenBSD's cryptotest program for testing OCF
+
+CONFIG_USER_CRYPTO_TOOLS_CRYPTOKEYTEST
+  OpenBSD's cryptokeytest program for testing OCF
+
+CONFIG_USER_ASTERISK
+  Asterisk is a software-based PBX
+
+CONFIG_USER_UDEV
+  udev allows Linux users to have a dynamic /dev directory and it provides the ability to have persistent device names.
+
+CONFIG_USER_ULOGD_ULOGD
+  Ulogd is a userspace logging facility for iptables.
+
+CONFIG_USER_ULOGD2_ULOGD
+  Ulogd is a userspace logging facility for iptables.  This is version 2,
+  which requires a linux 2.6 kernel.
+
+CONFIG_USER_CONNTRACK_CONNTRACK
+  Conntrack is a tool for listing and modifying the netfilter conntrack table.
+
+CONFIG_USER_SIPROXD_SIPROXD
+  siproxd is a SIP proxy. See http://siproxd.sourceforge.net/
+
+CONFIG_LIB_OSIP2
+  libosip2 is a library providing SIP-functionality for various
+  SIP stacks, such as siproxd, partysip and ser
+
+CONFIG_USER_SQUASHFS_MKSQUASHFS
+  Utility to create squashfs filesystems.
+
+CONFIG_USER_SQUASHFS_MKSQUASHFS7Z
+  Utility to create squashfs filesystems using p7zip instead of zlib.
+
+CONFIG_USER_P7ZIP_7ZA
+  The p7zip command line utility
+
+CONFIG_USER_RRDTOOL_RRDTOOL
+  A port of "rrdtool" for small footprint systems.
+
+CONFIG_POOR_ENTROPY
+  The system does not produce enough entropy to make /dev/random usable,
+  so point /dev/random to /dev/urandom.
+
+#
+# END of user config help
+#
+
+CONFIG_PROP_AUTHD_AUTHD
+  The SnapGear authentication daemon.  This daemon provides an ability
+  to limit or restrict network connectivity based on a number of
+  authentication mechanisms.
+
+CONFIG_PROP_AUTHD_WWWLIST
+  Support the use of destination site web access right.
+
+CONFIG_PROP_AUTHD_CERBERIAN
+  Use the Cerberian content rating service to determine access rights.
+
+CONFIG_PROP_AUTHD_USER
+  Enable support for Proxy authentication to determine the current user.
+
+CONFIG_PROP_AUTHD_USERACL
+  When using Proxy authentication, check the SnapGear Access Control list
+  after successful password checks have been done.
+
+CONFIG_PROP_AUTHD_PAM
+  Use PAM to authenticate users.
+
+CONFIG_PROP_AUTHD_ICAP
+  Enable support for request and response rewrites using the ICAP
+  protocol. Web washer interface requires this.
+
+CONFIG_PROP_CXEQ
+  Conditionally execute a shell command.  Sash doesn't have conditional
+  tests internally and this allows a basic branch capability.
+
+CONFIG_PROP_KEYPAD_KPCTRL
+  configure the backlight and test the keypad driver.
+
+CONFIG_PROP_SQUID_MOUNT
+  Small utility to mount squid smb partitions and prepair them for use.
+
+CONFIG_PROP_IFMOND_IFMOND
+  Monitors the status of an internet connection (whether ppp, diald, or
+  simply an ethernet connection), and starts up a seperate internet
+  connection if the original connection fails.  We monitor the connection by
+  pinging a remote host, and by determining whether the daemon that controls
+  the internet connection thinks that the connection is established.
+
+CONFIG_PROP_TRUSONIC_BMS
+  Include extra bits and pieces to support the TruSonic BMS units
+
+CONFIG_PROP_DEL_MP3
+  Include a small program that automatically deletes any of TruSonic's
+  encrypted content from the hard disc.  Great for re-fulfiling units.
+
+  Not released to Trusonic/MP3.com -- they didn't want to pay for it.
+
+CONFIG_PROP_AMAZON_TIMERD
+  Include Amazon timeout daemon.  Enables timeout of connection authentication
+  and limits arp cache size.
+
+CONFIG_PROP_IVPNSET
+  Program to switch between the wifi (CF) slot and the eth port on
+  on the Amazon iVPN device
+
+CONFIG_PROP_AMAZON_BOA_LDAP
+  Modify Boa's behaviour to perform an LDAP query to allow or deny access
+  to restricted pages.
+
+CONFIG_PROP_VLAN_VLAN
+  Back-end configuration utility for vlans.  Only enable if CONFIG_USER_CGI_VLAN
+  is enabled.
+
+CONFIG_PROP_CMA_CMA
+  Central Management Agent, communicates with the ServGate Global Manager
+  to facilitate various configuration operations.
+
+CONFIG_PROP_CRD_CRD
+  Configuration Recovery Daemon, automatically restores last known good
+  config in the absence of Internet connectivity.
+
+CONFIG_PROP_SERVICES
+  Build a comprehensive /etc/services from a number of source /etc/services
+  file (debian, bsd, portsdb.org, nessus-services and our old one).
+
+CONFIG_USER_MGMT_MGMT
+  SnapGear Centralised Management Support
+  Requires SnapGear SNMP daemon (sgsnmpd) and SnapGear private enterprise MIB
+
+CONFIG_USER_SGSNMPD_AGENT
+  SnapGear SNMP daemon. Provides mib-2.system.
+
+CONFIG_USER_SGSNMPD_UDP
+  Support SNMP over UDP. This will always be available 
+  if no other protocol is selected.
+
+CONFIG_USER_SGSNMPD_TCP
+  Support SNMP over TCP.
+
+CONFIG_USER_SGSNMPD_SNAPGEAR
+  Implements the SnapGear private enterprise MIB.
+
+CONFIG_USER_SGSNMPD_SERVGATE
+  Implements the ServGate call-home trap and MIB.
+
+CONFIG_PROP_SGSNMPD_FULLMIB2
+  Provides (almost) the full mib-2 at a fraction of the size of
+  ucd-snmp/net-snmp
+
+CONFIG_USER_SWTEST_SWTEST
+  Tool for testing the functionality of the switch.
+
+CONFIG_USER_SWTEST_SWCONFIG
+  Tool for configuring switches.
+
+CONFIG_USER_SWTEST_SWITCH_NUM
+  The number of switch interfaces.  These are assumed to be named
+  starting with eth0, etc.
+
+CONFIG_USER_SWTEST_RTL8305SB
+  Select the type of switch to support for swconfig and swtest.
+
+CONFIG_PROP_REPORTD_REPORTD
+  SnapGear Reporting Daemon
+  Sends regular data via syslog
+
+CONFIG_USER_FIREWALL_TOOLS
+  The SnapGear/SecureEdge firewall support tools.
+  Approx. binary size: 30k
+
+CONFIG_PROP_CONFIG_LIBCONFIG
+  The SnapGear config access library, including metaconfig and the config API
+
+CONFIG_PROP_CONFIG_STATIC
+  Build libconfig as a static library rather than a shared library.
+  This is currently required on the SH platform because of a bug.
+
+CONFIG_PROP_GCCMAPPING_LIBGCCMAPPING
+  Build the libgccmapping library which supports mapping from configuration in XML form.
+  Generally you will only need this if you have enabled GCC support,
+  in which case it will be enabled for you.
+
+CONFIG_PROP_LIBSNAPGEAR
+  Build libsnapgear which contains many low level utility routines used by prop/
+  applications. This should be automatically selected if needed.
+
+CONFIG_PROP_SMGRD_SMGRD
+  CyberGuard Global Command Center (GCC) connector daemon.
+
+CONFIG_PROP_SSCEP_SSCEP
+  If you want to enroll with CA servers using SCEP (Simple Certificate
+  Enrollment Protocol) then you should enable this.  Needed to register with GCC.
+
+CONFIG_PROP_LOGD_LOGD
+  Install a process that enables logging of significant system events to
+  unused flash segments.  This can help significantly during bug analysis.
+
+CONFIG_PROP_CGI_AUTH
+  Authentication with the cgi configuration program is done using a special
+  login page and browser cookies instead of via HTTP simple auth.
+
+CONFIG_PROP_TAMS_CONCENTRATOR
+  Enable additional features for the TAMS Concentrator unit.  This unit acts
+  as the hub of their (massive) VPN setup.
+
+CONFIG_PROP_WLAN_WLAN
+  Utility for configuring wireless LAN connections.
+
+CONFIG_PROP_WLAN_WLANSCAN
+  Utility for monitoring wireless LAN connections.
+
+CONFIG_PROP_BOA_SECURITY_COUNT
+  Log and count authentication access attempts through boa, and
+  lock the user out (and/or reset the config) if they provide
+  invalid credentials too many times.
+
+CONFIG_PROP_LOGIN_SECURITY_COUNT
+  Log and count authentication access attempts through telnet
+  (login), and lock the user out (and/or reset the config) if they provide
+  invalid credentials too many times.
+
+CONFIG_PROP_SSH_SECURITY_COUNT
+  Log and count authentication access attempts through ssh, and
+  lock the user out (and/or reset the config) if they provide
+  invalid credentials too many times.
+
+CONFIG_PROP_NETADDR_NETADDR
+  A small utility that calculates the network address given an IP and a
+  netmask.
+
+CONFIG_PROP_MEMHOG_OINK_OINK
+  A simple daemon that allocates a chunk of memory and never releases it.
+  Useful for inducing low memory situations.
+
+CONFIG_PROP_MENU_MENU
+  Simple menu system designed to drive LCD displays from a six button keypad.
+
+CONFIG_PROP_MTUCHK_MTUCHK
+  A small utility for testing the MTU of connections.  For example on a
+  PPTP connection,  run it on the unit with the IP of the other end of the
+  VPN to check that the data path is MTU clean.
+
+CONFIG_PROP_FSTHRASH_FSTHRASH
+  A filesystem testing application.  We continually kill -10 flatfsd while
+  reading the entire contents of /bin into memory.
+
+CONFIG_USER_BRCFG_BRCFG
+  Helper applications cor configuring bridges.
+
+CONFIG_PROP_FLASHPROG
+  This application is used in the SnapGear flash programming device
+  (SH4 based) to create flash images at/for the factory.
+
+CONFIG_PROP_USB_TOOLS
+  A set of utilities to perform actions on usb devices based
+  on configured settings. (i.e. mount usb storage devices)
+  can be used with hotplug scripts or run manually.
+
+CONFIG_PROP_CLAMAV_HELPER
+  A small utility that copies the clam virus database files to their
+  correct location.  Also, optionally, runs freshclam to bring the
+  databases up to date.  Will make the database directory if required.
+
+CONFIG_PROP_CLAMAV_DBUPDATE
+  If this option is selected, the clam virus database will be updated to
+  the current version when the romfs is built.  Without it, an older
+  database will be installed instead and the unit will have to do this
+  update.
+
+CONFIG_PROP_CLAMAV_CLAMSCAN
+  A lightweight file scanner that uses the clam daemon to detect virus
+  infections. Significantly smaller than clamav's clamdscan which does
+  essentially the same thing.
+
+CONFIG_PROP_SGC_TOOL
+  A script for managing locally stored .sgc configuration files. 
+
+CONFIG_SIZE_SYSLOG_MAXSIZE
+  Sets the default maximum size of the local syslog file (in KiB)
+
+CONFIG_SIZE_VAR_PART
+  Sets the size of the /var tmpfs partition (in KiB)
+
+CONFIG_SIZE_CONFIG_PART
+  Sets the size of the /etc/config tmpfs partition (in KiB).
+  Actually, this should be the size of the underlying flash partition
+  and the tmpfs partition will be twice that size if flatfsd compression
+  is enabled
+
+CONFIG_PROP_CGIX_CGIX
+  The new CGI extreme framework.
+
+CONFIG_PROP_CGIX_STYLESHEET
+  Which stylesheet do you want to use to tweak the look of the GUI.
+
+CONFIG_USER_CGI_DISKTEL
+  The SecureEdge/DISKtel product web configuration CGI.
+  Approx. binary size: 150k
+
+CONFIG_USER_FIREWALL_BRIDGE_LAN
+  Enable this if you expect that the firewall is a bridge between clients
+  and the rest of the LAN.  This will allow clients to request addresses
+  from DHCP servers, and access SMB shares.
+
+CONFIG_USER_FIREWALL_DEFAULT_FLOOD_DISABLE
+  Disable the flood rate limiting rules by default.
+
+CONFIG_USER_IPSEC_KEEPALIVE
+  Tool to detect whether an IPSec tunnel needs renegotiating.
+  Approx. binary size: 10k
+
+CONFIG_USER_IPSEC_CONFIGURATOR
+  Tool to parse an ipsec.conf file and execute the required Freeswan
+  commands.  This command replaces the scripts that are missing from
+  the Freeswan installation.
+  Approx. binary size: 10k
+
+CONFIG_PROP_LIBFW
+  Library to get a list of interfaces and there firewall information.
+  Used by ipsecctl and firewall.
+
+CONFIG_USER_PROTECT
+  Build the protect application which interfaces with the memory
+  protection loadable kernel module to provide user level memory
+  access protection.
+
+CONFIG_USER_FACTORY_FACTTEST
+  A testing utility only used for factory images. Requires a client to 
+  connect and retrieve details
+  Approx. binary size: 27k
+
+CONFIG_USER_EMCTEST_EMCECHO
+  A utility only used for EMC and similar testing.
+  Approx. binary size: NA
+
+CONFIG_USER_EMCTEST_EMCTEST
+  A utility only used for EMC and similar testing.
+  Approx. binary size: NA
+
+CONFIG_PROP_EMCRALINK_EMCRALINK
+  A test application specifically designed to work with the ralink card to get
+  CE certification.  If you don't know you need this app it is *very* unlikely
+  that you will want it.
+
+CONFIG_USER_DESTEST_DESTEST
+  Include the destest and aestest executables that does some basic checks to ensure
+  your encryption library is working correctly.
+
+CONFIG_USER_DESTEST_DESPERF
+  A little program that can be used to measure DES/3DES/AES performance.
+  It will take over ports 8000 (DES), 8001 (3DES) and 8002 (AES) so you
+  can tcpblast the machine to find out how fast it can encrypt data.
+
+CONFIG_USER_AES_PERF
+  A not so little program for fine tuning AES crypto performance on a unit.
+  This prorgams sequentially runs through all possible permutations of
+  configuration options for the AES code and determinse the fastest.
+
+CONFIG_USER_CERBERIAN_CERBERIAN
+  The cerberian URL filtering proxy server
+  This option adds about 30K to the image.
+
+CONFIG_USER_CERBERIAN_PROXYAUTH
+  Enable support for Proxy authentication to determine the current user.
+
+CONFIG_USER_CERBERIAN_AUTHACL
+  When using Proxy authentication, check the SnapGear Access Control list
+  after successful password checks have been done.
+
+CONFIG_USER_CERBERIAN_CERBTEST
+  A simple test program for testing encoding/decoding/library
+  functionality.  About 12K,  only for testing.
+
+CONFIG_PROP_REGDUMP_REGDUMP
+  Dump KS8695 Ethernet registers.
+
+CONFIG_PROP_CLAMAV_AVSCAN
+  Build a standalone program that scans files and directories using libclamav.
+
+CONFIG_PROP_IFMOND_IPSEC
+  A small *Swan like config tool for use by ifmond when controlling ipsec.
+
+CONFIG_PROP_IFMOND_IF_STATUS
+  A tool for determining dev_t status for use in ipsec.secrets and other
+  externally processed non-cgi environments.
+
+#
+# END of proprietary config help
+#

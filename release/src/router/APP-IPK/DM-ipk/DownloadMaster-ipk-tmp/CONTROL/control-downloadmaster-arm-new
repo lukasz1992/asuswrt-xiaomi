@@ -1,0 +1,14 @@
+Package: downloadmaster
+Architecture: arm
+Priority: optional
+Section: net
+Version: 9.1.0.104
+OptionalUtility: 1.0.0.1+
+Maintainer: ASUS
+Source: http://127.0.0.1/
+URL: http://www.asusnetwork.net:8081/downloadmaster/index.asp
+Description: Download tools
+Depends:asuslighttpd,wxbase,readline
+Suggests: 
+Conflicts: 
+Enabled: yes

@@ -1,0 +1,10 @@
+# $Id: Makefile.in 22646 2003-08-06 15:58:14Z VS $
+
+CONTRIB_SAMPLES=proplist resource treelay
+
+all:
+	@for d in $(CONTRIB_SAMPLES); do (cd $$d && $(MAKE)); done
+
+clean:
+	@for d in $(CONTRIB_SAMPLES); do (cd $$d && $(MAKE) clean); done
+

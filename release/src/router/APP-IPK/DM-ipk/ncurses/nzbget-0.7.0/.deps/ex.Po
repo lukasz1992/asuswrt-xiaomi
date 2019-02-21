@@ -1,0 +1,285 @@
+ex.o ex.o: ex.cpp \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/iostream \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/basic_definitions \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/system_configuration.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/iosfwd \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/char_traits \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/string.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/features.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_config.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/cdefs.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/include/stddef.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/xlocale.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_locale.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/exception \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/memory \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/new \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/cstddef \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/cstdlib \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/stdlib.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/waitflags.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/waitstatus.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/endian.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/endian.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/types.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/types.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/kernel_types.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/pthreadtypes.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sched.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/time.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/select.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/select.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigset.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/time.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/sysmacros.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/alloca.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/iterator_base \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/utility \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/cstdio \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/stdio.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_stdio.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/wchar.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/wchar.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/include/stdarg.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/stdio_lim.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/ios \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/locale \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/string \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/func_exception \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/vector \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/iterator \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/algorithm \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/functional \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/type_traits \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/istream \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/cctype \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/ctype.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_touplow.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/streambuf \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/istream_helpers \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/ostream \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/ostream_helpers \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/fstream \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/unistd.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/posix_opt.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/environments.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/wordsize.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/confname.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/getopt.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/fcntl.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/fcntl.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/stat.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/stat.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/errno.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/errno.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/errno_values.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/string_iostream \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_clk_tck.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/time.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/wait.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/signal.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/signum.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/siginfo.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigaction.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigcontext.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/asm/sigcontext.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigstack.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/ucontext.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/ucontext.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigthread.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/resource.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/resource.h \
+  ex.h Log.h \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/deque \
+  /WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/stdexcept \
+  Thread.h
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/iostream:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/basic_definitions:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/system_configuration.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/iosfwd:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/char_traits:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/string.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/features.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_config.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/cdefs.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/include/stddef.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/xlocale.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_locale.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/exception:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/memory:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/new:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/cstddef:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/cstdlib:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/stdlib.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/waitflags.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/waitstatus.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/endian.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/endian.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/types.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/types.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/kernel_types.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/pthreadtypes.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sched.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/time.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/select.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/select.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigset.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/time.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/sysmacros.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/alloca.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/iterator_base:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/utility:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/cstdio:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/stdio.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_stdio.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/wchar.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/wchar.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/include/stdarg.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/stdio_lim.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/ios:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/locale:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/string:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/func_exception:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/vector:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/iterator:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/algorithm:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/functional:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/type_traits:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/istream:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/cctype:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/ctype.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_touplow.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/streambuf:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/istream_helpers:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/ostream:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/ostream_helpers:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/fstream:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/unistd.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/posix_opt.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/environments.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/wordsize.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/confname.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/getopt.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/fcntl.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/fcntl.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/stat.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/stat.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/errno.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/errno.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/errno_values.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/string_iostream:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/uClibc_clk_tck.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/time.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/wait.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/signal.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/signum.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/siginfo.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigaction.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigcontext.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/asm/sigcontext.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigstack.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/ucontext.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/ucontext.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/sigthread.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/sys/resource.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/nowrap/../lib/gcc/mipsel-linux-uclibc/4.1.1/../../../../mipsel-linux-uclibc/sys-include/bits/resource.h:
+
+ex.h:
+
+Log.h:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/deque:
+
+/WorkSpace/optware_oleg/optware/toolchain/mipsel-linux-uclibc/gcc-4.1.1-uclibc-0.9.28/uClibc++/include/stdexcept:
+
+Thread.h:

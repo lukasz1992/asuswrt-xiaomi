@@ -1,0 +1,30 @@
+				 TODO
+			     -*- text -*-
+
+* Fix memory leaks. Not critical but sloppy and embarrassing.
+
+* Add an interactive shell-like interface. Type in urls, it downloads
+  them. Should be handy for piping ("echo url | snarf") and
+  others. Use your imagination.
+
+* Maybe add an RC file.
+
+* remove dependance on vfprintf.
+
+* Port to win32 (make more portable in general)
+
+* SSL borrowed from curl
+
+* better browser-style URL guessing
+
+* Improve password handling; cache username/hostname pairs and re-use 
+  passwords. Don't prompt if the password is cached.
+
+* Use keepalive for http and re-use sessions for ftp if grabbing multiple
+  files from the same host.
+
+* Add more & nicer output to progress code, most requested: ETA
+
+* Fix non-ansi stuff. Automake seems to be screwing up its invocation
+  of ansi2knr. I don't know why, yet, so stick with ANSI compilers if
+  possible.

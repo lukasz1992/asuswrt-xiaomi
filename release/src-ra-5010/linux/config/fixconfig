@@ -1,0 +1,26 @@
+#!/bin/sh
+#############################################################################
+#
+# Having to fix up all the configs all the time is just a pain,  here
+# we provide a nice way to quickly default any values that are not set
+#
+# Be sure to check the diffs before you commit the changes that this
+# script makes.
+#
+# Copyright (C) 2001 Lineo
+#
+#############################################################################
+
+for i in */*/vendor.config; do
+	echo "Checking $i ..."
+	grep CONFIG_ config.in | sed 's/.*\(CONFIG_[A-Z0-9_]*\).*$/\1/' |
+		sort | uniq | \
+		while read t; do
+			grep "$t=" $i > /dev/null && continue
+			grep "$t " $i > /dev/null && continue
+			echo "# $t is not set" >> $i
+			echo "    added $t"
+		done
+done
+
+############################################################################

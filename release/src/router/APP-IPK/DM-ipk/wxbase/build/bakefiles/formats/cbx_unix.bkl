@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<!-- $Id: cbx_unix.bkl 26633 2004-04-06 09:34:56Z VS $ -->
+
+<makefile>
+    
+    <include file="presets/fake.bkl"/>
+    <set var="COMPILER">vc</set>
+
+
+    <define-tag name="__fake_hook" rules="__fake">
+        <set var="type" overwrite="0">fake</set>
+    </define-tag>
+    
+    <define-tag name="__fake_hook" rules="exe">
+        <set var="type">exe</set>
+    </define-tag>
+
+    <output file="$(OUTPUT_FILE)" writer="cbx_unix.empy"/>
+    <set var="FORMAT_OUTPUT_VARIABLES">type</set>
+ 
+</makefile>

@@ -1,0 +1,16 @@
+.EXPORT_ALL_VARIABLES:
+
+# Fix the VERSIONPKG string to correspond to the current language setting
+
+ifeq ($(CONFIG_LANGUAGE),japanese)
+VERSIONPKG := $(VERSIONPKG)j
+endif
+
+ifeq ($(CONFIG_LANGUAGE),japanese-Canon)
+VERSIONPKG := $(VERSIONPKG)J
+endif
+
+ifeq ($(CONFIG_LANGUAGE),chinese)
+VERSIONPKG := $(VERSIONPKG)C
+endif
+

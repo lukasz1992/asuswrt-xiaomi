@@ -1,0 +1,3 @@
+If you upgrade DM version,please change the file as follows：
+  1. lighttpd-ipk-tmp/CONTROL/control* //modify the asuslighttpd version 
+  2. lighttpd-ipk-2.1/opt/etc/downloadmaster/*.asp             //modify *.js？ver=102 version

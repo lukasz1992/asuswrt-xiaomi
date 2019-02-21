@@ -1,0 +1,29 @@
+Summary: Snarf
+Name: snarf
+Version: @VERSION@
+Release: 1
+Copyright: GPL
+Group: Networking/Utilities
+Source: ftp.mint.net:/pub/snarf/snarf-@VERSION@.tar.gz
+Buildroot: /tmp
+
+%description
+Snarf is a non-interactive client for several network protocols.
+
+%prep
+%setup
+
+%build
+mkdir -p $RPM_BUILD_ROOT/usr/bin
+mkdir -p $RPM_BUILD_ROOT/usr/man/man1
+mkdir -p $RPM_BUILD_ROOT/usr/doc
+./configure --enable-guess-winsize --prefix=$RPM_BUILD_ROOT/usr
+make CFLAGS="$RPM_OPT_FLAGS"
+
+%install
+make install
+
+%files
+%doc COPYING README
+/usr/bin/snarf
+/usr/man/man1/snarf.1

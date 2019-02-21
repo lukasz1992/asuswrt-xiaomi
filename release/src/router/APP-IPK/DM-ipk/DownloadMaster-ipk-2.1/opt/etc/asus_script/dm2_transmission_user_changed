@@ -1,0 +1,35 @@
+#! /bin/sh
+is_arm_machine=`uname -m |grep arm`
+
+APP_UCLIBC_VERSION=0.9.28
+
+PATH=/bin:/sbin:/usr/sbin:/usr/bin:/opt/bin
+
+
+#leo added for get http_username and http_passwd from the FW
+transmission_username=`nvram get http_username`
+transmission_passwd=`nvram get http_passwd`
+
+
+#echo  "leo added for get transimission_username and pw"
+
+touch /tmp/dm2_check_user
+ 
+#echo  "leo added for get transimission_username and pw"
+ 
+if [ -f /tmp/transmission_get_up ]; then
+	rm -r /tmp/transmission_get_up
+	echo "$transmission_username">/tmp/transmission_get_up
+	echo "$transmission_passwd">>/tmp/transmission_get_up
+else
+	touch /tmp/transmission_get_up
+       	echo "$transmission_username">/tmp/transmission_get_up
+	echo "$transmission_passwd">>/tmp/transmission_get_up
+fi
+
+
+rm -r /tmp/dm2_check_user
+
+	
+
+

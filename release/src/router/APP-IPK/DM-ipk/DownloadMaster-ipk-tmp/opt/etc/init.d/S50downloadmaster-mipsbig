@@ -1,0 +1,1381 @@
+#! /bin/sh
+
+is_arm_machine=`uname -m |grep arm`
+
+APP_UCLIBC_VERSION=0.9.28
+
+#PATH=/sbin:/usr/sbin:/bin:/usr/bin:/opt/bin
+PATH=$APPS_PATH/usr/bin:$APPS_PATH/bin:$APPS_PATH/usr/sbin:$APPS_PATH/sbin:$PATH
+unset LD_LIBRARY_PATH
+unset LD_PRELOAD
+
+if [ -f "/bin/nice" ];then
+have_nice="1"
+else 
+have_nice="0"
+fi
+
+if [ -f "/userfs/bin/tcapi" ];then
+	if [ "$1" = "firewall-restart" ]; then
+	rm -rf /tmp/dm2_firewall_tag
+	fi
+else
+	if [ "$1" == "firewall-restart" ]; then
+	rm -rf /tmp/dm2_firewall_tag
+	fi
+fi
+if [ -f "/userfs/bin/tcapi" ];then
+APPS_DEV=`/userfs/bin/tcapi get Apps_Entry apps_dev`
+APPS_MOUNTED_PATH=`/userfs/bin/tcapi get Apps_Entry apps_mounted_path`
+APPS_INSTALL_FOLDER=`/userfs/bin/tcapi get Apps_Entry apps_install_folder`
+APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+
+LANGUAGE_R=`/userfs/bin/tcapi get SysInfo_Entry preferred_lang`
+
+PRODUCTID=`/userfs/bin/tcapi get SysInfo_Entry ProductName`
+LAN_IP=`/userfs/bin/tcapi get Lan_Entry IP`
+MISCR_HTTPPORT_X=`/userfs/bin/tcapi get Firewall_Entry misc_httpport_x`
+MISCR_HTTP_X=`/userfs/bin/tcapi get Firewall_Entry misc_http_x`
+#get Wan ip in DSL-wrt, by judging the dualwan status to get the real ip
+	DualWan=`/userfs/bin/tcapi get Dualwan_Entry wans_dualwan`
+	if [ -n "$DualWan" ] || [ "$DualWan" != "no attribute information" ] || [ "$DualWan" != "none" ]
+	then
+		Pri_Wan=`echo $DualWan | awk '{printf("%s\n", $1);}'`
+		Sec_Wan=`echo $DualWan | awk '{printf("%s\n", $2);}'`
+	
+		#get the first wan type
+		if [ "$Pri_Wan" = "lan" ]; then
+			Pri_unit=12
+		elif [ "$Pri_Wan" = "usb" ]; then
+			Pri_unit=11
+		elif [ "$Pri_Wan" = "wan" ]; then
+			Pri_unit=10
+		elif [ "$Pri_Wan" = "dsl" ]; then
+			DSLMode=`/userfs/bin/tcapi get Wan_Common DSLMode`
+			if [ "$DSLMode" = "VDSL" ]
+			then
+				Pri_unit=8
+			else 
+				Pri_unit=0
+			fi
+		fi
+		Pri_Wan_IP=`/userfs/bin/tcapi get Wanduck_Common wan"$Pri_unit"_ipaddr`
+		#get sec wan type, if sec_wan=none then jump this
+		if [ "$Sec_Wan" != "none" ]; then
+			if [ "$Sec_Wan" = "lan" ]; then
+				Sec_unit=12
+			elif [ "$Sec_Wan" = "usb" ]; then
+				Sec_unit=11
+			elif [ "$Sec_Wan" = "wan" ]; then
+				Sec_unit=10
+			elif [ "$Sec_Wan" = "dsl" ]; then
+				DSLMode2=`/userfs/bin/tcapi get Wan_Common DSLMode`
+				if [ "$DSLMode2" = "VDSL" ]
+				then
+					Sec_unit=8
+				else
+					Sec_unit=0
+				fi
+			fi
+
+			Sec_Wan_IP=`/userfs/bin/tcapi get Wanduck_Common wan"$Sec_unit"_ipaddr`
+	
+			if [ -z "$Pri_Wan_IP" ] || [ "$Pri_Wan_IP" = "no attribute information" ] \
+			|| [ "$Pri_Wan_IP" = "0.0.0.0" ]
+			then
+				#use 0.0.0.0 instead of "no attribute information"
+				if [ -z "$Sec_Wan_IP" ] || [ "$Sec_Wan_IP" = "no attribute information" ]
+				then
+					WAN_IP="0.0.0.0"
+				else
+					WAN_IP=$Sec_Wan_IP
+				fi
+			else
+				WAN_IP=$Pri_Wan_IP
+			fi
+		else
+		#use 0.0.0.0 instead of "no attribute information"
+			if [ -z "$Pri_Wan_IP" ] || [ "$Pri_Wan_IP" = "no attribute information" ]
+			then
+				WAN_IP="0.0.0.0"
+			else
+				WAN_IP=$Pri_Wan_IP
+			fi
+		fi
+	else
+		unit=`/userfs/bin/tcapi get Wanduck_Common wan_primary`
+		WAN_IP=`/userfs/bin/tcapi get Wanduck_Common wan"$unit"_ipaddr`
+		if [ -z "$Pri_Wan_IP" ] || [ "$Pri_Wan_IP" = "no attribute information" ]
+		then
+			WAN_IP="0.0.0.0"
+		fi
+	fi
+DDNS_ENABLE_X=`/userfs/bin/tcapi get Ddns_Entry Active`
+DDNS_HOSTNAME_X=`/userfs/bin/tcapi get Ddns_Entry MYHOST`
+RFW_ENABLE_X=`/userfs/bin/tcapi get Firewall_Entry fw_enable_x`
+else
+APPS_MOUNTED_PATH=`nvram get apps_mounted_path`
+APPS_INSTALL_FOLDER=`nvram get apps_install_folder`
+APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+APPS_DEV=`nvram get apps_dev`
+
+LANGUAGE_R=`nvram get preferred_lang`
+
+PRODUCTID=`nvram get productid`
+LAN_IP=`nvram get lan_ipaddr`
+MISCR_HTTPPORT_X=`nvram get misc_httpport_x`
+MISCR_HTTP_X=`nvram get misc_http_x`
+ACC_LIST=`nvram get acc_list`
+HTTP_USERNAME=${ACC_LIST%%\>*}
+HTTP_PASSWD_TMP=${ACC_LIST#*\>}
+if [ "$HTTP_PASSWD_TMP" != "" ];then
+	HTTP_PASSWD=${HTTP_PASSWD_TMP%%\<*}
+	HTTP_PASSWD=`echo -n "$HTTP_PASSWD" | md5sum |cut -d ' ' -f1`
+else
+	HTTP_PASSWD=`nvram get http_passwd`
+	HTTP_PASSWD=`echo -n "$HTTP_PASSWD" | md5sum |cut -d ' ' -f1`
+fi
+
+WAN_IP=`nvram get wan0_ipaddr`
+DDNS_ENABLE_X=`nvram get ddns_enable_x`
+DDNS_HOSTNAME_X=`nvram get ddns_hostname_x`
+RFW_ENABLE_X=`nvram get fw_enable_x`
+fi
+#chmod -R 777 $APPS_INSTALL_PATH/bin/
+
+#chmod -R 777 $APPS_INSTALL_PATH/etc
+
+if [ ! -d "$APPS_MOUNTED_PATH/Download2" ]; then
+mkdir -p $APPS_MOUNTED_PATH/Download2
+chmod -R 777 $APPS_MOUNTED_PATH/Download2
+fi
+
+if [ ! -d "$APPS_MOUNTED_PATH/Download2/Complete" ]; then
+mkdir -p $APPS_MOUNTED_PATH/Download2/Complete
+chmod -R 777 $APPS_MOUNTED_PATH/Download2/Complete
+fi
+
+if [ ! -d "$APPS_MOUNTED_PATH/Download2/config" ]; then
+mkdir -p $APPS_MOUNTED_PATH/Download2/config
+chmod -R 777 $APPS_MOUNTED_PATH/Download2/config
+fi
+
+if [ ! -d "$APPS_MOUNTED_PATH/Download2/InComplete" ]; then
+mkdir -p $APPS_MOUNTED_PATH/Download2/InComplete
+chmod -R 777 $APPS_MOUNTED_PATH/Download2/InComplete
+fi
+
+if [ ! -d "$APPS_MOUNTED_PATH/Download2/.logs" ]; then
+mkdir -p $APPS_MOUNTED_PATH/Download2/.logs
+chmod -R 777 $APPS_MOUNTED_PATH/Download2/.logs
+fi
+
+if [ ! -d "$APPS_MOUNTED_PATH/Download2/Seeds" ]; then
+mkdir -p $APPS_MOUNTED_PATH/Download2/Seeds
+chmod -R 777 $APPS_MOUNTED_PATH/Download2/Seeds
+fi
+
+if [ ! -d "/tmp/APPS/DM2/Script/" ]; then
+	mkdir -p /tmp/APPS/DM2/Script/
+fi
+if [ ! -d "/tmp/APPS/DM2/Config/" ]; then
+	mkdir -p /tmp/APPS/DM2/Config/
+fi
+if [ ! -d "/tmp/APPS/DM2/Status/" ]; then
+	mkdir -p /tmp/APPS/DM2/Status/
+fi
+if [ ! -d "/tmp/asus_app" ]; then
+mkdir -p /tmp/asus_app
+chmod -R 777 /tmp/asus_app
+fi
+
+if [ -f "/userfs/bin/tcapi" ];then
+	if [ "$1" = "start" ] || [ "$1" = "restart" ] || [ "$1" = "stop" ]; then
+		cp -rf /opt/etc/asus_script/dm* /tmp/APPS/DM2/Script/
+		cp -rf /opt/etc/dm2_* /tmp/APPS/DM2/Config/
+		cp -rf /opt/etc/init.d/S50downloadmaster /tmp/APPS/DM2/Script/S50downloadmaster
+		if [ ! -d "/tmp/APPS/Lighttpd/Script/" ]; then
+			mkdir -p /tmp/APPS/Lighttpd/Script/
+		fi
+		cp -rf /opt/etc/init.d/S50asuslighttpd /tmp/APPS/Lighttpd/Script/S50asuslighttpd
+		cp -rf /opt/etc/asus_script/asus_check_general /tmp/APPS/Lighttpd/Script/asus_check_general
+		if [ ! -x "/tmp/APPS/DM2" ] || [ ! -x "/tmp/APPS" ];then
+			chmod -R 777 /tmp/APPS
+		fi
+	fi
+
+
+	if [ "$1" = "start" ] || [ "$1" = "restart" ]; then
+		sh /tmp/APPS/Lighttpd/Script/asus_check_general general-check
+	
+	fi
+else
+	if [ "$1" == "start" ] || [ "$1" == "restart" ] || [ "$1" == "stop" ]; then
+		cp -rf /opt/etc/asus_script/dm* /tmp/APPS/DM2/Script/
+		cp -rf /opt/etc/dm2_* /tmp/APPS/DM2/Config/
+		cp -rf /opt/etc/init.d/S50downloadmaster /tmp/APPS/DM2/Script/S50downloadmaster
+		if [ ! -d "/tmp/APPS/Lighttpd/Script/" ]; then
+			mkdir -p /tmp/APPS/Lighttpd/Script/
+		fi
+		cp -rf /opt/etc/init.d/S50asuslighttpd /tmp/APPS/Lighttpd/Script/S50asuslighttpd
+		cp -rf /opt/etc/asus_script/asus_check_general /tmp/APPS/Lighttpd/Script/asus_check_general
+		if [ ! -x "/tmp/APPS/DM2" ] || [ ! -x "/tmp/APPS" ];then
+			chmod -R 777 /tmp/APPS
+		fi
+	fi
+
+
+	if [ "$1" == "start" ] || [ "$1" == "restart" ]; then
+		sh /tmp/APPS/Lighttpd/Script/asus_check_general general-check
+	
+	fi
+fi
+
+
+
+
+dir_control_file=$APPS_INSTALL_PATH/etc/dm2_general.conf
+
+if [ -f "/userfs/bin/tcapi" ];then
+	if [ "$1" = "start" ] || [ "$1" = "restart" ] || [ ! -f "$dir_control_file" ]; then
+		sh /tmp/APPS/DM2/Script/dm2_check_general general-check	
+	fi
+
+	#echo $MISC_HTTP_X
+	#echo $APPS_DL_SHARE
+
+	if [ "$1" = "start" ] || [ "$1" = "restart" ]; then
+		dir_btcontrol_file=$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+			NVRAM_CHECK_TRS=`/userfs/bin/tcapi get Apps_Entry trs_peer_port`
+			if [ ! -f "$dir_btcontrol_file" ]; then
+				if [ "$NVRAM_CHECK_TRS" = "no attribute information" ]; then
+					echo "The $dir_btcontrol_file is not installed yet!"
+					echo "Peer_port=51413">$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Auth_type=1">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Max_torrent_peer=60">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Max_peer=240">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Enable_dht=1">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Down_limit=0">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Down_rate=100">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Up_limit=0">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Up_rate=100">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Enable_pex=1">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Enable_peer_port=0">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf	
+					apps_dl_share_port="51413"
+					cp -rf $APPS_INSTALL_PATH/etc/dm2_transmission.conf /tmp/APPS/DM2/Config/dm2_transmission.conf
+					sh /tmp/APPS/DM2/Script/dm2_backup nvram-save
+				else
+					sh /tmp/APPS/DM2/Script/dm2_backup nvram-recover
+				fi
+			else
+				if [  "$NVRAM_CHECK_TRS" != "no attribute information" ]; then
+					sh /tmp/APPS/DM2/Script/dm2_backup nvram-backup
+				else
+					sh /tmp/APPS/DM2/Script/dm2_backup nvram-save
+				fi
+			fi
+	fi
+else
+	if [ "$1" == "start" ] || [ "$1" == "restart" ] || [ ! -f "$dir_control_file" ]; then
+		sh /tmp/APPS/DM2/Script/dm2_check_general general-check	
+	fi
+
+	#echo $MISC_HTTP_X
+	#echo $APPS_DL_SHARE
+
+	if [ "$1" == "start" ] || [ "$1" == "restart" ]; then
+		dir_btcontrol_file=$APPS_INSTALL_PATH/etc/dm2_transmission.conf	
+			NVRAM_CHECK_TRS=`nvram get trs_peer_port`
+			if [ ! -f "$dir_btcontrol_file" ]; then
+				if [ -z "$NVRAM_CHECK_TRS" ]; then
+					echo "Peer_port=51413">$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Auth_type=1">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Max_torrent_peer=60">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Max_peer=240">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Enable_dht=1">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Down_limit=0">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Down_rate=100">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Up_limit=0">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Up_rate=100">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Enable_pex=1">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf
+					echo "Enable_peer_port=0">>$APPS_INSTALL_PATH/etc/dm2_transmission.conf	
+					apps_dl_share_port="51413"
+					cp -rf $APPS_INSTALL_PATH/etc/dm2_transmission.conf /tmp/APPS/DM2/Config/dm2_transmission.conf
+					sh /tmp/APPS/DM2/Script/dm2_backup nvram-save
+				else
+					sh /tmp/APPS/DM2/Script/dm2_backup nvram-recover
+				fi
+			else
+				if [ ! -z $NVRAM_CHECK_TRS ]; then
+					sh /tmp/APPS/DM2/Script/dm2_backup nvram-backup
+				else
+					sh /tmp/APPS/DM2/Script/dm2_backup nvram-save
+				fi
+			fi
+	fi
+fi
+	if [ -f "/userfs/bin/tcapi" ];then
+		apps_dl_share_port=`/userfs/bin/tcapi get Apps_Entry trs_peer_port`
+	else
+		apps_dl_share_port=`nvram get trs_peer_port`
+	fi
+if [ -f "/userfs/bin/tcapi" ];then
+	if [ "$1" = "start" ] || [ "$1" = "restart" ]; then
+		dir_ed2k_file=$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+
+			NVRAM_CHECK_ED2K=`/userfs/bin/tcapi get Apps_Entry ed2k_ip`
+			if [ ! -f "$dir_ed2k_file" ]; then
+				if [  "$NVRAM_CHECK_ED2K" = "no attribute information" ]; then
+					echo "server_ip=176.103.48.36">$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+					echo "server_port=4184">>$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+					ED2K_SERVER_IP="176.103.48.36"
+					ED2K_SERVER_PORT="4184"
+					cp -rf $APPS_INSTALL_PATH/etc/dm2_ed2k.conf /tmp/APPS/DM2/Config/dm2_ed2k.conf
+					sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvramsave
+				else
+					sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvramrecover
+				fi
+			else
+				if [ "$NVRAM_CHECK_ED2K" != "no attribute information" ]; then
+					sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvrambackup
+				else
+					sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvramsave
+				fi
+			fi
+	fi
+else
+	if [ "$1" == "start" ] || [ "$1" == "restart" ]; then
+		dir_ed2k_file=$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+			NVRAM_CHECK_ED2K=`nvram get ed2k_ip`
+			if [ ! -f "$dir_ed2k_file" ]; then
+				if [ -z "$NVRAM_CHECK_ED2K" ]; then
+					echo "server_ip=176.103.48.36">$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+					echo "server_port=4184">>$APPS_INSTALL_PATH/etc/dm2_ed2k.conf
+					ED2K_SERVER_IP="176.103.48.36"
+					ED2K_SERVER_PORT="4184"
+					cp -rf $APPS_INSTALL_PATH/etc/dm2_ed2k.conf /tmp/APPS/DM2/Config/dm2_ed2k.conf
+					sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvramsave
+				else
+					sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvramrecover
+					ED2K_SERVER_IP=`nvram get ed2k_ip`
+					ED2K_SERVER_PORT=`nvram get ed2k_port`
+				fi
+			else
+				if [ ! -z "$NVRAM_CHECK_ED2K" ]; then
+					sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvrambackup
+				else
+					sh /tmp/APPS/DM2/Script/dm2_backup ed2k-nvramsave
+				fi
+			fi
+	fi
+fi
+
+	if [ -f "/userfs/bin/tcapi" ];then
+		ED2K_SERVER_IP=`/userfs/bin/tcapi get Apps_Entry ed2k_ip`
+		ED2K_SERVER_PORT=`/userfs/bin/tcapi get Apps_Entry ed2k_port`
+	else
+		ED2K_SERVER_IP=`nvram get ed2k_ip`
+		ED2K_SERVER_PORT=`nvram get ed2k_port`
+	fi
+	while [ ! -f "$dir_control_file" ]
+	do
+		sleep 2
+	done
+
+	DEVICE_TYPE_CHECK_TMP=`cat "$dir_control_file" |grep "DEVICE_TYPE="`
+	if [ -f "/userfs/bin/tcapi" ];then
+		while [ "$DEVICE_TYPE_CHECK_TMP" = "" ]
+		do
+			DEVICE_TYPE_CHECK_TMP=`cat "$dir_control_file" |grep "DEVICE_TYPE="`
+			sleep 2
+		done
+	else
+		while [ "$DEVICE_TYPE_CHECK_TMP" == "" ]
+		do
+			DEVICE_TYPE_CHECK_TMP=`cat "$dir_control_file" |grep "DEVICE_TYPE="`
+			sleep 2
+		done
+	fi
+
+	if [ -f "/userfs/bin/tcapi" ];then
+		BASE_PATH=`/userfs/bin/tcapi show Apps_Entry |grep "apps_mounted_path" |awk 'BEGIN{FS="/"}{print $4}'`
+	else
+		BASE_PATH=`nvram get apps_mounted_path |awk 'BEGIN{FS="/"}{print $4}'`
+	fi
+
+	MISC_HTTP_X=`cat "$dir_control_file" |grep "MISC_HTTP_X=" |awk 'BEGIN{FS="="}{print $2}'`
+
+	APPS_DL_SHARE=`cat "$dir_control_file" |grep "APPS_DL_SHARE=" |awk 'BEGIN{FS="="}{print $2}'`
+
+	DM_PORT=`cat "$dir_control_file" |grep "DM_PORT=" |awk 'BEGIN{FS="="}{print $2}'`
+	DM_HTTPS_PORT=`cat "$dir_control_file" |grep "DM_HTTPS_PORT=" |awk 'BEGIN{FS="="}{print $2}'`
+	DOWNLOAD_PATH=`cat "$dir_control_file" |grep "Download_dir=" |awk 'BEGIN{FS="="}{print $2}'`
+	DOWNLOAD_PATH_ED2K=`echo $DOWNLOAD_PATH|sed -n 's/\//\\\\\//pg'`
+
+if [ -f "/userfs/bin/tcapi" ];then
+if [ "$1" = "start" ] || [ "$1" = "restart" ]; then	
+	sh /tmp/APPS/DM2/Script/dm2_backup generalnvram-save
+
+#nzb nvram-save/recover
+		NZB_TEST=`/userfs/bin/tcapi get Apps_Entry nzb_host`
+		if [ -f "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" ]; then
+			if [ "$NZB_TEST" = "no attribute information" ]; then
+				sh /tmp/APPS/DM2/Script/dm2_backup nzb-nvramsave
+			else
+				sh /tmp/APPS/DM2/Script/dm2_backup nzb-nvrambackup
+			fi
+		else
+			if [ "$NZB_TEST" != "no attribute information"  ]; then
+				sh /tmp/APPS/DM2/Script/dm2_backup nzb-nvramrecover		
+			fi
+		fi
+fi
+else
+	if [ "$1" == "start" ] || [ "$1" == "restart" ]; then	
+		sh /tmp/APPS/DM2/Script/dm2_backup generalnvram-save
+	#nzb nvram-save/recover
+			NZB_TEST=`nvram get nzb_host`
+			if [ -f "$APPS_INSTALL_PATH/etc/dm2_nzbget_EX.conf" ]; then
+				if [ -z "$NZB_TEST" ]; then
+					sh /tmp/APPS/DM2/Script/dm2_backup nzb-nvramsave
+				else
+					sh /tmp/APPS/DM2/Script/dm2_backup nzb-nvrambackup
+				fi
+			else
+				if [ -n "$NZB_TEST" ]; then
+					sh /tmp/APPS/DM2/Script/dm2_backup nzb-nvramrecover		
+				fi
+			fi
+	fi
+fi
+	if [ -f "/userfs/bin/tcapi" ];then
+		/userfs/bin/tcapi commit Apps
+		/userfs/bin/tcapi save
+	else
+		nvram commit
+	fi
+
+start_amule(){
+	## ensure aMule can be started after it crashed
+	aMulePID=`pidof dm2_amuled`
+	if [ -z "$aMulePID" ] && [ -f "/tmp/APPS/DM2/Config/dm2_amule/muleLock" ]; then
+		rm -rf /tmp/APPS/DM2/Config/dm2_amule/muleLock
+	fi
+	
+	if [ "$have_nice" == "1" ]; then
+		nice -n 19 /opt/bin/dm2_amuled -c /tmp/APPS/DM2/Config/dm2_amule/ &
+	else
+		/opt/bin/dm2_amuled -c /tmp/APPS/DM2/Config/dm2_amule/ &
+	fi
+}
+
+case "$1" in
+  start|force-reload|restart)
+    #echo -n "Starting DM: "
+	#sh $APPS_INSTALL_PATH/etc/init.d/dm2_base_link.sh&
+	rm -rf /tmp/have_dm2
+	min_free=`cat "/proc/sys/vm/min_free_kbytes"`
+	if [ $min_free -lt 4096 ];then
+		echo 4096 > /proc/sys/vm/min_free_kbytes
+	fi
+	sh /tmp/APPS/DM2/Script/dm2_check
+
+	echo "downloadmaster_start" > /tmp/asus_app/downloadmaster_start
+	
+	if [ -z "$APPS_MOUNTED_PATH" ]; then
+		if [ -f "/userfs/bin/tcapi" ];then
+			/userfs/bin/tcapi set Apps_Entry apps_state_error 2
+			/userfs/bin/tcapi commit Apps
+			/userfs/bin/tcapi save
+		else
+			nvram set apps_state_error=2
+		fi
+		exit 1
+	fi
+
+	APP_BIN=$APPS_INSTALL_PATH/bin
+	APP_LIB=$APPS_INSTALL_PATH/lib
+	APP_ETC=$APPS_INSTALL_PATH/etc
+
+	APP_LINK_DIR=/tmp/opt
+	APP_LINK_BIN=$APP_LINK_DIR/bin
+	APP_LINK_LIB=$APP_LINK_DIR/lib
+
+	rm -rf /tmp/APPS/DM2/Status/*
+	if [ ! -f "/userfs/bin/tcapi" ];then
+		rm -rf $APP_LIB/libdl.so*
+	fi
+
+	APPS_MOUNTED_TYPE=`mount |grep "/dev/$APPS_DEV on " |awk '{print $5}'`
+	if [ "$APPS_MOUNTED_TYPE" != "vfat" ] && [ "$APPS_MOUNTED_TYPE" != "tfat" ]; then
+		#if [ ! -L "$APP_LINK_DIR" ]; then
+                #rm -rf $APP_LINK_DIR
+                #ln -sf $APPS_INSTALL_PATH $APP_LINK_DIR
+        	#fi
+
+		if [ ! -f "$APP_LIB/libpcre.so.1" ] && [ ! -f "$APP_LIB/libpcre.so.1.*" ]; then
+			ln -sf 	$APP_LIB/libpcre.so.0.0.1 $APP_LIB/libpcre.so.1
+		fi
+		if [ ! -f "$APP_LIB/libpcre.so.0" ] && [ ! -f "$APP_LIB/libpcre.so.0.0.1" ]; then
+				PCER_VER=`ls $APP_LIB/libpcre.so.1.* |awk 'BEGIN{FS=".so.1."}{print $2}'`
+				ln -sf 	$APP_LIB/libpcre.so.1.$PCER_VER $APP_LIB/libpcre.so.0
+		fi
+	    	#echo -n "Stopping DM: "
+		#killall -SIGTERM asus_lighttpd&
+		killall dm2_transmission-daemon&
+		transmissionnum=`ps | grep -c 'dm2_transmission-daemon'`
+		while [ $transmissionnum -ne 1 ]
+		do
+			transmissionnum=`ps | grep -c 'dm2_transmission-daemon'`
+			#echo $transmissionnum
+		done
+	   	killall -SIGUSR1 dm2_snarfmaster&
+		#killall -SIGUSR1 dm2_snarf&
+		killall -9 dm2_nzbget&
+		#killall -SIGUSR2 dm2_detect&
+		killall -SIGTERM dm2_amuled&
+		rm -rf /tmp/getdiskinfo_lock&
+		rm -rf /tmp/APPS/DM2/Config/dm2_general_check &
+		rm -rf /tmp/APPS/DM2/Config/dm2_general_protected &
+		rm -rf /tmp/APPS/DM2/Config/dm2_detect_protected &
+		rm -rf $APPS_MOUNTED_PATH/Download2/.logs/tracker_*
+		rm -rf $APPS_MOUNTED_PATH/Download2/.logs/transm_*
+		sed -i "31s/^.*$/TempDir=\/tmp\/mnt\/$BASE_PATH\/Download2\/InComplete/" /opt/etc/dm2_amule/dm2_amule.conf
+		#sed -i "32s/^.*$/IncomingDir=$DOWNLOAD_PATH_ED2K/" /opt/etc/dm2_amule/dm2_amule.conf
+		sed -i "47s/^.*$/OSDirectory=\/opt\/etc\/dm2_amule\//" /opt/etc/dm2_amule/dm2_amule.conf
+		cp -rf /opt/etc/dm2_amule/dm2_amule.conf /tmp/APPS/DM2/Config/dm2_amule/dm2_amule.conf
+		cp -rf /opt/etc/dm2_ed2k.conf /tmp/APPS/DM2/Config/dm2_ed2k.conf
+
+		#echo "DM2.0 firewall-stop: "
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+		iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+		iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+		#iptables -D INPUT -p udp --dport $DM_PORT -j ACCEPT
+		iptables -D INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+		iptables -D INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+		iptables -D INPUT -p tcp --dport 4662 -j ACCEPT
+		iptables -D INPUT -p udp --dport 4665 -j ACCEPT
+		iptables -D INPUT -p udp --dport 4672 -j ACCEPT
+		iptables -D OUTPUT -p tcp --dport 4662 -j ACCEPT
+		iptables -D OUTPUT -p udp --dport 4665 -j ACCEPT
+		iptables -D OUTPUT -p udp --dport 4672 -j ACCEPT
+	    	#echo "DM2.0 firewall-start: "
+		if [ -f "/userfs/bin/tcapi" ];then
+			if [ "$MISC_HTTP_X" = "1" ]; then
+				iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+				iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+			fi
+
+			if [ "$APPS_DL_SHARE" = "1" ]; then
+				        # port range
+				        iptables -I INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+				        iptables -I INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+					iptables -I INPUT -p tcp --dport 4662 -j ACCEPT
+					iptables -I INPUT -p udp --dport 4665 -j ACCEPT
+					iptables -I INPUT -p udp --dport 4672 -j ACCEPT
+					iptables -I OUTPUT -p tcp --dport 4662 -j ACCEPT
+					iptables -I OUTPUT -p udp --dport 4665 -j ACCEPT
+					iptables -I OUTPUT -p udp --dport 4672 -j ACCEPT
+					iptables -t nat -I VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+					iptables -t nat -I VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+					iptables -t nat -I VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+					iptables -t nat -I VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+					iptables -t nat -I VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+			fi
+		else
+			if [ "$MISC_HTTP_X" == "1" ]; then
+				iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+				iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+			fi
+
+			if [ "$APPS_DL_SHARE" == "1" ]; then
+				        # port range
+				        iptables -I INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+				        iptables -I INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+					iptables -I INPUT -p tcp --dport 4662 -j ACCEPT
+					iptables -I INPUT -p udp --dport 4665 -j ACCEPT
+					iptables -I INPUT -p udp --dport 4672 -j ACCEPT
+					iptables -I OUTPUT -p tcp --dport 4662 -j ACCEPT
+					iptables -I OUTPUT -p udp --dport 4665 -j ACCEPT
+					iptables -I OUTPUT -p udp --dport 4672 -j ACCEPT
+					iptables -t nat -I VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+					iptables -t nat -I VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+					iptables -t nat -I VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+					iptables -t nat -I VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+					iptables -t nat -I VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+			fi
+		fi
+		if [ -f "/userfs/bin/tcapi" ];then
+			/userfs/bin/tcapi set Apps_Entry dm_http_port $DM_PORT
+			/userfs/bin/tcapi set Apps_Entry dm_https_port $DM_HTTPS_PORT
+			/userfs/bin/tcapi commit Apps
+			/userfs/bin/tcapi save
+		else
+			nvram set dm_http_port=$DM_PORT
+			nvram set dm_https_port=$DM_HTTPS_PORT
+			nvram commit		
+		fi
+
+		        if [ -f $APPS_MOUNTED_PATH/Download2/config/settings.json ]; then
+ 			sed -i "43s/^.*$/    \"rpc-authentication-required\": true,/" $APPS_MOUNTED_PATH/Download2/config/settings.json
+
+			fi
+
+		cd  /opt/bin
+		if [ ! -f "/userfs/bin/tcapi" ];then
+			ln -sf /lib/libc.so.0 /opt/lib/libc.so.0
+			ln -sf /lib/libpthread.so.0 /opt/lib/libpthread.so.0
+			if [ "$have_nice" == "1" ]; then 
+				nice -n 19 ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+			else
+				./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+			fi
+			sleep 1
+			ln -sf /opt/lib/libuClibc-0.9.30.so /opt/lib/libc.so.0
+			ln -sf /opt/lib/libpthread-0.9.30.so /opt/lib/libpthread.so.0
+		else
+			if [ "$have_nice" = "1" ]; then 
+				nice -n 19 ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+			else
+				./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+			fi
+		fi
+
+		start_amule
+
+			if [ "$have_nice" != "1" ]; then 
+			./dm2_snarfmaster&
+			#echo "have_dm2" > /tmp/have_dm2
+			./dm2_nzbget -D&
+			#./asus_lighttpd -Df /opt/etc/asus_lighttpd.conf&
+			else
+			nice -n 19 ./dm2_snarfmaster&
+			nice -n 19 ./dm2_nzbget -D&
+			fi
+		if [  -f "$dir_ed2k_file" ]; then
+			amulenum=`ps | grep -c 'dm2_amuled'`
+			if [ $amulenum -lt 4 ]; then
+				sleep 8
+			fi
+			#/opt/bin/dm2_amulecmd -h $LAN_IP -P admin -c "add ed2k://|server|$ED2K_SERVER_IP|$ED2K_SERVER_PORT|"
+			/opt/bin/dm2_amulecmd -h $LAN_IP -P admin -c "connect $ED2K_SERVER_IP:$ED2K_SERVER_PORT"&
+		fi
+
+		asuslighttpdnum=`ps | grep "asus_lighttpd" | grep -v "$0" | grep -v "grep" | awk '{printf $5}'`
+		#echo "asuslighttpdnum="$asuslighttpdnum
+		if [ "$asuslighttpdnum" != "./asus_lighttpd" ] && [ "$asuslighttpdnum" != "/opt/bin/asus_lighttpd" ]; then
+			sh /tmp/APPS/Lighttpd/Script/S50asuslighttpd start
+		else
+			killall -SIGUSR2 asus_lighttpd&
+		fi
+		sleep 2
+		echo "have_dm2" > /tmp/have_dm2		
+		exit 0
+	fi
+
+	# openssl
+	OPENSSL_VER=`ls $APP_LIB/libcrypto.so.* |awk 'BEGIN{FS="libcrypto.so."}{print $2}'`
+	ln -sf $APP_LIB/libcrypto.so.$OPENSSL_VER $APP_LINK_LIB/libcrypto.so.0
+	ln -sf $APP_LIB/libcrypto.so.$OPENSSL_VER $APP_LINK_LIB/libcrypto.so
+	ln -sf $APP_LIB/libssl.so.$OPENSSL_VER $APP_LINK_LIB/libssl.so.0
+	ln -sf $APP_LIB/libssl.so.$OPENSSL_VER $APP_LINK_LIB/libssl.so
+
+	# zlib
+	ZLIB_VER=`ls $APP_LIB/libz.so.* |awk 'BEGIN{FS="libz.so."}{print $2}'`
+	ln -sf $APP_LIB/libz.so.$ZLIB_VER $APP_LINK_LIB/libz.so.1
+	ln -sf $APP_LIB/libz.so.$ZLIB_VER $APP_LINK_LIB/libz.so
+
+	# libcurl
+	LIBCURL_VER=`ls $APP_LIB/libcurl.so.* |awk 'BEGIN{FS="libcurl.so."}{print $2}'`
+	ln -sf $APP_LIB/libcurl.so.$LIBCURL_VER $APP_LINK_LIB/libcurl.so.4
+	ln -sf $APP_LIB/libcurl.so.$LIBCURL_VER $APP_LINK_LIB/libcurl.so
+
+	# libevent
+	LIBEVENT_VER=`ls $APP_LIB/libevent-2.0.so.* |awk 'BEGIN{FS="2.0.so."}{print $2}'`
+	ln -sf $APP_LIB/libevent-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent-2.0.so.5
+	ln -sf $APP_LIB/libevent-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent.so
+	ln -sf $APP_LIB/libevent_core-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent_core-2.0.so.5
+	ln -sf $APP_LIB/libevent_core-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent_core.so
+	ln -sf $APP_LIB/libevent_extra-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent_extra-2.0.so.5
+	ln -sf $APP_LIB/libevent_extra-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent_extra.so
+	ln -sf $APP_LIB/libevent_openssl-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent_openssl-2.0.so.5
+	ln -sf $APP_LIB/libevent_openssl-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent_openssl.so
+	ln -sf $APP_LIB/libevent_pthreads-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent_pthreads-2.0.so.5
+	ln -sf $APP_LIB/libevent_pthreads-2.0.so.$LIBEVENT_VER $APP_LINK_LIB/libevent_pthreads.so
+
+	# ncurses
+	NCURSES_VER=`ls $APP_LIB/libform.so.* |awk 'BEGIN{FS="libform.so."}{print $2}'`
+	ln -sf $APP_LIB/libform.so.$NCURSES_VER $APP_LINK_LIB/libform.so.5
+	ln -sf $APP_LIB/libform.so.$NCURSES_VER $APP_LINK_LIB/libform.so
+	ln -sf $APP_LIB/libmenu.so.$NCURSES_VER $APP_LINK_LIB/libmenu.so.5
+	ln -sf $APP_LIB/libmenu.so.$NCURSES_VER $APP_LINK_LIB/libmenu.so
+	ln -sf $APP_LIB/libncurses.so.$NCURSES_VER $APP_LINK_LIB/libncurses.so.5
+	ln -sf $APP_LIB/libncurses.so.$NCURSES_VER $APP_LINK_LIB/libncurses.so
+	ln -sf $APP_LIB/libpanel.so.$NCURSES_VER $APP_LINK_LIB/libpanel.so.5
+	ln -sf $APP_LIB/libpanel.so.$NCURSES_VER $APP_LINK_LIB/libpanel.so
+	ln -sf $APP_LIB/../share/terminfo $APP_LINK_LIB/terminfo
+
+	# libxml2
+	LIBXML2_VER=`ls $APP_LIB/libxml2.so.* |awk 'BEGIN{FS="libxml2.so."}{print $2}'`
+	ln -sf $APP_LIB/libxml2.so.$LIBXML2_VER $APP_LINK_LIB/libxml2.so.2
+	ln -sf $APP_LIB/libxml2.so.$LIBXML2_VER $APP_LINK_LIB/libxml2.so
+
+	if [ -z "$is_arm_machine" ]; then
+		# libuclibc++
+		LIBCPLUS_VER=`ls $APP_LIB/libuClibc++-* |awk 'BEGIN{FS="libuClibc++"}{print $2}' |awk 'BEGIN{FS="-"}{print $2}' |awk 'BEGIN{FS=".so"}{print $1}'`
+		ln -sf $APP_LIB/libuClibc++-$LIBCPLUS_VER.so $APP_LINK_LIB/libuClibc++.so.0
+		ln -sf $APP_LIB/libuClibc++-$LIBCPLUS_VER.so $APP_LINK_LIB/libuClibc++.so
+	fi
+
+	# libsigc++
+	LIBSIGC_VER=`ls $APP_LIB/libsigc-2.0.so.* |awk 'BEGIN{FS="libsigc-2.0.so."}{print $2}'`
+	ln -sf $APP_LIB/libsigc-2.0.so.$LIBSIGC_VER $APP_LINK_LIB/libsigc-2.0.so.0
+	ln -sf $APP_LIB/libsigc-2.0.so.$LIBSIGC_VER $APP_LINK_LIB/libsigc-2.0.so
+
+	# libpar2
+	LIBPAR_VER=`ls $APP_LIB/libpar2.so.* |awk 'BEGIN{FS="libpar2.so."}{print $2}'`
+	ln -sf $APP_LIB/libpar2.so.$LIBPAR_VER $APP_LINK_LIB/libpar2.so.0
+	ln -sf $APP_LIB/libpar2.so.$LIBPAR_VER $APP_LINK_LIB/libpar2.so
+
+	# pcre
+	PCRE1_VER=`ls $APP_LIB/libpcre.so.* |awk 'BEGIN{FS="libpcre.so."}{print $2}'`
+	ln -sf $APP_LIB/libpcre.so.$PCRE1_VER $APP_LINK_LIB/libpcre.so.1
+	ln -sf $APP_LIB/libpcre.so.$PCRE1_VER $APP_LINK_LIB/libpcre.so.0
+	ln -sf $APP_LIB/libpcre.so.$PCRE1_VER $APP_LINK_LIB/libpcre.so
+	PCRE2_VER=`ls $APP_LIB/libpcrecpp.so.* |awk 'BEGIN{FS="libpcrecpp.so."}{print $2}'`
+	ln -sf $APP_LIB/libpcrecpp.so.$PCRE2_VER $APP_LINK_LIB/libpcrecpp.so.1
+	ln -sf $APP_LIB/libpcrecpp.so.$PCRE2_VER $APP_LINK_LIB/libpcrecpp.so.0
+	ln -sf $APP_LIB/libpcrecpp.so.$PCRE2_VER $APP_LINK_LIB/libpcrecpp.so
+	PCRE3_VER=`ls $APP_LIB/libpcreposix.so.* |awk 'BEGIN{FS="libpcreposix.so."}{print $2}'`
+	ln -sf $APP_LIB/libpcreposix.so.$PCRE3_VER $APP_LINK_LIB/libpcreposix.so.1
+	ln -sf $APP_LIB/libpcreposix.so.$PCRE3_VER $APP_LINK_LIB/libpcreposix.so.0
+	ln -sf $APP_LIB/libpcreposix.so.$PCRE3_VER $APP_LINK_LIB/libpcreposix.so
+
+	# expat	
+	EXPAT_VER=`ls $APP_LIB/libexpat.so.* |awk 'BEGIN{FS="libexpat.so."}{print $2}'`
+	ln -sf $APP_LIB/libexpat.so.$EXPAT_VER $APP_LINK_LIB/libexpat.so.1
+	ln -sf $APP_LIB/libexpat.so.$EXPAT_VER $APP_LINK_LIB/libexpat.so
+
+	# wxbase
+	WXBASE_VER=`ls $APP_LIB/libwx_baseu-2.8.so.* |awk 'BEGIN{FS="libwx_baseu-2.8.so."}{print $2}'`
+	ln -sf $APP_LIB/libwx_baseu-2.8.so.$WXBASE_VER $APP_LINK_LIB/libwx_baseu-2.8.so.0
+	ln -sf $APP_LIB/libwx_baseu_net-2.8.so.$WXBASE_VER $APP_LINK_LIB/libwx_baseu_net-2.8.so.0
+	ln -sf $APP_LIB/libwx_baseu_xml-2.8.so.$WXBASE_VER $APP_LINK_LIB/libwx_baseu_xml-2.8.so.0
+	if [ -z "$is_arm_machine" ]; then
+		ln -sf $APP_LIB/libwx_baseu-2.8.so.$WXBASE_VER $APP_LINK_LIB/libwx_baseu-2.8-mipsel-linux.so
+		ln -sf $APP_LIB/libwx_baseu_net-2.8.so.$WXBASE_VER $APP_LINK_LIB/libwx_baseu_net-2.8-mipsel-linux.so
+		ln -sf $APP_LIB/libwx_baseu_xml-2.8.so.$WXBASE_VER $APP_LINK_LIB/libwx_baseu_xml-2.8-mipsel-linux.so
+	else
+		ln -sf $APP_LIB/libwx_baseu-2.8.so.$WXBASE_VER $APP_LINK_LIB/libwx_baseu-2.8-arm-linux.so
+		ln -sf $APP_LIB/libwx_baseu_net-2.8.so.$WXBASE_VER $APP_LINK_LIB/libwx_baseu_net-2.8-arm-linux.so
+		ln -sf $APP_LIB/libwx_baseu_xml-2.8.so.$WXBASE_VER $APP_LINK_LIB/libwx_baseu_xml-2.8-arm-linux.so
+	fi
+	
+	#readline
+	READLINE_VER=`ls $APP_LIB/libreadline.so.* |awk 'BEGIN{FS="libreadline.so."}{print $2}'`
+	ln -sf $APP_LIB/libreadline.so.$READLINE_VER $APP_LINK_LIB/libreadline.so.6
+	ln -sf $APP_LIB/libreadline.so.$READLINE_VER $APP_LINK_LIB/libreadline.so
+
+    	#echo -n "Stopping DM: "
+	#killall -SIGTERM asus_lighttpd&
+	killall dm2_transmission-daemon&
+	transmissionnum=`ps | grep -c 'dm2_transmission-daemon'`
+	while [ $transmissionnum -ne 1 ]
+	do
+		transmissionnum=`ps | grep -c 'dm2_transmission-daemon'`
+		#echo $transmissionnum
+	done
+   	killall -SIGUSR1 dm2_snarfmaster&
+	#killall -SIGUSR1 dm2_snarf&
+        killall -9 dm2_nzbget&
+	#killall -SIGUSR2 dm2_detect&
+	killall -SIGTERM dm2_amuled&
+	rm -rf /tmp/getdiskinfo_lock&
+	rm -rf /tmp/APPS/DM2/Config/dm2_general_check &
+	rm -rf /tmp/APPS/DM2/Config/dm2_general_protected &
+	rm -rf /tmp/APPS/DM2/Config/dm2_detect_protected &
+	rm -rf $APPS_MOUNTED_PATH/Download2/.logs/tracker_*
+	rm -rf $APPS_MOUNTED_PATH/Download2/.logs/transm_*
+	sed -i "31s/^.*$/TempDir=\/tmp\/mnt\/$BASE_PATH\/Download2\/InComplete/" /opt/etc/dm2_amule/dm2_amule.conf
+	#sed -i "32s/^.*$/IncomingDir=$DOWNLOAD_PATH_ED2K/" /opt/etc/dm2_amule/dm2_amule.conf
+	sed -i "47s/^.*$/OSDirectory=\/opt\/etc\/dm2_amule\//" /opt/etc/dm2_amule/dm2_amule.conf
+	cp -rf /opt/etc/dm2_amule/dm2_amule.conf /tmp/APPS/DM2/Config/dm2_amule/dm2_amule.conf
+	cp -rf /opt/etc/dm2_ed2k.conf /tmp/APPS/DM2/Config/dm2_ed2k.conf
+
+
+   	 #echo "DM2.0 firewall-stop: "
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+	iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+	iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTPS_PORT -j ACCEPT
+	#iptables -D INPUT -p udp --dport $DM_PORT -j ACCEPT
+	iptables -D INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+	iptables -D INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+	iptables -D INPUT -p tcp --dport 4662 -j ACCEPT
+	iptables -D INPUT -p udp --dport 4665 -j ACCEPT
+	iptables -D INPUT -p udp --dport 4672 -j ACCEPT
+	iptables -D OUTPUT -p tcp --dport 4662 -j ACCEPT
+	iptables -D OUTPUT -p udp --dport 4665 -j ACCEPT
+	iptables -D OUTPUT -p udp --dport 4672 -j ACCEPT
+    	#echo "DM2.0 firewall-start: "
+	if [ -f "/userfs/bin/tcapi" ];then
+		if [ "$MISC_HTTP_X" = "1" ]; then
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+		fi
+	else
+		if [ "$MISC_HTTP_X" == "1" ]; then
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+		fi
+	fi
+
+	if [ -f "/userfs/bin/tcapi" ];then
+		if [ "$APPS_DL_SHARE" = "1" ]; then
+		                # port range
+		                iptables -I INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+		                iptables -I INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+				iptables -I INPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4672 -j ACCEPT
+				iptables -I OUTPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4672 -j ACCEPT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+		fi
+	else
+		if [ "$APPS_DL_SHARE" == "1" ]; then
+		                # port range
+		                iptables -I INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+		                iptables -I INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+				iptables -I INPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4672 -j ACCEPT
+				iptables -I OUTPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4672 -j ACCEPT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+		fi
+	fi
+
+		if [ -f "/userfs/bin/tcapi" ];then
+			/userfs/bin/tcapi set Apps_Entry dm_http_port $DM_PORT
+			/userfs/bin/tcapi set Apps_Entry dm_https_port $DM_HTTPS_PORT
+			/userfs/bin/tcapi commit Apps
+			/userfs/bin/tcapi save
+		else
+			nvram set dm_http_port=$DM_PORT
+			nvram set dm_https_port=$DM_HTTPS_PORT
+			nvram commit
+		fi
+
+		        if [ -f $APPS_MOUNTED_PATH/Download2/config/settings.json ]; then
+ 			sed -i "43s/^.*$/    \"rpc-authentication-required\": true,/" $APPS_MOUNTED_PATH/Download2/config/settings.json
+
+			fi
+
+
+	cd  /opt/bin
+		if [ ! -f "/userfs/bin/tcapi" ];then
+			ln -sf /lib/libc.so.0 $APP_LINK_LIB/libc.so.0
+			ln -sf /lib/libpthread.so.0 $APP_LINK_LIB/libpthread.so.0
+			if [ "$have_nice" == "1" ]; then 
+				nice -n 19 ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+			else
+				./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+			fi
+			sleep 1
+			ln -sf $APP_LIB/libuClibc-0.9.30.so $APP_LINK_LIB/libc.so.0
+			ln -sf $APP_LIB/libpthread-0.9.30.so $APP_LINK_LIB/libpthread.so.0
+		else
+			if [ "$have_nice" = "1" ]; then
+				nice -n 19 ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+			else
+				./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+			fi
+		fi
+
+		start_amule
+
+			if [ "$have_nice" != "1" ]; then 
+			./dm2_snarfmaster&
+			#echo "have_dm2" > /tmp/have_dm2
+			./dm2_nzbget -D&
+			#./asus_lighttpd -Df /opt/etc/asus_lighttpd.conf&
+			else
+			nice -n 19 ./dm2_snarfmaster&
+			nice -n 19 ./dm2_nzbget -D&
+			fi
+
+
+	if [  -f "$dir_ed2k_file" ]; then
+			amulenum=`ps | grep -c 'dm2_amuled'`
+			if [ $amulenum -lt 4 ]; then
+				sleep 8
+			fi
+		#/opt/bin/dm2_amulecmd -h $LAN_IP -P admin -c "add ed2k://|server|$ED2K_SERVER_IP|$ED2K_SERVER_PORT|"
+		/opt/bin/dm2_amulecmd -h $LAN_IP -P admin -c "connect $ED2K_SERVER_IP:$ED2K_SERVER_PORT"&
+	fi
+		asuslighttpdnum=`ps | grep "asus_lighttpd" | grep -v "$0" | grep -v "grep" | awk '{printf $5}'`
+		#echo "asuslighttpdnum="$asuslighttpdnum
+		if [ "$asuslighttpdnum" != "./asus_lighttpd" ] && [ "$asuslighttpdnum" != "/opt/bin/asus_lighttpd" ]; then
+			sh /tmp/APPS/Lighttpd/Script/S50asuslighttpd start
+		else
+			killall -SIGUSR2 asus_lighttpd&
+		fi
+		sleep 2
+		echo "have_dm2" > /tmp/have_dm2	
+    #echo "DM2.0."
+    ;;
+  stop)
+    #echo -n "Stopping DM: "
+	if [ -f "/tmp/username_pw_DM.txt" ] ; then
+	rm -rf /tmp/username_pw_DM.txt
+	fi
+	rm -rf /tmp/have_dm2
+	rm -rf /tmp/asus_app/downloadmaster_start
+###diskinfo save
+		if [ -f "/userfs/bin/tcapi" ];then
+			PAHTN=`cat /tmp/dm_mount_path_n | awk 'BEGIN{FS="="}{print $2}'`
+			#USBPAHTN=path${PATHN}
+			ACT=usb_path${PAHTN}_act
+			SERIAL=usb_path${PAHTN}_serial
+			PID=usb_path${PAHTN}_pid
+			VID=usb_path${PAHTN}_vid
+			USB_ACT=`/userfs/bin/tcapi get USB_Entry $ACT`
+			USB_SERIAL=`/userfs/bin/tcapi get USB_Entry $SERIAL`
+			USB_PID=`/userfs/bin/tcapi get USB_Entry $PID`
+			USB_VID=`/userfs/bin/tcapi get USB_Entry $VID`
+			disk_tmp=`cat /opt/etc/dm2_general.conf | grep "Download_dir=" | cut -d '/' -f 2-4`
+			partition_tmp=`cat /proc/mounts | grep "/dev/" | grep "$disk_tmp" |awk '{printf $1}'`
+			partition_num=`echo $partition_tmp | sed 's/\(.*\)\(.\)$/\2/'`
+			/userfs/bin/tcapi set Apps_Entry gen_partition $partition_num
+			if [ "$USB_ACT" = "no attribute information" ]; then
+				/userfs/bin/tcapi set Apps_Entry gen_serial 000000
+				/userfs/bin/tcapi set Apps_Entry gen_vonder 000000
+				/userfs/bin/tcapi set Apps_Entry gen_product 000000
+
+			else
+
+					/userfs/bin/tcapi set Apps_Entry gen_serial "$USB_SERIAL"
+					/userfs/bin/tcapi set Apps_Entry gen_vonder "$USB_VID"
+					/userfs/bin/tcapi set Apps_Entry gen_product "$USB_PID"
+	
+			fi
+			/userfs/bin/tcapi commit Apps
+			/userfs/bin/tcapi save
+		else
+			PAHTN=`cat /tmp/dm_mount_path_n | awk 'BEGIN{FS="="}{print $2}'`
+			#USBPAHTN=path${PATHN}
+			ACT=usb_path${PAHTN}_act
+			SERIAL=usb_path${PAHTN}_serial
+			PID=usb_path${PAHTN}_pid
+			VID=usb_path${PAHTN}_vid
+			USB_ACT=`nvram get $ACT`
+			USB_SERIAL=`nvram get $SERIAL`
+			USB_PID=`nvram get $PID`
+			USB_VID=`nvram get $VID`
+
+			##get partitionnum
+			disk_tmp=`cat /opt/etc/dm2_general.conf | grep "Download_dir=" | cut -d '/' -f 2-4`
+			partition_tmp=`cat /proc/mounts | grep "/dev/" | grep "$disk_tmp" |awk '{printf $1}'`
+			partition_num=`echo $partition_tmp | sed 's/\(.*\)\(.\)$/\2/'`
+			nvram set gen_partition="$partition_num"
+
+			#get serial voder product
+			if [ -z "$USB_ACT" ]; then
+				nvram set gen_serial=000000
+				nvram set gen_vonder=000000
+				nvram set gen_product=000000
+			
+			else
+				
+					nvram set gen_serial="$USB_SERIAL"
+					nvram set gen_vonder="$USB_VID"
+					nvram set gen_product="$USB_PID"
+					
+			fi
+			nvram commit
+		fi
+###diskinfo save
+	APP_CHECK=`ls /tmp/asus_app`
+	media_server_control="/opt/lib/ipkg/info/mediaserver.control"
+	if [ ! -f "$media_server_control" ]; then
+		media_exist="no"
+	else 
+
+		media_exist=`cat "$media_server_control" |grep "Enabled:" |awk 'BEGIN{FS=": "}{print $2}'`
+	fi
+	if [ -f "/userfs/bin/tcapi" ];then
+		if [ -z "$APP_CHECK" ] && [ "$media_exist" = "no" ]; then
+			killall -SIGTERM asus_lighttpd&
+		fi
+	else
+		if [ -z "$APP_CHECK" ] && [ "$media_exist" == "no" ]; then
+			killall -SIGTERM asus_lighttpd&
+		fi
+	fi
+	rm -rf /tmp/APPS/DM2/Status/*
+	killall dm2_transmission-daemon&
+	transmissionnum=`ps | grep -c 'dm2_transmission-daemon'`
+	while [ $transmissionnum -ne 1 ]
+	do
+		transmissionnum=`ps | grep -c 'dm2_transmission-daemon'`
+		#echo $transmissionnum
+	done
+   	killall -SIGUSR1 dm2_snarfmaster&
+	#killall -SIGUSR1 dm2_snarf&
+        killall -SIGINT dm2_nzbget&
+	#killall -SIGUSR2 dm2_detect&
+	killall -SIGTERM dm2_amuled&
+	rm -rf /tmp/APPS/DM2/Config/dm2_general_check &
+	rm -rf /tmp/APPS/DM2/Config/dm2_general_protected &
+	rm -rf /tmp/APPS/DM2/Config/dm2_detect_protected &
+	rm -rf $APPS_MOUNTED_PATH/Download2/.logs/tracker_*
+	rm -rf $APPS_MOUNTED_PATH/Download2/.logs/transm_*
+	#rm -rf $APPS_MOUNTED_PATH/Download2/.logs/nzb_*	
+    #echo "DM2.0 firewall-stop: "
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+	iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+	iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+	#iptables -D INPUT -p udp --dport $DM_PORT -j ACCEPT
+	iptables -D INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+	iptables -D INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+	iptables -D INPUT -p tcp --dport 4662 -j ACCEPT
+	iptables -D INPUT -p udp --dport 4665 -j ACCEPT
+	iptables -D INPUT -p udp --dport 4672 -j ACCEPT
+	iptables -D OUTPUT -p tcp --dport 4662 -j ACCEPT
+	iptables -D OUTPUT -p udp --dport 4665 -j ACCEPT
+	iptables -D OUTPUT -p udp --dport 4672 -j ACCEPT
+
+    #echo "DM2.0."
+    ;;
+#  force-reload|restart)
+    #echo "Restarting DM: "
+#	rm -rf /tmp/have_dm2
+    #sh /opt/etc/init.d/S50downloadmaster stop
+#    sh /opt/etc/init.d/S50downloadmaster start
+#    ;;
+
+  firewall-start)
+    #echo "DM2.0 firewall-start: "
+	if [ -f "/userfs/bin/tcapi" ];then
+		if [ "$MISC_HTTP_X" = "1" ]; then
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+		fi
+
+		if [ "$APPS_DL_SHARE" = "1" ]; then
+		                # port range
+		                iptables -I INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+		                iptables -I INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+				iptables -I INPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4672 -j ACCEPT
+				iptables -I OUTPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4672 -j ACCEPT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+		fi
+	else
+		if [ "$MISC_HTTP_X" == "1" ]; then
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+		fi
+
+		if [ "$APPS_DL_SHARE" == "1" ]; then
+		                # port range
+		                iptables -I INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+		                iptables -I INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+				iptables -I INPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4672 -j ACCEPT
+				iptables -I OUTPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4672 -j ACCEPT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+		fi
+	fi
+	;;
+  firewall-stop)
+    #echo "DM2.0 firewall-stop: "
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+	iptables -t nat -D VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+	iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+	iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+	#iptables -D INPUT -p udp --dport $DM_PORT -j ACCEPT
+	iptables -D INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+	iptables -D INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+	iptables -D INPUT -p tcp --dport 4662 -j ACCEPT
+	iptables -D INPUT -p udp --dport 4665 -j ACCEPT
+	iptables -D INPUT -p udp --dport 4672 -j ACCEPT
+	iptables -D OUTPUT -p tcp --dport 4662 -j ACCEPT
+	iptables -D OUTPUT -p udp --dport 4665 -j ACCEPT
+	iptables -D OUTPUT -p udp --dport 4672 -j ACCEPT
+	;;
+
+  firewall-restart)
+    #echo "Restarting DM firewall: "
+    #echo "DM2.0 firewall-stop: "
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+	iptables -t nat -D VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+	if [ -f "/userfs/bin/tcapi" ];then
+		if [ "$2" = "" ];then
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+		else
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport $2 -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport $2 -j DNAT --to $LAN_IP
+		fi
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+		iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+		iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+		#iptables -D INPUT -p udp --dport $DM_PORT -j ACCEPT
+		if [ "$2" = "" ];then
+		iptables -D INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+		iptables -D INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+		else
+		iptables -D INPUT -p udp --dport $2 -j ACCEPT
+		iptables -D INPUT -p tcp --dport $2 -j ACCEPT
+		fi
+		iptables -D INPUT -p tcp --dport 4662 -j ACCEPT
+		iptables -D INPUT -p udp --dport 4665 -j ACCEPT
+		iptables -D INPUT -p udp --dport 4672 -j ACCEPT
+		iptables -D OUTPUT -p tcp --dport 4662 -j ACCEPT
+		iptables -D OUTPUT -p udp --dport 4665 -j ACCEPT
+		iptables -D OUTPUT -p udp --dport 4672 -j ACCEPT
+	    	#echo "DM2.0 firewall-start: "
+		if [ "$MISC_HTTP_X" = "1" ]; then
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+		fi
+
+		if [ "$APPS_DL_SHARE" = "1" ]; then
+		                # port range
+		                iptables -I INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+		                iptables -I INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+				iptables -I INPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4672 -j ACCEPT
+				iptables -I OUTPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4672 -j ACCEPT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+		fi
+	else
+		if [ "$2" == "" ];then
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+		else
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport $2 -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport $2 -j DNAT --to $LAN_IP
+		fi
+		iptables -t nat -D VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+		iptables -t nat -D VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+		iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+		iptables -D INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+		#iptables -D INPUT -p udp --dport $DM_PORT -j ACCEPT
+		if [ "$2" == "" ];then
+		iptables -D INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+		iptables -D INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+		else
+		iptables -D INPUT -p udp --dport $2 -j ACCEPT
+		iptables -D INPUT -p tcp --dport $2 -j ACCEPT
+		fi
+		iptables -D INPUT -p tcp --dport 4662 -j ACCEPT
+		iptables -D INPUT -p udp --dport 4665 -j ACCEPT
+		iptables -D INPUT -p udp --dport 4672 -j ACCEPT
+		iptables -D OUTPUT -p tcp --dport 4662 -j ACCEPT
+		iptables -D OUTPUT -p udp --dport 4665 -j ACCEPT
+		iptables -D OUTPUT -p udp --dport 4672 -j ACCEPT
+	    	#echo "DM2.0 firewall-start: "
+		if [ "$MISC_HTTP_X" == "1" ]; then
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_PORT -j ACCEPT
+			iptables -I INPUT -p tcp -m tcp -d $LAN_IP --dport $DM_HTTPS_PORT -j ACCEPT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_PORT -j DNAT --to-destination $LAN_IP:$DM_PORT
+			iptables -t nat -I VSERVER -p tcp -m tcp --dport $DM_HTTPS_PORT -j DNAT --to-destination $LAN_IP:$DM_HTTPS_PORT
+		fi
+
+		if [ "$APPS_DL_SHARE" == "1" ]; then
+		                # port range
+		                iptables -I INPUT -p udp --dport $apps_dl_share_port -j ACCEPT
+		                iptables -I INPUT -p tcp --dport $apps_dl_share_port -j ACCEPT
+				iptables -I INPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I INPUT -p udp --dport 4672 -j ACCEPT
+				iptables -I OUTPUT -p tcp --dport 4662 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4665 -j ACCEPT
+				iptables -I OUTPUT -p udp --dport 4672 -j ACCEPT
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport $apps_dl_share_port -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p tcp -m tcp --dport 4662 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4665 -j DNAT --to $LAN_IP
+				iptables -t nat -I VSERVER -p udp -m udp --dport 4672 -j DNAT --to $LAN_IP
+		fi
+	fi
+		echo "end">/tmp/dm2_firewall_tag
+    ;;
+
+  lighttpd-restart)
+    #echo "Restarting DM firewall: "
+	killall -SIGTERM asus_lighttpd&
+	#killall -SIGUSR2 dm2_detect&
+	rm -rf /tmp/APPS/DM2/Config/dm2_general_protected &
+	rm -rf /tmp/APPS/DM2/Config/dm2_detect_protected &
+	sleep 2
+	cd /opt/bin && ./asus_lighttpd -Df /opt/etc/asus_lighttpd.conf &
+    ;;
+
+  bt-restart)
+    #echo "Restarting dm2_transmission-daemon: "
+	rm -rf $APPS_MOUNTED_PATH/Download2/.logs/tracker_*
+	rm -rf $APPS_MOUNTED_PATH/Download2/.logs/transm_*
+		        if [ -f $APPS_MOUNTED_PATH/Download2/config/settings.json ]; then
+ 			sed -i "43s/^.*$/    \"rpc-authentication-required\": true,/" $APPS_MOUNTED_PATH/Download2/config/settings.json
+
+			fi	
+	#cd /opt/bin && ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+			if [ ! -f "/userfs/bin/tcapi" ];then
+				ln -sf /lib/libc.so.0 /tmp/opt/lib/libc.so.0
+				ln -sf /lib/libpthread.so.0 /tmp/opt/lib/libpthread.so.0
+				if [ "$have_nice" == "1" ]; then 
+					cd /opt/bin &&  nice -n 19 ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+				else
+					cd /opt/bin && ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+				fi
+				sleep 1
+				ln -sf /opt/lib/libuClibc-0.9.30.so /tmp/opt/lib/libc.so.0
+				ln -sf /opt/lib/libpthread-0.9.30.so /tmp/opt/lib/libpthread.so.0
+			else
+				if [ "$have_nice" = "1" ]; then 
+					cd /opt/bin &&  nice -n 19 ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+				else
+					cd /opt/bin &&  ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+				fi
+			fi
+    ;;
+
+   dir-change)
+
+	start_amule
+
+	  cd  /opt/bin
+	if [ "$have_nice" != "1" ]; then 
+		if [ $2 != "seeding" ]; then
+		./dm2_snarfmaster&
+		./dm2_nzbget -D&
+		killall -SIGUSR2 asus_lighttpd&
+		fi
+	else
+		if [ $2 != "seeding" ]; then
+		nice -n 19 ./dm2_snarfmaster&
+		nice -n 19 ./dm2_nzbget -D&
+		killall -SIGUSR2 asus_lighttpd&
+		fi
+	fi
+		        if [ -f $APPS_MOUNTED_PATH/Download2/config/settings.json ]; then
+ 			sed -i "43s/^.*$/    \"rpc-authentication-required\": true,/" $APPS_MOUNTED_PATH/Download2/config/settings.json
+
+			fi
+
+	if [ $2 != "dir" ]; then
+		bt_num=`ps | grep -c 'dm2_transmission-daemon'`
+		if [ $bt_num -lt 2 ]; then
+			if [ ! -f "/userfs/bin/tcapi" ];then
+				ln -sf /lib/libc.so.0 /tmp/opt/lib/libc.so.0
+				ln -sf /lib/libpthread.so.0 /tmp/opt/lib/libpthread.so.0
+				if [ "$have_nice" != "1" ]; then
+					./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+				else
+					nice -n 19 ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+				fi
+				sleep 1
+				ln -sf /opt/lib/libuClibc-0.9.30.so /tmp/opt/lib/libc.so.0
+				ln -sf /opt/lib/libpthread-0.9.30.so /tmp/opt/lib/libpthread.so.0
+			else
+				if [ "$have_nice" != "1" ]; then
+					./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+				else
+					nice -n 19 ./dm2_transmission-daemon -w "$DOWNLOAD_PATH" -g $APPS_MOUNTED_PATH/Download2/config -G $APPS_MOUNTED_PATH/Download2/ --incomplete-dir $APPS_MOUNTED_PATH/Download2/InComplete&
+				fi
+			fi
+		fi
+	fi
+	#sleep  8
+	amulenum=`ps | grep -c 'dm2_amuled'`
+	while [ $amulenum -lt 4 ]
+	do
+		amulenum=`ps | grep -c 'dm2_amuled'`
+		#echo $amulenum
+	done
+	if [  -f "$dir_ed2k_file" ]; then
+		#/opt/bin/dm2_amulecmd -h $LAN_IP -P admin -c "add ed2k://|server|$ED2K_SERVER_IP|$ED2K_SERVER_PORT|"
+		/opt/bin/dm2_amulecmd -h $LAN_IP -P admin -c "connect $ED2K_SERVER_IP:$ED2K_SERVER_PORT"&
+	fi
+	rm -rf /tmp/APPS/DM2/Status/*
+	;;
+  *)
+
+    #echo "Usage: /opt/etc/init.d/dm {start|stop|restart|force-reload|firewall-start|firewall-stop|firewall-restart|lighttpd-restart|general-renew}"
+    exit 1
+    ;;
+esac

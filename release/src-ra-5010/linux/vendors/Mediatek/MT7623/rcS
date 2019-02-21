@@ -1,0 +1,28 @@
+#!/bin/sh
+mount -a
+mkdir -p /var/run
+cat /etc_ro/motd
+mdev -s
+insmod /lib/modules/3.10.20/kernel/arch/arm/mach-mt7623/nvram.ko
+mdev -s
+wmt_loader
+nvram_daemon&
+init_system start
+
+#for telnet debugging
+telnetd
+
+#for syslogd
+mkdir -p /var/log
+
+#start wmt
+#wmt_loader
+
+#mknod /dev/stpwmt c 190 0
+#mknod /dev/stpbt  c 192 0
+mknod /dev/rdm0   c 263 0
+mknod /dev/gpio   c 241 0
+mknod /dev/pcm0   c 233 0
+#mknod /dev/wmtWifi c 153 0 
+
+#wmt_launcher -p /etc_ro/wmt/ &

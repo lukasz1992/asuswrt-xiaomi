@@ -1,0 +1,9 @@
+proc            /proc           proc    defaults 0 0
+none            /var            ramfs   defaults 0 0
+none            /dev            ramfs   defaults 0 0
+none            /etc            ramfs   defaults 0 0
+none            /tmp            ramfs   defaults 0 0
+none            /media          ramfs   defaults 0 0
+none            /sys            sysfs   default  0 0
+none            /dev/pts        devpts  default  0 0
+none            /proc/bus/usb   usbfs   defaults 0 0

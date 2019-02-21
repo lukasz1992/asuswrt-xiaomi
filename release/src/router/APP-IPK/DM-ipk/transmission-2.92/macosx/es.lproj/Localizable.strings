@@ -1,0 +1,718 @@
+"\"%@\" is not a valid torrent file." = "\"%@\" no es un torrent válido.";
+
+"%@ bytes" = "%@ bytes";
+
+"%@ files" = "%@ archivos";
+
+"%@ IP address rules in list" = "%@ direcciones IP cargadas";
+
+"%@ magnetized transfers" = "%@ tareas magnetizadas";
+
+"%@ of %@" = "%1$@ de %2$@";
+
+"%@ of torrent metadata retrieved" = "%@ de los metadatos del torrent recuperados";
+
+"%@ remaining" = "%@ restante";
+
+"%@ selected" = "%@ seleccionado";
+
+"%@ times" = "%@ veces";
+
+"%@ Torrent Files" = "%@ Torrents";
+
+"%@ Torrents Selected" = "%@ Torrents seleccionados";
+
+"%@ total" = "%@ total";
+
+"%@ transfers" = "%@ tareas";
+
+"%@ verified" = "%@ verificado";
+
+"%d cache" = "%d caché";
+
+"%d Connected" = "%d conectados";
+
+"%d DHT" = "%d DHT";
+
+"%d Downloading" = "%d Descargando";
+
+"%d incoming" = "%d entrante";
+
+"%d KB/s" = "%d KB/s";
+
+"%d local discovery" = "%d descubrimientos locales";
+
+"%d LTEP" = "%d LTEP";
+
+"%d minutes" = "%d minutos";
+
+"%d PEX" = "%d PEX";
+
+"%d pieces, %@ each" = "%1$d partes, %2$@ cada una";
+
+"%d Seeding" = "%d Compartiendo";
+
+"%d tracker" = "%d tracker";
+
+"%d web seeds" = "%d web seeds";
+
+"%u days" = "%u días";
+
+"%u hr" = "%u horas";
+
+"%u min" = "%u minutos";
+
+"%u sec" = "%u segundos";
+
+"%u years" = "%u años";
+
+"1 day" = "1 día";
+
+"1 file" = "1 archivo";
+
+"1 magnetized transfer" = "1 tarea magnetizada";
+
+"1 minute" = "1 minuto";
+
+"1 piece, %@" = "1 parte, %@";
+
+"1 time" = "1 vez";
+
+"1 transfer" = "1 tarea";
+
+"1 year" = "1 año";
+
+"A blocklist must first be downloaded" = "Primero hay que descargar una lista de bloqueo";
+
+"A file with the name \"%@\" already exists in the directory \"%@\". Choose a new name or directory to create the torrent file." = "Ya existe un archivo con el nombre \"%1$@\" en la carpeta \"%2$@\". Elija un nombre nuevo o una carpeta nueva para crear el torrent.";
+
+"A folder cannot be moved to inside itself." = "No se puede mover una carpeta dentro de sí misma.";
+
+"A torrent file cannot be created for files with no size." = "No se puede crear un torrent a partir de archivos vacíos.";
+
+"A torrent file with this name and directory cannot be created." = "No se puede crear un torrent con este nombre y en esta carpeta.";
+
+"A transfer marked as private with no tracker addresses will be unable to connect to peers. The torrent file will only be useful if you plan to upload the file to a tracker website that will add the addresses for you." = "Una tarea marcada como privada sin direcciones de tracker será incapaz de conectar con clientes. El torrent sólo será útil si quieres subir el archivo a un tracker web que añada las direcciones por ti.";
+
+"A transfer of \"%@\" already exists." = "Ya existe una tarea de \"%@\".";
+
+"Active" = "Activo";
+
+"Activity" = "Actividad";
+
+"Add" = "Añadir";
+
+"Add a tracker" = "Añadir un tracker";
+
+"Adding magnetized transfer failed." = "Fallo al añadir una descarga magnetizada.";
+
+"All" = "Todo";
+
+"All Groups" = "Todos los grupos";
+
+"An unknown error has occurred." = "Ha ocurrido un error desconocido";
+
+"Announce error" = "Error en el anuncio";
+
+"Announce in progress" = "Anuncio en progreso";
+
+"Announce is queued" = "Anuncio en cola";
+
+"Announce not scheduled" = "Anuncio no programado";
+
+"Announce timed out" = "Anuncio expirado";
+
+"Apply All" = "Aplicar a todos";
+
+"Apply Selected" = "Aplicar a los seleccionados";
+
+"Are you sure you want to quit?" = "¿Está seguro de querer salir?";
+
+"Are you sure you want to remove \"%@\" from the transfer list and trash the data file?" = "¿Está seguro de querer eliminar \"%@\" de la lista y mover los datos a la papelera?";
+
+"Are you sure you want to remove \"%@\" from the transfer list?" = "¿Está seguro de querer eliminar \"%@\" de la lista?";
+
+"Are you sure you want to remove %@ completed transfers from the transfer list?" = "¿Está seguro de querer eliminar %@ tareas completadas de la lista?";
+
+"Are you sure you want to remove %@ transfers from the transfer list and trash the data files?" = "¿Está seguro de querer eliminar %@ tareas completadas de la lista y eliminar los archivos del disco duro?";
+
+"Are you sure you want to remove %@ transfers from the transfer list?" = "¿Está seguro de querer eliminar %@ tareas de la lista?";
+
+"Are you sure you want to remove %d trackers?" = "¿Está seguro de querer eliminar %d trackers?";
+
+"Are you sure you want to remove this tracker?" = "¿Está seguro de querer eliminar este tracker?";
+
+"Are you sure you want to reset usage statistics?" = "¿Está seguro de querer reiniciar las estadísticas de uso?";
+
+"Available" = "Disponible";
+
+"Bandwidth" = "Ancho de banda";
+
+"Bandwidth settings changed" = "La configuración de ancho de banda ha cambiado.";
+
+"Blue" = "Azul";
+
+"Cancel" = "Cancelar";
+
+"Change transfer settings" = "Cambiar la configuración de la tarea";
+
+"Check Selected" = "Comprobar los seleccionados";
+
+"Checking existing data" = "Comprobando datos existentes";
+
+"Clear" = "Limpiar";
+
+"Client" = "Cliente";
+
+"Close Quick Look" = "Cerrar Vista Rápida";
+
+"Configure In Growl" = "Configurar en Growl";
+
+"Configure In System Preferences" = "Configurar en Preferencias del Sistema";
+
+"Connecting to site" = "Conectando al sitio";
+
+"Copy of \"%@\" Cannot Be Created" = "No se puede hacer una copia de \"%@\"";
+
+"Could not read \"%s\": %s." = "No se ha podido leer \"%1$s\": %2$s.";
+
+"Could not write \"%s\": %s." = "No se ha podido escribir \"%1$s\": %2$s.";
+
+"Create" = "Crear";
+
+"Create a Torrent File" = "Crear torrent";
+
+"Create torrent file" = "Crear torrent";
+
+"Create Torrent File" = "Crear torrent";
+
+"Creation of \"%@\" failed." = "No se ha podido crear \"%@\"";
+
+"Currently downloading (interested and not choked)" = "Actualmente descargando (interesado y no bloqueado)";
+
+"Currently uploading (interested and not choked)" = "Actualmente subiendo (interesado y no bloqueado)";
+
+"Date" = "Fecha";
+
+"Debug" = "Debug";
+
+"disabled" = "desactivado";
+
+"DL" = "↓";
+
+"DL from %d" = "bajando de %d";
+
+"Do not check disk space again" = "No volver a comprobar el espacio del disco otra vez";
+
+"Don't bug me about this ever again." = "No me vuelvas a molestar nunca más sobre esto.";
+
+"Don't Download" = "No descargar";
+
+"Donate" = "Donar";
+
+"Donate or not, there will be no difference to your torrenting experience." = "Dones o no, no habrá diferencia en el rendimiento de tus torrents.";
+
+"Download" = "Descargar";
+
+"Download Anyway" = "Descargas de todos modos";
+
+"Download Complete" = "Descarga completada";
+
+"Download of the blocklist failed." = "Ha fallado la descarga de la lista de bloqueo.";
+
+"Download Some" = "Descargar algunos";
+
+"Download speed" = "Velocidad de descarga";
+
+"Downloaded" = "Descargado";
+
+"Downloading" = "Descargando";
+
+"Downloading blocklist" = "Descargando lista de bloqueo";
+
+"Downloading from %d of %d peers" = "Descargando de %1$d de %2$d clientes";
+
+"Downloading from %d of 1 peer" = "Descargando de %d de 1 peer";
+
+"Downloading From Peer" = "Descargando del cliente";
+
+"Downloading From Web Seed" = "Descargando desde web seed";
+
+"encrypted" = "encriptado";
+
+"Encrypted Connection" = "Conexión encriptada";
+
+"Error" = "Error";
+
+"Files" = "Archivos";
+
+"Filter" = "Filtro";
+
+"From: cache" = "De: caché";
+
+"From: distributed hash table" = "Desde: tabla de hash distribuido";
+
+"From: incoming connection" = "De: conexión entrante";
+
+"From: libtorrent extension protocol handshake" = "De: libtorrent extension protocol handshake";
+
+"From: local peer discovery" = "De: búsqueda de clientes local";
+
+"From: peer exchange" = "De: intercambio de clientes";
+
+"From: tracker" = "De: tracker";
+
+"GB" = "GB";
+
+"GB/s" = "GB/s";
+
+"General" = "General";
+
+"General Info" = "Información general";
+
+"Global download limit" = "Límite global de descarga";
+
+"Global upload limit" = "Límite global de subida";
+
+"got %d peers" = "conseguidos %d clientes";
+
+"got 1 peer" = "tomado 1 cliente";
+
+"Gray" = "Gris";
+
+"Green" = "Verde";
+
+"Group" = "Grupo";
+
+"Groups" = "Grupos";
+
+"Hide Filter Bar" = "Ocultar barra de filtro";
+
+"Hide Inspector" = "Ocultar Inspector";
+
+"Hide Status Bar" = "Ocultar barra de estado";
+
+"High" = "Alta";
+
+"High Priority" = "Alta prioridad";
+
+"I Accept" = "Acepto";
+
+"If you are attempting to use already existing data, the root data directory should be inside the destination directory." = "Si estás intentando usar datos ya existentes, el directorio principal de los datos debería estar dentro del directorio de destino.";
+
+"inactive" = "inactivo";
+
+"Info" = "Información";
+
+"Inspector" = "Inspector";
+
+"Internet address of torrent file:" = "URL del torrent:";
+
+"IP Address" = "Dirección IP";
+
+"It appears that the file \"%@\" from %@ is not a torrent file." = "Parece que el archivo \"%1$@\" de %2$@ no es un torrent.";
+
+"KB" = "KB";
+
+"KB/s" = "KB/s";
+
+"Last Announce" = "Último anuncio";
+
+"Last Scrape" = "Último raspado";
+
+"Last updated" = "Actualizado por última vez";
+
+"Leechers" = "Leechers";
+
+"License" = "Licencia";
+
+"Limit (%d KB/s)" = "Limitado (%d KB/s)";
+
+"Log Could Not Be Saved" = "No se ha podido guardar el registro";
+
+"Low" = "Baja";
+
+"Low Priority" = "Baja prioridad";
+
+"Magnet link is a duplicate of an existing transfer." = "El enlace magnet es un duplicado o una tarea existente.";
+
+"Magnetized transfer" = "Tarea magnetizada";
+
+"MB" = "MB";
+
+"MB/s" = "MB/s";
+
+"Message" = "Mensaje";
+
+"Message Log" = "Registro de mensajes";
+
+"Multiple Priorities" = "Múltiples prioridades";
+
+"N/A" = "N/D";
+
+"Name" = "Nombre";
+
+"Network" = "Red";
+
+"Never" = "Nunca";
+
+"New Tier" = "Nuevo Tier";
+
+"Next announce in %@" = "Próximo anuncio en %@";
+
+"No Group" = "Sin grupo";
+
+"No Torrents Selected" = "Ningún torrent seleccionado";
+
+"None" = "Ninguno";
+
+"Nope" = "Nop";
+
+"Normal" = "Normal";
+
+"Normal Priority" = "Prioridad normal";
+
+"Not enough remaining disk space to download \"%@\" completely." = "No hay espacio de disco suficiente para descargar \"%@\".";
+
+"OK" = "OK";
+
+"Once removed, continuing the transfer will require the torrent file or magnet link." = "Una vez eliminada, para reanudarla necesitará el torrent o el enlace magnet.";
+
+"Once removed, continuing the transfers will require the torrent files or magnet links." = "Una vez eliminadas, necesitará los archivos torrent o enlaces magnet para reanudar las tareas.";
+
+"Once removed, Transmission will no longer attempt to contact it. This cannot be undone." = "Una vez eliminado, Transmission no volverá a intentar contactar con él. Esto no se puede deshacer.";
+
+"Once removed, Transmission will no longer attempt to contact them. This cannot be undone." = "Una vez eliminados, Transmission no volverá a intentar contactar con ellos. Esto no se puede deshacer.";
+
+"Only Check Selected" = "Comprobar sólo los seleccionados";
+
+"Open" = "Abrir";
+
+"Open Address" = "Abrir dirección";
+
+"Open Torrent Address" = "Abrir dirección de torrent";
+
+"Open torrent files" = "Abrir torrent";
+
+"Open Torrent Files" = "Abrir torrent";
+
+"Open torrent web address" = "Abrir dirección web de torrent";
+
+"Options" = "Opciones";
+
+"Orange" = "Naranja";
+
+"Partial Seed" = "Seed incompleto";
+
+"Pause / Resume All" = "Detener / Reanudar todos";
+
+"Pause / Resume Selected" = "Detener / Reanudar seleccionados";
+
+"Pause All" = "Detener todos";
+
+"Pause all transfers" = "Detener todas las tareas";
+
+"Pause Selected" = "Detener seleccionados";
+
+"Pause selected transfers" = "Detener tareas seleccionadas";
+
+"Pause the transfer" = "Detener la tarea";
+
+"Paused" = "Parado";
+
+"Peer is unchoking you, but you are not interested" = "El cliente te está desbloqueando, pero no estás interesado";
+
+"Peer wants you to upload, but you do not want to (interested and choked)" = "El cliente quiere subir, pero tú no quieres (interesado y bloqueado)";
+
+"Peers" = "Clientes";
+
+"Port" = "Puerto";
+
+"Port check site is down" = "Sitio de comprobación de puertos caido";
+
+"Port is closed" = "El puerto está cerrado";
+
+"Port is open" = "El puerto está abierto";
+
+"Priority" = "Prioridad";
+
+"Priority Not Available" = "Prioridad no disponible";
+
+"Private Torrent, non-tracker peer discovery disabled" = "Torrent privado, búsqueda de clientes de fuera del tracker desactivado";
+
+"Process" = "Proceso";
+
+"Processing blocklist" = "Procesando lista de bloqueo";
+
+"Program Started" = "Programa comenzado";
+
+"Progress: %@" = "Progreso: %@";
+
+"Protocol: %@" = "Protocolo: %@";
+
+"Public Torrent" = "Torrent público";
+
+"Purple" = "Violeta";
+
+"Quick Look" = "Vista Rápida";
+
+"Quit" = "Salir";
+
+"Quitting" = "Saliendo";
+
+"Ratio" = "Ratio";
+
+"Red" = "Rojo";
+
+"Remaining Time" = "Tiempo restante";
+
+"remaining time unknown" = "tiempo restante desconocido";
+
+"Remote" = "Remoto";
+
+"Remove" = "Eliminar";
+
+"Remove all transfers that have completed seeding." = "Eliminar todas las tareas que hayan terminado de compartir.";
+
+"Remove Selected" = "Eliminar seleccionados";
+
+"Remove selected trackers" = "Eliminar trackers seleccionados.";
+
+"Remove selected transfers" = "Eliminar las tareas seleccionadas";
+
+"Rename" = "Renombrar";
+
+"Rename File" = "Renombrar archivo";
+
+"Rename the file \"%@\":" = "Renombrar el archivo \"%@\":";
+
+"Reset" = "Restaurar";
+
+"Resume All" = "Reanudar todos";
+
+"Resume all transfers" = "Reanudar todas las tareas";
+
+"Resume Selected" = "Reanudar seleccionados";
+
+"Resume selected transfers" = "Reanudar las tareas seleccionadas";
+
+"Resume the transfer" = "Reanudar la tarea";
+
+"Resume the transfer right away" = "Reanudar la tarea ya";
+
+"Running Time" = "Tiempo de ejecución";
+
+"Save" = "Guardar";
+
+"Scrape error" = "Error en el raspado";
+
+"Scrape timed out" = "Raspado fuera de tiempo";
+
+"Seeders" = "Seeders";
+
+"Seeding" = "Subiendo";
+
+"Seeding complete" = "Compartir finalizado";
+
+"Seeding Complete" = "Compartir finalizado";
+
+"Seeding to %d of %d peers" = "Compartiendo con %1$d de %2$d clientes";
+
+"Seeding to %d of 1 peer" = "Compartiendo con %d de 1 cliente";
+
+"Select" = "Seleccionar";
+
+"Select a file or folder for the torrent file." = "Seleccionar un archivo o carpeta para el torrent.";
+
+"Select the download folder for \"%@\"" = "Seleccionar una carpeta de descarga para \"%@\"";
+
+"Select the name and location for the torrent file." = "Seleccionar el nombre y la ubicación del torrent.";
+
+"Select the new folder for \"%@\"." = "Seleccionar una carpeta nueva para \"%@\".";
+
+"Select the new folder for %d data files." = "Seleccionar una carpeta nueva para %d datos.";
+
+"Session Ratio" = "Ratio total en la sesión";
+
+"Session Transfer" = "Descarga total en la sesión";
+
+"Share" = "Compartir";
+
+"Share torrent file" = "Compartir torrent";
+
+"Shortcuts for changing global settings." = "Accesos directos para cambiar las preferencias globales";
+
+"Show" = "Mostrar";
+
+"Show Filter Bar" = "Mostrar barra de filtro";
+
+"Show in Finder" = "Mostrar en el Finder";
+
+"Show Inspector" = "Mostrar Inspector";
+
+"Show Status Bar" = "Mostrar barra de estado";
+
+"Show the data file in Finder" = "Mostrar archivos en el Finder";
+
+"Speed Limit" = "Límite de Velocidad";
+
+"Speed Limit Auto Disabled" = "Límite de Velocidad automático desactivado";
+
+"Speed Limit Auto Enabled" = "Límite de Velocidad automático activado";
+
+"Speed Limit overrides the total bandwidth limits with its own limits." = "El Límite de Velocidad reemplaza los límites de velocidad con los suyos propios";
+
+"Stalled" = "Estancado";
+
+"Statistics" = "Estadísticas";
+
+"Status of Selected Files" = "Estado de los archivos seleccionados";
+
+"Stop at Ratio (%.2f)" = "Parar con ratio (%.2f)";
+
+"Stop waiting to start" = "Comenzar ya";
+
+"Support open-source indie software" = "Apoya al software indie de código abierto";
+
+"TB" = "TB";
+
+"TB/s" = "TB/s";
+
+"The chosen torrent file location does not exist." = "La ubicación del torrent elegida no existe.";
+
+"The destination directory and root data directory have the same name." = "El directorio de destino y el directorio principal de los datos tienen el mismo nombre.";
+
+"The directory \"%@\" does not currently exist. Create this directory or choose a different one to create the torrent file." = "El directorio \"%@\" no existe actualmente. Cree este directorio o elija uno distinto para crear el torrent.";
+
+"The magnet link  \"%@\" cannot be added because it is a duplicate of an already existing transfer." = "El enlace magnet \"%@\" no puede ser añadido porque es un duplicado de una tarea ya existente.";
+
+"The move operation of \"%@\" cannot be done." = "La operación de mover \"%@\" no se puede realizar.";
+
+"The specified blocklist file did not contain any valid rules." = "El archivo de lista de bloqueo especificado no contenía ninguna regla válida.";
+
+"The torrent could not be downloaded from %@: %@." = "No se ha podido descarga el torrent de %1$@: %2$@.";
+
+"The torrent file (%@) cannot be found." = "El torrent  (%@) no ha podido ser encontrado.";
+
+"The torrent file cannot be opened because it contains invalid data." = "El torrent no puede ser abierto porque contiene datos inválidos.";
+
+"The total file size is zero bytes." = "El tamaño total del archivo es cero bytes.";
+
+"The transfer cannot be added because it is a duplicate of an already existing transfer." = "La tarea no puede ser añadida porque es un duplicado de una tarea ya existente.";
+
+"The transfer will be paused. Clear up space on %@ or deselect files in the torrent inspector to continue." = "La tarea se detendrá. Libere espacio en %@ o deseleccione archivos en el inspector de torrents para continuar.";
+
+"The transfer will not contact trackers for peers, and will have to rely solely on non-tracker peer discovery methods such as PEX and DHT to download and seed." = "La tarea no pedirá clientes al tracker, y tendrá que contar sólo con métodos de búsqueda de clientes propios como PEX y DHT para descargar y compartir.";
+
+"There are %@ active transfers." = "Hay %@ tareas activas.";
+
+"There are %@ transfers (%@ active)." = "Hay %1$@ tareas (%2$@ activas).";
+
+"There are %d active transfers that will be paused on quit. The transfers will automatically resume on the next launch." = "Hay %d tareas activas que se detendrán al salir. Las tareas se reanudarán automáticamente en el próximo arranque.";
+
+"There are no tracker addresses." = "No hay direcciones de tracker.";
+
+"There is already a copy of Transmission running. This copy cannot be opened until that instance is quit." = "Ya hay una copia de Transmission ejecutándose. Esta copia no puede ser abierta hasta que la otra instancia se cierre.";
+
+"There is an active transfer that will be paused on quit. The transfer will automatically resume on the next launch." = "Hay una tarea activa que se detendrá al salir. La tarea se reanudará automáticamente en el próximo arranque.";
+
+"There must be at least one file in a folder to create a torrent file." = "Tiene que haber por lo menos un archivo en la carpeta para crear un torrent.";
+
+"There was a problem creating the file \"%@\"." = "Hubo un problema creando el archivo \"%@\".";
+
+"There was an error moving the data file." = "Hubo un error moviendo los datos.";
+
+"There was an error when adding the magnet link \"%@\". The transfer will not occur." = "Hubo un error al añadir el enlace magnet \"%@\". La tarea no se añadirá.";
+
+"This folder contains no files." = "Esta carpeta no contiene archivos.";
+
+"This transfer is active. Once removed, continuing the transfer will require the torrent file or magnet link." = "La tarea está activa. Una vez eliminada, necesitará el archivo torrent o el enlace magnet para reanudar la tarea.";
+
+"This will clear the global statistics displayed by Transmission. Individual transfer statistics will not be affected." = "Esto borrará las estadísticas globales mostradas por Transmission.";
+
+"Tier %d" = "Tier %d";
+
+"Toggle Filter" = "Mostrar/Ocultar barra de filtro";
+
+"Toggle Inspector" = "Mostrar/Ocultar Inspector";
+
+"Toggle the filter bar" = "Mostrar/Ocultar barra de filtro";
+
+"Toggle the torrent inspector" = "Mostrar/Ocultar Inspector";
+
+"Torrent download failed" = "Fallo en la descarga del torrent";
+
+"Torrent File Auto Added" = "Torrent añadido automáticamente";
+
+"Torrent Inspector" = "Inspector de torrents";
+
+"torrent metadata needed" = "se necesitan metadatos del torrent";
+
+"Total N/A" = "Total N/D";
+
+"Total Ratio" = "Ratio total";
+
+"Total Transfer" = "Descarga total";
+
+"Tracker" = "Tracker";
+
+"Tracker returned error" = "El tracker dio error";
+
+"Tracker returned warning" = "El tracker dio una alerta";
+
+"Tracker will be used as a backup" = "El tracker será usado como backup";
+
+"Trackers" = "Trackers";
+
+"Transfer Not Active" = "Tarea no activa";
+
+"Transfers" = "Tareas";
+
+"Transfers Not Active" = "Tareas no activas";
+
+"Transmission is a file-sharing program. When you run a torrent, its data will be made available to others by means of upload. You and you alone are fully responsible for exercising proper judgement and abiding by your local laws." = "Transmission es un programa de compartir archivos. Cuando pones en marcha un torrent, su contenido se hará disponible a otros mediante subida. Tú y sólo tú eres completamente responsable de ejercer el juicio correcto y respetar tus leyes locales.";
+
+"Transmission is a full-featured torrent application. A lot of time and effort have gone into development, coding, and refinement. If you enjoy using it, please consider showing your love with a donation." = "Transmission es un completo gestor de torrents. Si disfrutas usándolo, por favor, considera mostrar tu amor con una donación.";
+
+"Transmission is already running." = "Transmission ya está abierto.";
+
+"UL" = "↑";
+
+"UL to %d" = "subiendo a %d";
+
+"Uncheck Selected" = "Desmarcar seleccionados";
+
+"unlimited" = "ilimitado";
+
+"unreadable error" = "error ilegible";
+
+"untitled" = "sin título";
+
+"Upload speed" = "Velocidad de subida";
+
+"Uploaded" = "Subido";
+
+"uploaded %@ (Ratio: %@)" = "subido %1$@ (Ratio: %2$@)";
+
+"Uploading To Peer" = "Subiendo a cliente";
+
+"Waiting to check existing data" = "Esperando a la comprobación de datos";
+
+"Waiting to download" = "Esperando a descargar";
+
+"Waiting to seed" = "Esperando a compartir";
+
+"Web Address" = "Dirección web";
+
+"web seed" = "semilla web";
+
+"Web Seeds" = "Semillas Web";
+
+"Welcome to Transmission" = "Bienvenido a Transmission";
+
+"Yellow" = "Amarillo";
+
+"You unchoked the peer, but the peer is not interested" = "Has desbloqueado al cliente, pero no está interesado";
+
+"You want to download, but peer does not want to send (interested and choked)" = "Quieres descargar, pero el cliente no quiere enviar (interesado y bloqueado)";
+

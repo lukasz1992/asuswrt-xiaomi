@@ -1,0 +1,26 @@
+#! /bin/sh
+
+if [ -f "/userfs/bin/tcapi" ];then
+APPS_MOUNTED_PATH=`/userfs/bin/tcapi get Apps_Entry apps_mounted_path`
+APPS_INSTALL_FOLDER=`/userfs/bin/tcapi get Apps_Entry apps_install_folder`
+APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+else
+APPS_MOUNTED_PATH=`nvram get apps_mounted_path`
+APPS_INSTALL_FOLDER=`nvram get apps_install_folder`
+APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+fi
+
+rm -rf $APPS_INSTALL_PATH/bin/dm2_*
+rm -rf $APPS_MOUNTED_PATH/Download2/.logs/tracker_*
+rm -rf $APPS_MOUNTED_PATH/Download2/.logs/transm_*
+rm -rf $APPS_MOUNTED_PATH/Download2/.logs/nzb_*
+rm -rf $APPS_MOUNTED_PATH/Download2/.logs/nzbget.log
+rm -rf $APPS_MOUNTED_PATH/Download2/.sems/*
+rm -rf $APPS_INSTALL_PATH/etc/dm2_amule
+rm -rf $APPS_INSTALL_PATH/etc/asus_script/dm2_*
+rm -rf $APPS_INSTALL_PATH/etc/dm2_*
+rm -rf $APPS_INSTALL_PATH/etc/downloadmaster/downloadmaster
+rm -rf $APPS_INSTALL_PATH/etc/init.d/S50downloadmaster
+rm -rf /tmp/APPS/DM2/
+rm -rf /tmp/dm2_amule_status
+

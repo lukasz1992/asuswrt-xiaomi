@@ -1,0 +1,420 @@
+menu "Ralink Module"
+
+###########
+# Debuging
+###########
+source "drivers/net/rt_rdm/Kconfig"
+
+#############
+# Wire
+#############
+
+source "drivers/net/raeth/Kconfig"
+
+config  HW_IPSEC
+	depends on RALINK_MT7621
+	bool    "HW IPSec Enable"
+	    select INET_AH
+		select INET_ESP
+		select INET_XFRM_MODE_TRANSPORT
+		select INET_XFRM_MODE_TUNNEL
+		select UNIX
+		select XFRM
+		select XFRM_USER
+		select NET_KEY
+		select CRYPTO_AEAD
+		select CRYPTO_AUTHENC
+		select CRTPTO_RNG
+		select CRYPTO_CBC
+		select CRYPTO_HMAC
+		select CRYPTO_SHA1
+		select CRYPTO_MD5
+		select CRYPTO_AES
+		select CRYPTO_DES
+		select CRYPTO_ANSI_CPRNG
+		default n
+
+config  RALINK_HWCRYPTO
+	depends on HW_IPSEC
+	tristate "HW Crypto Engine"
+	default m
+
+#############
+# Wireless
+#############
+menuconfig WIFI_DRIVER
+	bool "WiFi Driver Support"
+
+if WIFI_DRIVER
+
+choice
+	prompt "Choose First WiFi Interface"
+	config FIRST_IF_NONE
+	bool "None"
+
+	config FIRST_IF_RT2860
+	bool "RT2860 for rt2860v2 wifi driver"
+	select RTMP_MAC
+	select RALINK_RT2860
+
+	config FIRST_IF_MT7620
+	bool "MT7620 for rlt_wifi wifi driver"
+	select RTMP_MAC
+	select RALINK_RT6352
+
+	config FIRST_IF_MT7628
+	bool "MT7628 for rlt_wifi wifi driver"
+	depends on RALINK_MT7628
+	select MT_MAC
+
+	config FIRST_IF_RT3092
+	bool "RT3092"
+	depends on RALINK_MT7621
+	select RTMP_MAC
+	select RALINK_RT3092
+
+	config FIRST_IF_RT5392
+	bool "RT5392"
+	depends on RALINK_MT7621
+	select RTMP_MAC
+	select RALINK_RT5392
+
+	config FIRST_IF_RT5592
+	bool "RT5592"
+	depends on RALINK_MT7621
+	select RTMP_MAC
+	select RALINK_RT5592
+
+	config FIRST_IF_RT3593
+	bool "RT3593"
+	depends on RALINK_MT7621
+	select RTMP_MAC
+	select RALINK_RT3593
+
+	config FIRST_IF_MT7610E
+	bool "MT7610E"
+	depends on RALINK_MT7621
+	select RLT_MAC
+	select RALINK_MT7610E
+
+	config FIRST_IF_MT7612E
+	bool "MT7612E"
+	depends on RALINK_MT7621
+	select RLT_MAC
+	select RALINK_MT7612E
+
+	config FIRST_IF_MT7602E
+	bool "MT7602E"
+	depends on RALINK_MT7621
+	select RLT_MAC
+	select RALINK_MT7602E
+
+	config FIRST_IF_MT7603E
+	bool "MT7603E"
+	depends on RALINK_MT7621
+	select MT_MAC
+	select RALINK_MT7603E
+
+	config FIRST_IF_MT7637E
+	bool "MT7637E"
+	depends on RALINK_MT7621
+	select WIFI_MT_MAC
+	select MT_MAC
+	select RALINK_MT7637E
+
+	config FIRST_IF_MT7615E
+	bool "MT7615E"
+	depends on RALINK_MT7621
+	select WIFI_MT_MAC
+	select MT_MAC
+	select CHIP_MT7615E
+endchoice
+
+choice
+	prompt "Choose Second WiFi Interface"
+	config SECOND_IF_NONE
+	bool "None"
+
+	config SECOND_IF_RT3092
+	bool "RT3092"
+	select RTMP_MAC
+	select RALINK_RT3092
+
+	config SECOND_IF_RT5392
+	bool "RT5392"
+	select RTMP_MAC
+	select RALINK_RT5392
+
+	config SECOND_IF_RT5592
+	bool "RT5592"
+	select RTMP_MAC
+	select RALINK_RT5592
+
+	config SECOND_IF_RT3593
+	bool "RT3593"
+	select RTMP_MAC
+	select RALINK_RT3593
+
+	config SECOND_IF_RT3572
+	bool "RT3572"
+	select RTMP_MAC
+	select RALINK_RT3572
+
+	config SECOND_IF_RT5572
+	bool "RT5572"
+	select RTMP_MAC
+	select RALINK_RT5572
+
+	config SECOND_IF_MT7610U
+	bool "MT7610U"
+	select RLT_MAC
+	select RALINK_MT7610U
+
+	config SECOND_IF_MT7610E
+	bool "MT7610E"
+	select RLT_MAC
+	select RALINK_MT7610E
+
+	config SECOND_IF_RT8592
+	bool "RT85592"
+	select RLT_MAC
+	select RALINK_RT8592
+
+	config SECOND_IF_MT7612U
+	bool "MT7612U"
+	select RLT_MAC
+	select RALINK_MT7612U
+
+	config SECOND_IF_MT7612E
+	bool "MT7612E"
+	select RLT_MAC
+	select RALINK_MT7612E
+
+	config SECOND_IF_MT7602E
+	bool "MT7602E"
+	select RLT_MAC
+	select RALINK_MT7602E
+
+	config SECOND_IF_MT7603E
+	bool "MT7603E"
+	select MT_MAC
+	select RALINK_MT7603E
+
+	config SECOND_IF_MT7637E
+	bool "MT7637E"
+	select WIFI_MT_MAC
+	select MT_MAC
+	select RALINK_MT7637E
+
+	config SECOND_IF_MT7615E
+	bool "MT7615E"
+	select WIFI_MT_MAC
+	select CHIP_MT7615E
+endchoice
+
+choice
+	prompt "Choose Third WiFi Interface"
+	config THIRD_IF_NONE
+	bool "None"
+
+	config THIRD_IF_MT7615E
+	bool "MT7615E"
+	select WIFI_MT_MAC
+	select MT_MAC
+	select CHIP_MT7615E
+endchoice
+
+config  RT_FIRST_CARD
+        string
+        depends on ! FIRST_IF_NONE
+        default 2860 if FIRST_IF_RT2860
+        default 7620 if FIRST_IF_MT7620
+        default 7628 if FIRST_IF_MT7628
+        default 3090 if FIRST_IF_RT3092
+        default 5392 if FIRST_IF_RT5392
+        default 5592 if FIRST_IF_RT5592
+        default 3593 if FIRST_IF_RT3593
+        default 7610e if FIRST_IF_MT7610E
+	default 7612e if FIRST_IF_MT7612E
+	default 7602e if FIRST_IF_MT7602E
+	default 7603e if FIRST_IF_MT7603E
+	default 7637e if FIRST_IF_MT7637E
+	default 7615e if FIRST_IF_MT7615E
+
+config  RT_SECOND_CARD
+        string
+        depends on ! SECOND_IF_NONE
+        default 3090 if SECOND_IF_RT3092
+        default 5392 if SECOND_IF_RT5392
+        default 5592 if SECOND_IF_RT5592
+        default 3593 if SECOND_IF_RT3593
+        default 8592 if SECOND_IF_RT8592
+        default 3572 if SECOND_IF_RT3572
+        default 5572 if SECOND_IF_RT5572
+        default 7610e if SECOND_IF_MT7610E
+        default 7610u if SECOND_IF_MT7610U
+	default 7612e if SECOND_IF_MT7612E
+	default 7612u if SECOND_IF_MT7612U
+	default 7602e if SECOND_IF_MT7602E
+	default 7603e if SECOND_IF_MT7603E
+	default 7637e if SECOND_IF_MT7637E
+	default 7615e if SECOND_IF_MT7615E
+
+config  RT_THIRD_CARD
+	string
+	depends on ! THIRD_IF_NONE
+	default 7615e if THIRD_IF_MT7615E
+
+config  RT_FIRST_IF_RF_OFFSET
+        hex
+        depends on ! FIRST_IF_NONE
+        default 0x0
+
+config  RT_SECOND_IF_RF_OFFSET
+        hex
+        depends on ! SECOND_IF_NONE
+        default 0x8000
+
+config  RT_THIRD_IF_RF_OFFSET
+	hex
+	depends on ! THIRD_IF_NONE
+	default 0x4000
+
+config  RT2860V2_2850
+        bool "Dual Band"
+        depends on RALINK_RT2880
+
+choice
+        prompt "RF Type"
+        depends on RALINK_RT5350
+        default RALINK_RT5350_1T1R
+
+        config  RALINK_RT5350_1T1R
+        bool "1T1R"
+endchoice
+
+choice
+        prompt "RF Type"
+        depends on RALINK_RT3052
+        default RALINK_RT3052_2T2R
+
+        config  RALINK_RT3050_1T1R
+        bool "1T1R"
+
+        config  RALINK_RT3051_1T2R
+        bool "1T2R"
+
+        config  RALINK_RT3052_2T2R
+        bool "2T2R"
+endchoice
+
+choice
+        prompt "RF Type"
+        depends on  RALINK_RT3352
+
+        config  RALINK_RT3352_2T2R
+        bool "2T2R"
+endchoice
+
+choice
+	prompt "RF Type"
+	depends on RALINK_RT3883
+
+	config  RALINK_RT3662_2T2R
+	bool "2T3R (RT3662)"
+
+	config  RALINK_RT3883_3T3R
+	bool "3T3R (RT3883)"
+endchoice
+
+config RTDEV_MII
+    bool
+    default y if RT2880v2_INIC_MII || RT305x_INIC_MII || RT305x_INIC_USB || RT3680_iNIC_AP
+
+#config  UNIQUE_WPS
+#	bool "Unique WPS for Concurrent AP"
+#        depends on RT2860V2_AP_WSC
+#        depends on RT3090_AP_WSC || RT3572_AP_WSC || RT5392_AP_WSC || RT5572_AP_WSC || RT5592_AP_WSC
+#	default n
+
+#SKB alloc selection
+config WIFI_SKB_ALLOC_SELECT
+        bool "SKB Allocation API Select"
+        default n
+choice
+        prompt "SKB Allocation API Selection"
+        depends on WIFI_SKB_ALLOC_SELECT
+        default WIFI_PAGE_ALLOC_SKB
+
+        config  WIFI_SLAB_ALLOC_SKB
+                bool "SLAB skb allocation"
+
+        config  WIFI_PAGE_ALLOC_SKB
+                bool "Page skb allocation"
+endchoice
+
+
+#source "drivers/net/wireless/rt2860v2_ap/Kconfig"
+#source "drivers/net/wireless/rt2860v2_sta/Kconfig"
+#source "drivers/net/wireless/RTPCI_ap/Kconfig"
+#source "drivers/net/wireless/RT3090_ap/Kconfig"
+#source "drivers/net/wireless/RT5392_ap/Kconfig"
+#source "drivers/net/wireless/RT5592_ap/Kconfig"
+#source "drivers/net/wireless/RT3593_ap/Kconfig"
+#source "drivers/net/wireless/RT3572_ap/Kconfig"
+#source "drivers/net/wireless/RT5572_ap/Kconfig"
+#source "drivers/net/wireless/iNIC/Kconfig"
+#source "drivers/net/wireless/iNIC_RT305x/Kconfig"
+#source "drivers/net/wireless/RT3680_ap/Kconfig"
+#source "drivers/net/wireless/MT7610_ap/Kconfig"
+#source "drivers/net/wireless/rlt_wifi/Kconfig"
+#source "drivers/net/wireless/mt_wifi/embedded/Kconfig"
+#source "drivers/net/wireless/mt_wifi_7615E_4411/embedded/Kconfig"
+source "drivers/net/wireless/mt_wifi_7615E_4421/embedded/Kconfig"
+
+endif # WIFI_DRIVER
+
+#config WIFI_PKT_FWD
+#    bool "WiFi packet forwarding"
+#    depends on WIFI_DRIVER
+#   default n
+
+source "drivers/net/wireless/wifi_forward/wifi_fwd/Kconfig"
+
+config RTDEV
+	bool
+	default y if WIFI_DRIVER && !SECOND_IF_NONE || RTDEV_MII
+	default y if RTDEV_PLC
+
+config WIFI_PKT_FWD
+    bool "WiFi packet forwarding"
+    depends on WIFI_DRIVER
+    default n
+
+config WIFI_PKT_FWD_V1
+    bool "WiFi packet forwarding V1"
+    depends on WIFI_DRIVER
+    default n
+#######
+# USB
+#######
+source "drivers/usb/dwc_otg/Kconfig"
+
+#######
+# NAT
+#######
+choice
+prompt "Ralink NAT Type"
+
+config  RA_NAT_NONE
+bool "None"
+config  RA_NAT_HW
+bool "Hardware"
+depends on !RALINK_RT5350 && !RALINK_MT7628
+endchoice
+
+source "net/nat/hw_nat/Kconfig"
+
+
+endmenu
+

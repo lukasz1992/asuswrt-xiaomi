@@ -1,0 +1,13 @@
+#!/bin/sh
+mount -a
+mkdir -p /var/run
+cat /etc_ro/motd
+nvram_daemon&
+long_loop&
+goahead&
+
+#for telnet debugging
+telnetd
+
+#for syslogd
+mkdir -p /var/log

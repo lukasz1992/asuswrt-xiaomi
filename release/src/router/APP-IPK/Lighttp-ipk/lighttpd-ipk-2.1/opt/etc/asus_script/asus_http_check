@@ -1,0 +1,38 @@
+#! /bin/sh
+
+PATH=/bin:/sbin:/usr/sbin:/usr/bin:/opt/bin
+
+#HTTP_PASSWD=`nvram get http_passwd`
+ACC_LIST=`nvram get acc_list`
+HTTP_USERNAME=${ACC_LIST%%\>*}
+
+HTTP_PASSWD_TMP=${ACC_LIST#*\>}
+if [ "$HTTP_PASSWD_TMP" != "" ];then
+	HTTP_PASSWD=${HTTP_PASSWD_TMP%%\<*}
+	HTTP_PASSWD=`echo -n "$HTTP_PASSWD" | md5sum |cut -d ' ' -f1`
+else
+	HTTP_PASSWD=`nvram get http_passwd`
+	HTTP_PASSWD=`echo -n "$HTTP_PASSWD" | md5sum |cut -d ' ' -f1`
+fi
+
+case "$1" in
+  passwd-renew)
+		if [ "$2" != "$HTTP_PASSWD" ]; then
+			#sed -i "1s/^.*$/$HTTP_PASSWD/" /tmp/http_info
+			#sed -i "1c$HTTP_PASSWD" /tmp/http_info
+			echo $HTTP_PASSWD > /tmp/http_info
+			echo "$HTTP_PASSWD">/tmp/http_info_changed
+		fi
+    ;;
+
+  Special)
+		#sed -i "1s/^.*$/$HTTP_PASSWD/" /tmp/http_info
+		sed -i "1c$HTTP_PASSWD" /tmp/http_info
+		echo "$HTTP_PASSWD">/tmp/http_info_changed
+
+    ;;
+  *)
+
+    exit 1
+    ;;
+esac

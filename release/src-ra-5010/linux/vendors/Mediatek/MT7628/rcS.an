@@ -1,0 +1,15 @@
+#!/bin/sh
+mount -a
+mkdir -p /var/run
+makedevlinks.sh
+cat /etc_ro/motd > /dev/console
+nvram_daemon&
+#long_loop&
+#goahead&
+init_system start
+
+#for telnet debugging
+telnetd
+
+#for syslogd
+mkdir -p /var/log

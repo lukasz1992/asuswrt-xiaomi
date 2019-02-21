@@ -1,0 +1,101 @@
+dnl Process this file with autoconf to produce a configure script.
+
+dnl This is elrond's optional library check
+AC_DEFUN(FP_CHECK_OPT_LIB,
+         [AC_CHECK_FUNC([$2], :,
+                        AC_CHECK_LIB($@)dnl
+                       )dnl
+         ])dnl
+
+
+AC_INIT()
+
+VERSION=7.0
+
+AM_INIT_AUTOMAKE(snarf, $VERSION)
+AM_CONFIG_HEADER(config.h)
+
+AC_SUBST(VERSION)
+
+dnl Checks for programs.
+AC_PROG_CC
+AM_C_PROTOTYPES
+AM_PROG_CC_STDC
+AC_C_CONST
+AC_PROG_INSTALL
+
+dnl Checks for libraries.
+FP_CHECK_OPT_LIB(socket, socket, LIBS="-lsocket $LIBS")
+FP_CHECK_OPT_LIB(nsl, gethostbyname, LIBS="-lnsl $LIBS")
+FP_CHECK_OPT_LIB(resolv, gethostbyname, LIBS="-lresolv $LIBS")
+dnl SunOS 4.1.x needs the following for strerror
+FP_CHECK_OPT_LIB(44bsd, strerror, LIBS="-l44bsd $LIBS")
+
+dnl Checks for header files.
+AC_HEADER_STDC
+
+AC_CHECK_HEADERS(strings.h \
+		 stdarg.h \
+		 sys/ioctl.h)
+
+dnl Checks for socks5 build
+SOCKS5=
+AC_ARG_WITH(socks5,[ --with-socks5=[shared/static] add socks5 support [default=static]],,)
+if test "x$with_socks5" = "xshared"; then
+    AC_CHECK_LIB(socks5_sh, SOCKSgethostbyname,
+        SOCKS5=socks5_sh,
+        SOCKS5=)
+fi
+
+if test "x$with_socks5" != "x"; then
+    if test "x$SOCKS5" = "x"; then
+        if test "x$with_socks5" = "xyes"; then
+            with_socks5=static
+        fi
+        if test "x$with_socks5" = "xstatic"; then
+            AC_MSG_CHECKING(whether the compiler supports "-static")
+            save_libs=$LIBS
+            LIBS="$LIBS -static"
+            AC_TRY_LINK(,,static=yes,[LIBS=$save_libs;static=no])
+            AC_MSG_RESULT($static)
+        fi 
+        AC_CHECK_LIB(socks5, SOCKSgethostbyname,
+            SOCKS5=socks5, 
+            AC_MSG_ERROR(*** Can't build socksified snarf (SOCKS5 library not found) ***))
+    fi
+    AC_CHECK_HEADER(socks.h, [AC_DEFINE(USE_SOCKS5)
+        LIBS="$LIBS -lsocks5"],
+        AC_MSG_ERROR(*** Can't build socksified snarf (SOCKS5 header file not found) ***))
+fi
+
+AC_ARG_WITH(progress_default_off,[ --with-progress-default-off  progress bars default to off],,)
+AC_ARG_WITH(guess_winsize,       [ --with-guess-winsize         use ioctl to guess terminal width],,)
+
+if test "x$with_progress_default_off" = "xyes"; then
+	AC_DEFINE(PROGRESS_DEFAULT_OFF)
+fi
+
+if test "x$with_guess_winsize" = "xyes"; then
+	AC_DEFINE(GUESS_WINSIZE)
+fi
+
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_OFF_T
+
+AC_CHECK_TYPE(ssize_t, long)
+
+echo "#include <sys/socket.h>" >> confdefs.h
+AC_CHECK_TYPE(socklen_t, int)
+grep -v '^#include <sys/socket.h>$' confdefs.h > confdefs.h.new && \
+	mv confdefs.h.new confdefs.h
+
+dnl Checks for library functions.
+
+AC_CHECK_FUNCS(strerror gettimeofday strdup)
+
+HERROR=
+AC_CHECK_FUNC(herror,,[HERROR=herror.o;AC_SUBST(HERROR)])
+
+
+AC_OUTPUT(Makefile snarf.spec)

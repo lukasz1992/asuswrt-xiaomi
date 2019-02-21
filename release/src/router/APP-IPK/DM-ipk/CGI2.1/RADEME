@@ -1,0 +1,4 @@
+mipsel-linux-gcc dm_uploadbt_cgi.c dm_btdecode.c dm_func.c -o dm_uploadbt.cgi
+mipsel-linux-gcc dm_print_status.c dm_cgi.c dm_func.c -o dm_print_status.cgi
+mipsel-linux-gcc dm_apply_cgi.c dm_cgi.c dm_func.c dm_disk_info.c -o dm_apply.cgi
+mipsel-linux-gcc dm_disk_info.c dm_cgi.c -o dm_disk_info.cgi

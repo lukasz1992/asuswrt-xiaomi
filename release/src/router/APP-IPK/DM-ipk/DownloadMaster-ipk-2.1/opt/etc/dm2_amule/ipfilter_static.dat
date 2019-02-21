@@ -1,0 +1,5 @@
+# This file is used to store ipfilter-ranges that should
+# not be overwritten by aMule. If you wish to keep a custom
+# set of ipfilter-ranges that take precedence over ipfilter-
+# ranges aquired through the auto-update functionality, then
+# place them in this file. aMule will not change this file.

@@ -1,0 +1,35 @@
+#! /bin/sh
+
+PATH=/bin:/sbin:/usr/sbin:/usr/bin:/opt/bin
+
+ACC_LIST=`nvram get acc_list`
+HTTP_USERNAME_TMP=${ACC_LIST%%\>*}
+if [ "$HTTP_USERNAME_TMP" != "" ];then
+	HTTP_USERNAME=${ACC_LIST%%\>*}
+else
+	HTTP_USERNAME=`nvram get http_username`
+fi
+
+
+
+HTTP_PASSWD_TMP=${ACC_LIST#*\>}
+HTTP_PASSWD=${HTTP_PASSWD_TMP%%\<*}
+HTTP_PASSWD=`echo -n "$HTTP_PASSWD" | md5sum |cut -d ' ' -f1`
+
+CHECK_NAME_TMP=`cat "/tmp/APPS/Lighttpd/Config/asus_lighttpdpassword" | grep ":"`
+CHECK_NAME=${CHECK_NAME_TMP%:*}
+
+case "$1" in
+  user-renew)
+		if [ "$CHECK_NAME" != "$HTTP_USERNAME" ]; then
+			#sed -i "1s/^.*$/$HTTP_USERNAME:$HTTP_PASSWD/" /opt/etc/dm2_lighttpdpassword
+			#sed -i "1c$HTTP_USERNAME:$HTTP_PASSWD" /tmp/APPS/Lighttpd/Config/asus_lighttpdpassword
+			echo $HTTP_USERNAME":"$HTTP_PASSWD > /tmp/APPS/Lighttpd/Config/asus_lighttpdpassword
+			cp -rf /tmp/APPS/Lighttpd/Config/asus_lighttpdpassword /opt/etc/asus_lighttpdpassword
+		fi
+    ;;
+  *)
+
+    exit 1
+    ;;
+esac

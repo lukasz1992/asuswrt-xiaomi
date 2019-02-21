@@ -1,0 +1,15 @@
+-*- text -*-
+
+Here's a list of URLs to try to download, as sort of a test suite.
+
+1. ftp://cs-pub.bu.edu/
+
+This site fails on the PASV command, so it's handy to test the PORT fallback
+stuff.
+
+2. ftp://koobera.math.uic.edu/
+
+This uses anonftpd on what I think is a VMS host. It doesn't ask for a
+password, it just gives a 230 reply straight away. It does not support
+REST (ftp resume) either. An all-together wacked-out server.
+

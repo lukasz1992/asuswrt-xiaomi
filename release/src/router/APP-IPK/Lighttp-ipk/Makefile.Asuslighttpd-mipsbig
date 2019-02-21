@@ -1,0 +1,144 @@
+export SRCBASE := $(shell pwd)
+BUILD := i686-linux
+HOSTCC := gcc
+PLATFORM := mips-linux
+CROSS_COMPILE := mips-linux-uclibc-
+CONFIGURE := ./configure --host=mips-linux --build=$(BUILD)
+export TOOLCHAIN := $(shell cd $(dir $(shell which $(CROSS_COMPILE)gcc))/.. && pwd)
+export IPKG_TOOLS := /opt/trendchip/ipkg-utils-1.7
+export LD_DIR := /opt/trendchip/mips-linux-uclibc/usr
+
+
+export CC := $(CROSS_COMPILE)gcc
+export AR := $(CROSS_COMPILE)ar
+export AS := $(CROSS_COMPILE)as
+export LD := $(CROSS_COMPILE)ld
+export NM := $(CROSS_COMPILE)nm
+export RANLIB := $(CROSS_COMPILE)ranlib
+export STRIP := $(CROSS_COMPILE)strip
+export SIZE := $(CROSS_COMPILE)size
+export CXX := $(CROSS_COMPILE)g++
+export CXXCPP := $(CROSS_COMPILE)g++ -E
+
+
+# libpasswd:
+export LDFLAGS_P := -L$(TOOLCHAIN)/lib -lcrypt -Wl,-rpath,/opt/lib  
+export	CFLAGS_P := -Os -Wall  -fPIC	
+#
+# standard packages
+#
+obj-y += mkdir
+obj-y += pcre
+obj-y += openssl
+obj-y += libpasswd
+obj-y += nvram-encrypt
+obj-y += lighttpd-1.4.39
+obj-y += asuslighttpd-ipk
+
+
+all: $(obj-y)
+
+clean:pcre-clean openssl-clean lighttpd-1.4.39-clean nvram-encrypt-clean libpasswd-clean
+	-rm -rf lighttpd-ipk-2.1/opt/tmp/bin/*
+	-rm -rf lighttpd-ipk-2.1/opt/tmp/lib/*
+	-rm -rf lighttpd-ipk-2.1/CONTROL/control
+	-rm -rf lighttpd-ipk-2.1/opt/etc/init.d/S50asuslighttpd
+	-rm -rf bin/
+	-rm -rf lib/
+	-rm -rf include/
+	-rm -rf share/
+
+mkdir:
+	-mkdir -p opt/lib
+	-mkdir -p lighttpd-ipk-2.1/opt/tmp/bin/
+	-mkdir -p lighttpd-ipk-2.1/opt/tmp/lib/
+	-mkdir -p lighttpd-ipk-2.1/opt/etc/init.d/
+	-mkdir -p lighttpd-ipk-2.1/opt/etc/asus_conf.d/logs
+
+pcre/stamp-h1: 
+	cd pcre && \
+	./configure --prefix=$(SRCBASE) --host=$(PLATFORM)
+	touch $@
+
+pcre: pcre/stamp-h1
+	@$(MAKE) -C pcre all -j 4
+	@$(MAKE) -C pcre install
+
+pcre-clean:
+	-@$(MAKE) -C pcre clean
+	-rm pcre/stamp-h1
+
+openssl/stamp-h1: 
+	cd openssl && \
+	./Configure shared no-zlib -O2 -pipe  -I$(SRCBASE)/include \
+	--openssldir=$(SRCBASE)/opt/share/openssl --prefix=$(SRCBASE) \
+	linux-generic32 
+	touch $@
+
+openssl: openssl/stamp-h1
+	@$(MAKE) -C openssl \
+		MANDIR=/opt/man \
+		EX_LIBS=" -L$(SRCBASE)/../lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/../lib -ldl" \
+		DIRS="crypto ssl apps test" \
+		-j 4
+	@$(MAKE) -C openssl install
+
+openssl-clean:
+	-@$(MAKE) -C openssl clean
+	-rm openssl/stamp-h1
+
+lighttpd-1.4.39/stamp-h1: 
+	cd lighttpd-1.4.39 && \
+	LDFLAGS="-L$(SRCBASE)/opt/lib -lpasswd -L$(SRCBASE)/lib -Wl,-rpath,/opt/lib -Wl,-rpath-link,$(SRCBASE)/lib -L$(SRCBASE)/lib" CFLAGS="-DDM_MIPSBIG" CPPFLAGS="-D_REENTRANT -D__EXTENSIONS__ -I$(SRCBASE)/opt/include -I$(SRCBASE)/include -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGE_FILES" \
+	 PCRECONFIG="$(SRCBASE)/bin/pcre-config" PCRE_LIB="-L$(SRCBASE)/opt/lib -lpcre" \
+	 ./configure --build=i686-linux --host=mips-linux --target=mips-linux --prefix=/opt --libdir=/opt/lib/ --with-openssl --disable-ipv6 --with-pcre --with-openssl --without-zlib  --without-bzip2 --without-kerberos5 --disable-nls --enable-shared --disable-static
+	 touch $@
+
+lighttpd-1.4.39:pcre openssl libpasswd  nvram-encrypt lighttpd-1.4.39/stamp-h1
+	@$(MAKE) -C lighttpd-1.4.39 all -j 4
+	$(STRIP) lighttpd-1.4.39/src/lighttpd
+	$(STRIP) lighttpd-1.4.39/src/.libs/*.so
+	cp -rf lighttpd-1.4.39/src/lighttpd lighttpd-ipk-2.1/opt/tmp/bin/asus_lighttpd
+	cp -rf lighttpd-1.4.39/src/.libs/mod_access.so lighttpd-ipk-2.1/opt/tmp/lib/
+	cp -rf lighttpd-1.4.39/src/.libs/mod_auth.so lighttpd-ipk-2.1/opt/tmp/lib/
+	cp -rf lighttpd-1.4.39/src/.libs/mod_cgi.so lighttpd-ipk-2.1/opt/tmp/lib/
+	cp -rf lighttpd-1.4.39/src/.libs/mod_dirlisting.so lighttpd-ipk-2.1/opt/tmp/lib/
+	cp -rf lighttpd-1.4.39/src/.libs/mod_indexfile.so lighttpd-ipk-2.1/opt/tmp/lib/
+	cp -rf lighttpd-1.4.39/src/.libs/mod_rewrite.so lighttpd-ipk-2.1/opt/tmp/lib/
+	cp -rf lighttpd-1.4.39/src/.libs/mod_staticfile.so lighttpd-ipk-2.1/opt/tmp/lib/
+	cp -rf lighttpd-1.4.39/src/.libs/mod_alias.so lighttpd-ipk-2.1/opt/tmp/lib/
+	cp -rf lighttpd-1.4.39/src/.libs/mod_compress.so lighttpd-ipk-2.1/opt/tmp/lib/
+	cp -rf lighttpd-1.4.39/src/.libs/mod_auth_ticket.so lighttpd-ipk-2.1/opt/tmp/lib/
+
+lighttpd-1.4.39-clean:
+	-@$(MAKE) -C lighttpd-1.4.39 clean
+	-@rm lighttpd-1.4.39/stamp-h1
+
+libpasswd-clean:
+	-cd libpasswd &&  make clean
+	-rm libpasswd/stam-h2
+libpasswd/stamp-h2:
+	cd libpasswd \
+	touch stamp-h2;
+libpasswd:libpasswd/stamp-h2
+	cd libpasswd &&  make install
+	cp -rf libpasswd/libpasswd.so lighttpd-ipk-2.1/opt/tmp/lib
+
+nvram-encrypt-clean:
+	-cd nvram-encrypt &&  make clean
+	-rm nvram-encrypt/stamp-h2
+nvram-encrypt/stamp-h2:
+	cd nvram-encrypt \
+	touch stamp-h2;
+nvram-encrypt:nvram-encrypt/stamp-h2
+	cd nvram-encrypt &&  CFLAGS="-fPIC -DDM_MIPSBIG" make 
+	cp -rf nvram-encrypt/spwenc.o lighttpd-1.4.39/src
+
+asuslighttpd-ipk:
+	cp -rf lighttpd-ipk-tmp/opt/etc/asus_script/mipsbig/* lighttpd-ipk-2.1/opt/etc/asus_script/
+	cp -rf lighttpd-ipk-tmp/CONTROL/control-mipsbig lighttpd-ipk-2.1/CONTROL/control
+	cp -rf lighttpd-ipk-tmp/opt/etc/init.d/S50asuslighttpd-mipsbig lighttpd-ipk-2.1/opt/etc/init.d/S50asuslighttpd
+	$(STRIP) lighttpd-ipk-2.1/opt/tmp/bin/*
+	$(STRIP) lighttpd-ipk-2.1/opt/tmp/lib/*
+	@$(IPKG_TOOLS)/ipkg-build lighttpd-ipk-2.1 ./
+

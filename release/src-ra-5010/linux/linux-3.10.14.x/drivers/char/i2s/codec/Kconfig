@@ -1,0 +1,37 @@
+#
+# Serial device configuration
+#
+menuconfig RALINK_I2C_CODEC
+	tristate "I2C-Codec controller"
+#	select RALINK_I2C
+	select MTK_I2C
+	select I2C_MTK
+#	select RALINK_GDMA
+	default n
+
+if RALINK_I2C_CODEC
+
+choice
+	prompt "Select codec to control"
+	depends on RALINK_RT3883 || RALINK_RT3352 || RALINK_RT5350 || RALINK_RT6855 || RALINK_MT7620 || RALINK_MT7621 || RALINK_MT7628 || ARCH_MT7623
+	default RALINK_I2C_WM8960
+
+	config RALINK_I2C_WM8750
+		bool "Support I2C-WM8750 control"
+	config RALINK_I2C_WM8960
+		bool "Support I2C-WM8960 control"
+#	config I2S_192KHZ_CODEC
+#		bool "Support 192KHz codec (WM8524 for Tx; WM8782 for RX)"
+#		depends on RALINK_MT7628 || ARCH_MT7623
+endchoice
+
+
+config RALINK_I2C_WM8751
+	bool "Select I2C-WM8751 control -- Support TX only"
+	depends on RALINK_RT3052 || RALINK_RT2883 || RALINK_RT3350
+	default y
+
+endif
+
+
+

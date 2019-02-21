@@ -1,0 +1,3 @@
+If you upgrade DM version,please change the file as follows：
+  1. DownloadMaster-ipk-tmp/CONTROL/control* //modify the DM version , asusopenssl version,  asuslibcurl version
+  2. downloadmaster-UI/*.asp             //modify *.js？ver=102 version

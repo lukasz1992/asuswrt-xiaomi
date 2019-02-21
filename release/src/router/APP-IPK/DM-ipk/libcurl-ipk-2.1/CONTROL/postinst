@@ -1,0 +1,26 @@
+#! /bin/sh
+
+
+
+if [ -f "/userfs/bin/tcapi" ];then
+APPS_MOUNTED_PATH=`/userfs/bin/tcapi get Apps_Entry apps_mounted_path`
+APPS_INSTALL_FOLDER=`/userfs/bin/tcapi get Apps_Entry apps_install_folder`
+else
+APPS_MOUNTED_PATH=`nvram get apps_mounted_path`
+APPS_INSTALL_FOLDER=`nvram get apps_install_folder`
+fi
+APPS_INSTALL_PATH=$APPS_MOUNTED_PATH/$APPS_INSTALL_FOLDER
+
+#cp -rf /opt/tmp/bin/* $APPS_INSTALL_PATH/bin/
+mv -f /opt/tmp/bin/* $APPS_INSTALL_PATH/bin/
+chmod -R 777 $APPS_INSTALL_PATH/bin
+#cp -rf /opt/tmp/lib/* $APPS_INSTALL_PATH/lib/
+mv -f /opt/tmp/lib/* $APPS_INSTALL_PATH/lib/
+chmod -R 777 $APPS_INSTALL_PATH/lib
+
+#mv -f /opt/tmp/share/curl $APPS_INSTALL_PATH/share/
+#chmod -R 777 $APPS_INSTALL_PATH/share/curl
+
+chmod -R 777 $APPS_INSTALL_PATH
+#chmod 777 $APPS_INSTALL_PATH/etc/init.d/S50asuslighttpd
+#chmod 777 $APPS_INSTALL_PATH/etc/init.d/dm2_http_check

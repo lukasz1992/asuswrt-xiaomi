@@ -1,0 +1,27 @@
+.EXPORT_ALL_VARIABLES:
+############################################################################
+#
+# Vendor specific settings
+#
+
+CONSOLE_BAUD_RATE = 57600
+
+############################################################################
+
+CPUFLAGS :=
+VENDOR_CFLAGS :=
+DISABLE_XIP := 1
+DISABLE_MOVE_RODATA := 1       # until we get a toolchain release
+# LOPT := -O2                  # library is alway 02
+# UOPT := -Os                  # user apps are always Os
+
+############################################################################
+
+include $(ROOTDIR)/vendors/config/arm/config.arch
+
+#added by Steven Liu
+CFLAGS  +=  -I$(ROOTDIR)
+CFLAGS  +=  
+#--
+
+############################################################################

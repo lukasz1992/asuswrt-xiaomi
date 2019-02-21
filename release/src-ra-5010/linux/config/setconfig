@@ -1,0 +1,926 @@
+#!/bin/sh
+#############################################################################
+#
+#	This script gets called in two ways,  the first is to set the
+#	default config up.  The second "final" pass is to save any settings
+#	back to the vendors directory for permanent inclusion.
+#
+#	Copyright (C) 2001       Lineo    <davidm@snapgear.com>
+#	Copyright (C) 2001-2002  SnapGear <davidm@snapgear.com>
+#
+#############################################################################
+#
+# Some basic starting points
+#
+
+CONFIG=.config
+if [ -f ./.oldconfig ]
+then
+	. ./.oldconfig
+fi
+
+PASS="$1"
+VENDOR=""
+PRODUCT=""
+LANGUAGE=""
+LINUXDIR=""
+LIBCDIR=""
+LIBCBASEDIR=""
+COMPRESSFILE=""
+
+#############################################################################
+#
+# this code closely matches that in mkconfig,  it has to !
+#
+
+get_kernel()
+{
+	KERNEL="`grep '^CONFIG_DEFAULTS_KERNEL_.*=y' ${CONFIG}`"
+	if [ -z "${KERNEL}" ]; then
+		return 1
+	fi
+	KERNEL=${KERNEL##CONFIG_DEFAULTS_KERNEL_}
+	KERNEL=${KERNEL%%=y}
+	KERNEL="`echo ${KERNEL} | sed -e 's/_/./g'`.x"
+	return 0
+}
+
+var_isset() # because of make evironment inheritance,  we must look in the file
+{
+	if grep "$1=y" $CONFIG > /dev/null
+	then
+		return 0
+	fi
+	return 1
+}
+
+fix_name()
+{
+	echo $1 | tr '[\-\.\/\+a-z]' '[____A-Z]'
+}
+
+#
+# remove line containing $1 append line $2 to file in $3
+#
+replace_line()
+{
+	TMPR="/tmp/setconfig.$$"
+	if [ -f "$3" ]
+	then
+		cat "$3" | grep -v "$1" > "$TMPR"
+	else
+		touch "$TMPR"
+	fi
+	echo "$2" >> "$TMPR"
+	cp "$TMPR" "$3"
+	rm -f "$TMPR"
+}
+
+fix_conf_files()
+{
+	#
+	# add some bits for convienence, must be done after each stage
+	#
+
+	replace_line CONFIG_VENDOR= "CONFIG_VENDOR=$VENDOR"       .config
+	replace_line CONFIG_PRODUCT= "CONFIG_PRODUCT=$PRODUCT"    .config
+	replace_line CONFIG_LINUXDIR= "CONFIG_LINUXDIR=$LINUXDIR" .config
+	replace_line CONFIG_LIBCDIR= "CONFIG_LIBCDIR=$LIBCDIR"    .config
+	replace_line CONFIG_LANGUAGE= "CONFIG_LANGUAGE=$LANGUAGE" .config
+
+	replace_line CONFIG_VENDOR "#define CONFIG_VENDOR \"$VENDOR\"" \
+			 config/autoconf.h
+	replace_line CONFIG_PRODUCT "#define CONFIG_PRODUCT \"$PRODUCT\"" \
+			 config/autoconf.h
+	replace_line CONFIG_LINUXDIR "#define CONFIG_LINUXDIR \"$LINUXDIR\"" \
+			 config/autoconf.h
+	replace_line CONFIG_LIBCDIR "#define CONFIG_LIBCDIR \"$LIBCDIR\"" \
+			 config/autoconf.h
+	replace_line CONFIG_LANGUAGE "#define CONFIG_LANGUAGE \"$LANGUAGE\"" \
+			 config/autoconf.h
+	replace_line VENDORS_AUTOCONF_INCLUDED \
+			 "#define VENDORS_AUTOCONF_INCLUDED" config/autoconf.h
+	replace_line "#undef AUTOCONF_INCLUDED" "#undef AUTOCONF_INCLUDED" \
+			 config/autoconf.h
+
+	replace_line OLD_VENDOR   "OLD_VENDOR=\"$VENDOR\""   ./.oldconfig
+	replace_line OLD_PRODUCT  "OLD_PRODUCT=\"$PRODUCT\"" ./.oldconfig
+	replace_line OLD_LINUXDIR "OLD_LINUXDIR=\"$LINUXDIR\"" ./.oldconfig
+	replace_line OLD_LIBCDIR  "OLD_LIBCDIR=\"$LIBCDIR\"" ./.oldconfig
+	replace_line OLD_LANGUAGE  "OLD_LANGUAGE=\"$LANGUAGE\"" ./.oldconfig
+}
+
+#############################################################################
+
+for i in vendors/*/*/config.arch
+do
+	IFS=/
+	set -- $i
+	IFS=" 
+	"
+	VDIR="`dirname $i`"
+	if [ -f "$VDIR/config.languages" ]
+	then
+		for j in `cat "$VDIR/config.languages"`
+		do
+			if var_isset "CONFIG_DEFAULTS_`fix_name $2`_`fix_name $3`_`fix_name $j`"
+			then
+				VENDOR="$2"
+				PRODUCT="$3"
+				LANGUAGE="$j"
+				break 2
+			fi
+		done
+	fi
+	if var_isset "CONFIG_DEFAULTS_`fix_name $2`_`fix_name $3`"
+	then
+		VENDOR="$2"
+		PRODUCT="$3"
+		break
+	fi
+done
+
+#############################################################################
+
+if [ "$VENDOR$PRODUCT" = "" ]; then
+	echo "You have not selected a Vendor/Product in the config." >&2
+	exit 1
+fi
+
+#############################################################################
+#
+# kernel version
+#
+
+# get_kernel defines KERNEL for us
+if get_kernel; then
+	LINUXDIR="linux-${KERNEL}"
+else
+	echo "Unknown kernel configuration." >&2
+	exit 1
+fi
+
+if [ ! -d ${LINUXDIR} ]; then
+	echo "Missing kernel directory ${LINUXDIR}." >&2
+	exit 1
+fi
+
+#############################################################################
+#
+# Now install the configs,  careful not dump on them unless they asked us to
+#
+
+if [ "$PASS" != "final" ]; then
+
+
+	if [ -d linux-2.6.21.x/drivers/net/wireless/$PRODUCT/rt2860v2 ]; then
+		rm -rf linux-2.6.21.x/drivers/net/wireless/rt2860v2
+		rm -rf linux-2.6.21.x/drivers/net/wireless/rt2860v2_ap
+		rm -rf linux-2.6.21.x/drivers/net/wireless/rt2860v2_sta
+		ln -sf $PRODUCT/rt2860v2 linux-2.6.21.x/drivers/net/wireless/rt2860v2
+		ln -sf $PRODUCT/rt2860v2_ap linux-2.6.21.x/drivers/net/wireless/rt2860v2_ap
+		ln -sf $PRODUCT/rt2860v2_sta linux-2.6.21.x/drivers/net/wireless/rt2860v2_sta
+	fi
+	#
+	# if the user touches any important settings then force a clean
+	# otherwise bad things can happen in the tree
+	#
+	if [ "$OLD_LANGUAGE$OLD_PRODUCT$OLD_VENDOR$OLD_LINUXDIR$OLD_LIBCDIR" != \
+			"$LANGUAGE$PRODUCT$VENDOR$LINUXDIR$LIBCDIR" ]; then
+		if [ -f .oldconfig ]; then
+			cp .config .config.save
+			cp .oldconfig .config
+			echo; echo; echo; echo
+			if [ $NO_CLEAN ]
+			then
+				echo "**** Not cleaning tree ****"
+				echo; echo; echo; echo
+				sleep 3;
+			else
+				echo "**** Cleaning tree for old settings ****"
+				echo "rm -rf romfs; make clean > /dev/null 2>&1"
+				echo; echo; echo; echo
+				rm -rf romfs
+				make clean > /dev/null 2>&1
+			fi
+			cp .config.save .config
+			rm -f .config.save
+		fi
+		[ "$LIBCDIR" ] && rm -f $LIBCDIR/.config
+		rm -f $LINUXDIR/.config
+		rm -f lib/.config
+		rm -f uClibc-0.9.33.2/.config
+		rm -f config/.config
+		rm -f config.arch
+		[ ! -d modules ] || rm -f modules/.config
+	fi
+
+    # once before the oldconfig stuff is run
+	fix_conf_files
+
+	rm -f config.arch
+	ln -s "vendors/$VENDOR/$PRODUCT/config.arch" config.arch
+
+	if [ ! -f $LINUXDIR/.config ] || var_isset CONFIG_DEFAULTS_OVERRIDE; then
+		if [ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.$LINUXDIR" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.$LINUXDIR" ]; then
+			echo; echo; echo; echo
+			echo "*********************** NOTICE ****************************"
+			echo "There is no preset config for $LINUXDIR on platform $VENDOR/$PRODUCT." 
+			echo "If you choose to continue you will have to setup a linux"
+			echo "config from scratch which is a very complex task."
+			echo "You will find it easier if you can copy a config.$LINUXDIR"
+			echo "from another platform that is similar."
+			echo
+			echo "If you know what you are doing press <ENTER> otherwise"
+			echo "Type ^C to abort."
+			read dummy
+		else
+			if var_isset CONFIG_DEFSETTING_2M8M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_2M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_4M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_4M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_8M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_8M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_16M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_32M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_8M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_16M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_128M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_128M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_256M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.$LINUXDIR" $LINUXDIR/.config
+			elif var_isset CONFIG_DEFSETTING_8G1G; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.$LINUXDIR" $LINUXDIR/.config
+			fi
+		fi
+		make oldconfig_linux
+	fi
+
+	# Added by Steven Liu
+	TMP=`expr $LINUXDIR : "[^-][^-]*\(-.*\)"`
+	if [ ! -f user/busybox/.config ] || var_isset CONFIG_DEFAULTS_OVERRIDE; then
+		if [ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.busybox$TMP" ] && 
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.busybox$TMP" ] &&
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.busybox$TMP" ] &&
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.busybox$TMP" ] &&
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.busybox$TMP" ] &&
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.busybox$TMP" ] &&
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.busybox$TMP" ] &&
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.busybox$TMP" ] &&
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.busybox$TMP" ] &&
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.busybox$TMP" ] &&
+		   [ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.busybox$TMP" ] &&
+           [ ! -f "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.busybox$TMP" ] &&
+           [ ! -f "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.busybox$TMP" ]; then
+			echo; echo; echo; echo
+			echo "*********************** NOTICE ****************************"
+			echo "There is no preset config for busybox on platform $VENDOR/$PRODUCT." 
+			echo
+			echo "If you know what you are doing press <ENTER> otherwise"
+			echo "Type ^C to abort."
+			read dummy
+		else
+			if var_isset CONFIG_DEFSETTING_2M8M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_2M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_4M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_4M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_8M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_8M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_16M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_32M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_8M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_16M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_128M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_128M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_256M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.busybox$TMP" user/busybox/.config
+			elif var_isset CONFIG_DEFSETTING_8G1G; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.busybox$TMP" user/busybox/.config
+			fi
+		fi
+		make -C user/busybox oldconfig
+	fi
+	if [ ! -f lib/.config ] || var_isset CONFIG_DEFAULTS_OVERRIDE; then
+		if [ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.uclibc$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.uclibc$TMP" ] &&
+             [ ! -f "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.uclibc$TMP" ] &&
+             [ ! -f "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.uclibc$TMP" ]; then
+			echo; echo; echo; echo
+			echo "*********************** NOTICE ****************************"
+			echo "There is no preset config for uclibc-0.9.28 on platform $VENDOR/$PRODUCT." 
+			echo
+			echo "If you know what you are doing press <ENTER> otherwise"
+			echo "Type ^C to abort."
+			read dummy
+		else
+			if var_isset CONFIG_DEFSETTING_2M8M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_2M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_4M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_4M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_8M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_8M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_16M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_32M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_8M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_16M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_128M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_128M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_256M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.uclibc$TMP" lib/.config
+			elif var_isset CONFIG_DEFSETTING_8G1G; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.uclibc$TMP" lib/.config
+			fi
+
+		fi
+
+		if [ "$CONFIG_UCLIBC_0_9_28" = "y" ]; then
+		make -C lib oldconfig
+		fi
+	fi
+	if var_isset CONFIG_UCLIBC_0_9_33_2; then
+	if [ ! -f uClibc-0.9.33.2/.config ] || var_isset CONFIG_DEFAULTS_OVERRIDE; then
+		if [ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.uclibc0933$TMP" ] &&
+			 [ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.uclibc0933$TMP" ] &&
+             [ ! -f "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.uclibc0933$TMP" ] &&
+             [ ! -f "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.uclibc0933$TMP" ]; then
+			echo; echo; echo; echo
+			echo "*********************** NOTICE ****************************"
+			echo "There is no preset config for uclibc-0.9.33 on platform $VENDOR/$PRODUCT." 
+			echo
+			echo "If you know what you are doing press <ENTER> otherwise"
+			echo "Type ^C to abort."
+			read dummy
+		else
+			if var_isset CONFIG_DEFSETTING_2M8M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_2M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_4M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_4M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_8M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_8M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_16M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_32M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_8M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_16M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_128M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_128M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_256M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			elif var_isset CONFIG_DEFSETTING_8G1G; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.uclibc0933$TMP" uClibc-0.9.33.2/.config
+			fi
+
+		fi
+		if [ "$CONFIG_UCLIBC_0_9_33_2" = "y" ]; then
+		make -C uClibc-0.9.33.2 oldconfig
+		fi
+	fi
+	fi
+	#
+	# everything about modules is optional,  optional modules dir
+	# and optional modules config files
+	#
+	if [ -d modules ]; then
+		TMP=`expr $LINUXDIR : "[^-][^-]*\(-.*\)"`
+		if [ -f "vendors/$VENDOR/$PRODUCT/config.modules$TMP" ]
+		then
+			TMP="vendors/$VENDOR/$PRODUCT/config.modules$TMP"
+		else
+			TMP="vendors/$VENDOR/$PRODUCT/config.modules"
+		fi
+		if [ ! -f modules/.config ] || var_isset CONFIG_DEFAULTS_OVERRIDE; then
+			if [ -f "$TMP" ]; then
+				cp "$TMP" modules/.config
+			fi
+			make oldconfig_modules
+		fi
+	fi
+
+	if [ ! -f config/.config ] || var_isset CONFIG_DEFAULTS_OVERRIDE; then
+		TMP=`expr $LINUXDIR : "[^-][^-]*\(-.*\)"`
+		if [ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.vendor$TMP" ] && 
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.vendor$TMP" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.vendor$TMP" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.vendor$TMP" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.vendor$TMP" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.vendor$TMP" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.vendor$TMP" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.vendor$TMP" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.vendor$TMP" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.vendor$TMP" ] &&
+			[ ! -f "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.vendor$TMP" ] &&
+            [ ! -f "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.vendor$TMP" ] &&
+            [ ! -f "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.vendor$TMP" ]; then
+			echo; echo; echo; echo
+			echo "*********************** NOTICE ****************************"
+			echo "There is no preset config for applications on platform $VENDOR/$PRODUCT." 
+			echo "If you choose to continue you will have to setup your"
+			echo "application config from scratch.  You will find it easier"
+			echo "if you can copy a config.vendor file from another platform"
+			echo "that is similar."
+			echo
+			echo "If you press <ENTER> you will be forced into the application"
+			echo "config screen as part of the config process."
+			echo "You may type ^C to abort."
+			read dummy
+			#
+			# force config of user apps
+			#
+			replace_line CONFIG_DEFAULTS_VENDOR= \
+					"CONFIG_DEFAULTS_VENDOR=y" .config
+		else
+			if var_isset CONFIG_DEFSETTING_2M8M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_2M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_4M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_4M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_8M16M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_8M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_16M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_32M64M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_8M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_16M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_128M128M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_128M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_256M256M; then
+				cp "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.vendor$TMP" config/.config
+			elif var_isset CONFIG_DEFSETTING_8G1G; then
+				cp "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.vendor$TMP" config/.config
+			fi
+		fi
+		make oldconfig_config
+	fi
+
+	if [ -L lib/$LIBCBASEDIR ]; then
+		rm -f lib/$LIBCBASEDIR
+	fi
+
+	if [ ! -e lib/$LIBCBASEDIR -a -e $LIBCBASEDIR/. ] ; then
+		ln -s "`pwd`/$LIBCBASEDIR" "lib/$LIBCBASEDIR"
+	fi
+
+fi
+
+#############################################################################
+#
+# The override config option is always turned off when we are done so that
+# someone doesn't get all upset that they lost their config files.
+#
+# Always add the VENDOR/PRODUCT dir for the build to work
+#
+
+if [ "$PASS" = "final" ]; then
+
+	fix_conf_files
+
+	#
+	# check for other config options
+	#
+
+	if var_isset CONFIG_DEFAULTS_OVERRIDE; then
+		sed 's/^\(CONFIG_DEFAULTS_OVERRIDE\)=y/# \1 is not set/' < .config \
+				> .config.tmp
+		cp .config.tmp .config
+		rm -f .config.tmp
+	fi
+
+	if var_isset CONFIG_DEFAULTS_VENDOR_UPDATE; then
+		COMPRESSFILE=".config autoconf.h"
+		if var_isset CONFIG_DEFSETTING_2M8M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_8M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_2M16M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_16M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_4M16M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_16M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_4M32M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_32M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_8M16M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_16M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_8M32M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_8M64M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_64M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_16M64M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_64M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_32M64M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/32M_64M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_8M128M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_128M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_16M128M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_128M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_128M128M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_128M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_128M256M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_256M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_256M256M; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/256M_256M_config.$LINUXDIR"
+		elif var_isset CONFIG_DEFSETTING_8G1G; then
+			cp $LINUXDIR/.config "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.$LINUXDIR"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8G_1G_config.$LINUXDIR"
+		fi
+
+		TMP=`expr $LINUXDIR : "[^-][^-]*\(-.*\)"`
+		if var_isset CONFIG_DEFSETTING_2M8M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_8M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_2M16M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_16M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_4M16M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_16M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_4M32M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_32M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_8M16M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_16M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_8M32M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_8M64M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_64M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_16M64M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_64M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_32M64M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/32M_64M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_8M128M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_128M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_16M128M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_128M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_128M128M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_128M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_128M256M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_256M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_256M256M; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/256M_256M_config.vendor$TMP"
+		elif var_isset CONFIG_DEFSETTING_8G1G; then
+			cp config/.config "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.vendor$TMP"
+			COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8G_1G_config.vendor$TMP"
+		fi
+		
+		if [ -f modules/.config ]; then
+			if var_isset CONFIG_DEFSETTING_2M8M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_8M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_2M16M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_16M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_4M16M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_16M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_4M32M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_32M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M16M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_16M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M32M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M64M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_64M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_16M64M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_64M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_32M64M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/32M_64M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M128M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_128M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_16M128M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_128M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_128M128M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_128M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_128M256M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_256M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_256M256M; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/256M_256M_config.modules$TMP"
+			elif var_isset CONFIG_DEFSETTING_8G1G; then
+				cp modules/.config "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.modules$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8G_1G_config.modules$TMP"
+			fi
+		fi
+		if [ -f "lib/.config" ]; then
+			if var_isset CONFIG_DEFSETTING_2M8M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_8M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_2M16M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_16M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_4M16M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_16M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_4M32M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_32M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M16M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_16M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M32M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M64M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_64M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_16M64M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_64M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_32M64M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/32M_64M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M128M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_128M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_16M128M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_128M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_128M128M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_128M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_128M256M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_256M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_256M256M; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/256M_256M_config.uclibc$TMP"
+			elif var_isset CONFIG_DEFSETTING_8GM1G; then
+				cp lib/.config "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.uclibc$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8G_1G_config.uclibc$TMP"
+			fi
+		fi
+		if [ -f "uClibc-0.9.33.2/.config" ]; then
+			if var_isset CONFIG_DEFSETTING_2M8M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_8M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_2M16M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_16M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_4M16M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_16M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_4M32M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_32M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M16M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_16M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M32M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M64M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_64M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_16M64M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_64M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_32M64M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/32M_64M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M128M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_128M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_16M128M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_128M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_128M128M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_128M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_128M256M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_256M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_256M256M; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/256M_256M_config.uclibc0933$TMP"
+			elif var_isset CONFIG_DEFSETTING_8G1G; then
+				cp uClibc-0.9.33.2/.config "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.uclibc0933$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8G_1G_config.uclibc0933$TMP"
+			fi
+		fi
+		
+		if [ -f "user/busybox/.config" ]; then
+			if var_isset CONFIG_DEFSETTING_2M8M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/2M_8M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_8M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_2M16M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/2M_16M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/2M_16M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_4M16M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/4M_16M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_16M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_4M32M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/4M_32M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/4M_32M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M16M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/8M_16M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_16M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M32M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M32M_VOIP; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_32M_voip_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M64M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/8M_64M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_64M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_16M64M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/16M_64M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_64M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_32M64M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/32M_64M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/32M_64M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_8M128M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/8M_128M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8M_128M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_16M128M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/16M_128M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/16M_128M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_128M128M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/128M_128M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_128M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_128M256M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/128M_256M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/128M_256M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_256M256M; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/256M_256M_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/256M_256M_config.busybox$TMP"
+			elif var_isset CONFIG_DEFSETTING_8G1G; then
+				cp user/busybox/.config "vendors/$VENDOR/$PRODUCT/config/8G_1G_config.busybox$TMP"
+				COMPRESSFILE="$COMPRESSFILE vendors/$VENDOR/$PRODUCT/config/8G_1G_config.busybox$TMP"
+			fi
+			tar zcvf save_default.tgz $COMPRESSFILE
+		fi
+
+		sed 's/^\(CONFIG_DEFAULTS_VENDOR_UPDATE\)=y/# \1 is not set/' <.config\
+				> .config.tmp
+		cp .config.tmp .config
+		rm -f .config.tmp
+
+		if [ -f "vendors/$VENDOR/$PRODUCT/config.device" ]
+		then
+			cp .config "vendors/$VENDOR/$PRODUCT/config.device"
+		fi
+	fi
+
+	grep -v CONFIG_DEFAULTS_VENDOR= < .config | \
+		grep -v CONFIG_DEFAULTS_MODULES= | \
+		grep -v CONFIG_DEFAULTS_KERNEL= > .config.tmp
+
+	cp .config.tmp .config
+	rm -f .config.tmp
+fi
+
+#############################################################################
+exit 0

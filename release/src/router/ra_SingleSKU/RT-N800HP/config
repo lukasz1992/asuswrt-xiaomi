@@ -1,0 +1,17 @@
+
+SKU_2G_FCC  = "20171031_7615_SingleSKU.dat"
+SKU_5G_FCC  = "20171031_7615_SingleSKU.dat"
+SKU_2G_CE   = "dummy_sku.dat"
+SKU_5G_CE   = "dummy_sku.dat"
+SKU_2G_IC   = "dummy_sku.dat"
+SKU_5G_IC   = "dummy_sku.dat"
+SKU_2G_CN   = "dummy_sku.dat"
+SKU_5G_CN   = "dummy_sku.dat"
+SKU_2G_SG   = 
+SKU_5G_SG   = 
+SKU_2G_AU   = "dummy_sku.dat"
+SKU_5G_AU   = "dummy_sku.dat"
+SKU_2G_NCC  = 
+SKU_5G_NCC  =
+SKU_2G_JP   = 
+SKU_5G_JP   = 

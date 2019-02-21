@@ -1,0 +1,47 @@
+#! /bin/sh
+USB1_ACT=`nvram get usb_path1_act`
+USB1_SERIAL=`nvram get usb_path1_serial`
+USB1_PID=`nvram get usb_path1_pid`
+USB1_VID=`nvram get usb_path1_vid`
+
+USB2_ACT=`nvram get usb_path2_act`
+USB2_SERIAL=`nvram get usb_path2_serial`
+USB2_PID=`nvram get usb_path2_pid`
+USB2_VID=`nvram get usb_path2_vid`
+
+if [ ! -f "/tmp/usbinfo" ]; then
+	touch /tmp/usbinfo
+fi
+
+case "$1" in
+    start)
+	if [ ! -z "$USB1_ACT" ]&&[ ! -z "$USB2_ACT" ]; then
+		echo "usb1_act=$USB1_ACT" >/tmp/usbinfo
+		echo "usb1_serial=$USB1_SERIAL" >>/tmp/usbinfo
+		echo "usb1_pid=$USB1_PID" >>/tmp/usbinfo
+		echo "usb1_vid=$USB1_VID" >>/tmp/usbinfo
+		echo "usb2_act=$USB2_ACT" >>/tmp/usbinfo
+		echo "usb2_serial=$USB2_SERIAL" >>/tmp/usbinfo
+		echo "usb2_pid=$USB2_PID" >>/tmp/usbinfo
+		echo "usb2_vid=$USB2_VID" >>/tmp/usbinfo
+		echo "end" > /tmp/usbinfo_lock
+	else
+		if [ ! -z "$USB1_ACT" ]; then
+			echo "usb1_act=$USB1_ACT" >/tmp/usbinfo
+			echo "usb1_serial=$USB1_SERIAL" >>/tmp/usbinfo
+			echo "usb1_pid=$USB1_PID" >>/tmp/usbinfo
+			echo "usb1_vid=$USB1_VID" >>/tmp/usbinfo
+			echo "end" > /tmp/usbinfo_lock
+		else
+			echo "usb2_act=$USB2_ACT" >/tmp/usbinfo
+			echo "usb2_serial=$USB2_SERIAL" >>/tmp/usbinfo
+			echo "usb2_pid=$USB2_PID" >>/tmp/usbinfo
+			echo "usb2_vid=$USB2_VID" >>/tmp/usbinfo
+			echo "end" > /tmp/usbinfo_lock
+		fi
+	fi
+	;;
+	*)
+  exit 1
+  ;;
+esac

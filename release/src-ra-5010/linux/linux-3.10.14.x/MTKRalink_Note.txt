@@ -1,0 +1,7 @@
+
+branch from linux-mti (3.10.14.x)
+
+# git clone git://git.linux-mips.org/pub/scm/linux-mti.git
+# git checkout linux-mti-3.10
+
+2013/11/28 yy.huang

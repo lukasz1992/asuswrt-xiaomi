@@ -1,0 +1,74 @@
+#! /bin/sh
+PATH=$APPS_PATH/usr/bin:$APPS_PATH/bin:$APPS_PATH/usr/sbin:$APPS_PATH/sbin:$PATH
+unset LD_LIBRARY_PATH
+unset LD_PRELOAD
+
+_Usb_HD_Mount(){
+
+#usb_num=1
+#HD_N=`mount |grep "/dev/sd" | awk '{print $1}'| awk 'BEGIN{FS="/"}{print $3}'`
+
+#for f in $HD_N; do 
+ 
+ 
+if [ -f "/userfs/bin/tcapi" ];then
+			#usb_path_num=`tcapi show USB_Entry | grep "=$f" | awk 'BEGIN{FS="_"}{print path$2}'`
+			ACT=usb_path$1_act
+			SERIAL=usb_path$1_serial
+			PID=usb_path$1_pid
+			VID=usb_path$1_vid
+			USB_ACT=`/userfs/bin/tcapi get USB_Entry $ACT`
+			USB_SERIAL=`/userfs/bin/tcapi get USB_Entry $SERIAL`
+			USB_PID=`/userfs/bin/tcapi get USB_Entry $PID`
+			USB_VID=`/userfs/bin/tcapi get USB_Entry $VID`
+
+if [ "$2" == "1" ]; then
+			echo "usb$2_act=$USB_ACT" >/tmp/usbinfo
+else
+			echo "usb$2_act=$USB_ACT" >>/tmp/usbinfo
+fi
+			echo "usb$2_serial=$USB_SERIAL" >>/tmp/usbinfo
+			echo "usb$2_pid=$USB_PID" >>/tmp/usbinfo
+			echo "usb$2_vid=$USB_VID" >>/tmp/usbinfo
+			
+else
+			usb_path_num=`nvram show | grep "usb_path"| grep "=$f" | awk 'BEGIN{FS="_"}{print path$2}'`
+			ACT=usb_path$1_act
+			SERIAL=usb_path$1_serial
+			PID=usb_path$1_pid
+			VID=usb_path$1_vid
+			USB_ACT=`nvram get $ACT`
+			USB_SERIAL=`nvram get $SERIAL`
+			USB_PID=`nvram get $PID`
+			USB_VID=`nvram get $VID`
+if [ "$2" == "1" ]; then
+			echo "usb$2_act=$USB_ACT" >/tmp/usbinfo
+else
+			echo "usb$2_act=$USB_ACT" >>/tmp/usbinfo
+fi
+			echo "usb$2_serial=$USB_SERIAL" >>/tmp/usbinfo
+			echo "usb$2_pid=$USB_PID" >>/tmp/usbinfo
+			echo "usb$2_vid=$USB_VID" >>/tmp/usbinfo
+			
+	
+fi
+#usb_num=$(($usb_num+1))
+#done
+echo "end" > /tmp/usbinfo_lock
+}
+
+if [ ! -f "/tmp/usbinfo" ]; then
+	touch /tmp/usbinfo
+fi
+
+
+case "$1" in
+    start)
+
+		_Usb_HD_Mount $2 $3
+              
+	;;
+	*)
+  exit 1
+  ;;
+esac

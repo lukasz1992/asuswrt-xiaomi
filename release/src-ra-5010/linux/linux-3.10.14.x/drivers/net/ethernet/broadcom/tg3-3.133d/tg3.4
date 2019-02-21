@@ -1,0 +1,171 @@
+.\" Copyright (c) 2006-2013 Broadcom Corporation
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation.
+.\"
+.\" tg3.4,v 1.1 
+.\"
+.TH TG3 4 "07/19/12" "Broadcom Corporation"
+.\"
+.\" NAME part
+.\"
+.SH NAME
+tg3 \- Broadcom NetXtreme (Tigon3) series Gigabit Ethernet device driver
+.\"
+.\" SYNOPSIS part
+.\"
+.SH SYNOPSIS
+.B insmod tg3.o
+.PP
+.B insmod tg3.ko
+.PP
+.B modprobe tg3
+.\"
+.\" DESCRIPTION part
+.\"
+.SH DESCRIPTION
+.I tg3
+is the network device driver for the Broadcom
+.B NetXtreme BCM57xx
+series PCI/PCI-X/PCI Express Gigabit Ethernet Network Interface Card (NIC).
+The latest driver is in the latest 3.x Linux kernel. It can also be
+downloaded from http://www.broadcom.com as a source package, but is
+generally not necessary to do so if you are using the latest 3.x
+upstream kernel from http://www.kernel.org or one of the latest
+vendor kernels from Red Hat, SuSE, or others.
+.PP
+Refer to the README.TXT from the driver package on how to
+compile and install the driver source package.
+.PP
+Refer to various Linux documentations
+on how to configure network protocol and address.
+.\"
+.\" DRIVER SETTINGS part
+.\"
+.SH DRIVER SETTINGS
+Driver settings can be queried and changed using \fBethtool\fP. The latest
+ethtool can be downloaded from
+\fBftp://ftp.kernel.org/pub/software/network/ethtool\fP if
+it is not already installed. 
+See the ethtool man page for more information. ethtool settings
+do not persist across reboot or module reload. The ethtool commands can be
+put in a startup script such as /etc/rc.local to preserve the settings
+across a reboot. On Red Hat distributions, "ethtool -s" parameters can be
+specified in the ifcfg-ethx scripts using the ETHTOOL_OPTS keyword. The
+specified ethtool parameters will be set during ifup. Example:
+/etc/sysconfig/network-scripts/ifcfg-eth0:
+
+ETHTOOL_OPTS="wol g speed 100 duplex half autoneg off"
+
+.\"
+.\" DEFAULT SETTINGS part
+.\"
+.SH DEFAULT SETTINGS
+.TP
+Speed :
+Autonegotiation with all speeds advertised
+.TP
+Flow control :
+Autonegotiation with rx and tx advertised
+.TP
+MTU :
+1500 (range 46 - 9000)
+
+Some chips do not support jumbo MTUs bigger than 1500
+
+.TP
+Rx Ring Size :
+200 (range 0 - 511)
+.TP
+Rx Jumbo Ring Size :
+100 (range 0 - 255)
+
+Not all chips support the jumbo ring, and some
+chips that support jumbo frames do not use the
+jumbo ring.
+
+.TP
+Tx Ring Size :
+511 (range (MAX_SKB_FRAGS+1) - 511)
+
+MAX_SKB_FRAGS varies on different kernels and
+different architectures. On a 2.6/3.x kernel for
+x86, MAX_SKB_FRAGS is 18.
+
+.TP
+Number of RSS channels:
+Varies depending on the number of CPUs on MSI-X
+capable devices.  (Range 1 - 4)
+
+.TP
+Number of TSS channels:
+Varies depending on the number of CPUs on MSI-X
+capable devices.  (Range 1 - 4)
+
+.TP
+Coalesce rx usecs :
+20 (range 0 - 1023)
+.TP
+Coalesce rx usecs irq :
+20 (range 0 - 255)
+.TP
+Coalesce rx frames :
+5 (range 0 - 1023)
+.TP
+Coalesce rx frames irq :
+5 (range 0 - 255)
+.TP
+Coalesce tx usecs :
+72 (range 0 - 1023)
+.TP
+Coalesce tx usecs irq :
+20 (range 0 - 255)
+.TP
+Coalesce tx frames :
+53 (range 0 - 1023)
+.TP
+Coalesce tx frames irq :
+5 (range 0 - 255)
+.TP
+Coalesce stats usecs   :
+1000000 (aprox. 1 sec.)
+
+Some coalescing parameters are not used or have
+different defaults on some chips
+
+.TP
+MSI/MSI-X :
+Enabled (if supported by the device and interrupt test passes)
+.TP
+TSO :
+Enabled on 2.6/3.x kernels on newer devices
+(Some devices do not support TSO)
+.TP
+WoL :
+Disabled
+.\"
+.\" SENSOR SUPPORT part
+.\"
+.SH SENSOR SUPPORT
+If your device and platform support sensors and you're running a
+kernel that supports CONFIG_HWMON, you can read the sensor data from:
+
+/sys/class/hwmon/hwmon#/device/
+
+Select the hwmon# device that matches the tg3 device.  Only
+\fBtemp1\fP sensor attributes are supported at this time.
+
+.\"
+.\" AUTHOR part
+.\"
+.SH AUTHOR
+Michael Chan \- mchan@broadcom.com
+.\"
+.\" SEE ALSO part
+.\"
+.SH SEE ALSO
+.BR ifconfig (8),
+.BR insmod (8),
+.BR modprobe.conf (5),
+.BR ethtool (8).
+

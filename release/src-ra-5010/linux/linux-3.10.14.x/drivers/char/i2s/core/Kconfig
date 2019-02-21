@@ -1,0 +1,86 @@
+#
+# Serial device configuration
+#
+
+
+menuconfig RALINK_I2S
+	tristate "Ralink I2S Support"
+#	select RALINK_I2C
+	select RALINK_GDMA
+	default n
+
+if RALINK_I2S
+
+config I2S_IN_CLK
+        bool "Use Internal Reference Clock"
+	depends on RALINK_RT3052
+	default n
+
+config I2S_MS_MODE
+        bool "Ralink SoC as I2S Master Device"
+        depends on RALINK_RT3352 || RALINK_RT6855
+	default n
+
+
+config I2S_WM8751
+	bool "Select Audio Codec WM8751  -- Support TX only"
+	depends on RALINK_RT3052 || RALINK_RT2883 || RALINK_RT3350
+	default y
+
+config I2S_IN_MCLK
+	bool "Use Internal REFCLK As MCLK Source"
+	depends on RALINK_RT3352 || RALINK_RT5350 || RALINK_RT6855 || RALINK_MT7620 || RALINK_MT7621 || RALINK_MT7628 || ARCH_MT7623
+	depends on !I2S_192KHZ_CODEC
+	default y
+
+config I2S_192KHZ_CODEC
+		bool "Support 192KHz codec (WM8524 for Tx; WM8782 for RX)"
+		depends on RALINK_MT7628 || ARCH_MT7623
+		depends on !RALINK_I2C_CODEC
+
+
+choice
+	prompt	"Selection For MCLK"
+	
+	config I2S_MCLK_12MHZ
+		bool "Select 12MHz Internal REFCLK"
+		depends on RALINK_RT3352 || RALINK_RT5350 || RALINK_RT6855 || RALINK_MT7620 || RALINK_MT7628 || RALINK_MT7621
+		depends on I2S_IN_MCLK
+		depends on !I2S_192KHZ_CODEC
+
+	config I2S_MCLK_12P288MHZ
+		bool "Select 12.288MHz/11.289MHz Internal REFCLK as MCLK"
+		depends on RALINK_MT7621 || ARCH_MT7623
+		depends on I2S_IN_MCLK
+		depends on !I2S_192KHZ_CODEC
+
+	config I2S_MCLK_12MHZ
+		bool "Select 12MHz External Xtal"
+		depends on !I2S_IN_MCLK
+		depends on !I2S_192KHZ_CODEC
+
+	config I2S_MCLK_12P288MHZ
+		bool "Select 12.288MHz External Xtal"
+		depends on !I2S_IN_MCLK
+		depends on !I2S_192KHZ_CODEC
+
+	config I2S_MCLK_24P576MHZ
+		bool "Select 24.576MHz External Xtal"
+		depends on !I2S_IN_MCLK
+		depends on I2S_192KHZ_CODEC
+
+endchoice
+
+#config I2S_MMAP
+#        bool "Use MMAP mechanism for dma transmission"
+#        depends on !SND_MT76XX_SOC
+#        default y
+#	---help---
+#	  This option is supported while not turning on ALSA
+
+#config I2S_WITH_AEC
+#	tristate "Ralink I2S WITH AEC Support"
+#	default n
+
+endif #RALINK_I2S
+
