@@ -17,9 +17,10 @@ var wantype = '';
 var wanstate = -1;
 var wansbstate = -1;
 var wanauxstate = -1;
-var RetryCountDown = 5;
+var RetryCountDown = 15;
+var RetryCountDown_flag = 0;
 var successcase = 0;
-var RetryCountDown_fail = 5;
+var RetryCountDown_fail = 10;
 var first_wanstate = -1;
 var first_wansbstate = -1;
 var first_wanauxstate = -1;
@@ -36,9 +37,6 @@ var ewan_index = -1;
 var usb_index = -1;
 var wans_dualwan = '<% nvram_get("wans_dualwan"); %>'.split(" ");
 var based_modelid = '<% nvram_get("productid"); %>';
-if(parent.document.QKform.wan_proto.value == "pptp" || parent.document.QKform.wan_proto.value == "l2tp"){
-	RetryCountDown = 10;
-}
 
 function QKDetect_load_body(){
 	parent.set_step("t1");
@@ -101,31 +99,32 @@ function getWANStatus(){
 				getWANStatus();			
 		},
 		success: function(response){
-			RetryCountDown_fail = 5;
+			--RetryCountDown;
 			if(based_modelid == "4G-AC53U" || based_modelid == "4G-AC55U" || based_modelid == "4G-AC68U"){
-				getDualWANState();			
+				setTimeout('getWANStatus();', 500);
 			}
 
 			if(parent.document.QKform.wan_proto.value != "pptp" && parent.document.QKform.wan_proto.value != "l2tp"){
 				if(autodet_state == "" || autodet_state == "0" || autodet_state == "1"){
 					setTimeout('getWANStatus();', 500);
-					return true;
 				}
+			}
+
+			if(RetryCountDown < 1 && RetryCountDown_flag == 0){
+				RetryCountDown = 10;
+				RetryCountDown_flag = 1;
+				restart_autodet();
 			}
 
 			if(wanstate == 6){
 				setTimeout("getWANStatus();", 2000);
-				return true;
 			}
 
 			if(wanstate == -1 || wanstate == 0 || wanstate == 1){
 				if(wanauxstate == 3 && wanstate == 1){ // PPP_AUTH_FAIL
 					alert("<#QKSet_Internet_Setup_fail_reason2#>");
 					redirect_page("internet_account");
-					return true;
 				}
-				else
-					--RetryCountDown;
 
 				if(RetryCountDown < 1){
 					if(parent.ISMOBILE){
@@ -147,8 +146,9 @@ function getWANStatus(){
 						}
 					}
 				}
-				else
+				else{
 					setTimeout("getWANStatus();", 2000);
+				}
 			}
 			else if(wanstate == 4 && wansbstate == 4){
 				parent.changeSubnet = true;
@@ -193,14 +193,14 @@ function getWANStatus(){
 							}
 						}
 					}
-					else
+					else{
 						setTimeout("getWANStatus();", 2000);
+					}
 				}
 				else{
 					if(wanlink_type() == "dhcp" && now_flag != "resetModem")
 						redirect_page("resetModem");
 					else if(RetryCountDown > 0){
-						--RetryCountDown;
 						setTimeout("getWANStatus();", 2000);
 					}
 					else{

@@ -2,7 +2,8 @@ var qisPostData = {};
 
 var opModeObj = {
 	"sw_mode": "",
-	"wlc_psta": ""
+	"wlc_psta": "",
+	"wlc_dpsta": ""
 }
 
 var generalObj = {
@@ -56,7 +57,15 @@ var wanObj = {
 		"wan_dns1_x": "",
 		"wan_dns2_x": "",
 		"wan_heartbeat_x": ""
-	}	
+	},
+
+	"LWAN_2p5G": {
+		"wans_extwan": "0"
+	},
+
+	"dualWan": {
+		"wans_dualwan": ""
+	}
 }
 
 var lanObj = {
@@ -110,7 +119,41 @@ var wlcObj = {
 	"wlc_key": "",
 	"wlc_ap_mac": ""
 }
-
+var wlcMultiObj = {
+	"wlc0" : {
+		"wlc0_band": "",
+		"wlc0_ssid": "",
+		"wlc0_auth_mode": "",
+		"wlc0_crypto": "",
+		"wlc0_wpa_psk": "",
+		"wlc0_wep": "",
+		"wlc0_wep_key": "",
+		"wlc0_key": "",
+		"wlc0_ap_mac": ""
+	},
+	"wlc1" : {
+		"wlc1_band": "",
+		"wlc1_ssid": "",
+		"wlc1_auth_mode": "",
+		"wlc1_crypto": "",
+		"wlc1_wpa_psk": "",
+		"wlc1_wep": "",
+		"wlc1_wep_key": "",
+		"wlc1_key": "",
+		"wlc1_ap_mac": ""
+	},
+	"wlc2" : {
+		"wlc2_band": "",
+		"wlc2_ssid": "",
+		"wlc2_auth_mode": "",
+		"wlc2_crypto": "",
+		"wlc2_wpa_psk": "",
+		"wlc2_wep": "",
+		"wlc2_wep_key": "",
+		"wlc2_key": "",
+		"wlc2_ap_mac": ""
+	}
+}
 var yandexObj = {
 	"yadns_enable_x": "",
 	"yadns_mode": ""	
@@ -135,16 +178,22 @@ var timeObj = {
 }
 
 var iptvObj = {
-	"wan10_proto": "",
-	"wan11_proto": "",
 	"switch_stb_x": "",
-	"switch_wantag": "",
+	"switch_wantag": ""
+}
+
+var iptvManualObj = {
 	"switch_wan0tagid": "",
 	"switch_wan0prio": "",
 	"switch_wan1tagid": "",
 	"switch_wan1prio": "",
 	"switch_wan2tagid": "",
-	"switch_wan2prio": "",
+	"switch_wan2prio": ""
+}
+
+var iptvWanSettingObj = {
+	"wan10_proto": "",
+	"wan11_proto": "",
 	"wan10_ipaddr_x": "",
 	"wan10_netmask_x": "",
 	"wan10_gateway_x": "",
@@ -175,15 +224,18 @@ var modemObj = {
 
 var systemVariable = {
 	"originWanType": "", /* ToDo: Secondary WAN support */
+	"originWansExtwan": "",
+	"originWansDualwan": "",
 	"manualWanSetup": false,
 	"wanDnsenable": "",
 	"detwanResult": {
 		"wanType": "",
 		"isIPConflict": false,
 	},
-	"isNewFw": false,
+	"isNewFw": 0,
 	"newFwVersion": "",
 	"papList": [],
+	"papListAiMesh": [],
 	"selectedAP": {},
 	"opMode": "",
 	"originOpMode": "",
@@ -193,11 +245,26 @@ var systemVariable = {
 	"uiLanguage": "",
 	"territoryCode": "",
 	"default_http_passwd": "admin",
-	"forceChangePw": "",
-	"forceChangePwInTheEnd": "",
-	"rebootTime": ""
+	"forceChangePw": false,
+	"forceChangePwInTheEnd": false,
+	"rebootTime": "",
+	"multiPAP" : {
+		"wlcOrder": [],
+		"wlcStatus": {}
+	},
+	"wanOption": false
 }
 
 var aimeshObj = {
 	"cfg_master": "1"
+}
+
+var boostKeyObj = {
+	"turbo_mode": "1"
+}
+
+var axModeObj = {
+	"wl0_he_features": "3",
+	"wl1_he_features": "3",
+	"wl2_he_features": "3"
 }

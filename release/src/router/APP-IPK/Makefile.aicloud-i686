@@ -33,8 +33,6 @@ obj-y += pcre
 obj-y += samba
 obj-y += sqlite
 obj-y += subsequent
-#obj-y += wb
-#obj-y += push_log
 obj-y += lighttpd
 obj-y += Aicloud-ipk
 
@@ -54,8 +52,6 @@ clean:
 	@$(MAKE) -C $(CURRENT)/sqlite clean
 	@$(MAKE) -C $(CURRENT)/lighttpd-1.4.39 clean
 	@$(MAKE) -C $(CURRENT)/samba-3.5.8 clean -f Makefile.i686
-	@$(MAKE) -C $(CURRENT)/wb clean -f Makefile.i686
-	#@$(MAKE) -C $(CURRENT)/push_log clean -f Makefile.i686
 	@rm -rf AiCloud-ipk/opt/tmp/lib/*
 	@rm -rf AiCloud-ipk/opt/tmp/bin/*
 	@rm -rf AiCloud-ipk/CONTROL/control
@@ -189,21 +185,6 @@ sqlite:sqlite/stamp-h1
 samba:
 	@$(MAKE) -C $(CURRENT)/samba-3.5.8 -f Makefile.i686
 	cp -rf $(CURRENT)/samba-3.5.8/source3/bin/libsmbclient.so.0 AiCloud-ipk/opt/tmp/lib/
-
-wb/stamp-h1:
-		cd $(CURRENT)/wb \
-		touch stamp-h1;	
-wb:wb/stamp-h1
-	@$(MAKE) -C $(CURRENT)/wb -f Makefile.i686
-	cp -rf $(CURRENT)/wb/libws.so AiCloud-ipk/opt/tmp/lib/
-
-push/stamp-h1:
-
-push_log:push/stamp-h1	
-	@$(MAKE) -C $(CURRENT)/push_log -f Makefile.i686
-	cp -rf $(CURRENT)/push_log/libpush_log.so AiCloud-ipk/opt/tmp/lib/
-
-
 
 lighttpd/stamp-h1: 
 		cd $(CURRENT)/lighttpd-1.4.39 \

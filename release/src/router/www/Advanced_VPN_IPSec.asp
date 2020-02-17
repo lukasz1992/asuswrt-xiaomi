@@ -173,13 +173,13 @@ function initial(){
 
 	//set FAQ URL
 	//	https://www.asus.com/support/FAQ/1033576
-	httpApi.faqURL("faq_windows", "1033576", "https://www.asus.com", "/support/FAQ/");
+	httpApi.faqURL("1033576", function(url){document.getElementById("faq_windows").href=url;});
 	//	https://www.asus.com/support/FAQ/1033575
-	httpApi.faqURL("faq_macOS", "1033575", "https://www.asus.com", "/support/FAQ/");
+	httpApi.faqURL("1033575", function(url){document.getElementById("faq_macOS").href=url;});
 	//	https://www.asus.com/support/FAQ/1033574
-	httpApi.faqURL("faq_iPhone", "1033574", "https://www.asus.com", "/support/FAQ/");
+	httpApi.faqURL("1033574", function(url){document.getElementById("faq_iPhone").href=url;});
 	//	https://www.asus.com/support/FAQ/1033572
-	httpApi.faqURL("faq_android", "1033572", "https://www.asus.com", "/support/FAQ/");
+	httpApi.faqURL("1033572", function(url){document.getElementById("faq_android").href=url;});
 }
 
 var MAX_RETRY_NUM = 5;
@@ -197,8 +197,8 @@ function show_warning_message(){
 				document.getElementById("privateIP_notes").innerHTML = "<#vpn_privateIP_hint#>";
 				document.getElementById("privateIP_notes").style.display = "";
 				$(".general_server_addr").html("-");
-				//	http://www.asus.com/support/FAQ/1033906
-				httpApi.faqURL("faq_port_forwarding", "1033906", "https://www.asus.com", "/support/FAQ/");	//this id is include in string : #vpn_privateIP_hint#
+				//	https://www.asus.com/support/FAQ/1033906
+				httpApi.faqURL("1033906", function(url){document.getElementById("faq_port_forwarding").href=url;});	//this id is include in string : #vpn_privateIP_hint#
 			}
 			else {
 				if(ddns_enable_x == "1" && ddns_hostname_x != "") {
@@ -214,8 +214,8 @@ function show_warning_message(){
 				document.getElementById("privateIP_notes").innerHTML = "<#vpn_privateIP_hint#>";
 				document.getElementById("privateIP_notes").style.display = "";
 				$(".general_server_addr").html("-");
-				//	http://www.asus.com/support/FAQ/1033906
-				httpApi.faqURL("faq_port_forwarding", "1033906", "https://www.asus.com", "/support/FAQ/");	//this id is include in string : #vpn_privateIP_hint#
+				//	https://www.asus.com/support/FAQ/1033906
+				httpApi.faqURL("1033906", function(url){document.getElementById("faq_port_forwarding").href=url;});	//this id is include in string : #vpn_privateIP_hint#
 			}
 			else {
 				if(ddns_enable_x == "1" && ddns_hostname_x != "") {
@@ -231,8 +231,8 @@ function show_warning_message(){
 		document.getElementById("privateIP_notes").innerHTML = "<#vpn_privateIP_hint#>";
 		document.getElementById("privateIP_notes").style.display = "";
 		$(".general_server_addr").html("-");
-		//	http://www.asus.com/support/FAQ/1033906
-		httpApi.faqURL("faq_port_forwarding", "1033906", "https://www.asus.com", "/support/FAQ/");	//this id is include in string : #vpn_privateIP_hint#
+		//	https://www.asus.com/support/FAQ/1033906
+		httpApi.faqURL("1033906", function(url){document.getElementById("faq_port_forwarding").href=url;});	//this id is include in string : #vpn_privateIP_hint#
 	}
 	else {
 		if(ddns_enable_x == "1" && ddns_hostname_x != "") {

@@ -4,6 +4,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta HTTP-EQUIV="Pragma" CONTENT="no-cache">
 <meta HTTP-EQUIV="Expires" CONTENT="-1">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
 <link rel="shortcut icon" href="images/favicon.png">
 <link rel="icon" href="images/favicon.png">
 <title></title>
@@ -187,7 +188,7 @@ function initial(){
 				document.getElementById("goDualWANSetting").style.display = "none";
 				document.getElementById("dualwan_enable_button").style.display = "none";
 			}			
-			else if(parent.document.form.dual_wan_flag.value == 0){
+			else if(parent.document.form.dual_wan_flag.value == 0 && wans_caps != "wan lan"){
 				document.getElementById("goDualWANSetting").style.display = "none";
 				document.getElementById("dualwan_enable_button").style.display = "";
 			}

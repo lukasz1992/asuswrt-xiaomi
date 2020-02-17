@@ -65,4 +65,6 @@
   <wan>link_internet=<% nvram_get("link_internet"); %></wan>
   <diag>diag_dblog_enable=<% nvram_get("dblog_enable"); %></diag>
   <diag>diag_dblog_remaining=<% nvram_get("dblog_remaining"); %></diag>
+  <wan>wlc2_state=<% nvram_get("wlc2_state"); %></wan>
+  <wan>le_restart_httpd=<% nvram_get("le_restart_httpd"); %></wan>
 </devicemap>

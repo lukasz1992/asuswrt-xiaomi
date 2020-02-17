@@ -103,9 +103,9 @@ var wan_unit_orig = '<% nvram_get("wan_unit"); %>';
 function initial(){
 	show_menu();
 	//	https://www.asus.com/support/FAQ/114001/
-	httpApi.faqURL("faq", "114001", "https://www.asus.com", "/support/FAQ/");
+	httpApi.faqURL("114001", function(url){document.getElementById("faq").href=url;});
 	//	https://www.asus.com/support/FAQ/1016385/
-	httpApi.faqURL("faq2", "1016385", "https://www.asus.com", "/support/FAQ/");
+	httpApi.faqURL("1016385", function(url){document.getElementById("faq2").href=url;});
 
 	default_apps_array = [["AiDisk", "aidisk.asp", "<#AiDiskWelcome_desp1#>", "Aidisk_png", ""],
 			["<#Servers_Center#>", "mediaserver.asp", "<#UPnPMediaServer_Help#>", "server_png", ""],
@@ -445,8 +445,6 @@ function show_apps(){
 	if(apps_array == "" && (appnet_support || appbase_support)){
 		apps_array = [["downloadmaster", "", "", "no", "no", "", "", "<#DM_EnableHint#>", "downloadmaster_png", "", "", ""],
 									["mediaserver", "", "", "no", "no", "", "", "", "mediaserver_png", "", "", ""]];
-		if(nodm_support)
-			apps_array[1][0] = "mediaserver2";
 
 		if(aicloudipk_support)
 			apps_array.push(["aicloud", "", "", "no", "no", "", "", "AiCloud 2.0 utilities", "aicloud_png", "", "", ""]);
@@ -483,16 +481,13 @@ function show_apps(){
 			apps_array.splice(media2_idx[0], 1);
 	}
 	else{
-		if(nodm_support)
-			var media_idx = apps_array.getIndexByValue2D("mediaserver");
-		else
-			var media_idx = apps_array.getIndexByValue2D("mediaserver2");
+		var media_idx = apps_array.getIndexByValue2D("mediaserver2");
 
 		if(media_idx[1] != -1 && media_idx != -1)
 			apps_array.splice(media_idx[0], 1);
 
 		var media_idx = apps_array.getIndexByValue2D("mediaserver");
-		if(!nodm_support && (media_idx == -1 || media_idx[1] == -1)){
+		if(media_idx == -1 || media_idx[1] == -1){
 			var apps_len = apps_array.length;
 			apps_array[apps_len] = ["mediaserver", "", "", "no", "no", "", "", "", "mediaserver_png", "", "", ""];
 		}
@@ -518,7 +513,7 @@ function show_apps(){
 		else
 			htmlcode += '<div class="app_name"><a style="text-decoration: underline;" href="' + default_apps_array[i][1] + '">' + default_apps_array[i][0] + '</a></div>\n';
 		if(i ==3){
-			htmlcode += '<div class="app_desc">' + default_apps_array[i][2] + ' <a href="http://www.asus.com/event/networks_3G4G_support/" target="_blank" style="text-decoration:underline;">Support</a></div>\n';
+			htmlcode += '<div class="app_desc">' + default_apps_array[i][2] + ' <a href="https://www.asus.com/event/networks_3G4G_support/" target="_blank" style="text-decoration:underline;"><#Support#></a></div>\n';
 		}
 		else{
 			htmlcode += '<div class="app_desc">' + default_apps_array[i][2] + '</div>\n';
@@ -613,10 +608,7 @@ function show_apps(){
 		if(apps_array[i][0] == "Download Master")
 			apps_array[i][0] = "downloadmaster";
 		else if(apps_array[i][0] == "Media Server"){
-			if(!nodm_support)
-				apps_array[i][0] = "mediaserver";
-			else
-				apps_array[i][0] = "mediaserver2";
+			apps_array[i][0] = "mediaserver";
 		}
 		else if(apps_array[i][0] == "AiCloud 2.0")
 			apps_array[i][0] = "aicloud";

@@ -3221,6 +3221,21 @@ void RAETH_Init_PSEUDO(pEND_DEVICE pAd, struct net_device *net_dev)
 #endif 
 #endif // CONFIG_RALINK_MT7620 //
 
+#ifdef CONFIG_RAETH_HW_VLAN_TX
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+    dev->features |= NETIF_F_HW_VLAN_TX;
+#else
+    dev->features |= NETIF_F_HW_VLAN_CTAG_TX;
+#endif
+#endif
+#ifdef CONFIG_RAETH_HW_VLAN_RX
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+    dev->features |= NETIF_F_HW_VLAN_RX;
+#else
+    dev->features |= NETIF_F_HW_VLAN_CTAG_RX;
+#endif
+#endif
+
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,10,0)
 	dev->vlan_features = dev->features;
 #endif

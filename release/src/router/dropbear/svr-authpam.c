@@ -178,13 +178,14 @@ pamConvFunc(int num_msg,
  * Keyboard interactive would be a lot nicer, but since PAM is synchronous, it
  * gets very messy trying to send the interactive challenges, and read the
  * interactive responses, over the network. */
-void svr_auth_pam() {
+void svr_auth_pam(int valid_user) {
 
 	struct UserDataS userData = {NULL, NULL};
 	struct pam_conv pamConv = {
 		pamConvFunc,
 		&userData /* submitted to pamvConvFunc as appdata_ptr */ 
 	};
+	const char* printable_user = NULL;
 
 	pam_handle_t* pamHandlep = NULL;
 
@@ -204,11 +205,22 @@ void svr_auth_pam() {
 
 	password = buf_getstring(ses.payload, &passwordlen);
 
+	/* We run the PAM conversation regardless of whether the username is valid
+	in case the conversation function has an inherent delay.
+	Use ses.authstate.username rather than ses.authstate.pw_name.
+	After PAM succeeds we then check the valid_user flag too */
+
 	/* used to pass data to the PAM conversation function - don't bother with
 	 * strdup() etc since these are touched only by our own conversation
 	 * function (above) which takes care of it */
-	userData.user = ses.authstate.pw_name;
+	userData.user = ses.authstate.username;
 	userData.passwd = password;
+
+	if (ses.authstate.pw_name) {
+		printable_user = ses.authstate.pw_name;
+	} else {
+		printable_user = "<invalid username>";
+	}
 
 	/* Init pam */
 	if ((rc = pam_start("sshd", NULL, &pamConv, &pamHandlep)) != PAM_SUCCESS) {
@@ -219,6 +231,12 @@ void svr_auth_pam() {
 
 	/* just to set it to something */
 	if ((rc = pam_set_item(pamHandlep, PAM_TTY, "ssh")) != PAM_SUCCESS) {
+		dropbear_log(LOG_WARNING, "pam_set_item() failed, rc=%d, %s",
+				rc, pam_strerror(pamHandlep, rc));
+		goto cleanup;
+	}
+
+	if ((rc = pam_set_item(pamHandlep, PAM_RHOST, svr_ses.remotehost)) != PAM_SUCCESS) {
 		dropbear_log(LOG_WARNING, "pam_set_item() failed, rc=%d, %s",
 				rc, pam_strerror(pamHandlep, rc));
 		goto cleanup;
@@ -236,8 +254,13 @@ void svr_auth_pam() {
 				rc, pam_strerror(pamHandlep, rc));
 		dropbear_log(LOG_WARNING,
 				"Bad PAM password attempt for '%s' from %s",
-				ses.authstate.pw_name,
+				printable_user,
 				svr_ses.addrstring);
+#ifdef SECURITY_NOTIFY
+		SEND_PTCSRV_EVENT(PROTECTION_SERVICE_SSH,
+				RPT_FAIL, svr_ses.hoststring,
+				"From dropbear , LOGIN FAIL(authpam)");
+#endif
 		send_msg_userauth_failure(0, 1);
 		goto cleanup;
 	}
@@ -247,8 +270,25 @@ void svr_auth_pam() {
 				rc, pam_strerror(pamHandlep, rc));
 		dropbear_log(LOG_WARNING,
 				"Bad PAM password attempt for '%s' from %s",
-				ses.authstate.pw_name,
+				printable_user,
 				svr_ses.addrstring);
+#ifdef SECURITY_NOTIFY
+		SEND_PTCSRV_EVENT(PROTECTION_SERVICE_SSH,
+				RPT_FAIL, svr_ses.hoststring,
+				"From dropbear , LOGIN FAIL(authpam)");
+#endif
+		send_msg_userauth_failure(0, 1);
+		goto cleanup;
+	}
+
+	if (!valid_user) {
+		/* PAM auth succeeded but the username isn't allowed in for another reason
+		(checkusername() failed) */
+#ifdef SECURITY_NOTIFY
+		SEND_PTCSRV_EVENT(PROTECTION_SERVICE_SSH,
+				RPT_FAIL, svr_ses.hoststring,
+				"From dropbear , ACCOUNT FAIL");
+#endif
 		send_msg_userauth_failure(0, 1);
 		goto cleanup;
 	}
@@ -257,6 +297,11 @@ void svr_auth_pam() {
 	dropbear_log(LOG_NOTICE, "PAM password auth succeeded for '%s' from %s",
 			ses.authstate.pw_name,
 			svr_ses.addrstring);
+#ifdef SECURITY_NOTIFY
+	SEND_PTCSRV_EVENT(PROTECTION_SERVICE_SSH,
+			RPT_SUCCESS, svr_ses.hoststring,
+			"From dropbear , LOGIN SUCCESS(authpam)");
+#endif
 	send_msg_userauth_success();
 
 cleanup:

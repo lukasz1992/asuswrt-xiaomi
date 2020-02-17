@@ -26,6 +26,7 @@ span{
 <script type="text/javascript" src="/qis/QISMobilePlugin.js"></script>
 <script type="text/JavaScript" src="/js/jquery.js"></script>
 <script type="text/javascript" src="/help.js"></script>
+<script type="text/JavaScript" src="/js/httpApi.js"></script>
 <script>
 /*
 	# restart needed service after loading this page immediately by restartService();
@@ -559,6 +560,11 @@ function QKfinish_load_body(){
 	parent.detect_firmware();
 	document.getElementById("QISmain").style.display = "";
 	parent.document.title = "<#Web_Title#> - <#QKSet_all_title#>";
+
+	var linkInternet = httpApi.isConnected();
+	if(linkInternet){
+		document.getElementById("main_manual").style.display = "";
+	}
 
 	if(gobi_support){
 		$("#freqtitle2")[0].style.display = "none";
@@ -1728,7 +1734,7 @@ var startQuery = function(){
 
 <div id="AreaHint" style="margin-top:10px; margin-left:5px;">
 	<div><img style="width: 720px; *width: 710px; height: 2px;" src="/images/New_ui/export/line_export.png"></div>
-	<div id="main_manual" style="padding-left:20px;margin-top:10px">
+	<div id="main_manual" style="padding-left:20px;margin-top:10px;display:none;">
 		<span><#ASUS_Registration#></span>
 	</div>	
 </div>

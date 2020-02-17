@@ -132,15 +132,6 @@ function QKinternettype_load_body(){
 		
 		if(parent.get_internet_type_reducedmode() == "enable")
 			blocking("dhcppppoe_sec", false);
-	
-		if( !parent.meoVoda_support ){
-			document.getElementById('meoOption').outerHTML = "";
-			document.getElementById('vodafoneOption').outerHTML = "";
-		}
-
-		if( !parent.movistarTriple_support ){
-			document.getElementById('movistarOption').outerHTML = "";
-		}
 
 		if(parent.based_modelid == "RT-AC95U"){ //MODELDEP: RT-AC95U : TRUNK ports
 			document.getElementById("voip_lan").innerHTML = "LAN4";	//P3

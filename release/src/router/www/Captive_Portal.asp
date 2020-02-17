@@ -23,6 +23,7 @@
 <script type="text/javascript" src="disk_functions.js"></script>
 <script type="text/javascript" src="/switcherplugin/jquery.iphone-switch.js"></script>
 <script type="text/javascript" src="/Captive_Portal_template.js"></script>
+<script type="text/javascript" src="/js/httpApi.js"></script>
 <script>
 var disk_flag = true;
 var splash_image_base64 = "";
@@ -82,6 +83,12 @@ function initial(){
 		captivePortalShowAndHide(0);
 		$("#apply_button").val('<#CTL_Apply_Enable#>');
 	}
+
+	var series = productid.split("-")[0].toUpperCase();
+	if(series == "BRT")
+		httpApi.faqURL("1034971", function(url){document.getElementById("faq").href=url;});
+	else
+		$(".brt_series").remove();
 }
 function captivePortalShowAndHide(_flag) {
 	if(_flag == 1) {
@@ -1883,6 +1890,9 @@ function check_gn_if_status(_subunit, _gn_array) {
 									<div style='float:left;width:80%;'>
 									<div class="cp_page_intro_txt" style="color:#FC0;"><#FreeWiFi_desc1#></div>
 									<div class="cp_page_intro_txt"><#FreeWiFi_desc2#></div>
+									<div class="cp_page_intro_txt brt_series">
+										<#FAQ_Find#> : <a id="faq" href="" target="_blank" style="font-weight:bolder;text-decoration:underline;" href="" target="_blank">GO</a>
+									</div>
 									<div align="center" class="left" style="float:left;margin-left:20px;margin-top:10px;cursor:pointer;" id="radio_captive_portal_enable"></div>
 									<div class="iphone_switch_container" style="height:32px; width:74px; position: relative; overflow: hidden;"></div>
 									<script type="text/javascript">

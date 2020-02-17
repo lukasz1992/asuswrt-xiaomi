@@ -23,7 +23,6 @@
  * SOFTWARE. */
 
 #include "includes.h"
-#include "options.h"
 #include "dbutil.h"
 #include "tcpfwd.h"
 #include "channel.h"
@@ -41,6 +40,7 @@ const struct ChanType cli_chan_tcpremote = {
 	newtcpforwarded,
 	NULL,
 	NULL,
+	NULL,
 	NULL
 };
 #endif
@@ -54,6 +54,7 @@ static const struct ChanType cli_chan_tcplocal = {
 	1, /* sepfds */
 	"direct-tcpip",
 	tcp_prio_inithandler,
+	NULL,
 	NULL,
 	NULL,
 	NULL
@@ -136,7 +137,7 @@ static int cli_localtcp(const char* listenaddr,
 	tcpinfo->chantype = &cli_chan_tcplocal;
 	tcpinfo->tcp_type = direct;
 
-	ret = listen_tcpfwd(tcpinfo);
+	ret = listen_tcpfwd(tcpinfo, NULL);
 
 	if (ret == DROPBEAR_FAILURE) {
 		m_free(tcpinfo);
@@ -234,7 +235,7 @@ static int newtcpforwarded(struct Channel * channel) {
 	char *origaddr = NULL;
 	unsigned int origport;
 	m_list_elem * iter = NULL;
-	struct TCPFwdEntry *fwd;
+	struct TCPFwdEntry *fwd = NULL;
 	char portstring[NI_MAXSERV];
 	int err = SSH_OPEN_ADMINISTRATIVELY_PROHIBITED;
 
@@ -265,7 +266,7 @@ static int newtcpforwarded(struct Channel * channel) {
 	}
 
 
-	if (iter == NULL) {
+	if (iter == NULL || fwd == NULL) {
 		/* We didn't request forwarding on that port */
 		cleantext(origaddr);
 		dropbear_log(LOG_INFO, "Server sent unrequested forward from \"%s:%d\"", 
@@ -274,7 +275,7 @@ static int newtcpforwarded(struct Channel * channel) {
 	}
 	
 	snprintf(portstring, sizeof(portstring), "%u", fwd->connectport);
-	channel->conn_pending = connect_remote(fwd->connectaddr, portstring, channel_connect_done, channel);
+	channel->conn_pending = connect_remote(fwd->connectaddr, portstring, channel_connect_done, channel, NULL, NULL);
 
 	channel->prio = DROPBEAR_CHANNEL_PRIO_UNKNOWABLE;
 	

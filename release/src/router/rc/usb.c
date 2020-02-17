@@ -1662,14 +1662,14 @@ _dprintf("%s: stop_cloudsync.\n", __func__);
 	nvram_set("dsltmp_diag_log_path", "");
 #endif
 
-#ifdef RTCONFIG_PUSH_EMAIL
+#ifdef RTCONFIG_FRS_FEEDBACK
 #ifdef RTCONFIG_DBLOG
 	if(nvram_match("dblog_enable", "1")) {
 		eval("dblogcmd", "exit"); // to stop dblog daemon
 	}
 	nvram_set("dblog_usb_path", "");
 	#endif /* RTCONFIG_DBLOG */
-#endif /* RTCONFIG_PUSH_EMAIL */
+#endif /* RTCONFIG_FRS_FEEDBACK */
 
 	if(!g_reboot && nvram_match("apps_mounted_path", mnt->mnt_dir))
 		stop_app();
@@ -2021,7 +2021,7 @@ _dprintf("usb_path: 4. don't set %s.\n", tmp);
 		}
 #endif
 
-#ifdef RTCONFIG_PUSH_EMAIL
+#ifdef RTCONFIG_FRS_FEEDBACK
 #ifdef RTCONFIG_DBLOG
 		if(ret == MOUNT_VAL_RW) {
 			if(nvram_match("dblog_usb_path", "")) {
@@ -2033,7 +2033,7 @@ _dprintf("usb_path: 4. don't set %s.\n", tmp);
 			}
 		}
 #endif /* RTCONFIG_DBLOG */
-#endif /* RTCONFIG_PUSH_EMAIL */
+#endif /* RTCONFIG_FRS_FEEDBACK */
 
 		// check the permission files.
 		if(ret == MOUNT_VAL_RW)

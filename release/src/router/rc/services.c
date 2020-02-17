@@ -412,9 +412,6 @@ static int build_temp_rootfs(const char *newroot)
 	const char *bin = "ash busybox cat cp dd df echo grep iwpriv kill ls ps mkdir mount nvram ping sh tar umount uname rm";
 	const char *sbin = "init rc hotplug2 insmod lsmod modprobe reboot rmmod rtkswitch";
 	const char *lib = "librt*.so* libnsl* libdl* libm* ld-* libiw* libgcc* libpthread* libdisk* libc*"
-#if defined(RTCONFIG_PUSH_EMAIL)
-			     " libws* libpush_log*"
-#endif
 		;
 	const char *usrbin = "killall";
 #ifdef RTCONFIG_BCMARM
@@ -432,9 +429,9 @@ static int build_temp_rootfs(const char *newroot)
 #ifdef RTCONFIG_USB_SMS_MODEM
 			     " libsmspdu.so"
 #endif
-#if defined(RTCONFIG_HTTPS) || defined(RTCONFIG_PUSH_EMAIL)
+#if defined(RTCONFIG_HTTPS) || defined(RTCONFIG_PUSH_EMAIL) || defined(RTCONFIG_FRS_FEEDBACK)
 			     " libssl* libmssl*"
-#if defined(RTCONFIG_PUSH_EMAIL)
+#if defined(RTCONFIG_FRS_FEEDBACK)
 			     " libcurl* libxml2*"
 #endif
 #endif
@@ -934,7 +931,6 @@ static void link_down(void)
 	eval("rtkswitch", "15");
 #endif
 
-#ifdef RTCONFIG_CONCURRENTREPEATER
 #ifdef RTCONFIG_REALTEK
 	if(access_point_mode()) {
 #else
@@ -945,33 +941,22 @@ static void link_down(void)
 		foreach (word, ifnames, next) {
 			SKIP_ABSENT_FAKE_IFACE(word);
 #ifdef RTCONFIG_REALTEK
-				eval("iwpriv", word, "set_mib", "func_off=1");
-				eval("iwpriv", word, "del_sta", "all");
-#else
-				eval("iwpriv",word,"set", "RadioOn=0");
-#endif
-		}
-	}
-	else
-#endif
-	{
-		/* ifconfig down wireless */
-		strcpy(ifnames, nvram_safe_get("wl_ifnames"));
-		foreach (word, ifnames, next) {
-			SKIP_ABSENT_FAKE_IFACE(word);
+			eval("iwpriv", word, "set_mib", "func_off=1");
+			eval("iwpriv", word, "del_sta", "all");
+#elif defined(RTCONFIG_RALINK)
+			eval("iwpriv",word,"set", "RadioOn=0");
+#else /* RTCONFIG_QCA */
 			ifconfig(word, 0, NULL, NULL);
+#endif
 		}
 	}
-
 }
 
 static void link_up(void)
 {
 	char word[256], *next, ifnames[128];
-#ifdef RTCONFIG_CONCURRENTREPEATER
 	char  tmp[100], prefix[]="wlXXXXXXX_";
 	int  band = 0;
-#endif
 	/* link up LAN ports */
 #ifdef RTCONFIG_REALTEK
 	lanport_ctrl(1);
@@ -979,7 +964,6 @@ static void link_up(void)
 	eval("rtkswitch", "14");
 #endif
 
-#ifdef RTCONFIG_CONCURRENTREPEATER
 #ifdef RTCONFIG_REALTEK
 	if(access_point_mode()) {
 #else
@@ -993,20 +977,12 @@ static void link_up(void)
 			if (nvram_match(strcat_r(prefix, "radio", tmp), "1"))
 #ifdef RTCONFIG_REALTEK
 				eval("iwpriv",word,"set_mib", "func_off=0");
-#else
+#elif defined(RTCONFIG_RALINK)
 				eval("iwpriv",word,"set", "RadioOn=1");
+#else /* RTCONFIG_QCA */
+				ifconfig(word, IFUP, NULL, NULL);
 #endif
 			band++;
-		}
-	}
-	else
-#endif
-	{
-		/* ifconfig up wireless */
-		strcpy(ifnames, nvram_safe_get("wl_ifnames"));
-		foreach (word, ifnames, next) {
-			SKIP_ABSENT_FAKE_IFACE(word);
-			ifconfig(word, IFUP, NULL, NULL);
 		}
 	}
 }
@@ -1165,6 +1141,7 @@ void start_dnsmasq(void)
 					    nvram_safe_get("lan_hostname"));
 			}
 		}
+
 #endif
 		fclose(fp);
 	} else
@@ -3479,7 +3456,11 @@ wl_igs_enabled(void)
 
 		snprintf(prefix, sizeof(prefix), "wl%d_", i);
 		if (nvram_match(strcat_r(prefix, "radio", tmp), "1") &&
-			(nvram_match(strcat_r(prefix, "igs", tmp), "1") || is_psta(i) || is_psr(i)))
+			(nvram_match(strcat_r(prefix, "igs", tmp), "1") 
+#ifdef RTCONFIG_PROXYSTA
+			 || is_psta(i) || is_psr(i)
+#endif
+			 ))
 			return 1;
 
 		i++;
@@ -7583,11 +7564,11 @@ start_services(void)
 	start_adtbw();
 #endif
 
-#ifdef RTCONFIG_PUSH_EMAIL
+#ifdef RTCONFIG_FRS_FEEDBACK
 #ifdef RTCONFIG_DBLOG
 	start_dblog(0);
 #endif /* RTCONFIG_DBLOG */
-#endif /* RTCONFIG_PUSH_EMAIL */
+#endif /* RTCONFIG_FRS_FEEDBACK */
 	return 0;
 }
 
@@ -9307,6 +9288,9 @@ again:
 #endif
 #endif
 #endif
+#ifdef RTCONFIG_BT_CONN
+				stop_dbus_daemon();
+#endif
 				if (!(r = build_temp_rootfs(TMP_ROOTFS_MNT_POINT)))
 					sw = 1;
 #ifdef RTCONFIG_DUAL_TRX
@@ -10430,14 +10414,14 @@ check_ddr_done:
 	}
 #endif
 #endif
-#ifdef RTCONFIG_PUSH_EMAIL
+#ifdef RTCONFIG_FRS_FEEDBACK
 #ifdef RTCONFIG_DBLOG
 	else if (strcmp(script, "dblog") == 0) {
 		if(action & RC_SERVICE_STOP) stop_dblog();
 		if(action & RC_SERVICE_START) start_dblog(1);
 	}
 #endif /* RTCONFIG_DBLOG */
-#endif /* RTCONFIG_PUSH_EMAIL */
+#endif /* RTCONFIG_FRS_FEEDBACK */
 	else if (strcmp(script, "wan_line") == 0) {
 		_dprintf("%s: restart_wan_line: %s.\n", __FUNCTION__, cmd[1]);
 		if(cmd[1]) {
@@ -11398,8 +11382,12 @@ check_ddr_done:
 	else if (strcmp(script, "sig_check") == 0)
 	{
 		if(action & RC_SERVICE_START){
-			eval("sig_update.sh");
-			if(nvram_get_int("sig_state_flag")) eval("sig_upgrade.sh", "1");
+			char *sig_update_argv[] = {"sig_update.sh", NULL};
+			_eval(sig_update_argv, NULL, 0, NULL);
+			if(nvram_get_int("sig_state_flag")){
+				char *sig_upgrade_argv[] = {"sig_upgrade.sh", NULL};
+				_eval(sig_upgrade_argv, NULL, 0, NULL);
+			}
 			stop_dpi_engine_service(0);
 			start_dpi_engine_service();
 		}
@@ -11420,12 +11408,16 @@ check_ddr_done:
 	{
 		eval("AiProtectionMonitor", "-z", "-t", "3");
 	}
-#endif
 	else if (strcmp(script, "traffic_analyzer") == 0)
 	{
 		// only stop service need to save database
 		if(action & RC_SERVICE_STOP) hm_traffic_analyzer_save();
 	}
+	else if (strcmp(script, "wrs_wbl") == 0)
+	{
+		start_wrs_wbl_service();
+	}
+#endif
 #ifdef RTCONFIG_TRAFFIC_LIMITER
 	else if (strcmp(script, "reset_traffic_limiter") == 0)
 	{
@@ -11463,6 +11455,30 @@ check_ddr_done:
 	else if (strcmp(script, "update_nc_setting_conf") == 0)
 	{
 		update_nc_setting_conf();
+	}
+	else if (strcmp(script, "oauth_google_gen_token_email") == 0)
+	{
+		oauth_google_gen_token_email();
+#ifdef RTCONFIG_CFGSYNC
+		// trigger cfg_server do sync
+		const char config[] =
+		{
+			"{"\
+			"\"oauth_google_refresh_token\":\"\","\
+			"\"oauth_google_user_email\":\"\","\
+			"\"fb_email_provider\":\"\""\
+			"}\0"
+		};
+		char event_msg[133] = {0};
+		memset(event_msg, 0, sizeof(event_msg));
+		snprintf(event_msg, sizeof(event_msg)-1, RC_CONFIG_CHANGED_MSG, EID_RC_CONFIG_CHANGED, config);
+		(void)send_cfgmnt_event(event_msg);
+		//  WEVENT_GENERIC_MSG	 "{\""WEVENT_PREFIX"\":{\""EVENT_ID"\":\"%d\"}}"
+#endif	// RTCONFIG_CFGSYNC
+	}
+	else if (strcmp(script, "oauth_google_check_token_status") == 0)
+	{
+		oauth_google_check_token_status();
 	}
 #endif
 	else if (strcmp(script, "logger") == 0)
@@ -11538,6 +11554,9 @@ check_ddr_done:
 		}
 		if(action & RC_SERVICE_START) {
 			setup_timezone();
+
+			nvram_set("reload_svc_radio", "1");
+
 			refresh_ntpc();
 			start_logger();
 			start_telnetd();
@@ -11848,10 +11867,10 @@ retry_wps_enr:
 	}
 #endif
 
-#ifdef RTCONFIG_PUSH_EMAIL
-	else if (strcmp(script, "sendmail") == 0)
+#ifdef RTCONFIG_FRS_FEEDBACK
+	else if (strcmp(script, "sendfeedback") == 0)
 	{
-		start_DSLsendmail();
+		start_sendfeedback();
 	}
 #ifdef RTCONFIG_DBLOG
 	else if (strcmp(script, "senddblog") == 0)
@@ -11869,7 +11888,7 @@ retry_wps_enr:
 #ifdef RTCONFIG_DSL_TCLINUX
 	else if (strcmp(script, "DSLsenddiagmail") == 0)
 	{
-		start_DSLsenddiagmail();
+		start_sendDSLdiag();
 	}
 #endif
 #endif
@@ -12869,8 +12888,9 @@ int start_nat_rules(void)
 	int ret, retry, nat_state;
 
 	// all rules applied directly according to currently status, wanduck help to triger those not cover by normal flow
-#if defined(RTAC58U)
-	if (!strncmp(nvram_safe_get("territory_code"), "CX", 2))
+#if defined(RTAC58U) || defined(RTAC59U)
+	if (!strncmp(nvram_safe_get("territory_code"), "CX/01", 5)
+	 || !strncmp(nvram_safe_get("territory_code"), "CX/05", 5))
 		;
 	else
 #endif

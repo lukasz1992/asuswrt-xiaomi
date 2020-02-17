@@ -33,23 +33,15 @@
  * etc. Don't use this normally, it might cause problems */
 /* #define DEBUG_VALGRIND */
 
-/* Define this to compile in trace debugging printf()s. 
- * You'll need to run programs with "-v" to turn this on.
- *
- * Caution: Don't use this in an unfriendly environment (ie unfirewalled),
- * since the printing may not sanitise strings etc. This will add a reasonable
- * amount to your executable size. */
-#ifndef DEBUG_TRACE
-#define DEBUG_TRACE 0
-#endif
-
 /* All functions writing to the cleartext payload buffer call
  * CHECKCLEARTOWRITE() before writing. This is only really useful if you're
  * attempting to track down a problem */
 /*#define CHECKCLEARTOWRITE() assert(ses.writepayload->len == 0 && \
 		ses.writepayload->pos == 0)*/
 
+#ifndef CHECKCLEARTOWRITE
 #define CHECKCLEARTOWRITE()
+#endif
 
 /* Define this, compile with -pg and set GMON_OUT_PREFIX=gmon to get gmon
  * output when Dropbear forks. This will allow it gprof to be used.
@@ -64,6 +56,7 @@
 
 /* you don't need to touch this block */
 #if DEBUG_TRACE
+extern int debug_trace;
 #define TRACE(X) dropbear_trace X;
 #define TRACE2(X) dropbear_trace2 X;
 #else /*DEBUG_TRACE*/

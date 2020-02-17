@@ -150,9 +150,11 @@ u32 __mii_mgr_write(u32 phy_addr, u32 phy_register, u32 write_data)
 		}
 	}
 }
-
+static DEFINE_SPINLOCK(mii_mgr_lock); // ASUS_EXT
 u32 mii_mgr_read(u32 phy_addr, u32 phy_register, u32 *read_data)
 {
+	unsigned long flags; // ASUS_EXT
+	spin_lock_irqsave(&mii_mgr_lock, flags); // ASUS_EXT
 #if defined (CONFIG_GE1_RGMII_FORCE_1000) || defined (CONFIG_GE1_TRGMII_FORCE_1200) || defined (CONFIG_GE1_TRGMII_FORCE_2000) || defined (CONFIG_GE1_TRGMII_FORCE_2600) || defined (CONFIG_P5_RGMII_TO_MT7530_MODE)
         u32 low_word;
         u32 high_word;
@@ -174,6 +176,7 @@ u32 mii_mgr_read(u32 phy_addr, u32 phy_register, u32 *read_data)
 					if(an_status){
 						*(unsigned long *)(ESW_PHY_POLLING) |= (1<<31);//(AN polling on)
 					}
+					spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 					return 1;
                                 }
                         }
@@ -185,15 +188,19 @@ u32 mii_mgr_read(u32 phy_addr, u32 phy_register, u32 *read_data)
 #endif
 	{
                 if(__mii_mgr_read(phy_addr, phy_register, read_data)) {
+					spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
                         return 1;
                 }
         }
-
+	spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
         return 0;
 }
 
 u32 mii_mgr_write(u32 phy_addr, u32 phy_register, u32 write_data)
 {
+	unsigned long flags; // ASUS_EXT
+	spin_lock_irqsave(&mii_mgr_lock, flags); // ASUS_EXT
+
 #if defined (CONFIG_GE1_RGMII_FORCE_1000) || defined (CONFIG_GE1_TRGMII_FORCE_1200) || defined (CONFIG_GE1_TRGMII_FORCE_2000) || defined (CONFIG_GE1_TRGMII_FORCE_2600) || defined (CONFIG_P5_RGMII_TO_MT7530_MODE)
 	u32 an_status = 0;
         
@@ -212,6 +219,7 @@ u32 mii_mgr_write(u32 phy_addr, u32 phy_register, u32 write_data)
 					if(an_status){
 						*(unsigned long *)(ESW_PHY_POLLING) |= (1<<31);//(AN polling on)
 					}
+					spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 				    return 1;
                                 }
                         }
@@ -223,15 +231,19 @@ u32 mii_mgr_write(u32 phy_addr, u32 phy_register, u32 write_data)
 #endif
 	{
                 if(__mii_mgr_write(phy_addr, phy_register, write_data)) {
+					spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
                         return 1;
                 }
         }
-
-        return 0;
+	spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
+	return 0;
 }
 
 u32 mii_mgr_cl45_set_address(u32 port_num, u32 dev_addr, u32 reg_addr)
 {
+	unsigned long flags; // ASUS_EXT
+	spin_lock_irqsave(&mii_mgr_lock, flags); // ASUS_EXT
+
 	u32 rc = 0;
 	unsigned long volatile t_start = jiffies;
 	u32 volatile data = 0;
@@ -246,6 +258,7 @@ u32 mii_mgr_cl45_set_address(u32 port_num, u32 dev_addr, u32 reg_addr)
 		else if (time_after(jiffies, t_start + 5*HZ)) {
 			enable_mdio(0);
 			printk("\n MDIO Read operation is ongoing !!\n");
+			spin_unlock_irqrestore(&mii_mgr_lock, flags);
 			return rc;
 		}
 	}
@@ -259,11 +272,13 @@ u32 mii_mgr_cl45_set_address(u32 port_num, u32 dev_addr, u32 reg_addr)
 		if (!(sysRegRead(MDIO_PHY_CONTROL_0) & (0x1 << 31))) //0 : Read/write operation complete
 		{
 			enable_mdio(0);
+			spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 			return 1;
 		}
 		else if (time_after(jiffies, t_start + 5 * HZ)) {
 			enable_mdio(0);
 			printk("\n MDIO Write operation Time Out\n");
+			spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 			return 0;
 		}
 	}
@@ -273,6 +288,9 @@ u32 mii_mgr_cl45_set_address(u32 port_num, u32 dev_addr, u32 reg_addr)
 
 u32 mii_mgr_read_cl45(u32 port_num, u32 dev_addr, u32 reg_addr, u32 *read_data)
 {
+	unsigned long flags; // ASUS_EXT
+	spin_lock_irqsave(&mii_mgr_lock, flags); // ASUS_EXT
+
 	u32 volatile status = 0;
 	u32 rc = 0;
 	unsigned long volatile t_start = jiffies;
@@ -292,6 +310,7 @@ u32 mii_mgr_read_cl45(u32 port_num, u32 dev_addr, u32 reg_addr, u32 *read_data)
 		else if (time_after(jiffies, t_start + 5*HZ)) {
 			enable_mdio(0);
 			printk("\n MDIO Read operation is ongoing !!\n");
+			spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 			return rc;
 		}
 	}
@@ -304,11 +323,13 @@ u32 mii_mgr_read_cl45(u32 port_num, u32 dev_addr, u32 reg_addr, u32 *read_data)
 		if (!(sysRegRead(MDIO_PHY_CONTROL_0) & (0x1 << 31))) {
 			*read_data = (sysRegRead(MDIO_PHY_CONTROL_0) & 0x0000FFFF);
 			enable_mdio(0);
+			spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 			return 1;
 		}
 		else if (time_after(jiffies, t_start+5*HZ)) {
 			enable_mdio(0);
 			printk("\n Set Operation: MDIO Read operation is ongoing and Time Out!!\n");
+			spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 			return 0;
 		}
 		status = sysRegRead(MDIO_PHY_CONTROL_0);
@@ -318,6 +339,9 @@ u32 mii_mgr_read_cl45(u32 port_num, u32 dev_addr, u32 reg_addr, u32 *read_data)
 
 u32 mii_mgr_write_cl45	(u32 port_num, u32 dev_addr, u32 reg_addr, u32 write_data)
 {
+	unsigned long flags; // ASUS_EXT
+	spin_lock_irqsave(&mii_mgr_lock, flags); // ASUS_EXT
+
 	u32 rc = 0;
 	unsigned long volatile t_start = jiffies;
 	u32 volatile data = 0;
@@ -335,6 +359,7 @@ u32 mii_mgr_write_cl45	(u32 port_num, u32 dev_addr, u32 reg_addr, u32 write_data
 		else if (time_after(jiffies, t_start + 5*HZ)) {
 			enable_mdio(0);
 			printk("\n MDIO Read operation is ongoing !!\n");
+			spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 			return rc;
 		}
 	}
@@ -350,11 +375,13 @@ u32 mii_mgr_write_cl45	(u32 port_num, u32 dev_addr, u32 reg_addr, u32 write_data
 		if (!(sysRegRead(MDIO_PHY_CONTROL_0) & (0x1 << 31)))
 		{
 			enable_mdio(0);
+			spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 			return 1;
 		}
 		else if (time_after(jiffies, t_start + 5 * HZ)) {
 			enable_mdio(0);
 			printk("\n MDIO Write operation Time Out\n");
+			spin_unlock_irqrestore(&mii_mgr_lock, flags); // ASUS_EXT
 			return 0;
 		}
 

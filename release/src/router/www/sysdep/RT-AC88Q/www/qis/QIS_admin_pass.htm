@@ -286,7 +286,19 @@ function submitForm(){
 		document.form.http_passwd.select();
 		changeiuiBackground(0);
 		return false;
-	}	
+	}
+
+	if(document.form.http_passwd.value.length > 16){
+		if(parent.ISMOBILE)
+			showtext(document.getElementById("_alert_msg2"),"* <#JS_max_password#>");
+		else
+			showtext(document.getElementById("alert_msg2"),"* <#JS_max_password#>");			
+		
+		document.form.http_passwd.focus();
+		document.form.http_passwd.select();
+		changeiuiBackground(0);
+		return false;
+	}
 
 	if(document.form.http_passwd.value != document.form.v_password2.value){
 		if(parent.ISMOBILE)

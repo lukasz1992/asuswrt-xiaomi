@@ -322,7 +322,7 @@ define(function(){
 					retArray.push("menu_APP");
 				}
 
-				if(!cloudsync_support && !aicloudipk_support){
+				if((!cloudsync_support && !aicloudipk_support) || nocloudsync_support){
 					retArray.push("menu_AiCloud");
 				}
 
@@ -366,7 +366,7 @@ define(function(){
 					retArray.push("menu_ParentalControl");
 					retArray.push("menu_QoS");
 
-					if(userRSSI_support){
+					if(!userRSSI_support){
 						retArray.push("menu_Wireless");
 					}
 

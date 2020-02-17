@@ -61,7 +61,7 @@ function initial(){
 	
 	show_menu();
 	// https://www.asus.com/US/support/FAQ/1033906
-	httpApi.faqURL("faq", "1033906", "https://www.asus.com", "/support/FAQ/");
+	httpApi.faqURL("1033906", function(url){document.getElementById("faq").href=url;});
 	//if support pptpd and openvpnd then show switch button
 	if(pptpd_support && openvpnd_support) {
 		document.getElementById("divSwitchMenu").style.display = "";

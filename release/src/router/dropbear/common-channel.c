@@ -32,25 +32,24 @@
 #include "circbuffer.h"
 #include "dbutil.h"
 #include "channel.h"
-#include "ssh.h"
 #include "listener.h"
 #include "runopts.h"
 #include "netio.h"
 
 static void send_msg_channel_open_failure(unsigned int remotechan, int reason,
 		const char *text, const char *lang);
-static void send_msg_channel_open_confirmation(struct Channel* channel,
+static void send_msg_channel_open_confirmation(const struct Channel* channel,
 		unsigned int recvwindow, 
 		unsigned int recvmaxpacket);
 static int writechannel(struct Channel* channel, int fd, circbuffer *cbuf,
 	const unsigned char *moredata, unsigned int *morelen);
-static void send_msg_channel_window_adjust(struct Channel *channel, 
+static void send_msg_channel_window_adjust(const struct Channel *channel,
 		unsigned int incr);
 static void send_msg_channel_data(struct Channel *channel, int isextended);
 static void send_msg_channel_eof(struct Channel *channel);
 static void send_msg_channel_close(struct Channel *channel);
 static void remove_channel(struct Channel *channel);
-static unsigned int write_pending(struct Channel * channel);
+static unsigned int write_pending(const struct Channel * channel);
 static void check_close(struct Channel *channel);
 static void close_chan_fd(struct Channel *channel, int fd, int how);
 
@@ -145,7 +144,6 @@ static struct Channel* newchannel(unsigned int remotechan,
 	newchan->index = i;
 	newchan->sent_close = newchan->recv_close = 0;
 	newchan->sent_eof = newchan->recv_eof = 0;
-	newchan->close_handler_done = 0;
 
 	newchan->remotechan = remotechan;
 	newchan->transwindow = transwindow;
@@ -199,7 +197,7 @@ struct Channel* getchannel() {
 }
 
 /* Iterate through the channels, performing IO if available */
-void channelio(fd_set *readfds, fd_set *writefds) {
+void channelio(const fd_set *readfds, const fd_set *writefds) {
 
 	/* Listeners such as TCP, X11, agent-auth */
 	struct Channel *channel;
@@ -263,7 +261,7 @@ void channelio(fd_set *readfds, fd_set *writefds) {
 
 /* Returns true if there is data remaining to be written to stdin or
  * stderr of a channel's endpoint. */
-static unsigned int write_pending(struct Channel * channel) {
+static unsigned int write_pending(const struct Channel * channel) {
 
 	if (channel->writefd >= 0 && cbuf_getused(channel->writebuf) > 0) {
 		return 1;
@@ -287,7 +285,7 @@ static void check_close(struct Channel *channel) {
 				channel->extrabuf ? cbuf_getused(channel->extrabuf) : 0))
 
 	if (!channel->flushing 
-		&& !channel->close_handler_done
+		&& !channel->sent_close
 		&& channel->type->check_close
 		&& channel->type->check_close(channel))
 	{
@@ -299,7 +297,7 @@ static void check_close(struct Channel *channel) {
 	   channel, to ensure that the shell has exited (and the exit status 
 	   retrieved) before we close things up. */
 	if (!channel->type->check_close	
-		|| channel->close_handler_done
+		|| channel->sent_close
 		|| channel->type->check_close(channel)) {
 		close_allowed = 1;
 	}
@@ -386,10 +384,8 @@ void channel_connect_done(int result, int sock, void* user_data, const char* UNU
 static void send_msg_channel_close(struct Channel *channel) {
 
 	TRACE(("enter send_msg_channel_close %p", (void*)channel))
-	if (channel->type->closehandler 
-			&& !channel->close_handler_done) {
+	if (channel->type->closehandler) {
 		channel->type->closehandler(channel);
-		channel->close_handler_done = 1;
 	}
 	
 	CHECKCLEARTOWRITE();
@@ -662,10 +658,8 @@ static void remove_channel(struct Channel * channel) {
 		m_close(channel->errfd);
 	}
 
-	if (!channel->close_handler_done
-		&& channel->type->closehandler) {
-		channel->type->closehandler(channel);
-		channel->close_handler_done = 1;
+	if (channel->type->cleanup) {
+		channel->type->cleanup(channel);
 	}
 
 	if (channel->conn_pending) {
@@ -691,13 +685,7 @@ void recv_msg_channel_request() {
 
 	TRACE(("enter recv_msg_channel_request %p", (void*)channel))
 
-	if (channel->sent_close) {
-		TRACE(("leave recv_msg_channel_request: already closed channel"))
-		return;
-	}
-
-	if (channel->type->reqhandler 
-			&& !channel->close_handler_done) {
+	if (channel->type->reqhandler) {
 		channel->type->reqhandler(channel);
 	} else {
 		int wantreply;
@@ -904,7 +892,7 @@ void recv_msg_channel_window_adjust() {
 
 /* Increment the incoming data window for a channel, and let the remote
  * end know */
-static void send_msg_channel_window_adjust(struct Channel* channel, 
+static void send_msg_channel_window_adjust(const struct Channel* channel,
 		unsigned int incr) {
 
 	TRACE(("sending window adjust %d", incr))
@@ -1009,9 +997,14 @@ cleanup:
 }
 
 /* Send a failure message */
-void send_msg_channel_failure(struct Channel *channel) {
+void send_msg_channel_failure(const struct Channel *channel) {
 
 	TRACE(("enter send_msg_channel_failure"))
+
+	if (channel->sent_close) {
+		TRACE(("Skipping sending msg_channel_failure for closed channel"))
+		return;
+	}
 	CHECKCLEARTOWRITE();
 
 	buf_putbyte(ses.writepayload, SSH_MSG_CHANNEL_FAILURE);
@@ -1022,9 +1015,13 @@ void send_msg_channel_failure(struct Channel *channel) {
 }
 
 /* Send a success message */
-void send_msg_channel_success(struct Channel *channel) {
+void send_msg_channel_success(const struct Channel *channel) {
 
 	TRACE(("enter send_msg_channel_success"))
+	if (channel->sent_close) {
+		TRACE(("Skipping sending msg_channel_success for closed channel"))
+		return;
+	}
 	CHECKCLEARTOWRITE();
 
 	buf_putbyte(ses.writepayload, SSH_MSG_CHANNEL_SUCCESS);
@@ -1054,7 +1051,7 @@ static void send_msg_channel_open_failure(unsigned int remotechan,
 
 /* Confirm a channel open, and let the remote end know what number we've
  * allocated and the receive parameters */
-static void send_msg_channel_open_confirmation(struct Channel* channel,
+static void send_msg_channel_open_confirmation(const struct Channel* channel,
 		unsigned int recvwindow, 
 		unsigned int recvmaxpacket) {
 
@@ -1240,8 +1237,8 @@ struct Channel* get_any_ready_channel() {
 	return NULL;
 }
 
-void start_send_channel_request(struct Channel *channel, 
-		char *type) {
+void start_send_channel_request(const struct Channel *channel,
+		const char *type) {
 
 	CHECKCLEARTOWRITE();
 	buf_putbyte(ses.writepayload, SSH_MSG_CHANNEL_REQUEST);

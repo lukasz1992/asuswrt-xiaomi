@@ -607,7 +607,7 @@ var ctf_fa_mode = '<% nvram_get("ctf_fa_mode"); %>';
 function applyRule(){
 	var wrs_app_filter_row = "";
 	if(document.form.PC_devicename.value != ""){
-		alert("You must press add icon to add a new rule first.");
+		alert("<#JS_add_rule#>");
 		return false;
 	}
 
@@ -672,10 +672,15 @@ function applyRule(){
 		}
 	}
 
-	if(reset_wan_to_fo(document.form, document.form.wrs_app_enable.value)) {
-		showLoading();
-		document.form.submit();
+	if(reset_wan_to_fo.check_status()) {
+		if(reset_wan_to_fo.change_status)
+			reset_wan_to_fo.change_wan_mode(document.form);
 	}
+	else
+		return false;
+
+	showLoading();
+	document.form.submit();
 }
 
 function translate_category_id(){

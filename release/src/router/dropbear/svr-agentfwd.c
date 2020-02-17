@@ -45,7 +45,7 @@
 
 static int send_msg_channel_open_agent(int fd);
 static int bindagent(int fd, struct ChanSess * chansess);
-static void agentaccept(struct Listener * listener, int sock);
+static void agentaccept(const struct Listener * listener, int sock);
 
 /* Handles client requests to start agent forwarding, sets up listening socket.
  * Returns DROPBEAR_SUCCESS or DROPBEAR_FAILURE */
@@ -100,7 +100,7 @@ fail:
 /* accepts a connection on the forwarded socket and opens a new channel for it
  * back to the client */
 /* returns DROPBEAR_SUCCESS or DROPBEAR_FAILURE */
-static void agentaccept(struct Listener *UNUSED(listener), int sock) {
+static void agentaccept(const struct Listener *UNUSED(listener), int sock) {
 
 	int fd;
 
@@ -118,7 +118,7 @@ static void agentaccept(struct Listener *UNUSED(listener), int sock) {
 
 /* set up the environment variable pointing to the socket. This is called
  * just before command/shell execution, after dropping privileges */
-void svr_agentset(struct ChanSess * chansess) {
+void svr_agentset(const struct ChanSess * chansess) {
 
 	char *path = NULL;
 	int len;
@@ -151,6 +151,7 @@ void svr_agentcleanup(struct ChanSess * chansess) {
 
 	if (chansess->agentfile != NULL && chansess->agentdir != NULL) {
 
+#if DROPBEAR_SVR_MULTIUSER
 		/* Remove the dir as the user. That way they can't cause problems except
 		 * for themselves */
 		uid = getuid();
@@ -159,6 +160,7 @@ void svr_agentcleanup(struct ChanSess * chansess) {
 			(seteuid(ses.authstate.pw_uid)) < 0) {
 			dropbear_exit("Failed to set euid");
 		}
+#endif
 
 		/* 2 for "/" and "\0" */
 		len = strlen(chansess->agentdir) + strlen(chansess->agentfile) + 2;
@@ -170,10 +172,12 @@ void svr_agentcleanup(struct ChanSess * chansess) {
 
 		rmdir(chansess->agentdir);
 
+#if DROPBEAR_SVR_MULTIUSER
 		if ((seteuid(uid)) < 0 ||
 			(setegid(gid)) < 0) {
 			dropbear_exit("Failed to revert euid");
 		}
+#endif
 
 		m_free(chansess->agentfile);
 		m_free(chansess->agentdir);
@@ -184,6 +188,7 @@ void svr_agentcleanup(struct ChanSess * chansess) {
 static const struct ChanType chan_svr_agent = {
 	0, /* sepfds */
 	"auth-agent@openssh.com",
+	NULL,
 	NULL,
 	NULL,
 	NULL,
@@ -208,13 +213,14 @@ static int bindagent(int fd, struct ChanSess * chansess) {
 
 	struct sockaddr_un addr;
 	unsigned int prefix;
-	char path[sizeof(addr.sun_path)], sockfile[sizeof(addr.sun_path)];
+	char path[(sizeof(addr.sun_path)-1)/2], sockfile[(sizeof(addr.sun_path)-1)/2];
 	mode_t mode;
 	int i;
 	uid_t uid;
 	gid_t gid;
 	int ret = DROPBEAR_FAILURE;
 
+#if DROPBEAR_SVR_MULTIUSER
 	/* drop to user privs to make the dir/file */
 	uid = getuid();
 	gid = getgid();
@@ -222,6 +228,7 @@ static int bindagent(int fd, struct ChanSess * chansess) {
 		(seteuid(ses.authstate.pw_uid)) < 0) {
 		dropbear_exit("Failed to set euid");
 	}
+#endif
 
 	memset((void*)&addr, 0x0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -261,10 +268,12 @@ bindsocket:
 
 
 out:
+#if DROPBEAR_SVR_MULTIUSER
 	if ((seteuid(uid)) < 0 ||
 		(setegid(gid)) < 0) {
 		dropbear_exit("Failed to revert euid");
 	}
+#endif
 	return ret;
 }
 

@@ -167,9 +167,12 @@ else ifeq ($(RTCONFIG_QCA8033),y)
 OBJS += qca8033.o
 else ifeq ($(RTCONFIG_SOC_IPQ40XX),y)
 OBJS += ipq40xx.o
+else ifeq ($(RTCONFIG_QCN550X)$(RTCONFIG_SWITCH_QCA8337N),yy)
+OBJS += qca8337_ssdk_sh.o
 else
 OBJS += qca8337.o
 endif
+OBJS += qca.o
 else ifeq ($(RTCONFIG_ALPINE),y)
 OBJS += flash_mtd.o api-alpine.o
 ifeq ($(RTCONFIG_EXT_RTL8370MB),y)

@@ -1022,32 +1022,6 @@ gen_qca_wifi_cfgs(void)
 				if (!(fp = fopen(path2, "a")))
 					continue;
 
-				/* hostapd of QCA Wi-Fi 10.2 and 10.4 driver is not required if
-				 * 1. Open system and WPS is disabled.
-				 *    a. primary 2G/5G and WPS is disabled
-				 *    b. guest 2G/5G
-				 * 2. WEP
-				 * But 802.11ad Wigig driver, nl80211 based, always need it due
-				 * to some features are implemented by hostapd.
-				 */
-
-					if (unit == WL_60G_BAND) {
-						/* Do nothing, just skip continuous statment below for
-						 * 802.11ad Wigig driver.  Maybe we need to do same
-						 * thing for newer nl80211 based 2.4G/5G driver too.
-						 */
-					}
-					else if (!strcmp(nvram_safe_get(wl_nvname("auth_mode_x", unit, sunit)), "shared")) {
-						fclose(fp);
-						continue;
-					}
-					else if (!strcmp(nvram_safe_get(wl_nvname("auth_mode_x", unit, sunit)), "open") &&
-							((!sunit && !nvram_get_int("wps_enable")) || sunit)) {
-						fclose(fp);
-						continue;
-					}
-
-
 				sprintf(conf_path, "/etc/Wireless/conf/hostapd_%s.conf", wif);
 				sprintf(pid_path, "/var/run/hostapd_%s.pid", wif);
 				sprintf(entropy_path, "/var/run/entropy_%s.bin", wif);
@@ -1346,6 +1320,12 @@ void set_default_accept_ra(int flag)
 	ipv6_sysconf("default", "accept_ra", flag ? 1 : 0);
 }
 
+void set_default_accept_ra_defrtr(int flag)
+{
+	ipv6_sysconf("all", "accept_ra_defrtr", flag ? 1 : 0);
+	ipv6_sysconf("default", "accept_ra_defrtr", flag ? 1 : 0);
+}
+
 void set_default_forwarding(int flag)
 {
 	ipv6_sysconf("all", "forwarding", flag ? 1 : 0);
@@ -1380,7 +1360,8 @@ void config_ipv6(int enable, int incl_wan)
 	DIR *dir;
 	struct dirent *dirent;
 	char word[256], *next;
-	int service, match;
+	char prefix[sizeof("wanXXXXXXXXXX_")], *wan_proto;
+	int service, match, accept_defrtr;
 
 	if (enable) {
 		enable_ipv6("default");
@@ -1429,7 +1410,14 @@ void config_ipv6(int enable, int incl_wan)
 #ifdef RTCONFIG_6RELAYD
 		case IPV6_PASSTHROUGH:
 #endif
+			snprintf(prefix, sizeof(prefix), "wan%d_", wan_primary_ifunit_ipv6());
+			wan_proto = nvram_safe_get(strcat_r(prefix, "proto", word));
+			accept_defrtr = service == IPV6_NATIVE_DHCP && /* limit to native by now */
+					strcmp(wan_proto, "dhcp") != 0 && strcmp(wan_proto, "static") != 0 &&
+					nvram_match(ipv6_nvname("ipv6_ifdev"), "ppp") ?
+					nvram_get_int(ipv6_nvname("ipv6_accept_defrtr")) : 1;
 			set_default_accept_ra(1);
+			set_default_accept_ra_defrtr(accept_defrtr);
 			break;
 		case IPV6_6IN4:
 		case IPV6_6TO4:
@@ -2336,6 +2324,18 @@ void start_lan(void)
 						ioctl(sfd, SIOCSIFHWADDR, &ifr);
 					}
 
+#ifdef RTCONFIG_EMF
+					if ((nvram_get_int("emf_enable")
+#if defined(RTCONFIG_BCMWL6) && !defined(HND_ROUTER)
+						|| wl_igs_enabled()
+#endif
+					) && !strcmp(ifname, "dpsta")) {
+						eval("emf", "add", "iface", lan_ifname, ifname);
+						eval("emf", "add", "uffp", lan_ifname, ifname);
+						eval("emf", "add", "rtport", lan_ifname, ifname);
+					}
+#endif
+
 					if (dpsta)
 						add_to_list(ifname, list, sizeof(list));
 				}
@@ -2429,7 +2429,11 @@ gmac3_no_swbr:
 #ifdef HND_ROUTER
 						if (!strstr(bonding_ifnames, ifname))
 #endif
-						eval("emf", "add", "iface", lan_ifname, ifname);
+						{
+							eval("emf", "add", "iface", lan_ifname, ifname);
+							eval("emf", "add", "uffp", lan_ifname, ifname);
+							eval("emf", "add", "rtport", lan_ifname, ifname);
+						}
 					}
 #endif
 				}
@@ -2985,7 +2989,11 @@ gmac3_no_swbr:
 					|| wl_igs_enabled()
 #endif
 				)
+				{
 					eval("emf", "del", "iface", lan_ifname, ifname);
+					eval("emf", "del", "uffp", lan_ifname, ifname);
+					eval("emf", "del", "rtport", lan_ifname, ifname);
+				}
 #endif
 #if defined (RTCONFIG_WLMODULE_RT3352_INIC_MII)
 				{ // remove interface for iNIC packets
@@ -3117,14 +3125,14 @@ void hotplug_net(void)
 	char lan_ifname[16];
 	char *interface, *action;
 	bool psta_if, dyn_if, add_event, remove_event;
-	int unit = WAN_UNIT_NONE;
-	char tmp[100], prefix[32];
 #ifdef RTCONFIG_USB_MODEM
 	char device_path[128], usb_path[PATH_MAX], usb_node[32], port_path[8];
 	char nvram_name[32];
 	char word[PATH_MAX], *next;
 	char modem_type[8];
+	int unit = WAN_UNIT_NONE;
 	int modem_unit;
+	char tmp[100], prefix[32];
 	char tmp2[100], prefix2[32];
 	unsigned int vid, pid;
 	char buf[32];
@@ -3269,10 +3277,13 @@ void hotplug_net(void)
 NEITHER_WDS_OR_PSTA:
 	/* PPP interface removed */
 	if (strncmp(interface, "ppp", 3) == 0 && remove_event) {
+		_dprintf("hotplug net: remove net %s.\n", interface);
+		/* do not clear interface too early
 		while ((unit = ppp_ifunit(interface)) >= 0) {
 			snprintf(prefix, sizeof(prefix), "wan%d_", unit);
 			nvram_set(strcat_r(prefix, "pppoe_ifname", tmp), "");
 		}
+		*/
 	}
 #ifdef RTCONFIG_USB_MODEM
 	// Android phone, RNDIS interface, NCM, qmi_wwan.
@@ -3528,9 +3539,15 @@ NEITHER_WDS_OR_PSTA:
 #endif
 
 #elif defined(RTCONFIG_QCA)
+#if defined(RTCONFIG_SWITCH_RTL8370M_PHY_QCA8033_X2) || defined(RTCONFIG_SWITCH_RTL8370MB_PHY_QCA8033_X2) || !defined(RTCONFIG_QCN550X)
 		/* All models use eth0/eth1 as LAN or WAN. */
 		if (!strncmp(interface, "eth0", 4) || !strncmp(interface, "eth1", 4))
 			return;
+#else
+		/* RT-AC59U family */
+		if (!strncmp(interface, "eth0", 4))
+			return;
+#endif
 #if defined(RTCONFIG_SWITCH_RTL8370M_PHY_QCA8033_X2) || defined(RTCONFIG_SWITCH_RTL8370MB_PHY_QCA8033_X2)
 		/* BRT-AC828 SR1~SR3: eth2/eth3 are WAN1/WAN2.
 		 * BRT-AC828 SR4+   : eth2/eth3 are LAN2/WAN2.
@@ -3538,14 +3555,15 @@ NEITHER_WDS_OR_PSTA:
 		if (!strncmp(interface, "eth2", 4) || !strncmp(interface, "eth3", 4))
 			return;
 #endif
+
 #elif defined(RTCONFIG_REALTEK)
 		TRACE_PT("do nothing in hotplug net\n");
+#elif defined(RTCONFIG_LANTIQ)
+		TRACE_PT("do nothing in hotplug net\n");
 #else
-#ifndef RTCONFIG_LANTIQ
 		// for all models, ethernet's physical interface.
 		if(!strcmp(interface, "eth0"))
 			return;
-#endif
 #endif
 
 		// Not wired ethernet.
@@ -5049,6 +5067,18 @@ void start_lan_wl(void)
 						close(s);
 					}
 
+#ifdef RTCONFIG_EMF
+					if ((nvram_get_int("emf_enable")
+#if defined(RTCONFIG_BCMWL6) && !defined(HND_ROUTER)
+						|| wl_igs_enabled()
+#endif
+					) && !strcmp(ifname, "dpsta")) {
+						eval("emf", "add", "iface", lan_ifname, ifname);
+						eval("emf", "add", "uffp", lan_ifname, ifname);
+						eval("emf", "add", "rtport", lan_ifname, ifname);
+					}
+#endif
+
 					if (dpsta)
 						add_to_list(ifname, list2, sizeof(list2));
 				}
@@ -5128,7 +5158,11 @@ gmac3_no_swbr:
 #ifdef HND_ROUTER
 						if (!strstr(bonding_ifnames, ifname))
 #endif
-						eval("emf", "add", "iface", lan_ifname, ifname);
+						{
+							eval("emf", "add", "iface", lan_ifname, ifname);
+							eval("emf", "add", "uffp", lan_ifname, ifname);
+							eval("emf", "add", "rtport", lan_ifname, ifname);
+						}
 					}
 #endif
 				}
@@ -5992,7 +6026,7 @@ void start_lan_port(int dt)
 	}
 
 #ifdef RTCONFIG_QTN
-	if (nvram_get_int("qtn_ready") == 1)
+	if (nvram_get_int("qtn_ready") == 0)
 		dbG("do not start lan port due to QTN not ready\n");
 	else
 		lanport_ctrl(1);

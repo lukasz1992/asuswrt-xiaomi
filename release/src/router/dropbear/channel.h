@@ -69,10 +69,6 @@ struct Channel {
 	int sent_close, recv_close;
 	int recv_eof, sent_eof;
 
-	/* Set after running the ChanType-specific close hander
-	 * to ensure we don't run it twice (nor type->checkclose()). */
-	int close_handler_done;
-
 	struct dropbear_progress_connection *conn_pending;
 	int initconn; /* used for TCP forwarding, whether the channel has been
 					 fully initialised */
@@ -84,7 +80,7 @@ struct Channel {
 	int flushing;
 
 	/* Used by client chansession to handle ~ escaping, NULL ignored otherwise */
-	void (*read_mangler)(struct Channel*, unsigned char* bytes, int *len);
+	void (*read_mangler)(const struct Channel*, const unsigned char* bytes, int *len);
 
 	const struct ChanType* type;
 
@@ -94,11 +90,18 @@ struct Channel {
 struct ChanType {
 
 	int sepfds; /* Whether this channel has separate pipes for in/out or not */
-	char *name;
+	const char *name;
+	/* Sets up the channel */
 	int (*inithandler)(struct Channel*);
-	int (*check_close)(struct Channel*);
+	/* Called to check whether a channel should close, separately from the FD being closed.
+	Used for noticing process exiting */
+	int (*check_close)(const struct Channel*);
+	/* Handler for ssh_msg_channel_request */
 	void (*reqhandler)(struct Channel*);
-	void (*closehandler)(struct Channel*);
+	/* Called prior to sending ssh_msg_channel_close, used for sending exit status */
+	void (*closehandler)(const struct Channel*);
+	/* Frees resources, called just prior to channel being removed */
+	void (*cleanup)(const struct Channel*);
 };
 
 /* Callback for connect_remote */
@@ -107,7 +110,7 @@ void channel_connect_done(int result, int sock, void* user_data, const char* err
 void chaninitialise(const struct ChanType *chantypes[]);
 void chancleanup(void);
 void setchannelfds(fd_set *readfds, fd_set *writefds, int allow_reads);
-void channelio(fd_set *readfd, fd_set *writefd);
+void channelio(const fd_set *readfd, const fd_set *writefd);
 struct Channel* getchannel(void);
 /* Returns an arbitrary channel that is in a ready state - not
 being initialised and no EOF in either direction. NULL if none. */
@@ -115,8 +118,8 @@ struct Channel* get_any_ready_channel(void);
 
 void recv_msg_channel_open(void);
 void recv_msg_channel_request(void);
-void send_msg_channel_failure(struct Channel *channel);
-void send_msg_channel_success(struct Channel *channel);
+void send_msg_channel_failure(const struct Channel *channel);
+void send_msg_channel_success(const struct Channel *channel);
 void recv_msg_channel_data(void);
 void recv_msg_channel_extended_data(void);
 void recv_msg_channel_window_adjust(void);
@@ -135,7 +138,7 @@ int send_msg_channel_open_init(int fd, const struct ChanType *type);
 void recv_msg_channel_open_confirmation(void);
 void recv_msg_channel_open_failure(void);
 #endif
-void start_send_channel_request(struct Channel *channel, char *type);
+void start_send_channel_request(const struct Channel *channel, const char *type);
 
 void send_msg_request_success(void);
 void send_msg_request_failure(void);

@@ -6,6 +6,7 @@ wget_options="-q -t 2 -T $wget_timeout --no-check-certificate"
 
 dl_path_MR="https://dlcdnets.asus.com/pub/ASUS/LiveUpdate/Release/Wireless_SQ/MR"
 dl_path_SQ="https://dlcdnets.asus.com/pub/ASUS/LiveUpdate/Release/Wireless_SQ"
+dl_path_SQ_beta="https://dlcdnets.asus.com/pub/ASUS/LiveUpdate/Release/Wireless_SQ/app"
 dl_path_file="https://dlcdnets.asus.com/pub/ASUS/wireless/ASUSWRT"
 
 nvram set webs_state_upgrade=0 # INITIALIZING
@@ -72,19 +73,26 @@ elif [ "$formr" == "1" ]; then
 		echo "---- wget fw MR1 ${dl_path_MR}1/$firmware_rsasign ----" >> /tmp/webs_upgrade.log
 		wget $wget_options ${dl_path_MR}1/$firmware_rsasign -O /tmp/rsasign.bin
 	fi
+elif [ "$forsq" -ge 2 ] && [ "$forsq" -le 9 ]; then
+	echo "---- wget fw sq beta_user ${dl_path_SQ_beta}${forsq}/$firmware_file ----" >> /tmp/webs_upgrade.log
+	wget -t 2 -T $wget_timeout --no-check-certificate --output-file=/tmp/fwget_log ${dl_path_SQ_beta}${forsq}/$firmware_file -O $firmware_path
+	if [ "$rsa_enabled" != "" ]; then
+		echo "---- wget fw sq beta_user ${dl_path_SQ_beta}${forsq}/$firmware_rsasign ----" >> /tmp/webs_upgrade.log
+		wget $wget_options ${dl_path_SQ_beta}${forsq}/$firmware_rsasign -O /tmp/rsasign.bin
+	fi
 elif [ "$forsq" == "1" ]; then
 	echo "---- wget fw sq ${dl_path_SQ}/$firmware_file ----" >> /tmp/webs_upgrade.log
-	wget -t 2 -T $wget_timeout --no-check-certificate --output-file=/tmp/fwget_log https://dlcdnets.asus.com/pub/ASUS/LiveUpdate/Release/Wireless_SQ/$firmware_file -O $firmware_path
+	wget -t 2 -T $wget_timeout --no-check-certificate --output-file=/tmp/fwget_log ${dl_path_SQ}/$firmware_file -O $firmware_path
 	if [ "$rsa_enabled" != "" ]; then
 		echo "---- wget fw sq ${dl_path_SQ}/$firmware_rsasign ----" >> /tmp/webs_upgrade.log
-		wget $wget_options https://dlcdnets.asus.com/pub/ASUS/LiveUpdate/Release/Wireless_SQ/$firmware_rsasign -O /tmp/rsasign.bin
+		wget $wget_options ${dl_path_SQ}/$firmware_rsasign -O /tmp/rsasign.bin
 	fi
 elif [ "$urlpath" == "" ]; then
 	echo "---- wget fw Real ${dl_path_file}/$firmware_file ----" >> /tmp/webs_upgrade.log
-	wget -t 2 -T $wget_timeout --no-check-certificate --output-file=/tmp/fwget_log https://dlcdnets.asus.com/pub/ASUS/wireless/ASUSWRT/$firmware_file -O $firmware_path
+	wget -t 2 -T $wget_timeout --no-check-certificate --output-file=/tmp/fwget_log ${dl_path_file}/$firmware_file -O $firmware_path
 	if [ "$rsa_enabled" != "" ]; then
 		echo "---- wget fw Real ${dl_path_file}/$firmware_rsasign ----" >> /tmp/webs_upgrade.log
-		wget $wget_options https://dlcdnets.asus.com/pub/ASUS/wireless/ASUSWRT/$firmware_rsasign -O /tmp/rsasign.bin
+		wget $wget_options ${dl_path_file}/$firmware_rsasign -O /tmp/rsasign.bin
 	fi
 else
 	echo "---- wget fw URL ----" >> /tmp/webs_upgrade.log

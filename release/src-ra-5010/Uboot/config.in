@@ -1546,9 +1546,9 @@ choice 'PRODUCT'	"RT-N14U CONFIG_RTN14U \
 			 RT-N54U CONFIG_RTN54U \
 			 RT-AC54U CONFIG_RTAC54U \
 			 RT-N56U-B1 CONFIG_RTN56UB1 \
+		 	 RT-AC1200 CONFIG_RTAC1200 \
 			 RT-AC1200GA1 CONFIG_RTAC1200GA1 \
 			 RT-AC1200GU CONFIG_RTAC1200GU \
-		 	 RT-AC1200 CONFIG_RTAC1200 \
 			 RT-AC1200HP CONFIG_RTAC1200HP \
 			 RT-N11P CONFIG_RTN11P \
 			 RP-AC56 CONFIG_RPAC56 \
@@ -1875,8 +1875,7 @@ choice 'CPU Frequency' " 880Mhz MT7621_CPU_880MHZ \
 						875Mhz MT7621_CPU_875MHZ \
 		   				800Mhz MT7621_CPU_800MHZ \
 						500Mhz MT7621_CPU_500MHZ \
-						50Mhz MT7621_CPU_50MHZ"
-						880Mhz
+						50Mhz MT7621_CPU_50MHZ" 880Mhz
 
 if [ "$MT7621_CPU_880MHZ" = "y" ]; then
     define_hex  MT7621_CPU_FREQUENCY    370
@@ -2065,7 +2064,7 @@ fi
 #-----------------------
 # Other Option
 #-----------------------
-if [ "$CONFIG_RTAC52U" = "y" ] || [ "$CONFIG_RTAC51U" = "y" ] || [ "$CONFIG_RTAC51UP" = "y" ] || [ "$CONFIG_RTN54U" = "y" ] || [ "$CONFIG_RTAC1200HP" = "y"] || [ "$CONFIG_RTN56UB1" = "y" ]  || [ "$CONFIG_RTAC1200GA1" = "y" ] || [ "$CONFIG_RTAC1200GU" = "y" ] || [ "$CONFIG_RTAC54U" = "y" ]  || [ $CONFIG_RPAC87 = "y" ] || [ $CONFIG_RTAC85U = "y" ] || [ $CONFIG_RTAC85P = "y" ]  || [ "$CONFIG_RTACRH26" = "y" ] || [ $CONFIG_RTN800HP = "y" ]; then
+if [ "$CONFIG_RTAC52U" = "y" ] || [ "$CONFIG_RTAC51U" = "y" ] || [ "$CONFIG_RTAC51UP" = "y" ] || [ "$CONFIG_RTN54U" = "y" ] || [ "$CONFIG_RTAC1200HP" = "y" ] || [ "$CONFIG_RTN56UB1" = "y" ]  || [ "$CONFIG_RTAC1200GA1" = "y" ] || [ "$CONFIG_RTAC1200GU" = "y" ] || [ "$CONFIG_RTAC54U" = "y" ]  || [ $CONFIG_RPAC87 = "y" ] || [ $CONFIG_RTAC85U = "y" ] || [ $CONFIG_RTAC85P = "y" ]  || [ "$CONFIG_RTACRH26" = "y" ] || [ $CONFIG_RTN800HP = "y" ]; then
 choice 'ALL_LED_OFF GPIO' "N/A ALL_LED_OFF_NONE \
 			   RXD(GPIO_NR_10) ALL_LED_OFF_RXD_GPIONR10 \
 			  "

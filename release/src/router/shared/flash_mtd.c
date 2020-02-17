@@ -278,7 +278,7 @@ int MTDPartitionRead(const char *mtd_name, const unsigned char *buf, int offset,
 	return 0;
 }
 
-#if defined(RTCONFIG_QCA) && ( defined(RTCONFIG_WIFI_QCA9557_QCA9882) || defined(RTCONFIG_QCA953X) || defined(RTCONFIG_QCA956X))
+#if defined(RTCONFIG_QCA) && ( defined(RTCONFIG_WIFI_QCA9557_QCA9882) || defined(RTCONFIG_QCA953X) || defined(RTCONFIG_QCA956X) || defined(RTCONFIG_QCN550X))
 int VVPartitionRead(const char *mtd_name, const unsigned char *buf, int offset, int count)
 {
 	int cnt, fd, ret;
@@ -328,7 +328,7 @@ int CalRead(const unsigned char *buf, int offset, int count)
 	/// TBD. MTDPartitionRead will fail...
 	return VVPartitionRead(CALDATA_MTD_NAME, buf, offset, count);
 }
-#endif	/* RTCONFIG_QCA && (RTCONFIG_WIFI_QCA9557_QCA9882 || RTCONFIG_QCA953X || RTCONFIG_QCA956X) */
+#endif	/* RTCONFIG_QCA && (RTCONFIG_WIFI_QCA9557_QCA9882 || RTCONFIG_QCA953X || RTCONFIG_QCA956X || RTCONFIG_QCN550X) */
 
 /**
  * Read data from Factory partition.

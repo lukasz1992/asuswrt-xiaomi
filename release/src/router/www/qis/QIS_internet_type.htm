@@ -82,13 +82,6 @@ function QKinternettype_load_body(){
 			ISP_Profile_Selection(original_switch_wantag);
 			hide_specialISP();
 		}
-
-		if( !parent.meoVoda_support ){
-			document.getElementById('meoOption').outerHTML = "";
-			document.getElementById('meoDiv').outerHTML = "";
-			document.getElementById('vodafoneOption').outerHTML = "";
-			document.getElementById('vodafoneDiv').outerHTML = "";
-		}
 	
 		if(parent.ruisp_support)
 			document.getElementById("ruisp_btn").style.display = "";

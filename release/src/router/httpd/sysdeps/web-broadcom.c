@@ -51,7 +51,7 @@
 #include <wlscan.h>
 #ifdef RTCONFIG_BCMWL6
 #include <dirent.h>
-#if defined(RTCONFIG_BCM7) || defined(RTCONFIG_BCM_7114) || defined(HND_ROUTER)
+#ifdef __CONFIG_DHDAP__
 #include <security_ipc.h>
 #endif
 
@@ -2067,6 +2067,9 @@ wds_list:
 	ret += websWrite(wp, "%-4s%-5s",
 				"SGI", "STBC");
 #if (WL_STA_VER >= 5)
+#ifdef RTCONFIG_BCM_7114
+	if (!nvram_get_int("dhd24"))
+#endif
 	ret += websWrite(wp, "%-5s%-4s",
 				"MUBF", "NSS");
 #endif
@@ -2103,9 +2106,14 @@ wds_list:
 			((sta->ht_capabilities & WL_STA_CAP_SHORT_GI_20) || (sta->ht_capabilities & WL_STA_CAP_SHORT_GI_40)) ? "Yes" : "No",
 			((sta->ht_capabilities & WL_STA_CAP_TX_STBC) || (sta->ht_capabilities & WL_STA_CAP_RX_STBC_MASK)) ? "Yes" : "No");
 #if (WL_STA_VER >= 5)
-		ret += websWrite(wp, "%-5s",
-			((sta->vht_flags & WL_STA_MU_BEAMFORMER) || (sta->vht_flags & WL_STA_MU_BEAMFORMEE)) ? "Yes" : "No");
-		ret += websWrite(wp, "%3d ", wl_sta_info_nss(sta, unit));
+#ifdef RTCONFIG_BCM_7114
+		if (!nvram_get_int("dhd24"))
+#endif
+		{
+			ret += websWrite(wp, "%-5s",
+				((sta->vht_flags & WL_STA_MU_BEAMFORMER) || (sta->vht_flags & WL_STA_MU_BEAMFORMEE)) ? "Yes" : "No");
+			ret += websWrite(wp, "%3d ", wl_sta_info_nss(sta, unit));
+		}
 #endif
 #endif
 #endif
@@ -2170,9 +2178,14 @@ wds_list:
 					((sta->ht_capabilities & WL_STA_CAP_SHORT_GI_20) || (sta->ht_capabilities & WL_STA_CAP_SHORT_GI_40)) ? "Yes" : "No",
 					((sta->ht_capabilities & WL_STA_CAP_TX_STBC) || (sta->ht_capabilities & WL_STA_CAP_RX_STBC_MASK)) ? "Yes" : "No");
 #if (WL_STA_VER >= 5)
-				ret += websWrite(wp, "%-5s",
-					((sta->vht_flags & WL_STA_MU_BEAMFORMER) || (sta->vht_flags & WL_STA_MU_BEAMFORMEE)) ? "Yes" : "No");
-				ret += websWrite(wp, "%3d ", wl_sta_info_nss(sta, unit));
+#ifdef RTCONFIG_BCM_7114
+				if (!nvram_get_int("dhd24"))
+#endif
+				{
+					ret += websWrite(wp, "%-5s",
+						((sta->vht_flags & WL_STA_MU_BEAMFORMER) || (sta->vht_flags & WL_STA_MU_BEAMFORMEE)) ? "Yes" : "No");
+					ret += websWrite(wp, "%3d ", wl_sta_info_nss(sta, unit));
+				}
 #endif
 #endif
 #endif
@@ -3585,7 +3598,7 @@ ej_SiteSurvey(int eid, webs_t wp, int argc, char_t **argv)
 	memset(params, 0, params_size);
 	params->bss_type = DOT11_BSSTYPE_INFRASTRUCTURE;
 	memcpy(&params->bssid, &ether_bcast, ETHER_ADDR_LEN);
-	params->scan_type = nvram_match(strcat_r(prefix, "reg_mode", tmp), "h") ? WL_SCANFLAGS_PASSIVE : 0;
+	params->scan_type = (nvram_match(strcat_r(prefix, "reg_mode", tmp), "h") && !nvram_match(strcat_r(prefix, "mode", tmp), "psta")) ? WL_SCANFLAGS_PASSIVE : 0;
 	params->nprobes = -1;
 	params->active_time = -1;
 	params->passive_time = -1;
@@ -4704,7 +4717,7 @@ typedef struct wlc_ap_list_info
 
 static wlc_ap_list_info_t ap_list[WLC_MAX_AP_SCAN_LIST_LEN];
 
-#if defined(RTCONFIG_BCM7) || defined(RTCONFIG_BCM_7114) || defined(HND_ROUTER)
+#ifdef __CONFIG_DHDAP__
 #define MAX_SSID_LEN		32
 #define WL_EVENT_TIMEOUT	10
 
@@ -5049,7 +5062,7 @@ get_scan_escan(char *scan_buf, uint buf_len)
 }
 
 static char *
-wl_get_scan_results_escan(char *ifname, chanspec_t chanspec, int ctl_ch)
+wl_get_scan_results_escan(char *ifname, chanspec_t chanspec, int ctl_ch, int ctl_ch_tmp)
 {
 	int ret, retry_times = 0;
 	wl_escan_params_t *params = NULL;
@@ -5080,7 +5093,7 @@ wl_get_scan_results_escan(char *ifname, chanspec_t chanspec, int ctl_ch)
 	memset(params, 0, params_size);
 	params->params.bss_type = DOT11_BSSTYPE_INFRASTRUCTURE;
 	memcpy(&params->params.bssid, &ether_bcast, ETHER_ADDR_LEN);
-	params->params.scan_type = nvram_match(strcat_r(prefix, "reg_mode", tmp), "h") ? WL_SCANFLAGS_PASSIVE : 0;
+	params->params.scan_type = (nvram_match(strcat_r(prefix, "reg_mode", tmp), "h") && !nvram_match(strcat_r(prefix, "mode", tmp), "psta")) ? WL_SCANFLAGS_PASSIVE : 0;
 	params->params.nprobes = -1;
 	params->params.active_time = -1;
 	params->params.passive_time = -1;
@@ -5138,10 +5151,9 @@ wl_get_scan_results_escan(char *ifname, chanspec_t chanspec, int ctl_ch)
 
 	if (chanspec != 0) {
 		dbg("restore original chanspec: %s (0x%x)\n", wf_chspec_ntoa(chanspec, chanbuf), chanspec);
-#ifndef RTCONFIG_BCM7
-                if (ctl_ch > 64)
+		if (wl_cap(unit, "bgdfs") && (((ctl_ch >= 100) && (ctl_ch_tmp <= 48)) || ((ctl_ch < 100) && (ctl_ch_tmp >= 149))))
 			wl_iovar_setint(ifname, "dfs_ap_move", chanspec);
-#endif
+		else
 		{
 			wl_iovar_setint(ifname, "chanspec", chanspec);
 			wl_iovar_setint(ifname, "acs_update", -1);
@@ -5156,7 +5168,7 @@ wl_get_scan_results_escan(char *ifname, chanspec_t chanspec, int ctl_ch)
 #endif
 
 static char *
-wl_get_scan_results(char *ifname, chanspec_t chanspec, int ctl_ch)
+wl_get_scan_results(char *ifname, chanspec_t chanspec, int ctl_ch, int ctl_ch_tmp)
 {
 	int ret, retry_times = 0;
 	wl_scan_params_t *params;
@@ -5180,7 +5192,7 @@ wl_get_scan_results(char *ifname, chanspec_t chanspec, int ctl_ch)
 	memset(params, 0, params_size);
 	params->bss_type = DOT11_BSSTYPE_INFRASTRUCTURE;
 	memcpy(&params->bssid, &ether_bcast, ETHER_ADDR_LEN);
-	params->scan_type = nvram_match(strcat_r(prefix, "reg_mode", tmp), "h") ? WL_SCANFLAGS_PASSIVE : 0;
+	params->scan_type = (nvram_match(strcat_r(prefix, "reg_mode", tmp), "h") && !nvram_match(strcat_r(prefix, "mode", tmp), "psta")) ? WL_SCANFLAGS_PASSIVE : 0;
 	params->nprobes = -1;
 	params->active_time = -1;
 	params->passive_time = -1;
@@ -5214,10 +5226,9 @@ wl_get_scan_results(char *ifname, chanspec_t chanspec, int ctl_ch)
 
 	if (chanspec != 0) {
 		dbg("restore original chanspec: %s (0x%x)\n", wf_chspec_ntoa(chanspec, chanbuf), chanspec);
-#if defined(RTCONFIG_DHDAP) && !defined(RTCONFIG_BCM7)
-		if (ctl_ch > 64)
+		if (wl_cap(unit, "bgdfs") && (((ctl_ch >= 100) && (ctl_ch_tmp <= 48)) || ((ctl_ch < 100) && (ctl_ch_tmp >= 149))))
 			wl_iovar_setint(ifname, "dfs_ap_move", chanspec);
-#endif
+		else
 		{
 			wl_iovar_setint(ifname, "chanspec", chanspec);
 			wl_iovar_setint(ifname, "acs_update", -1);
@@ -5254,36 +5265,52 @@ wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	int retval = 0, ctl_ch;
 	char chanbuf[CHANSPEC_STR_LEN];
 	chanspec_t chspec_cur = 0, chanspec = 0;
+	chanspec_t chspec_tmp = 0;
+	int ctl_ch_tmp = 0;
 #if defined(RTCONFIG_DHDAP) && !defined(RTCONFIG_BCM7)
 	chanspec_t chspec_tar = 0;
 	char buf_sm[WLC_IOCTL_SMLEN];
 	wl_dfs_ap_move_status_t *status = (wl_dfs_ap_move_status_t*) buf_sm;
 #endif
+#ifdef __CONFIG_DHDAP__
+	int is_dhd = 0;
+#endif
 
 	snprintf(prefix, sizeof(prefix), "wl%d_", unit);
 	name = nvram_safe_get(strcat_r(prefix, "ifname", tmp));
+#ifdef __CONFIG_DHDAP__
+	is_dhd = !dhd_probe(name);
+#endif
 
 	ctl_ch = wl_control_channel(unit);
-	if (nvram_match(strcat_r(prefix, "reg_mode", tmp), "h")) {
+	if (nvram_match(strcat_r(prefix, "reg_mode", tmp), "h") &&
+		!nvram_match(strcat_r(prefix, "mode", tmp), "psta")) {
 		if ((ctl_ch > 48) && (ctl_ch < 149)) {
 			if (!with_non_dfs_chspec(name)) {
 				dbg("%s scan rejected under DFS mode\n", name);
 				return 0;
-			} else if (wl_iovar_getint(name, "chanspec", (int *) &chspec_cur) < 0) {
+			} else if (wl_iovar_get(name, "chanspec", &chspec_cur, sizeof(chanspec_t)) < 0) {
 				dbg("get current chanpsec failed\n");
 				return 0;
 			} else {
 				dbg("current chanspec: %s (0x%x)\n", wf_chspec_ntoa(chspec_cur, chanbuf), chspec_cur);
 
-				chanspec = ((nvram_get_hex(strcat_r(prefix, "band5grp", tmp)) & WL_5G_BAND_4) ? select_chspec_with_band_bw(name, 4, 3, chspec_cur) : select_chspec_with_band_bw(name, 1, 3, chspec_cur));
-				dbg("switch to chanspec: %s (0x%x)\n", wf_chspec_ntoa(chanspec, chanbuf), chanspec);
-				wl_iovar_setint(name, "chanspec", chanspec);
-				wl_iovar_setint(name, "acs_update", -1);
-				chanspec = chspec_cur;
+				chspec_tmp = (((nvram_get_hex(strcat_r(prefix, "band5grp", tmp)) & WL_5G_BAND_4) && (ctl_ch < 100)) ? select_chspec_with_band_bw(name, 4, 3, chspec_cur) : select_chspec_with_band_bw(name, 1, 3, chspec_cur));
+				if (!chspec_tmp && (nvram_get_hex(strcat_r(prefix, "band5grp", tmp)) & WL_5G_BAND_4))
+					chspec_tmp = select_chspec_with_band_bw(name, 4, 3, chspec_cur);
+
+				if (chspec_tmp != 0) {
+					dbg("switch to chanspec: %s (0x%x)\n", wf_chspec_ntoa(chspec_tmp, chanbuf), chspec_tmp);
+					wl_iovar_setint(name, "chanspec", chspec_tmp);
+					wl_iovar_setint(name, "acs_update", -1);
+
+					chanspec = chspec_cur;
+					ctl_ch_tmp = wf_chspec_ctlchan(chspec_tmp);
+				}
 			}
 		}
 #if defined(RTCONFIG_DHDAP) && !defined(RTCONFIG_BCM7)
-		else {
+		else if (wl_cap(unit, "bgdfs")) {
 			if (wl_iovar_get(name, "dfs_ap_move", &buf_sm[0], WLC_IOCTL_SMLEN) < 0) {
 				dbg("get dfs_ap_move status failure\n");
 				return 0;
@@ -5307,22 +5334,25 @@ wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 #endif
 	}
 
-#if defined(RTCONFIG_BCM7) || defined(RTCONFIG_BCM_7114) || defined(HND_ROUTER)
-	if (!nvram_match(strcat_r(prefix, "mode", tmp), "wds")) {
-		if (wl_get_scan_results_escan(name, chanspec, ctl_ch) == NULL) {
+#ifdef __CONFIG_DHDAP__
+	if (is_dhd && !nvram_match(strcat_r(prefix, "mode", tmp), "wds")) {
+		if (wl_get_scan_results_escan(name, chanspec, ctl_ch, ctl_ch_tmp) == NULL) {
 			return 0;
 		}
 	}
 	else
 #endif
-	if (wl_get_scan_results(name, chanspec, ctl_ch) == NULL) {
+	if (wl_get_scan_results(name, chanspec, ctl_ch, ctl_ch_tmp) == NULL) {
 		return 0;
 	}
 
 	if (list->count == 0)
 		return 0;
-#if !(defined(RTCONFIG_BCM7) || defined(RTCONFIG_BCM_7114) || defined(HND_ROUTER))
-	else if (list->version != WL_BSS_INFO_VERSION
+	else if (
+#ifdef __CONFIG_DHDAP__
+			!is_dhd &&
+#endif
+			list->version != WL_BSS_INFO_VERSION
 			&& list->version != LEGACY_WL_BSS_INFO_VERSION
 #ifdef RTCONFIG_BCMWL6
 			&& list->version != LEGACY2_WL_BSS_INFO_VERSION
@@ -5333,7 +5363,6 @@ wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 		    list->version, WL_BSS_INFO_VERSION);
 		return 0;
 	}
-#endif
 
 	memset(ap_list, 0, sizeof(ap_list));
 	bi = list->bss_info;

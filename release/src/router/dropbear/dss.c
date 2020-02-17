@@ -44,6 +44,7 @@
  * These should be freed with dss_key_free.
  * Returns DROPBEAR_SUCCESS or DROPBEAR_FAILURE */
 int buf_get_dss_pub_key(buffer* buf, dropbear_dss_key *key) {
+	int ret = DROPBEAR_FAILURE;
 
 	TRACE(("enter buf_get_dss_pub_key"))
 	dropbear_assert(key != NULL);
@@ -56,17 +57,41 @@ int buf_get_dss_pub_key(buffer* buf, dropbear_dss_key *key) {
 	 || buf_getmpint(buf, key->g) == DROPBEAR_FAILURE
 	 || buf_getmpint(buf, key->y) == DROPBEAR_FAILURE) {
 		TRACE(("leave buf_get_dss_pub_key: failed reading mpints"))
-		return DROPBEAR_FAILURE;
+		ret = DROPBEAR_FAILURE;
+		goto out;
 	}
 
-	if (mp_count_bits(key->p) < MIN_DSS_KEYLEN) {
-		dropbear_log(LOG_WARNING, "DSS key too short");
-		TRACE(("leave buf_get_dss_pub_key: short key"))
-		return DROPBEAR_FAILURE;
+	if (mp_count_bits(key->p) != DSS_P_BITS) {
+		dropbear_log(LOG_WARNING, "Bad DSS p");
+		ret = DROPBEAR_FAILURE;
+		goto out;
 	}
 
+	if (mp_count_bits(key->q) != DSS_Q_BITS) {
+		dropbear_log(LOG_WARNING, "Bad DSS q");
+		ret = DROPBEAR_FAILURE;
+		goto out;
+	}
+
+	/* test 1 < g < p */
+	if (mp_cmp_d(key->g, 1) != MP_GT) {
+		dropbear_log(LOG_WARNING, "Bad DSS g");
+		ret = DROPBEAR_FAILURE;
+		goto out;
+	}
+	if (mp_cmp(key->g, key->p) != MP_LT) {
+		dropbear_log(LOG_WARNING, "Bad DSS g");
+		ret = DROPBEAR_FAILURE;
+		goto out;
+	}
+
+	ret = DROPBEAR_SUCCESS;
 	TRACE(("leave buf_get_dss_pub_key: success"))
-	return DROPBEAR_SUCCESS;
+out:
+	if (ret == DROPBEAR_FAILURE) {
+		m_mp_free_multi(&key->p, &key->q, &key->g, &key->y, NULL);
+	}
+	return ret;
 }
 
 /* Same as buf_get_dss_pub_key, but reads a private "x" key at the end.
@@ -86,7 +111,7 @@ int buf_get_dss_priv_key(buffer* buf, dropbear_dss_key *key) {
 	m_mp_alloc_init_multi(&key->x, NULL);
 	ret = buf_getmpint(buf, key->x);
 	if (ret == DROPBEAR_FAILURE) {
-		m_free(key->x);
+		m_mp_free_multi(&key->x, NULL);
 	}
 
 	return ret;
@@ -101,26 +126,7 @@ void dss_key_free(dropbear_dss_key *key) {
 		TRACE2(("enter dsa_key_free: key == NULL"))
 		return;
 	}
-	if (key->p) {
-		mp_clear(key->p);
-		m_free(key->p);
-	}
-	if (key->q) {
-		mp_clear(key->q);
-		m_free(key->q);
-	}
-	if (key->g) {
-		mp_clear(key->g);
-		m_free(key->g);
-	}
-	if (key->y) {
-		mp_clear(key->y);
-		m_free(key->y);
-	}
-	if (key->x) {
-		mp_clear(key->x);
-		m_free(key->x);
-	}
+	m_mp_free_multi(&key->p, &key->q, &key->g, &key->y, &key->x, NULL);
 	m_free(key);
 	TRACE2(("leave dsa_key_free"))
 }
@@ -133,7 +139,7 @@ void dss_key_free(dropbear_dss_key *key) {
  * mpint	g
  * mpint	y
  */
-void buf_put_dss_pub_key(buffer* buf, dropbear_dss_key *key) {
+void buf_put_dss_pub_key(buffer* buf, const dropbear_dss_key *key) {
 
 	dropbear_assert(key != NULL);
 	buf_putstring(buf, SSH_SIGNKEY_DSS, SSH_SIGNKEY_DSS_LEN);
@@ -145,7 +151,7 @@ void buf_put_dss_pub_key(buffer* buf, dropbear_dss_key *key) {
 }
 
 /* Same as buf_put_dss_pub_key, but with the private "x" key appended */
-void buf_put_dss_priv_key(buffer* buf, dropbear_dss_key *key) {
+void buf_put_dss_priv_key(buffer* buf, const dropbear_dss_key *key) {
 
 	dropbear_assert(key != NULL);
 	buf_put_dss_pub_key(buf, key);
@@ -156,7 +162,7 @@ void buf_put_dss_priv_key(buffer* buf, dropbear_dss_key *key) {
 #if DROPBEAR_SIGNKEY_VERIFY
 /* Verify a DSS signature (in buf) made on data by the key given. 
  * returns DROPBEAR_SUCCESS or DROPBEAR_FAILURE */
-int buf_dss_verify(buffer* buf, dropbear_dss_key *key, buffer *data_buf) {
+int buf_dss_verify(buffer* buf, const dropbear_dss_key *key, const buffer *data_buf) {
 	unsigned char msghash[SHA1_HASH_SIZE];
 	hash_state hs;
 	int ret = DROPBEAR_FAILURE;
@@ -178,6 +184,13 @@ int buf_dss_verify(buffer* buf, dropbear_dss_key *key, buffer *data_buf) {
 		goto out;
 	}
 
+#if DEBUG_DSS_VERIFY
+	printmpint("dss verify p", key->p);
+	printmpint("dss verify q", key->q);
+	printmpint("dss verify g", key->g);
+	printmpint("dss verify y", key->y);
+#endif
+
 	/* hash the data */
 	sha1_init(&hs);
 	sha1_process(&hs, data_buf->data, data_buf->len);
@@ -187,9 +200,16 @@ int buf_dss_verify(buffer* buf, dropbear_dss_key *key, buffer *data_buf) {
 	/* w = (s')-1 mod q */
 	/* let val1 = s' */
 	bytes_to_mp(&val1, (const unsigned char*) &string[SHA1_HASH_SIZE], SHA1_HASH_SIZE);
+#if DEBUG_DSS_VERIFY
+	printmpint("dss verify s'", &val1);
+#endif
 
 	if (mp_cmp(&val1, key->q) != MP_LT) {
 		TRACE(("verify failed, s' >= q"))
+		goto out;
+	}
+	if (mp_cmp_d(&val1, 0) != MP_GT) {
+		TRACE(("verify failed, s' <= 0"))
 		goto out;
 	}
 	/* let val2 = w = (s')^-1 mod q*/
@@ -200,6 +220,9 @@ int buf_dss_verify(buffer* buf, dropbear_dss_key *key, buffer *data_buf) {
 	/* u1 = ((SHA(M')w) mod q */
 	/* let val1 = SHA(M') = msghash */
 	bytes_to_mp(&val1, msghash, SHA1_HASH_SIZE);
+#if DEBUG_DSS_VERIFY
+	printmpint("dss verify r'", &val1);
+#endif
 
 	/* let val3 = u1 = ((SHA(M')w) mod q */
 	if (mp_mulmod(&val1, &val2, key->q, &val3) != MP_OKAY) {
@@ -211,6 +234,10 @@ int buf_dss_verify(buffer* buf, dropbear_dss_key *key, buffer *data_buf) {
 	bytes_to_mp(&val1, (const unsigned char*) &string[0], SHA1_HASH_SIZE);
 	if (mp_cmp(&val1, key->q) != MP_LT) {
 		TRACE(("verify failed, r' >= q"))
+		goto out;
+	}
+	if (mp_cmp_d(&val1, 0) != MP_GT) {
+		TRACE(("verify failed, r' <= 0"))
 		goto out;
 	}
 	/* let val4 = u2 = ((r')w) mod q */
@@ -253,7 +280,7 @@ out:
 
 /* Sign the data presented with key, writing the signature contents
  * to the buffer */
-void buf_put_dss_sign(buffer* buf, dropbear_dss_key *key, buffer *data_buf) {
+void buf_put_dss_sign(buffer* buf, const dropbear_dss_key *key, const buffer *data_buf) {
 	unsigned char msghash[SHA1_HASH_SIZE];
 	unsigned int writelen;
 	unsigned int i;

@@ -187,6 +187,18 @@ var country_selection_array = new Array();
 var _AU1_support = false;
 var _AU2_support = false;
 
+// for RT-AC58U CX/01
+if(country_array.indexOf("CX") != -1){
+	country_selection_list[7][0] = "CX";
+	country_selection_list[7][1] = "New Zealand";
+	country_selection_list.splice(8,1);
+}
+// for RT-AC58U SP/01
+if(country_array.indexOf("SP") != -1){
+	country_selection_list[7][0] = "SP";
+	country_selection_list.splice(8,1);
+}
+
 if(country_array.indexOf("NZ") != -1){
 	country_selection_list[7][1] = "New Zealand";
 	country_selection_list.splice(8,1);
@@ -310,7 +322,7 @@ function initial(){
 			}
 		}
 
-		if(based_modelid == "RT-AC88N" || based_modelid == "RT-AC88Q" || based_modelid == "BRT-AC828" || based_modelid == "RT-AD7200" || based_modelid == "RT-AC58U" || based_modelid == "RT-AC82U" || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC1750" || based_modelid == "MAP-AC3000"){
+		if(based_modelid == "RT-AC88N" || based_modelid == "RT-AC88Q" || based_modelid == "BRT-AC828" || based_modelid == "RT-AD7200" || based_modelid == "RT-AC58U" || based_modelid == "RT-AC59U" || based_modelid == "RT-AC82U" || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC3000"){
 			inputCtrl(document.form.wl_txbf, 1);
 			document.getElementById("wl_MU_MIMO_field").style.display = "";
 			document.form.wl_mumimo.disabled = false;
@@ -339,7 +351,7 @@ function initial(){
 		}
 
 		if((!Qcawifi_support && !Rawifi_support) || based_modelid == "RT-AC87U"
-		    || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC1750" || based_modelid == "MAP-AC3000"
+		    || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC3000"
 		    || based_modelid == "RT-AC82U" || based_modelid == "RT-AC58U" || based_modelid == "4G-AC53U" || (based_modelid == "RP-AC87" && wl_unit_value == "1") ){		// hide on Broadcom platform
 			document.getElementById("wl_plcphdr_field").style.display = "none";
 		}
@@ -400,7 +412,7 @@ function initial(){
 				inputCtrl(document.form.wl_itxbf, 1);
 			}	
 		}	
-		if(based_modelid == "RT-AC88N" || based_modelid == "RT-AC88Q" || based_modelid == "BRT-AC828" || based_modelid == "RT-AD7200" || based_modelid == "RT-AC58U" || based_modelid == "RT-AC82U" || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC1750" || based_modelid == "MAP-AC3000")
+		if(based_modelid == "RT-AC88N" || based_modelid == "RT-AC88Q" || based_modelid == "BRT-AC828" || based_modelid == "RT-AD7200" || based_modelid == "RT-AC58U" || based_modelid == "RT-AC82U" || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC3000")
 		{
 			$('wl_txbf_desc').innerHTML = "<#WLANConfig11b_x_ExpBeam#>";
 			inputCtrl(document.form.wl_txbf, 1);
@@ -502,7 +514,7 @@ function initial(){
 	}
 	
 
-	if( based_modelid == "BRT-AC828" || based_modelid == "RT-AC82U" || based_modelid == "RT-AC58U" || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC1750" || based_modelid == "MAP-AC3000")
+	if(based_modelid == "BRT-AC828" || based_modelid == "RT-AC82U" || based_modelid == "RT-AC58U" || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC3000" || (based_modelid == "RT-AC59U" && wl_unit_value == '1'))
 		document.getElementById("wl_implicitxbf_field").style.display = "";
 	else
 		document.getElementById("wl_implicitxbf_field").style.display = "none";
@@ -1802,7 +1814,7 @@ function checkWLReady(){
 							</select>
 						</td>
 					</tr>					
-					<!-- RT-AC82U & RT-AC58U & 4G-AC53U & MAP-AC1300 & MAP-AC2200 & VZW-AC1300 & MAP-AC1750 & MAP-AC3000 -->
+					<!-- RT-AC82U & RT-AC58U & 4G-AC53U & MAP-AC1300 & MAP-AC2200 & VZW-AC1300 & MAP-AC3000 -->
 					<tr id="wl_implicitxbf_field"  style="display:none">
 						<th><a class="hintstyle" href="javascript:void(0);" onClick="">Implicit beamforming</a></th>
 						<td>
@@ -1833,7 +1845,7 @@ function checkWLReady(){
 
 					<!--QCA9984 platform only, e.g. BRT-AC828 -->
 					<tr>
-						<th>Hardware WiFi Offloading</th><!-- untranslated -->
+						<th><#WLANConfig11b_x_Hardware_Offloading#></th>
 						<td>
 							<select name="wl_hwol" class="input_option">
 									<option value="0" <% nvram_match("wl_hwol", "0","selected"); %> ><#WLANConfig11b_WirelessCtrl_buttonname#></option>

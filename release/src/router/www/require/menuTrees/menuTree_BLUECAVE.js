@@ -85,6 +85,14 @@ define(function(){
 				] 
 			},
 			{
+				menuName: "网易UU加速器",
+				index: "menu_UU", 
+				tab: [
+					{url: "UUAccelerator.asp", tabName: "网易UU加速器"},
+					{url: "NULL", tabName: "__INHERIT__"}
+				] 
+			},
+			{
 				menuName: "<#Traffic_Analyzer#>",
 				index: "menu_TrafficAnalyzer", 
 				tab: [
@@ -238,7 +246,7 @@ define(function(){
 					{url: "Advanced_SNMP_Content.asp", tabName: "SNMP"},
 					{url: "Advanced_TR069_Content.asp", tabName: "TR-069"},
 					{url: "Advanced_Notification_Content.asp", tabName: "Notification"},
-					{url: "Advanced_Privacy.asp", tabName: "Privacy"},
+					{url: "Advanced_Privacy.asp", tabName: "<#menu_privacy#>"},
 					{url: "NULL", tabName: "__INHERIT__"}
 				]
 			},
@@ -293,7 +301,7 @@ define(function(){
 					retArray.push("menu_APP");
 				}
 
-				if(!cloudsync_support && !aicloudipk_support){
+				if((!cloudsync_support && !aicloudipk_support) || nocloudsync_support){
 					retArray.push("menu_AiCloud");
 				}
 
@@ -321,6 +329,9 @@ define(function(){
 					retArray.push("menu_GameBoost");
 				}
 
+				if(!uu_support){
+					retArray.push("menu_UU");
+				}
 				/* Operation Mode */
 				if(isSwMode("re")){
 					retArray.push("menu_GuestNetwork");
@@ -335,7 +346,7 @@ define(function(){
 					retArray.push("menu_VLAN");
 					retArray.push("menu_Firewall");
 
-					if(userRSSI_support){
+					if(!userRSSI_support){
 						retArray.push("menu_Wireless");
 					}
 
@@ -427,7 +438,7 @@ define(function(){
 					retArray.push("YandexDNS.asp");
 				}
 
-				if(!feedback_support) {		
+				if(!frs_feedback_support) {		
 					retArray.push("Advanced_Feedback.asp");
 				}
 

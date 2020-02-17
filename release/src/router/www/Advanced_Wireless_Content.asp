@@ -155,7 +155,7 @@ function initial(){
 		inputCtrl(document.form.wl_nctrlsb, 0);
 	}
 	
-	if(!Rawifi_support && document.form.wl_channel.value  == '0' && cur_control_channel){
+	if(document.form.wl_channel.value == '0' && cur_control_channel){
 		document.getElementById("auto_channel").style.display = "";
 		document.getElementById("auto_channel").innerHTML = "Current control channel: " + cur_control_channel[wl_unit_value];
 	}
@@ -201,6 +201,30 @@ function initial(){
 			document.form.smart_connect_t.value = smart_connect_flag_t;
 
 		enableSmartCon(smart_connect_flag_t);
+	}
+
+	if(is_RU_sku){
+		var ch_orig = parseInt(document.form.wl_channel_orig.value);
+		var _ch = '0';
+		var _array = [36, 44, 52, 60, 100, 108, 116, 124, 132, 140, 149, 157];
+		if(document.form.wl_nmode_x.value == 0 || document.form.wl_nmode_x.value == 8){    // Auto or N/AC mixed
+			if(document.form.wl_bw.value == 3){    // 80 MHz		
+				for(i=0; i<_array.length; i+=2){
+					if(ch_orig >= _array[i] && ch_orig <= (_array[i]+12)){
+						_ch = _array[i];
+					}
+				}
+			}
+			else if(document.form.wl_bw.value == 2){    // 40 MHz
+				for(i=0; i<_array.length; i++){
+					if(ch_orig >= _array[i] && ch_orig <= (_array[i]+4)){
+						_ch = _array[i];
+					}
+				}
+			}
+			
+			document.form.wl_channel.value = _ch;
+		}
 	}
 }
 
@@ -517,8 +541,12 @@ function applyRule(){
 		if(isSwMode("re") || isSwMode("mb"))
 			document.form.action_wait.value = "5";
 
-		if (Qcawifi_support)
+		if (Qcawifi_support) {
 			document.form.action_wait.value = "30";
+		}
+		else if (Rawifi_support) {
+			document.form.action_wait.value = "20";
+		}
 
 		document.form.submit();
 	}

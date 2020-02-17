@@ -1681,6 +1681,65 @@ ej_wl_scan_5g(int eid, webs_t wp, int argc, char_t **argv)
 	return wl_scan(eid, wp, argc, argv, 1);
 }
 
+const char *
+get_wifname(int band)
+{
+	if (band)
+		return WIF_5G;
+	else
+		return WIF_2G;
+}
+int
+getChannel(int band)
+{
+	int channel;
+	struct iw_range	range;
+	double freq;
+	struct iwreq wrq1;
+	struct iwreq wrq2;
+	if (wl_ioctl(get_wifname(band), SIOCGIWFREQ, &wrq1) < 0)
+		return 0;
+	char buffer[sizeof(iwrange) * 2];
+	bzero(buffer, sizeof(buffer));
+	wrq2.u.data.pointer = (caddr_t) buffer;
+	wrq2.u.data.length = sizeof(buffer);
+	wrq2.u.data.flags = 0;
+
+	if (wl_ioctl(get_wifname(band), SIOCGIWRANGE, &wrq2) < 0)
+		return 0;
+
+	if (ralink_get_range_info(&range, buffer, wrq2.u.data.length) < 0)
+		return 0;
+
+	freq = iw_freq2float(&(wrq1.u.freq));
+	if (freq < KILO)
+		channel = (int) freq;
+	else
+	{
+		channel = iw_freq_to_channel(freq, &range);
+		if (channel < 0)
+			return 0;
+	}
+	return channel;
+}
+int
+ej_wl_control_channel(int eid, webs_t wp, int argc, char_t **argv)
+{
+	int ret = 0;
+	int channel_24 = 0, channel_50 = 0;
+	if (!(channel_24 = getChannel(0)))
+	{
+		ret = websWrite(wp, "[\"0\"]");
+		return ret;
+	}
+	if (!(channel_50 = getChannel(1)))
+		ret = websWrite(wp, "[\"%d\", \"%d\"]", channel_24, 0);
+	else
+		ret = websWrite(wp, "[\"%d\", \"%d\"]", channel_24, channel_50);
+
+	return ret;
+}
+
 
 static int ej_wl_channel_list(int eid, webs_t wp, int argc, char_t **argv, int unit)
 {

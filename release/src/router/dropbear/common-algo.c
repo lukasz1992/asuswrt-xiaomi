@@ -179,9 +179,6 @@ algo_type sshciphers[] = {
 	{"blowfish-cbc", 0, &dropbear_blowfish, 1, &dropbear_mode_cbc},
 #endif
 #endif /* DROPBEAR_ENABLE_CBC_MODE */
-#if DROPBEAR_NONE_CIPHER
-	{"none", 0, (void*)&dropbear_nocipher, 1, &dropbear_mode_none},
-#endif
 	{NULL, 0, NULL, 0, NULL}
 };
 
@@ -279,6 +276,7 @@ static const struct dropbear_kex kex_curve25519 = {DROPBEAR_KEX_CURVE25519, NULL
 
 algo_type sshkex[] = {
 #if DROPBEAR_CURVE25519
+	{"curve25519-sha256", 0, &kex_curve25519, 1, NULL},
 	{"curve25519-sha256@libssh.org", 0, &kex_curve25519, 1, NULL},
 #endif
 #if DROPBEAR_ECDH
@@ -292,11 +290,11 @@ algo_type sshkex[] = {
 	{"ecdh-sha2-nistp256", 0, &kex_ecdh_nistp256, 1, NULL},
 #endif
 #endif
-#if DROPBEAR_DH_GROUP14_SHA1
-	{"diffie-hellman-group14-sha1", 0, &kex_dh_group14_sha1, 1, NULL},
-#endif
 #if DROPBEAR_DH_GROUP14_SHA256
 	{"diffie-hellman-group14-sha256", 0, &kex_dh_group14_sha256, 1, NULL},
+#endif
+#if DROPBEAR_DH_GROUP14_SHA1
+	{"diffie-hellman-group14-sha1", 0, &kex_dh_group14_sha1, 1, NULL},
 #endif
 #if DROPBEAR_DH_GROUP1
 	{"diffie-hellman-group1-sha1", 0, &kex_dh_group1, 1, NULL},
@@ -314,7 +312,7 @@ algo_type sshkex[] = {
  * against.
  * Returns DROPBEAR_SUCCESS if we have a match for algo, DROPBEAR_FAILURE
  * otherwise */
-int have_algo(char* algo, size_t algolen, algo_type algos[]) {
+int have_algo(const char* algo, size_t algolen, const algo_type algos[]) {
 
 	int i;
 
@@ -329,7 +327,7 @@ int have_algo(char* algo, size_t algolen, algo_type algos[]) {
 }
 
 /* Output a comma separated list of algorithms to a buffer */
-void buf_put_algolist(buffer * buf, algo_type localalgos[]) {
+void buf_put_algolist(buffer * buf, const algo_type localalgos[]) {
 
 	unsigned int i, len;
 	unsigned int donefirst = 0;
@@ -466,42 +464,10 @@ out:
 	return ret;
 }
 
-#if DROPBEAR_NONE_CIPHER
-
-void
-set_algo_usable(algo_type algos[], const char * algo_name, int usable)
-{
-	algo_type *a;
-	for (a = algos; a->name != NULL; a++)
-	{
-		if (strcmp(a->name, algo_name) == 0)
-		{
-			a->usable = usable;
-			return;
-		}
-	}
-}
-
-int
-get_algo_usable(algo_type algos[], const char * algo_name)
-{
-	algo_type *a;
-	for (a = algos; a->name != NULL; a++)
-	{
-		if (strcmp(a->name, algo_name) == 0)
-		{
-			return a->usable;
-		}
-	}
-	return 0;
-}
-
-#endif /* DROPBEAR_NONE_CIPHER */
-
 #if DROPBEAR_USER_ALGO_LIST
 
 char *
-algolist_string(algo_type algos[])
+algolist_string(const algo_type algos[])
 {
 	char *ret_list;
 	buffer *b = buf_new(200);

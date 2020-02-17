@@ -95,7 +95,15 @@ function cleanTask(){
 
 <div id="button_descrition" style="display:none;padding:5px 0px 5px 25px;">
 <ul style="font-size:11px; font-family:Arial; color:#FFF; padding:0px; margin:0px; list-style:outside; line-height:150%;">
-	<li><#PrinterStatus_x_Monopoly_itemdesc#></li>
+	<li><#PrinterStatus_x_Monopoly_itemdesc#> <a id="faq" href="https://www.asus.com/support/FAQ/113988/" target="_blank" style="text-decoration:underline;">FAQ</a></li>
+	<li>
+		<a id="faq1" href="" target="_blank" style="text-decoration:underline;"><#asus_ez_print_share#> FAQ</a>
+		<br>
+		<a href="http://dlcdnet.asus.com/pub/ASUS/LiveUpdate/Release/Wireless/Printer.zip" style="text-decoration:underline;font-weight:bolder;color:#FC0"><#Download_now#></a>
+	</li>
+	<li>
+		<a id="faq2" href="" target="_blank" style="text-decoration:underline;"><#LPR_print_share#> FAQ (Windows)</a>
+	</li>
 	<li>
 		<a id="faq" href="https://www.asus.com/support/FAQ/113988/" target="_blank" style="text-decoration:underline;"><#Printing_button_item#> FAQ</a>
 	</li>

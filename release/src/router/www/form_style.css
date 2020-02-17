@@ -1162,15 +1162,17 @@ color:#FFFFFF;
 .tabclick_NW {
 	font-weight: bolder;
 	font-family: Verdana, MS UI Gothic, MS P Gothic, sans-serif;
-    color: White;
-    display: block;
-    float: left;
-    height: 28px;
-    padding-right: 8px;
-    margin-right:2px;
-    text-align:center;
-    text-decoration: none;
+  color: White;
+  display: block;
+  float: left;
+  height: 28px;
+  padding-right: 8px;
+  margin-right:2px;
+  text-align:center;
+  text-decoration: none;
 	max-width:240px;
+	background-color: #4F5B5F;
+	border-radius: 5px 5px 0 0;
 }
 .tabclick_NW span {
 	cursor:pointer;
@@ -2276,4 +2278,28 @@ padding-top:1px;
 #bottom_border{
 	border-bottom:5px #2A3539 solid;
 	padding:5px 10px 5px 10px;
+}
+
+.oauth_google_btn{
+	float: left;
+	background: transparent url(images/New_ui/btn_google_signin_dark_normal_web.png) no-repeat scroll center top;
+	width: 133px;
+	height: 26px;
+	cursor: pointer;
+}
+.oauth_google_status{
+	float: left;
+	margin-top: 3px;
+	margin-left: 5px;
+	display: none;
+}
+.query_list{
+	display: none;
+	background-color: #576D73;
+	border: 1px solid  #929EA1;
+	list-style: none;
+	width:339px; height:120px; 
+	margin:0 0 0 2px;
+	padding: 6px;position: absolute;
+	overflow-y: auto;
 }

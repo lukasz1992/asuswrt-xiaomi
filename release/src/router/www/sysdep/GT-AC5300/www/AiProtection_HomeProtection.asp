@@ -127,6 +127,9 @@ function initial(){
 	getEventData();
 	check_weakness();
 	$("#all_security_btn").hide();
+
+	if(!ASUS_EULA.status("tm"))
+		ASUS_EULA.config(eula_confirm, cancel);
 }
 
 function getEventTime(){
@@ -215,6 +218,9 @@ function applyRule(){
 			document.form.action_wait.value = "<% nvram_get("reboot_time"); %>";
 		}
 	}
+
+	if(reset_wan_to_fo.change_status)
+		reset_wan_to_fo.change_wan_mode(document.form);
 
 	showLoading();
 	document.form.submit();
@@ -713,6 +719,24 @@ function eula_confirm(){
 	document.form.action_wait.value = "15";
 	applyRule();
 }
+function switch_control(_status){
+	if(_status) {
+		if(reset_wan_to_fo.check_status()) {
+			if(ASUS_EULA.check("tm")){
+				document.form.wrs_protect_enable.value = "1";
+				shadeHandle("1");
+				applyRule();
+			}
+		}
+		else
+			cancel();
+	}
+	else {
+		document.form.wrs_protect_enable.value = "0";
+		shadeHandle("0");
+		applyRule();
+	}
+}
 
 function show_alert_preference(){
 	cal_panel_block("alert_preference", 0.25);
@@ -1111,7 +1135,7 @@ function shadeHandle(flag){
 														<tr>
 															<td>
 																<div style="width:430px"><#AiProtection_HomeDesc2#></div>
-																<div style="width:430px"><a style="text-decoration:underline;" href="http://www.asus.com/support/FAQ/1008719/" target="_blank"><#AiProtection_title#> FAQ</a></div>
+																<div style="width:430px"><a style="text-decoration:underline;" href="https://www.asus.com/support/FAQ/1008719/" target="_blank"><#AiProtection_title#> FAQ</a></div>
 															</td>
 															<td>
 																<div style="width:100px;height:48px;margin-left:-40px;background-image:url('images/New_ui/tm_logo.png');"></div>
@@ -1139,18 +1163,10 @@ function shadeHandle(flag){
 														<script type="text/javascript">
 															$('#radio_protection_enable').iphoneSwitch('<% nvram_get("wrs_protect_enable"); %>',
 																function(){
-																	ASUS_EULA.config(eula_confirm, cancel);
-
-																	if(ASUS_EULA.check("tm")){
-																		document.form.wrs_protect_enable.value = "1";
-																		shadeHandle("1");
-																		applyRule();
-																	}
+																	switch_control(1);
 																},
 																function(){
-																	document.form.wrs_protect_enable.value = "0";
-																	shadeHandle("0");
-																	applyRule();
+																	switch_control(0);
 																}
 															);
 														</script>

@@ -55,6 +55,7 @@ var wl_maclist_x_array = gn_array[0][16];
 var g_maxsta = 50;
 
 var captive_portal_used_wl_array = new Array();
+var all_gn_status = [];
 
 window.onresize = function() {
 	if(document.getElementById("gnset_block").style.display == "block") {
@@ -566,7 +567,6 @@ function showHideContent(objnmae, thisObj) {
 }
 
 function gen_gntable(){
-	//wl_info.band5g_2_support = false;
 	var gen_new_guest = function(_unit, _subunit) {
 		var html = "";
 		if(wl_info.band5g_2_support)
@@ -595,7 +595,6 @@ function gen_gntable(){
 		var html = "";
 		var show_str = "";
 		var _gn_unit_subunit = "wl" + _unit + "." + _index;
-		//html += "<table style='width:100%'><tr><td>";
 		if(wl_info.band5g_2_support)
 			html += "<div class='editedGuestNetwork_block_tri_band'>";
 		else
@@ -604,15 +603,11 @@ function gen_gntable(){
 		html += "<div style='float:left;width:50%;'>";
 		html += "<div style='float:left;line-height:32px;' class='guestNetwork_name_edited'>" + wl_nband_title[_unit] + "</div>";
 		html += "</div>";
-		
 		html += "<div style='float:right;width:50%;'>";
-		if(captive_portal_used_wl_array[_gn_unit_subunit] == undefined) {
+		if(captive_portal_used_wl_array[_gn_unit_subunit] == undefined)
 			html += "<div class='left' style='float:right;' id='radio_guest_enable_" + _unit + "_" + _index + "'></div>";
-		}
 		html += "<div class='internetTimeEdit' style='float:right;cursor:pointer;' onclick='edit_guest_unit(" + _unit + ", " + _index + ");' ></div>";
 		html += "</div>";
-		
-		//html += "</td></tr></table>";
 		html += "</div>";
 		html += "<div class='guest_line'></div>";
 		html += "<div class='guestNetwork_titleName_edited'><#QIS_finish_wireless_item1#></div>";
@@ -694,7 +689,6 @@ function gen_gntable(){
 
 	var htmlcode = ""; 
 	var guest_group_num = gn_array_2g.length;
-	//no5gmssid_support =true;
 
 	//short term solution for only router mode support Captive Portal
 	if(isSwMode("rt")) {
@@ -822,6 +816,7 @@ function gen_gntable(){
 			htmlcode += gen_had_enable_guest(gn_array_2g[i - 1], "0", i);
 		}
 		htmlcode += "</td>";
+		all_gn_status.push({"idx" : "0." + i, "enable" : (gn_array_2g[i - 1][0] == '1'), "bw_enabled" : (gn_array_2g[i - 1][18] == '1')});
 		//5G
 		if(wl_info.band5g_support && !no5gmssid_support) {
 			htmlcode += "<td style='width:" + td_width + ";vertical-align:top;'>";
@@ -833,6 +828,7 @@ function gen_gntable(){
 				htmlcode += gen_had_enable_guest(gn_array_5g[i - 1], "1", i);
 			}
 			htmlcode += "</td>";
+			all_gn_status.push({"idx" : "1." + i, "enable" : (gn_array_5g[i - 1][0] == '1'), "bw_enabled" : (gn_array_5g[i - 1][18] == '1')});
 		}
 		//5G-2
 		if(wl_info.band5g_2_support) {
@@ -845,6 +841,7 @@ function gen_gntable(){
 				htmlcode += gen_had_enable_guest(gn_array_5g_2[i - 1], "2", i);
 			}
 			htmlcode += "</td>";
+			all_gn_status.push({"idx" : "2." + i, "enable" : (gn_array_5g_2[i - 1][0] == '1'), "bw_enabled" : (gn_array_5g_2[i - 1][18] == '1')});
 		}
 		htmlcode += "</tr></table>";
 		htmlcode += "</div>";
@@ -959,6 +956,8 @@ function applyRule(){
 				document.form.action_script.value = "restart_wireless;restart_qos;restart_firewall;";
 			}
 		}
+
+		dis_qos_enable(document.form.wl_unit.value + "." + document.form.wl_subunit.value, document.form, "bw_enabled");
 
 		var _unit_subunit = "wl" + document.form.wl_unit.value + "." + document.form.wl_subunit.value;
 		if(captive_portal_used_wl_array[_unit_subunit] != undefined) {
@@ -1103,7 +1102,11 @@ function en_dis_guest_unit(_unit, _subunit, _setting){
 	document.unitform.wl_unit.value = _unit;
 	document.unitform.wl_subunit.value = _subunit;
 	if(based_modelid == "BRT-AC828")
-		document.form.action_wait.value = 50; //MODELDEP: BRT-AC828
+		document.unitform.action_wait.value = 50; //MODELDEP: BRT-AC828
+
+	if(_setting == "0")
+		dis_qos_enable(_unit + "." + _subunit, document.unitform, "enable");
+
 	document.unitform.submit();
 }
 function updateLanaccess() {
@@ -1234,7 +1237,7 @@ function addRow(obj, upper){
 		obj.focus();
 		obj.select();			
 		return false;
-	}else if(!check_macaddr(obj, check_hwaddr_flag(obj))){
+	}else if(!check_macaddr(obj, check_hwaddr_flag(obj, 'inner'))){
 		obj.focus();
 		obj.select();	
 		return false;	
@@ -1377,6 +1380,42 @@ function bandwidth_code(o,event){
 		return true;
 	else
 		return false;		
+}
+
+function dis_qos_enable(_wl_idx, _form_obj, _control_item){
+	if(_wl_idx == "" || _wl_idx == undefined || _form_obj == "" || _form_obj == undefined || _control_item == "" || _control_item == undefined)
+		return;
+
+	if(!(all_gn_status.some(function(item, index, array){return (item.enable == true && item.bw_enabled == true)})))//if all gn bw disabled, not need disable qos
+		return;
+
+	var sw_mode_support = isSwMode("rt");
+	var cp_wifi_not_used = (captive_portal_used_wl_array["wl" + _wl_idx] == undefined) ? true : false;
+	if(sw_mode_support && cp_wifi_not_used){
+		var specific_gn = all_gn_status.filter(function(item, index, array){
+			return (item.idx == _wl_idx);
+		})[0];
+
+		if(_control_item == "enable")
+			specific_gn.enable = false;
+		else if(_control_item == "bw_enabled")
+			specific_gn.bw_enabled = document.form.bw_enabled_x[0].checked;
+
+		var all_gn_bw_dis = !(all_gn_status.some(function(item, index, array){return (item.enable == true && item.bw_enabled == true)}));
+		var QoS_bw_rulelist_orig = '<% nvram_get("qos_bw_rulelist"); %>';
+		var qos_can_dis = (QoS_enable_orig == "1" && QoS_type_orig == "2" && QoS_bw_rulelist_orig == "") ? true : false;
+		if(all_gn_bw_dis && qos_can_dis){
+			if(_form_obj.qos_enable == undefined){
+				var qos_enable = document.createElement("input");
+				qos_enable.type = "hidden";
+				qos_enable.name = "qos_enable";
+				qos_enable.value = "0";
+				_form_obj.appendChild(qos_enable);
+			}
+			else
+				_form_obj.qos_enable.value = "0";
+		}
+	}
 }
 </script>
 </head>

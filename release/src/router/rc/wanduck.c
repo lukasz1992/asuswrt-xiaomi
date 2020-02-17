@@ -15,6 +15,8 @@
  * MA 02111-1307 USA
  */
 
+#define _GNU_SOURCE
+
 #include <rc.h>
 #include <wanduck.h>
 
@@ -335,8 +337,9 @@ void get_related_nvram(){
 
 	boot_end = nvram_get_int("success_start_service");
 
-#if defined(RTAC58U)
-	if (!strncmp(nvram_safe_get("territory_code"), "CX", 2))
+#if defined(RTAC58U) || defined(RTAC59U)
+	if (!strncmp(nvram_safe_get("territory_code"), "CX/01", 5)
+	 || !strncmp(nvram_safe_get("territory_code"), "CX/05", 5))
 		isFirstUse = 0;
 	else
 #endif
@@ -568,6 +571,24 @@ static void wan_led_control(int sig) {
 		}
 #endif
 	}
+#endif
+
+#if defined(RTCONFIG_LANWAN_LED) || defined(RTCONFIG_LAN4WAN_LED)
+#if defined(RTCONFIG_QCA)
+	if (nvram_match("AllLED", "1")) {
+		if (rule_setup) {
+			led_control(LED_WAN, LED_OFF);
+#if defined(RTCONFIG_WANRED_LED)
+			led_control(LED_WAN_RED, LED_ON);
+#endif
+		} else {
+			led_control(LED_WAN, LED_ON);
+#if defined(RTCONFIG_WANRED_LED)
+			led_control(LED_WAN_RED, LED_OFF);
+#endif
+		}
+	}
+#endif
 #endif
 }
 
@@ -965,13 +986,8 @@ int detect_internet(int wan_unit)
 #ifdef RTCONFIG_DUALWAN
 			strcmp(dualwan_mode, "lb") &&
 #endif
-			!found_default_route(wan_unit)){
+			!found_default_route(wan_unit))
 		link_internet = DISCONN;
-
-		// fix the missed gateway sometimes.
-		if(is_wan_connect(wan_unit))
-			add_multi_routes();
-	}
 #ifdef DETECT_INTERNET_MORE
 	else if(!get_packets_of_net_dev(wan_ifname, &rx_packets, &tx_packets) || rx_packets <= RX_THRESHOLD)
 		link_internet = DISCONN;
@@ -2328,6 +2344,7 @@ void handle_dns_req(int sfd, unsigned char *request, int maxlen, struct sockaddr
 	};
 #endif
 	unsigned char reply_content[MAXLINE], *ptr, *end;
+	char *nptr, *nend;
 	dns_header *d_req, *d_reply;
 	dns_queries queries;
 	dns_answer answer;
@@ -2345,6 +2362,8 @@ void handle_dns_req(int sfd, unsigned char *request, int maxlen, struct sockaddr
 
 	/* query, only first so far */
 	memset(&queries, 0, sizeof(queries));
+	nptr = queries.name;
+	nend = queries.name + sizeof(queries.name) - 1;
 	while (ptr < end) {
 		size_t len = *ptr++;
 		if (len > 63 || end - ptr < (len ? : 4))
@@ -2355,9 +2374,10 @@ void handle_dns_req(int sfd, unsigned char *request, int maxlen, struct sockaddr
 			ptr += 4;
 			break;
 		}
-		if (*queries.name)
-			strcat(queries.name, ".");
-		strncat(queries.name, (char *)ptr, len);
+		if (nptr < nend && *queries.name)
+			*nptr++ = '.';
+		if (nptr < nend)
+			nptr = stpncpy(nptr, (char *)ptr, min(len, nend - nptr));
 		ptr += len;
 	}
 	if (queries.type == 0 || queries.ip_class == 0 || strlen(queries.name) > 1025)

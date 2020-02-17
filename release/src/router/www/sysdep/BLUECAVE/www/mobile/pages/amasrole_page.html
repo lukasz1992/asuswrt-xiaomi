@@ -27,36 +27,40 @@
 		</div>
 	</div>
 	<div class="table_td">
-		<div class="pageDesc">
-			<div class="descSteps">Router</div>
-			<div>Connect your modem to the WAN port on your router using the Ethernet cable.</div>
-		</div>
-		<div>
-			<div class="selectorTopContainer">
-				<div class="selectorContainer">
-					<div class="selectorContainerDiv">
-						<div class="selectBar" onclick="goTo.asRouter()"><#AiMesh_setup_router#></div>
-						<div class="narrowContainer">
-							<div class="icon_arrow_right" style="width:20px;height:32px;"></div>
+		<div id="AiMesh_router" style="display:none;">
+			<div class="pageDesc">
+				<div class="descSteps"><#AiMesh_Router#></div>
+				<div><#AiMesh_Router_Desc#></div>
+			</div>
+			<div>
+				<div class="selectorTopContainer">
+					<div class="selectorContainer">
+						<div class="selectorContainerDiv">
+							<div class="selectBar" onclick="goTo.asRouter()"><#AiMesh_setup_router#></div>
+							<div class="narrowContainer">
+								<div class="icon_arrow_right" style="width:20px;height:32px;"></div>
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
+
+			<div style="height: 50px"></div>
 		</div>
 
-		<div style="height: 50px"></div>
-
-		<div class="pageDesc">
-			<div class="descSteps">AiMesh node</div>
-			<div>The AiMesh system is composed of ASUS routers. You will set up one router becomes AiMesh router and you can add another AiMesh node to expand your network.</div>
-		</div>
-		<div>
-			<div class="selectorTopContainer">
-				<div class="selectorContainer">
-					<div class="selectorContainerDiv">
-						<div class="selectBar" onclick="goTo.asNode()"><#AiMesh_setup_node#></div>
-						<div class="narrowContainer">
-							<div class="icon_arrow_right" style="width:20px;height:32px;"></div>
+		<div id="AiMesh_node" style="display:none;">
+			<div class="pageDesc">
+				<div class="descSteps"><#AiMesh_Node#></div>
+				<div><#AiMesh_Intro_Desc#></div>
+			</div>
+			<div>
+				<div class="selectorTopContainer">
+					<div class="selectorContainer">
+						<div class="selectorContainerDiv">
+							<div class="selectBar" onclick="goTo.asNode()"><#AiMesh_setup_node#></div>
+							<div class="narrowContainer">
+								<div class="icon_arrow_right" style="width:20px;height:32px;"></div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -75,9 +79,9 @@
 			<div class="aimesh_illustration_bg text amasSupport">
 				<div class="aimesh_illustration_text">Modem</div>
 				<div class="aimesh_illustration_text ethernet"></div>
-				<div class="aimesh_illustration_text">AiMesh router</div>
+				<div class="aimesh_illustration_text"><#AiMesh_Router#></div>
 				<div class="aimesh_illustration_text wifi"></div>
-				<div class="aimesh_illustration_text">AiMesh node</div>
+				<div class="aimesh_illustration_text"><#AiMesh_Node#></div>
 				<div style="clear: both;"></div>
 			</div>
 		</div>

@@ -636,45 +636,6 @@ long getSTAConnTime(char *ifname, char *bssid)
 	return 0;
 }
 
-typedef struct _WLANCONFIG_LIST {
-	char addr[18];
-	unsigned int aid;
-	unsigned int chan;
-	char txrate[10];
-	char rxrate[10];
-	unsigned int rssi;
-	unsigned int idle;
-	unsigned int txseq;
-	unsigned int rxseq;
-	char caps[12];
-	char acaps[10];
-	char erp[7];
-	char state_maxrate[20];
-	char wps[4];
-	char conn_time[12];
-	char rsn[4];
-	char wme[4];
-	char mode[31];
-	char ie[32];
-	char htcaps[10];
-	unsigned int u_acaps;
-	unsigned int u_erp;
-	unsigned int u_state_maxrate;
-	unsigned int u_psmode;
-	char subunit;	/* '0': main 2G/5G network, '1' ~ '7': Guest network (MAX_NO_MSSID = 8), 'B': Facebook Wi-Fi, 'F': Free Wi-Fi, 'C': Captive Portal */
-} WLANCONFIG_LIST;
-
-#if defined(RTCONFIG_WIFI_QCA9990_QCA9990) || defined(RTCONFIG_WIFI_QCA9994_QCA9994)
-#define MAX_STA_NUM 512
-#else
-#define MAX_STA_NUM 256
-#endif
-
-typedef struct _WIFI_STA_TABLE {
-	int Num;
-	WLANCONFIG_LIST Entry[ MAX_STA_NUM ];
-} WIFI_STA_TABLE;
-
 /** Get client list via wlanconfig utility.
  * @unit:
  * @sta_info:
@@ -686,27 +647,15 @@ typedef struct _WIFI_STA_TABLE {
  * otherwise:	Main or guest network.
  * @return:
  */
-#define STA_INFO_PATH "/tmp/wlanconfig_athX_list"
 static int __getSTAInfo(int unit, WIFI_STA_TABLE *sta_info, char *ifname, char id)
 {
-	FILE *fp;
-	int l2_offset, subunit;
-	char *l2, *l3;
-	char line_buf[300]; // max 14x
+	int subunit;
 	char subunit_str[4] = "0", wlif[sizeof("wlX.Yxxx")];
 
-	if (unit < 0 || unit >= MAX_NR_WL_IF)
+	if (absent_band(unit))
 		return -1;
 	if (!ifname || *ifname == '\0')
 		return -1;
-#if !defined(RTCONFIG_HAS_5G_2)
-	if (unit == 2)
-		return -1;
-#endif
-#if !defined(RTCONFIG_WIGIG)
-	if (unit == 3)
-		return -1;
-#endif
 
 	subunit = get_wlsubnet(unit, ifname);
 	if (subunit < 0)
@@ -722,58 +671,7 @@ static int __getSTAInfo(int unit, WIFI_STA_TABLE *sta_info, char *ifname, char i
 	if (id == 'B' || id == 'F' || id == 'C')
 		snprintf(subunit_str, sizeof(subunit_str), "%c", id);
 
-	doSystem("wlanconfig %s list > %s", ifname, STA_INFO_PATH);
-	fp = fopen(STA_INFO_PATH, "r");
-	if (fp) {
-/* wlanconfig ath1 list
-ADDR               AID CHAN TXRATE RXRATE RSSI IDLE  TXSEQ  RXSEQ  CAPS        ACAPS     ERP    STATE MAXRATE(DOT11) HTCAPS ASSOCTIME    IEs   MODE PSMODE
-00:10:18:55:cc:08    1  149  55M   1299M   63    0      0   65535               0        807              0              Q 00:10:33 IEEE80211_MODE_11A  0
-08:60:6e:8f:1e:e6    2  149 159M    866M   44    0      0   65535     E         0          b              0           WPSM 00:13:32 WME IEEE80211_MODE_11AC_VHT80  0
-08:60:6e:8f:1e:e8    1  157 526M    526M   51 4320      0   65535    EP         0          b              0          AWPSM 00:00:10 RSN WME IEEE80211_MODE_11AC_VHT80 0
-*/
-		//fseek(fp, 131, SEEK_SET);	// ignore header
-		fgets(line_buf, sizeof(line_buf), fp); // ignore header
-		l2 = strstr(line_buf, "ACAPS");
-		if (l2 != NULL)
-			l2_offset = (int)(l2 - line_buf);
-		else {
-			l2_offset = 79;
-			l2 = line_buf + l2_offset;
-		}
-		while ( fgets(line_buf, sizeof(line_buf), fp) ) {
-			WLANCONFIG_LIST *r = &sta_info->Entry[sta_info->Num++];
-
-			r->subunit = subunit_str[0];
-			/* IEs may be empty string, find IEEE80211_MODE_ before parsing mode and psmode. */
-			l3 = strstr(line_buf, "IEEE80211_MODE_");
-			if (l3) {
-				*(l3 - 1) = '\0';
-				sscanf(l3, "IEEE80211_MODE_%s %d", r->mode, &r->u_psmode);
-			}
-			*(l2 - 1) = '\0';
-			sscanf(line_buf, "%s%u%u%s%s%u%u%u%u%[^\n]",
-				r->addr, &r->aid, &r->chan, r->txrate,
-				r->rxrate, &r->rssi, &r->idle, &r->txseq,
-				&r->rxseq, r->caps);
-			sscanf(l2, "%u%x%u%s%s%[^\n]",
-				&r->u_acaps, &r->u_erp, &r->u_state_maxrate, r->htcaps, r->conn_time, r->ie);
-			if (strlen(r->rxrate) >= 6)
-				strcpy(r->rxrate, "0M");
-#if 0
-			dbg("[%s][%u][%u][%s][%s][%u][%u][%u][%u][%s]"
-				"[%u][%u][%x][%s][%s][%s][%d]\n",
-				r->addr, r->aid, r->chan, r->txrate, r->rxrate,
-				r->rssi, r->idle, r->txseq, r->rxseq, r->caps,
-				r->u_acaps, r->u_erp, r->u_state_maxrate, r->htcaps, r->ie,
-				r->mode, r->u_psmode);
-#endif
-				convert_mac_string(r->addr);
-		}
-
-		fclose(fp);
-		unlink(STA_INFO_PATH);
-	}
-	return 0;
+	return get_qca_sta_info_by_ifname(ifname, subunit_str[0], sta_info);
 }
 
 /** Get client list via iw utility.
@@ -854,7 +752,7 @@ next_sta:
 			continue;
 		}
 		convert_mac_string(r->addr);
-		r->subunit = subunit_str[0];
+		r->subunit_id = subunit_str[0];
 		strlcpy(r->mode, "11ad", sizeof(r->mode));
 		while (fgets(line_buf, sizeof(line_buf), fp)) {
 			if (!strncmp(line_buf, "Station", 7)) {
@@ -1369,18 +1267,18 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 			getSTAInfo(unit, sta_info);
 			for(i = 0; i < sta_info->Num; i++) {
 				*subunit_str = '\0';
-				if (sta_info->Entry[i].subunit == '0')
+				if (sta_info->Entry[i].subunit_id == '0')
 					strlcpy(subunit_str, "Main", sizeof(subunit_str));
-				else if (isdigit(sta_info->Entry[i].subunit))
-					snprintf(subunit_str, sizeof(subunit_str), "Guest Network-%c", sta_info->Entry[i].subunit);
-				else if (sta_info->Entry[i].subunit == 'B')
+				else if (isdigit(sta_info->Entry[i].subunit_id))
+					snprintf(subunit_str, sizeof(subunit_str), "Guest Network-%c", sta_info->Entry[i].subunit_id);
+				else if (sta_info->Entry[i].subunit_id == 'B')
 					strlcpy(subunit_str, "Facebook Wi-Fi", sizeof(subunit_str));
-				else if (sta_info->Entry[i].subunit == 'F')
+				else if (sta_info->Entry[i].subunit_id == 'F')
 					strlcpy(subunit_str, "Free Wi-Fi", sizeof(subunit_str));
-				else if (sta_info->Entry[i].subunit == 'C')
+				else if (sta_info->Entry[i].subunit_id == 'C')
 					strlcpy(subunit_str, "Captive Portal", sizeof(subunit_str));
 				else {
-					dbg("%s: Unknown subunit [%s]\n", sta_info->Entry[i].subunit);
+					dbg("%s: Unknown subunit_id [%c]\n", sta_info->Entry[i].subunit_id);
 				}
 				ret += websWrite(wp, "%-16s %-17s %-15s %7s %7s %12s\n",
 					subunit_str,
@@ -1509,7 +1407,7 @@ static int wl_stainfo_list(int unit, webs_t wp)
 		websWrite(wp, ", \"%s\"", r->txrate);
 		websWrite(wp, ", \"%s\"", r->rxrate);
 		websWrite(wp, ", \"%s\"", r->conn_time);
-		s = r->subunit;
+		s = r->subunit_id;
 		if (s < '0' || s  >= ('0' + MAX_NO_MSSID - 1))
 			s = '0';
 		if (s == '0')
@@ -1596,7 +1494,7 @@ int ej_get_wlstainfo_list(int eid, webs_t wp, int argc, char_t **argv)
 			}
 
 			for(j = 0, r = &sta_info->Entry[0]; j < sta_info->Num; j++, r++) {
-				s = r->subunit;
+				s = r->subunit_id;
 				if (s < 0 || s > 3)
 					s = 0;
 
@@ -1841,65 +1739,60 @@ ej_wps_info_2g(int eid, webs_t wp, int argc, char_t **argv)
 
 // Wireless Client List		 /* Start --Alicia, 08.09.23 */
 
+struct ej_wl_auth_list_priv_s {
+	int firstRow;
+	webs_t wp;
+};
+
+/* Helper of ej_wl_auth_list()
+ * @src:	pointer to WLANCONFIG_LIST
+ * @arg:
+ * @return:
+ * 	0:	success
+ *  otherwise:	error
+ */
+static int handle_ej_wl_auth_list(const WLANCONFIG_LIST *src, void *arg)
+{
+	struct ej_wl_auth_list_priv_s *priv = arg;
+	char *value;
+
+	if (!src || !arg)
+		return -1;
+
+	if (priv->firstRow == 1)
+		priv->firstRow = 0;
+	else
+		websWrite(priv->wp, ", ");
+
+	websWrite(priv->wp, "[");
+
+	websWrite(priv->wp, "\"%s\"", src->addr);
+	value = "YES";
+	websWrite(priv->wp, ", \"%s\"", value);
+	value = "";
+	websWrite(priv->wp, ", \"%s\"", value);
+	websWrite(priv->wp, "]");
+
+	return 0;
+}
+
 int ej_wl_auth_list(int eid, webs_t wp, int argc, char_t **argv)
 {
 //only for ath0 & ath1
-        WLANCONFIG_LIST *result;
-	#define AUTH_INFO_PATH "/tmp/auth_athX_list"
-	FILE *fp;
-	int unit, firstRow, ret = 0;
-	char line_buf[300]; // max 14x
-	char *value;
-	char ifname[100], *next;
-	result = (WLANCONFIG_LIST *)malloc(sizeof(WLANCONFIG_LIST));
-	memset(result, 0, sizeof(result));
+	int unit, ret = 0;
+	char ifname[IFNAMSIZ], *next;
+	struct ej_wl_auth_list_priv_s priv = { .firstRow = 1, .wp = wp };
 
 	unit = 0;
-	firstRow = 1;
 	foreach(ifname, nvram_safe_get("wl_ifnames"), next) {
 		if (unit >= MAX_NR_WL_IF)
 			break;
 		SKIP_ABSENT_BAND_AND_INC_UNIT(unit);
 
-		doSystem("wlanconfig %s list > %s", ifname, AUTH_INFO_PATH);
-		fp = fopen(AUTH_INFO_PATH, "r");
-		if (!fp) {
-			++unit;
-			continue;
-		}
-		fgets(line_buf, sizeof(line_buf), fp); // ignore header
-		while ( fgets(line_buf, sizeof(line_buf), fp) ) {
-			sscanf(line_buf, "%s%u%u%s%s%u%u%u%u%s%s%s%s%s%s%s%s%s",
-				result->addr, &result->aid, &result->chan,
-				result->txrate, result->rxrate, &result->rssi,
-				&result->idle, &result->txseq, &result->rxseq,
-				result->caps, result->acaps, result->erp,
-				result->state_maxrate, result->wps,
-				result->conn_time, result->rsn, result->wme,
-				result->mode);
-			
-			if (firstRow == 1)
-				firstRow = 0;
-			else
-				websWrite(wp, ", ");
-			websWrite(wp, "[");
-
-			websWrite(wp, "\"%s\"", result->addr);
-			value = "YES";
-			websWrite(wp, ", \"%s\"", value);
-			value = "";
-			websWrite(wp, ", \"%s\"", value);
-			websWrite(wp, "]");
-		
-		}
-
-		fclose(fp);
-		unlink(AUTH_INFO_PATH);
+		__get_qca_sta_info_by_ifname(ifname, 0, handle_ej_wl_auth_list, &priv);
 		++unit;
 	}
 	
-	free(result);
-
 	return ret;
 }
 
@@ -2108,8 +2001,9 @@ static int ej_wl_channel_list(int eid, webs_t wp, int argc, char_t **argv, int u
 	if (country_code == NULL || strlen(country_code) != 2) return retval;
 
 	//try getting channel list via wifi driver first
-#if defined(RTAC58U)
-	if (unit == 0 && !strncmp(nvram_safe_get("territory_code"), "CX", 2))
+#if defined(RTAC58U) || defined(RTAC59U)
+	if (unit == 0 && (!strncmp(nvram_safe_get("territory_code"), "CX/01", 5)
+		       || !strncmp(nvram_safe_get("territory_code"), "CX/05", 5)))
 		retval += websWrite(wp, "[1,2,3,4,5,6,7,8,9,10,11]");
 	else
 #endif
@@ -2247,7 +2141,7 @@ static struct nat_accel_kmod_s {
 } nat_accel_kmod[] = {
 #if defined(RTCONFIG_SOC_IPQ8064)
 	{ "ecm" },
-#elif defined(RTCONFIG_SOC_QCA9557) || defined(RTCONFIG_QCA953X) || defined(RTCONFIG_QCA956X) || defined(RTCONFIG_SOC_IPQ40XX)
+#elif defined(RTCONFIG_SOC_QCA9557) || defined(RTCONFIG_QCA953X) || defined(RTCONFIG_QCA956X) || defined(RTCONFIG_QCN550X) || defined(RTCONFIG_SOC_IPQ40XX)
 	{ "shortcut_fe" },
 #else
 #error Implement nat_accel_kmod[]

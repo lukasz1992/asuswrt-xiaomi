@@ -1,12 +1,12 @@
 
-SKU_2G_FCC  = "20180827_7615_Single_SKU_power_table_FCC.dat"
-SKU_5G_FCC  = "20180827_7615_Single_SKU_power_table_FCC.dat"
+SKU_2G_FCC  = "20181025_7615_Single_SKU_power_table_FCC.dat"
+SKU_5G_FCC  = "20181025_7615_Single_SKU_power_table_FCC.dat"
 SKU_2G_CE   = "20181008_7615_Single_SKU_power_table_CE.dat"
 SKU_5G_CE   = "20181008_7615_Single_SKU_power_table_CE.dat"
 SKU_2G_IC   = "dummy_sku.dat"
 SKU_5G_IC   = "dummy_sku.dat"
-SKU_2G_CN   = "dummy_sku.dat"
-SKU_5G_CN   = "dummy_sku.dat"
+SKU_2G_CN   = "20181025_7615_Single_SKU_power_table_SRRC.dat"
+SKU_5G_CN   = "20181025_7615_Single_SKU_power_table_SRRC.dat"
 SKU_2G_SG   = 
 SKU_5G_SG   = 
 SKU_2G_AU   = "20181008_7615_Single_SKU_power_table_AU.dat" 
@@ -15,3 +15,6 @@ SKU_2G_NCC  =
 SKU_5G_NCC  =
 SKU_2G_JP   = "dummy_sku.dat"
 SKU_5G_JP   = "dummy_sku.dat"
+SKU_2G_EAC   = "20190219-WG9116MAC44-ASU_Single_SKU_power_table-RU_EAC.dat"
+SKU_5G_EAC   = "20190219-WG9116MAC44-ASU_Single_SKU_power_table-RU_EAC.dat"
+

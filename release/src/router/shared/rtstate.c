@@ -1053,7 +1053,7 @@ char *get_default_ssid(int unit, int subunit)
 	unsigned char mac_binary[6];
 	const char *post_5g = "-1", *post_5g2 = "-2", *post_guest = "_Guest";	/* postfix for RTCONFIG_NEWSSID_REV2 case */
 
-#ifdef RTCONFIG_NEWSSID_REV2
+#if defined(RTCONFIG_NEWSSID_REV2) || defined(RTCONFIG_NEWSSID_REV4)
 	rev3 = 1;
 #endif
 
@@ -1066,7 +1066,7 @@ char *get_default_ssid(int unit, int subunit)
 #ifdef GTAC5300
 	post_5g = "";
 	post_5g2 = "_Gaming";
-#elif !defined(RTCONFIG_NEWSSID_REV2) && !defined(RTCONFIG_SINGLE_SSID)
+#elif !defined(RTCONFIG_NEWSSID_REV2) && !defined(RTCONFIG_NEWSSID_REV4) && !defined(RTCONFIG_SINGLE_SSID)
 	post_5g = "";
 #endif
 
@@ -1093,9 +1093,12 @@ char *get_default_ssid(int unit, int subunit)
 	) {
 		macp = get_2g_hwaddr();
 		ether_atoe(macp, mac_binary);
-#if defined(RTAC58U)
+#if defined(RTAC58U) || defined(RTAC59U)
 		if (!strncmp(nvram_safe_get("territory_code"), "SP", 2))
 			sprintf((char *)ssidbase, "Spirit_%02X", mac_binary[5]);
+		else if (!strncmp(nvram_safe_get("territory_code"), "CX/01", 5)
+		      || !strncmp(nvram_safe_get("territory_code"), "CX/05", 5))
+			sprintf((char *)ssidbase, "Stuff-Fibre_%02X", mac_binary[5]);
 		else
 #endif
 			sprintf((char *)ssidbase, "%s_%02X", SSID_PREFIX, mac_binary[5]);
@@ -1107,10 +1110,21 @@ char *get_default_ssid(int unit, int subunit)
 #endif
 
 	strlcpy(ssid, ssidbase, sizeof(ssid));
+
+#ifdef RTCONFIG_NEWSSID_REV4
+	if ((!subunit)
+#if defined(RTAC59U)
+		&& strncmp(nvram_safe_get("territory_code"), "CX/01", 5)
+		&& strncmp(nvram_safe_get("territory_code"), "CX/05", 5)
+#endif
+	)
+		return ssid;
+#endif
+
 #if !defined(RTCONFIG_SINGLE_SSID)	/* including RTCONFIG_NEWSSID_REV2 */
 	switch (unit) {
 	case WL_2G_BAND:
-#if defined(RTCONFIG_NEWSSID_REV2)
+#if defined(RTCONFIG_NEWSSID_REV2) || defined(RTCONFIG_NEWSSID_REV4)
 		if (band_num > 1)
 #endif
 			strlcat(ssid, "_2G", sizeof(ssid));

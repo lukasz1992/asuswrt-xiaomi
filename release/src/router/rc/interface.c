@@ -606,7 +606,7 @@ int start_vlan(void)
 	if(!nvram_match("switch_wantag", "none")&&!nvram_match("switch_wantag", "")&&!nvram_match("switch_wantag", "hinet"))
 	{
 #if defined(RTCONFIG_QCA)
-#if defined(RTCONFIG_SWITCH_RTL8370MB_PHY_QCA8033_X2)
+#if defined(RTCONFIG_SWITCH_RTL8370MB_PHY_QCA8033_X2) || defined(RTN19)
 		char *wan_base_if = "eth1";	/* lan_1, WAN interface if IPTV is enabled. */
 #else
 		char *wan_base_if = "eth0";

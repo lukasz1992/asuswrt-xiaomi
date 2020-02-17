@@ -21,6 +21,7 @@
 <script type="text/javascript" src="/client_function.js"></script>
 <script type="text/javascript" src="/validator.js"></script>
 <script type="text/javascript" src="/switcherplugin/jquery.iphone-switch.js"></script>
+<script type="text/javascript" src="/js/httpApi.js"></script>
 <style>
 .contentM_qis{
 	position:absolute;
@@ -60,6 +61,11 @@ $(document).ready(function (){
 	show_menu();
 	collect_info();
 	generate_client_table();
+	var series = productid.split("-")[0].toUpperCase();
+	if(series == "BRT")
+		httpApi.faqURL("1034970", function(url){document.getElementById("faq").href=url;});
+	else
+		$(".brt_series").remove();
 });
 
 function collect_info(){
@@ -355,6 +361,9 @@ function check_active(obj){
 									<div class="formfonttitle"><#Permission_Management#> - <#Permission_Management_RADIUS#></div>
 									<div style="margin-left:5px;margin-top:10px;margin-bottom:10px"><img src="/images/New_ui/export/line_export.png"></div>
 									<div class="formfontdesc"><#PM_RADIUS_desc#></div>
+									<div class="formfontdesc brt_series">
+										<#FAQ_Find#> : <a id="faq" href="" target="_blank" style="font-weight:bolder;text-decoration:underline;" href="" target="_blank">GO</a>
+									</div>
 									<div>
 										<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3"  class="FormTable">
 											<tr>

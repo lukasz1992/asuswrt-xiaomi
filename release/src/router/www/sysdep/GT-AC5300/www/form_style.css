@@ -2411,3 +2411,13 @@ padding-top:1px;
 	border-bottom:5px #000 solid;
 	padding:5px 10px 5px 10px;
 }
+.query_list{
+	display: none;
+	background-color: rgb(62,3,13);
+	border: 1px solid  rgb(147,7,31);
+	list-style: none;
+	width:339px; height:120px; 
+	margin:0 0 0 2px;
+	padding: 6px;position: absolute;
+	overflow-y: auto;
+}

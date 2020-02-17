@@ -73,8 +73,8 @@ if(yadns_support){
 
 function initial(){
 	show_menu();
-	//id="faq" href="https://www.asus.com/US/support/FAQ/1000906"
-	httpApi.faqURL("faq", "1000906", "https://www.asus.com", "/support/FAQ/");
+	//id="faq" href="https://www.asus.com/US/support/FAQ/1036677"
+	httpApi.faqURL("1036677", function(url){document.getElementById("faq").href=url;});
 
 	var dhcp_staticlist_row = dhcp_staticlist_array.split('&#60');
 	for(var i = 1; i < dhcp_staticlist_row.length; i += 1) {
@@ -150,7 +150,7 @@ function addRow_Group(upper){
 		document.form.dhcp_staticip_x_0.focus();
 		document.form.dhcp_staticip_x_0.select();
 		return false;
-	}else if(check_macaddr(document.form.dhcp_staticmac_x_0, check_hwaddr_flag(document.form.dhcp_staticmac_x_0)) == true &&
+	}else if(check_macaddr(document.form.dhcp_staticmac_x_0, check_hwaddr_flag(document.form.dhcp_staticmac_x_0, 'inner')) == true &&
 		 validator.validIPForm(document.form.dhcp_staticip_x_0,0) == true &&
 		 validate_dhcp_range(document.form.dhcp_staticip_x_0) == true){
 		

@@ -86,16 +86,25 @@ typedef struct svr_runopts {
 	int ipv6;
 	*/
 
-#ifdef DO_MOTD
+#if DO_MOTD
 	/* whether to print the MOTD */
 	int domotd;
 #endif
 
 	int norootlogin;
 
+#ifdef HAVE_GETGROUPLIST
+	/* restrict_group is the group name if group restriction was enabled, 
+	NULL otherwise */
+	char *restrict_group;
+	/* restrict_group_gid is only valid if restrict_group is set */
+	gid_t restrict_group_gid;
+#endif
+
 	int noauthpass;
 	int norootpass;
 	int allowblankpass;
+	unsigned int maxauthtries;
 
 #if DROPBEAR_SVR_REMOTETCPFWD
 	int noremotetcp;
@@ -127,7 +136,7 @@ typedef struct cli_runopts {
 
 	char *progname;
 	char *remotehost;
-	char *remoteport;
+	const char *remoteport;
 
 	char *own_user;
 	char *username;
@@ -166,6 +175,8 @@ typedef struct cli_runopts {
 #if DROPBEAR_CLI_PROXYCMD
 	char *proxycmd;
 #endif
+	char *bind_address;
+	char *bind_port;
 } cli_runopts;
 
 extern cli_runopts cli_opts;

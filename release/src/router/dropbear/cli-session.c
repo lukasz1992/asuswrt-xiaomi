@@ -81,7 +81,7 @@ static const packettype cli_packettypes[] = {
 	{SSH_MSG_REQUEST_SUCCESS, ignore_recv_response},
 	{SSH_MSG_REQUEST_FAILURE, ignore_recv_response},
 #endif
-	{0, 0} /* End */
+	{0, NULL} /* End */
 };
 
 static const struct ChanType *cli_chantypes[] = {
@@ -118,7 +118,7 @@ void cli_session(int sock_in, int sock_out, struct dropbear_progress_connection 
 	cli_session_init(proxy_cmd_pid);
 
 	/* Ready to go */
-	sessinitdone = 1;
+	ses.init_done = 1;
 
 	/* Exchange identification */
 	send_session_identification();
@@ -165,13 +165,6 @@ static void cli_session_init(pid_t proxy_cmd_pid) {
 	cli_ses.lastprivkey = NULL;
 	cli_ses.lastauthtype = 0;
 
-#if DROPBEAR_NONE_CIPHER
-	cli_ses.cipher_none_after_auth = get_algo_usable(sshciphers, "none");
-	set_algo_usable(sshciphers, "none", 0);
-#else
-	cli_ses.cipher_none_after_auth = 0;
-#endif
-
 	/* For printing "remote host closed" for the user */
 	ses.remoteclosed = cli_remoteclosed;
 
@@ -188,7 +181,7 @@ static void cli_session_init(pid_t proxy_cmd_pid) {
 
 }
 
-static void send_msg_service_request(char* servicename) {
+static void send_msg_service_request(const char* servicename) {
 
 	TRACE(("enter send_msg_service_request: servicename='%s'", servicename))
 
@@ -275,19 +268,11 @@ static void cli_sessionloop() {
 			}
 #endif
 
-#if DROPBEAR_NONE_CIPHER
-			if (cli_ses.cipher_none_after_auth)
-			{
-				set_algo_usable(sshciphers, "none", 1);
-				send_msg_kexinit();
-			}
-#endif
-
 			if (cli_opts.backgrounded) {
 				int devnull;
 				/* keeping stdin open steals input from the terminal and
 				   is confusing, though stdout/stderr could be useful. */
-				devnull = open(_PATH_DEVNULL, O_RDONLY);
+				devnull = open(DROPBEAR_PATH_DEVNULL, O_RDONLY);
 				if (devnull < 0) {
 					dropbear_exit("Opening /dev/null: %d %s",
 							errno, strerror(errno));
@@ -353,7 +338,7 @@ void kill_proxy_command(void) {
 
 static void cli_session_cleanup(void) {
 
-	if (!sessinitdone) {
+	if (!ses.init_done) {
 		return;
 	}
 
@@ -371,6 +356,7 @@ static void cli_session_cleanup(void) {
 }
 
 static void cli_finished() {
+	TRACE(("cli_finised()"))
 
 	session_cleanup();
 	fprintf(stderr, "Connection to %s@%s:%s closed.\n", cli_opts.username,

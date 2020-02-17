@@ -21,6 +21,7 @@
 <script type="text/javascript" src="/js/jquery.js"></script>
 <script type="text/javascript" src="/switcherplugin/jquery.iphone-switch.js"></script>
 <script type="text/javascript" src="/form.js"></script>
+<script type="text/javascript" src="js/oauth.js"></script>
 <style type="text/css">
 /* folder tree */
 .mask_bg{
@@ -204,6 +205,11 @@ function initial(){
 			setTimeout("showInvitation(getflag);", 300);
 		}
 	}
+	$("#authBtn").click(
+		function() {
+			oauth.dropbox(onDropBoxLogin);
+		}
+	);
 }
 
 // Invitation
@@ -606,7 +612,6 @@ function getDropBoxClientName(token, uid){
 }
 
 var updateCloudStatus_counter = 0;
-var captcha_flag = 0;
 function updateCloudStatus(){
     $.ajax({
     	url: '/cloud_status.asp',
@@ -654,20 +659,6 @@ function updateCloudStatus(){
 							_cloud_msg += "<span style=\\'word-break:break-all;\\'>" + decodeURIComponentSafe(cloud_obj) + "</span>";
 						}
 						else if(cloud_msg){
-							if(cloud_msg == "Need to enter the CAPTCHA"){
-								if(captcha_flag == 0){
-									for(var i = 0; i < cloud_synclist_all.length; i += 1) {
-										if(cloud_synclist_all[i][0] == 0){ //ASUS WebStorage
-											showAddTable(0, i);
-											editRule = i + 1;
-										}
-									}
-									document.getElementById('captcha_tr').style.display = "";															
-									autoFocus('captcha_field');	
-									document.getElementById('captcha_iframe').src = CAPTCHA_URL;
-									captcha_flag = 1;
-								}
-							}
 							_cloud_msg += cloud_msg;
 						}
 						else{
@@ -1083,12 +1074,8 @@ function applyRule(){
 			newRule.push(document.form.cloud_username.value);
 			newRule.push(document.form.cloud_password.value);
 
-			if(document.form.captcha_field.value == "" && document.form.security_code_field.value == ""){
-				newRule.push("none");
-			}
-			else{
-				newRule.push(document.form.security_code_field.value+'#'+document.form.captcha_field.value);
-			}
+			//OPT Authentication#Captcha
+			newRule.push("none");
 
 			newRule.push(document.form.cloud_rule.value);
 			newRule.push("/tmp"+document.form.cloud_dir.value);
@@ -1566,8 +1553,6 @@ function change_service(obj){
 		document.getElementById('ftp_port').parentNode.parentNode.style.display = "none";
 		document.getElementById('ftp_root_path').parentNode.parentNode.style.display = "none";
 		//document.getElementById('cloud_rule').parentNode.parentNode.style.display = "";
-		document.form.security_code_field.disabled = false;
-		document.getElementById("security_code_tr").style.display = "";
 		document.getElementById("cloud_username_tr").style.display = "";
 		document.getElementById("cloud_password_tr").style.display = "";
 		document.getElementById("applyBtn").style.display = "";
@@ -1587,8 +1572,6 @@ function change_service(obj){
 		document.getElementById('ftp_port').parentNode.parentNode.style.display = "none";
 		document.getElementById('ftp_root_path').parentNode.parentNode.style.display = "none";
 		//document.getElementById('cloud_rule').parentNode.parentNode.style.display = "";
-		document.form.security_code_field.disabled = true;
-		document.getElementById("security_code_tr").style.display = "none";
 		document.getElementById("cloud_username_tr").style.display = "none";
 		document.getElementById("cloud_password_tr").style.display = "none";
 		document.getElementById("applyBtn").style.display = "none";
@@ -1608,8 +1591,6 @@ function change_service(obj){
 		document.getElementById('ftp_port').parentNode.parentNode.style.display = "";
 		document.getElementById('ftp_root_path').parentNode.parentNode.style.display = "";
 		//document.getElementById('cloud_rule').parentNode.parentNode.style.display = "none";
-		document.form.security_code_field.disabled = true;
-		document.getElementById("security_code_tr").style.display = "none";
 		document.getElementById("cloud_username_tr").style.display = "";
 		document.getElementById("cloud_password_tr").style.display = "";
 		document.getElementById("applyBtn").style.display = "";
@@ -1628,8 +1609,6 @@ function change_service(obj){
 		document.getElementById('ftp_url').parentNode.parentNode.style.display = "none";
 		document.getElementById('ftp_port').parentNode.parentNode.style.display = "none";
 		document.getElementById('ftp_root_path').parentNode.parentNode.style.display = "none";
-		document.form.security_code_field.disabled = false;
-		document.getElementById("security_code_tr").style.display = "none";
 		document.getElementById("cloud_username_tr").style.display = "";
 		document.getElementById("cloud_password_tr").style.display = "";
 		document.getElementById("applyBtn").style.display = "";
@@ -1652,8 +1631,6 @@ function change_service(obj){
 		//document.getElementById('cloud_rule').parentNode.parentNode.style.display = "none";
 		document.form.cloud_rule.options[1] = new Option("USB Disk A to B", 1, false, false);
 		document.form.cloud_rule.options[2] = new Option("USB Disk B to A", 2, false, false);
-		document.form.security_code_field.disabled = true;
-		document.getElementById("security_code_tr").style.display = "none";
 		document.getElementById("cloud_username_tr").style.display = "none";
 		document.getElementById("cloud_password_tr").style.display = "none";
 		document.getElementById("applyBtn").style.display = "";
@@ -1664,15 +1641,15 @@ function change_service(obj){
 	var ss_support = '<% nvram_get("ss_support"); %>';	
 	$("#povider_tr").hover(
 		function(){     // for mouse enter event
-			if(isSupport(ss_support, "asuswebstorage"))
+			if(smart_sync_support(ss_support, "asuswebstorage"))
 				$('#WebStorage').parent().css('display','block');
-			if(isSupport(ss_support, "dropbox"))
+			if(smart_sync_support(ss_support, "dropbox"))
 				$('#Dropbox').parent().css('display','block');
-			if(isSupport(ss_support, "ftp"))
+			if(smart_sync_support(ss_support, "ftp"))
 				$('#ftp_server').parent().css('display','block');
-			if(isSupport(ss_support, "samba"))
+			if(smart_sync_support(ss_support, "samba"))
 				$('#Samba').parent().css('display','block');
-			if(isSupport(ss_support, "usb"))
+			if(smart_sync_support(ss_support, "usb"))
 				$('#Usb').parent().css('display','block');
 
 		},
@@ -1687,98 +1664,15 @@ function change_service(obj){
 }
 
 // parsing ss_support (Smart Sync)
-function isSupport(_nvramvalue, _ptn){
+function smart_sync_support(_nvramvalue, _ptn){
 	return (_nvramvalue.search(_ptn) == -1) ? false : true;
 }
 
-var captcha_flag = 0;
-function refresh_captcha(){
-	if(captcha_flag == 0){
-		var captcha_url = 'http://sg03.asuswebstorage.com/member/captcha/?userid='+document.form.cloud_username.value;
-		document.getElementById('captcha_iframe').setAttribute("src", captcha_url);
-	}
-	else{
-		document.getElementById('captcha_iframe').src = document.getElementById('captcha_iframe').src;
-	}
-}
-
-//- Login dropbox
-function dropbox_login(){
-	var base64Encode = function(input) {
-		var keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-		var output = "";
-		var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-		var i = 0;
-		var utf8_encode = function(string) {
-			string = string.replace(/\r\n/g,"\n");
-			var utftext = "";
-			for (var n = 0; n < string.length; n++) {
-				var c = string.charCodeAt(n);
-				if (c < 128) {
-					utftext += String.fromCharCode(c);
-				}
-				else if((c > 127) && (c < 2048)) {
-					utftext += String.fromCharCode((c >> 6) | 192);
-					utftext += String.fromCharCode((c & 63) | 128);
-				}
-				else {
-					utftext += String.fromCharCode((c >> 12) | 224);
-					utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-					utftext += String.fromCharCode((c & 63) | 128);
-				}
-			}
-			return utftext;
-		};
-		input = utf8_encode(input);
-		while (i < input.length) {
-			chr1 = input.charCodeAt(i++);
-			chr2 = input.charCodeAt(i++);
-			chr3 = input.charCodeAt(i++);
-			enc1 = chr1 >> 2;
-			enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-			enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-			enc4 = chr3 & 63;
-			if (isNaN(chr2)) {
-				enc3 = enc4 = 64;
-			}
-			else if (isNaN(chr3)) {
-				enc4 = 64;
-			}
-			output = output + 
-			keyStr.charAt(enc1) + keyStr.charAt(enc2) + 
-			keyStr.charAt(enc3) + keyStr.charAt(enc4);
-		}
-		return output;
-	};
-	var b = window.location.href.indexOf("/",window.location.protocol.length+2);
-	var app_key = "qah4ku73k3qmigj";
-	var redirect_url = "https://oauth.asus.com/aicloud/dropbox.html";			
-	var callback_url = window.location.href.slice(0,b) + "/dropbox_callback.htm,onDropBoxLogin"; 
-
-	//workaround for encode issue, if the original string is not a multiple of 6, the base64 encode result will display = at the end
-	//Then Dropbox will encode the url twice, the char = will become %3D, and callback oauth.asus.com will cause url not correct.
-	//So need add not use char at callback_url for a multiple of 6
-	var remainder = callback_url.length % 6;
-	if(remainder != 0) {
-		var not_use = "";
-		for(var i = remainder; i < 6; i += 1) {
-			not_use += ",";
-		}
-		callback_url += not_use; 
-	}
-	var url = "https://www.dropbox.com/oauth2/authorize?response_type=token&client_id=" + app_key;
-	url += "&redirect_uri=" + encodeURIComponent(redirect_url);
-	url += "&state=base64_" + base64Encode(callback_url);
-	url += "&force_reapprove=true&force_reauthentication=true";
-			
-	window.open(url,"mywindow","menubar=1,resizable=0,width=630,height=550");
-}
-
 //- Login success callback function
-function onDropBoxLogin(token, uid){
-	if(token.search("error") == -1){
-		document.form.cloud_username.value = uid;
-		document.form.cloud_password.value = token;
+function onDropBoxLogin(_parm){
+	if(_parm.token.search("error") == -1){
+		document.form.cloud_username.value = _parm.uid;
+		document.form.cloud_password.value = _parm.token;
 		document.getElementById("applyBtn").style.display = "";
 		document.getElementById("authBtn").style.display = "none";
 		document.getElementById("authHint").style.display = "";
@@ -2016,34 +1910,12 @@ function onDropBoxLogin(token, uid){
 								</select>			
 							</td>
 						  </tr>
-
-						  <tr id="security_code_tr">
-							<th width="30%" style="font-family: Calibri;font-weight: bolder;">
-								<#routerSync_Security_code#>
-							</th>
-							<td>
-								<div style="color:#FC0;"><input id="security_code_field" name="security_code_field" type="text" maxlength="6" class="input_32_table" style="height: 23px;width:100px;margin-right:10px;" autocorrect="off" autocapitalize="off"><#OTP_Auth#></div>
-							</td>
-						  </tr>
-						  <tr height="45px;" id="captcha_tr" style="display:none;">
-							<th width="30%" style="font-family: Calibri;font-weight: bolder;">
-								<#Captcha#>
-							</th>			
-							<td style="height:85px;">
-								<div style="height:25px;"><input id="captcha_field" name="captcha_field" type="text" maxlength="6" class="input_32_table" style="height: 23px;width:100px;margin-top:8px;" autocomplete="off" autocorrect="off" autocapitalize="off"></div>
-								<div id="captcha_hint" style="color:#FC0;height:25px;margin-top:10px;"><#Captcha_note#></div>
-								<div>
-									<iframe id="captcha_iframe" frameborder="0" scrolling="no" src="" style="width:230px;height:80px;*width:210px;*height:87px;margin:-60px 0 0 160px;*margin-left:165px;"></iframe>
-								</div>
-								<div style="color:#FC0;text-decoration:underline;height:35px;margin:-35px 0px 0px 380px;cursor:pointer" onclick="refresh_captcha();"><#CTL_refresh#></div>   
-							</td>
-						  </tr>
 						</table>
 							<div class="apply_gen pop_div_bg" style="margin-top:20px;margin-bottom:10px;display:none;" id="applyDiv">
 	  					<input name="button" type="button" class="button_gen" onclick="showAddTable();" value="<#CTL_Cancel#>"/>
-	  					<input id="applyBtn" name="button" type="button" class="button_gen" onclick="applyRule()" value="<#CTL_apply#>"/>
-	  					<input id="authBtn" name="button" type="button" class="button_gen" onclick="dropbox_login()" value="Authenticate"/>
-	  					<span id="authHint" style="color:#FC0;display:none">Authenticated!</span>
+						<input id="applyBtn" name="button" type="button" class="button_gen" onclick="applyRule()" value="<#CTL_apply#>"/>
+						<input id="authBtn" name="button" type="button" class="button_gen" value="Authenticate"/>
+						<span id="authHint" style="color:#FC0;display:none"><#Authenticated#></span>
 	  				</div>
 </div>
 <table border="0" align="center" cellpadding="0" cellspacing="0" class="content">

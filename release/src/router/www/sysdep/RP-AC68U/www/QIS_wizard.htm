@@ -61,6 +61,7 @@ body{
 		width:250px;
 		color:#007AFE;
 		text-align:right;
+		word-break: keep-all;
 	}
 
 	.wireless_field{
@@ -241,7 +242,7 @@ var panel = '<div id="navigation" data-role="panel" data-display="overlay" data-
 	panel += '<div id="nav_mb" style="font-family:HelveticaNeueW10-45Ligh,Helvetica,Arial;font-size:1.5em;color:#FFF;line-height:28px;padding:26px 10px;border-bottom:1px solid #4C545E;cursor:pointer" onclick="operation_mode_switch(\'MB\')"><#OP_MB_item#></div>';
 	panel += '<div id="nav_express_5g" style="font-family:HelveticaNeueW10-45Ligh,Helvetica,Arial;font-size:1.5em;color:#FFF;line-height:28px;padding:26px 10px;border-bottom:1px solid #4C545E;cursor:pointer" onclick="operation_mode_switch(\'express_5g\')"><#OP_RE5G_item#><br>(<#QIS_RP_desc11#>)</div>';
 	panel += '<div id="nav_express_2g" style="font-family:HelveticaNeueW10-45Ligh,Helvetica,Arial;font-size:1.5em;color:#FFF;line-height:28px;padding:26px 10px;border-bottom:1px solid #4C545E;cursor:pointer" onclick="operation_mode_switch(\'express_2g\')"><#OP_RE2G_item#><br>(<#QIS_RP_desc12#>)</div>';
-	panel += '<div style="font-family:HelveticaNeue-Medium,Arial;font-weight:bold;font-size:1.375em;color:#A8CBF4;line-height:20px;padding:20px 0 19px 0;border-bottom:1px solid #4C545E;margin-top:14px;"><#menu5_4_3#></div>';
+	panel += '<div style="font-family:HelveticaNeue-Medium,Arial;font-weight:bold;font-size:1.375em;color:#A8CBF4;line-height:20px;padding:20px 0 19px 0;border-bottom:1px solid #4C545E;margin-top:14px;"><#feedback_setting_file#></div>';
 	if(!isDefault)
 		panel += '<div id="nav_back" style="font-family:HelveticaNeueW10-45Ligh,Helvetica,Arial;font-size:1.5em;color:#FFF;line-height:28px;padding:26px 10px;border-bottom:1px solid #4C545E;cursor:pointer" onclick="back_to_home();"><#CTL_Setting#></div>';
 	panel += '<div><label for="upload_setting_profile" style="width:212px;height:62px;background-color:#DC6263;font-family:HelveticaNeueW10-45Ligh,Helvetica W01 Light,Arial;font-size:1.625em;color:#FFF;border-radius:4px;text-align:center;line-height:62px;margin:28px 0 14px 0;"><#CTL_upload#></label></div>';
@@ -1202,7 +1203,7 @@ function internetCheck(){
 
 	$("#summary_try_button").show();
 	var lang_alise = get_supportsite_lang();
-	url = "http://www.asus.com" + lang_alise + "/Networking/";
+	url = "https://www.asus.com" + lang_alise + "/Networking/";
 	setTimeout('top.location.href =" ' + url + '"', 10000);
 }
 
@@ -2020,6 +2021,13 @@ function validForm(){
 		return false;
 	}
 
+	if(httpPassInput.value.length > 16){
+		alert("<#JS_max_password#>");
+		httpPassInput.focus();
+		httpPassInput.select();
+		return false;
+	}
+
 	if(!validator.string(httpPassInput)){
 		httpPassInput.focus();
 		httpPassInput.select();
@@ -2123,7 +2131,7 @@ function genOptions(){
 		<div style="text-align:center;margin:31px 0">
 			<div  id="welcome_button" style="cursor:pointer;width:480px;height:auto;border-radius:4px;color:#FFF;background-color:#007AFF;border:1px solid #007AFF;font-size:2.25em;margin:auto;line-height:88px;" onclick="start_welcome();"><#OP_RE_item#></div>
 		</div>
-		<div style="color:#FFF;font-size:18px;text-align:center;"><a href="#navigation"><#menu5#></a></div>
+		<div style="color:#FFF;font-size:22px;text-align:center;"><a href="#navigation"><#menu5#></a></div>
 		<div style="visibility: hidden" class="led_intro loading"></div>
 	</div>
 </div>
@@ -2175,7 +2183,7 @@ function genOptions(){
 					<div class="icon_eye_open" style="width:32px;height:32px;display:table-cell;padding-right:110px;" onclick="pass_checked('http_passwd', this)"></div>
 				</div>
 				<div style="margin:22px 55px 41px 30px">
-					<input id="http_passwd" type="text" maxlength="64" style="padding-left:18px;font-family:HelveticaNeueW10-45Ligh,Helvetica,Arial;font-size:1.875em;color:#DBDBDB;" value="" data-clear-btn="true"></input>
+					<input id="http_passwd" type="text" maxlength="17" style="padding-left:18px;font-family:HelveticaNeueW10-45Ligh,Helvetica,Arial;font-size:1.875em;color:#DBDBDB;" value="" data-clear-btn="true"></input>
 				</div>
 			</div>
 			<div style="margin-left:38px;margin-bottom:150px;">
@@ -2183,7 +2191,7 @@ function genOptions(){
 					<div style="HelveticaNeueLT45_Light_regular,Helvetica_regular,Arial;font-size:1.5em;color:#B8D8FF;display:table-cell"><#PASS_retype#></div>
 				</div>
 				<div style="margin:22px 55px 41px 30px">
-					<input id="http_passwd_confirm" type="text" maxlength="64" style="padding-left:18px;font-family:HelveticaNeueW10-45Ligh,Helvetica,Arial;font-size:1.875em;color:#DBDBDB;" value="" data-clear-btn="true"></input>
+					<input id="http_passwd_confirm" type="text" maxlength="17" style="padding-left:18px;font-family:HelveticaNeueW10-45Ligh,Helvetica,Arial;font-size:1.875em;color:#DBDBDB;" value="" data-clear-btn="true"></input>
 				</div>
 			</div>
 
@@ -2490,7 +2498,7 @@ function genOptions(){
 	</div>
 
 	<div class="desktop_left_field">
-		<div style="font-size:60px"><#menu5_1#></div>
+		<div style="font-size:38px"><#menu5_1#></div>
 		<div style="font-size:32px"><#Settings#></div>
 	</div>
 	<div class="table_td">

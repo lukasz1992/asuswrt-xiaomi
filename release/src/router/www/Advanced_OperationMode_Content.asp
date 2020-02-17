@@ -120,6 +120,7 @@ function initial(){
 	var gen_operation_mode = function(_jsonArray, _sw_mode) {
 		var $spanHtml = $('<span>');
 		$spanHtml.attr({"id" : _jsonArray["span"]["id"]});
+		$spanHtml.css("margin-right", "10px");
 		var $inputHtml = $('<input>');
 		$inputHtml.attr({ "type" : "radio", "id" : _jsonArray["input"]["id"], "name" :  _jsonArray["input"]["name"], "value" : _jsonArray["input"]["value"] });
 		$inputHtml.addClass("input");
@@ -148,7 +149,7 @@ function initial(){
 				"value" : "1"
 			},
 			"label" : {
-				"text" : (amesh_support) ? "Wireless router mode / AiMesh Router mode (Default)"/* untranslated string */ : "<#OP_GW_item#>"
+				"text" : (amesh_support) ? "<#AiMesh_GW_item#>" : "<#OP_GW_item#>"
 			},
 			"mode" : "1",
 			"express" : "0"
@@ -163,7 +164,7 @@ function initial(){
 				"value" : "3"
 			},
 			"label" : {
-				"text" : (amesh_support) ? "Access Point(AP) mode / AiMesh Router in AP mode"/* untranslated string */ : "<#OP_AP_item#>"
+				"text" : (amesh_support) ? "<#AiMesh_AP_item#>" : "<#OP_AP_item#>"
 			},
 			"mode" : "3",
 			"express" : "0"
@@ -193,7 +194,7 @@ function initial(){
 				"value" : "2"
 			},
 			"label" : {
-				"text" : "Express Way 2.4 GHz" /* untranslated string */
+				"text" : "<#OP_RE2G_item#>"
 			},
 			"mode" : "2",
 			"express" : "1"
@@ -208,7 +209,7 @@ function initial(){
 				"value" : "2"
 			},
 			"label" : {
-				"text" : "Express Way 5 GHz" /* untranslated string */
+				"text" : "<#OP_RE5G_item#>"
 			},
 			"mode" : "2",
 			"express" : "2"
@@ -238,7 +239,7 @@ function initial(){
 				"value" : "5"
 			},
 			"label" : {
-				"text" : "AiMesh node" /* untranslated string */
+				"text" : "<#AiMesh_Node#>"
 			},
 			"mode" : "5",
 			"express" : "0"
@@ -252,24 +253,19 @@ function initial(){
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["repeaterMode"], sw_mode_orig));
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["rp_express_2g"], sw_mode_orig));
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["rp_express_5g"], sw_mode_orig));
-		$("#operation_mode_bg").append("&nbsp;&nbsp;");
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["mbMode"], sw_mode_orig));
 		$("#operation_mode_bg").append("<br>");
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["AiMeshMode"], sw_mode_orig));
 	}
 	else {
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["routerMode"], sw_mode_orig));
-		$("#operation_mode_bg").append("&nbsp;&nbsp;");
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["repeaterMode"], sw_mode_orig));
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["rp_express_2g"], sw_mode_orig));
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["rp_express_5g"], sw_mode_orig));
-		$("#operation_mode_bg").append("&nbsp;&nbsp;");
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["apMode"], sw_mode_orig));
-		$("#operation_mode_bg").append("&nbsp;&nbsp;");
 		$("#operation_mode_bg").append(gen_operation_mode(operation_array["mbMode"], sw_mode_orig));
 	}
 	setScenerion(sw_mode_orig, document.form.wlc_express.value);
-	Senario_shift();
 
 	if(downsize_4m_support || downsize_8m_support)
 		document.getElementById("Senario").style.display = "none";
@@ -295,13 +291,6 @@ function initial(){
 		document.getElementById("mbMode").style.display = "none";
 		document.getElementById("sw_mode4_radio").disabled = true;
 	}
-}
-
-function Senario_shift(){
-	var isIE = navigator.userAgent.search("MSIE") > -1; 
-	if(isIE)
-		document.getElementById("Senario").style.width = "700px";
-		document.getElementById("Senario").style.marginLeft = "5px";
 }
 
 function restore_wl_config(prefix){
@@ -499,60 +488,61 @@ function applyRule(){
 		else
 			document.form.wl0_auth_mode_x.value = "open";
 
-		if(band5g_support){
-			inputCtrl(document.form.wl1_ssid,1);
-			inputCtrl(document.form.wl1_crypto,1);
-			inputCtrl(document.form.wl1_wpa_psk,1);
-			inputCtrl(document.form.wl1_auth_mode_x,1);
-			if(!validator.stringSSID(document.form.wl1_ssid)){   //validate 5G SSID
-				document.form.wl1_ssid.focus();
-				return false;
-			}
-			
-			if(document.form.wl1_wpa_psk.value != ""){
-				if(is_KR_sku){
-					if(!validator.psk_KR(document.form.wl1_wpa_psk))           //validate 2.4G WPA2 key
-						return false;
+		if(document.form.smart_connect_x.value != "1"){
+			if(band5g_support){
+				inputCtrl(document.form.wl1_ssid,1);
+				inputCtrl(document.form.wl1_crypto,1);
+				inputCtrl(document.form.wl1_wpa_psk,1);
+				inputCtrl(document.form.wl1_auth_mode_x,1);
+				if(!validator.stringSSID(document.form.wl1_ssid)){ //validate 5G SSID
+					document.form.wl1_ssid.focus();
+					return false;
 				}
-				else{
-					if(!validator.psk(document.form.wl1_wpa_psk))	//validate 5G WPA2 key
-						return false;
-				}
-			
-				document.form.wl1_auth_mode_x.value = "psk2";
-				document.form.wl1_crypto.value = "aes";
-			}
-			else
-				document.form.wl1_auth_mode_x.value = "open";
-		}
 
-		if(wl_info.band5g_2_support){
-			inputCtrl(document.form.wl2_ssid,1);
-			inputCtrl(document.form.wl2_crypto,1);
-			inputCtrl(document.form.wl2_wpa_psk,1);
-			inputCtrl(document.form.wl2_auth_mode_x,1);
-			if(!validator.stringSSID(document.form.wl2_ssid)){   //validate 5G-2 SSID
-				document.form.wl2_ssid.focus();
-				return false;
-			}
-			
-			if(document.form.wl2_wpa_psk.value != ""){
-				if(is_KR_sku){
-					if(!validator.psk_KR(document.form.wl2_wpa_psk))           //validate 2.4G WPA2 key
-						return false;
-				}
-				else{
-					if(!validator.psk(document.form.wl2_wpa_psk))	//validate 5G-2 WPA2 key
-						return false;
-				}			
+				if(document.form.wl1_wpa_psk.value != ""){
+					if(is_KR_sku){
+						if(!validator.psk_KR(document.form.wl1_wpa_psk)) //validate 2.4G WPA2 key
+							return false;
+					}
+					else{
+						if(!validator.psk(document.form.wl1_wpa_psk)) //validate 5G WPA2 key
+							return false;
+					}
 
-				document.form.wl1_auth_mode_x.value = "psk2";
-				document.form.wl1_crypto.value = "aes";
+					document.form.wl1_auth_mode_x.value = "psk2";
+					document.form.wl1_crypto.value = "aes";
+				}
+				else
+					document.form.wl1_auth_mode_x.value = "open";
 			}
-			else
-				document.form.wl1_auth_mode_x.value = "open";
+
+			if(wl_info.band5g_2_support){
+				inputCtrl(document.form.wl2_ssid,1);
+				inputCtrl(document.form.wl2_crypto,1);
+				inputCtrl(document.form.wl2_wpa_psk,1);
+				inputCtrl(document.form.wl2_auth_mode_x,1);
+				if(!validator.stringSSID(document.form.wl2_ssid)){ //validate 5G-2 SSID
+					document.form.wl2_ssid.focus();
+					return false;
+				}
+
+				if(document.form.wl2_wpa_psk.value != ""){
+					if(is_KR_sku){
+						if(!validator.psk_KR(document.form.wl2_wpa_psk)) //validate 2.4G WPA2 key
+							return false;
+					}
+					else{
+						if(!validator.psk(document.form.wl2_wpa_psk)) //validate 5G-2 WPA2 key
+							return false;
+					}
+
+					document.form.wl1_auth_mode_x.value = "psk2";
+					document.form.wl1_crypto.value = "aes";
+				}
+				else
+					document.form.wl1_auth_mode_x.value = "open";
+			}
 		}
-			
 	}
 
 	showLoading();	
@@ -590,14 +580,12 @@ function setScenerion(mode, express){
 		if(express == 1){	//Express Way 2.4 GHz
 			$("#sw_mode2_0_radio").prop('checked', true);
 			document.form.wlc_express.value = 1;
-			//untranslated string
-			$("#mode_desc").html("In Express Way-2.4GHz mode, <#Web_Title2#> wireless connect to an existing 2.4 GHz WiFi channel and extend the wireless coverage by 5 GHz WiFi channel only.<br/><span style=\"color:#FC0\"><#deviceDiscorvy2#></span>");
+			$("#mode_desc").html("<#OP_RE2G_desc#><br/><span style=\"color:#FC0\"><#deviceDiscorvy2#></span>");
 		}
 		else if(express == 2){	//Express Way 5 GHz
 			$("#sw_mode2_1_radio").prop('checked', true);
 			document.form.wlc_express.value = 2;
-			//untranslated string
-			$("#mode_desc").html("In Express Way-5GHz mode, <#Web_Title2#> wireless connect to an existing 5 GHz WiFi channel and extend the wireless coverage by 2.4 GHz WiFi channel only. (Your router must support 5GHz WiFi channel.)<br/><span style=\"color:#FC0\"><#deviceDiscorvy2#></span>");
+			$("#mode_desc").html("<#OP_RE5G_desc#><br/><span style=\"color:#FC0\"><#deviceDiscorvy2#></span>");
 		}	
 		else{		// Repeater
 			$("#sw_mode2_radio").prop('checked', true);
@@ -619,11 +607,11 @@ function setScenerion(mode, express){
 		}else{*/
 			var desc = "";
 			if(amesh_support) {
-				desc += "AiMesh Router in AP mode which connects to a wireless router through an Ethernet cable to extend the wireless signal coverage to other network clients. In this mode, the firewall, IP sharing, and NAT functions are disabled by default.";/* untranslated */
+				desc += "<#AiMesh_AP_desc#>";
 				desc += "<br>";
-				desc += "You can add AiMesh node to form an AiMesh WiFi system to provide extreme WiFi coverage."/* untranslated */
+				desc += "<#AiMesh_Node_Add#>";
 				desc += "<br>";
-				desc += "<span style=\"color:#FC0\">AiMesh Router in AP mode, the DHCP-assigned IP address changes. Install and use the <a href=\"http://dlcdnet.asus.com/pub/ASUS/LiveUpdate/Release/Wireless/Discovery.zip\" target=\"_blank\" style=\"font-family:Lucida Console;text-decoration:underline;color:#FC0;\">Device Discovery Utility</a> in order to detect the wireless router's IP address.</span>";
+				desc += "<span style=\"color:#FC0\"><#AiMesh_deviceDiscorvy3#></span>";
 			}
 			else
 				desc = "<#OP_AP_desc#><br/><span style=\"color:#FC0\"><#deviceDiscorvy3#></span>";
@@ -662,12 +650,12 @@ function setScenerion(mode, express){
 	}
 	else if(mode == '5') {
 		document.form.sw_mode.value = 5;
-		$("#Senario").css({"height": "400px", "background": "url(/images/New_ui/amesh/house_final_dea.png) center no-repeat", "margin-bottom": "30px", "margin-left": "30px"});
-		var desc = "You can set this router to be an AiMesh node to extend existing AiMesh router WiFi coverage.";/* untranslated */
+		$("#Senario").css({"height": "400px", "background": "url(/images/New_ui/amesh/house_final_dea.png) center no-repeat", "margin": "auto", "margin-bottom": "30px"});
+		var desc = "<#AiMesh_Node_desc#>";
 		desc += "<br>";
-		desc += "1. By factory reset, this router will be available to be joined to existing AiMesh network.";/* untranslated */
+		desc += "1. <#AiMesh_Node_desc1#>";
 		desc += "<br>";
-		desc += "2. Please go to the AiMesh setting page of your existing router to add AiMesh node.";/* untranslated */
+		desc += "2. <#AiMesh_Node_desc2#>";
 		$("#mode_desc").html(desc);
 		$("input[name=sw_mode_radio][value=5]").prop('checked', true);
 	}
@@ -681,9 +669,9 @@ function setScenerion(mode, express){
 			$("#Senario").css({"height": "", "background": "url(/images/New_ui/rt.jpg) center no-repeat", "margin-bottom": "30px"});
 		var desc = "";
 		if(amesh_support) {
-			desc += "AiMesh Router mode is a traditional mode with AiMesh functionality, which connects to the Internet via PPPoE, DHCP, PPTP, L2TP, or Static IP and shares the wireless network to LAN clients or devices. In this mode, NAT, firewall, and DHCP server are enabled by default. UPnP and Dynamic DNS are supported for SOHO and home users. Select this mode if you are a first-time user or you are not currently using any wired/wireless routers.";/* untranslated */
+			desc += "<#AiMesh_GW_desc#>";
 			desc += "<br>";
-			desc += "You can add AiMesh node to form an AiMesh WiFi system to provide extreme WiFi coverage."/* untranslated */
+			desc += "<#AiMesh_Node_Add#>";
 		}
 		else
 			desc = "<#OP_GW_desc#>";

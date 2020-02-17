@@ -211,17 +211,18 @@ int mtd_unlock_erase_main(int argc, char *argv[])
 int asusimg2rtkimg(char *src_name)
 {
 		FILE *pSrcFile = NULL, *pDstFile = NULL;
+		int pDstFile_fd = -1;
 		unsigned char buf[4096] = {0};
-		long filesize, kernelsize;
+		long filesize, kernelsize, write_total_size = 0;
 		int first_read_kernel = 1, first_read_root = 1, last_read_kernel = 0, count;
 
 		pSrcFile = fopen(src_name, "r");
-		pDstFile = fopen("/tmp/linux.trx.tmp", "w");
-		if (pSrcFile && pDstFile) {
+		pDstFile = fopen(src_name, "r+"); // If using same file, it cannot need 2x firmware_size free memory.
+		pDstFile_fd = fileno(pDstFile);
+		if (pSrcFile && pDstFile && pDstFile_fd != -1) {
 			/* Get image size */
 			fseek(pSrcFile, 0, SEEK_END);
 			filesize = ftell(pSrcFile);
-
 			/* Skip ASUS trx header */
 			fseek(pSrcFile, 64, SEEK_SET);
 			filesize -= 64;
@@ -245,6 +246,7 @@ int asusimg2rtkimg(char *src_name)
 				}
 				if (kernelsize > 0) { // Write Kernel + Kernrl signature
 					fwrite(buf, 1, count, pDstFile);
+					write_total_size += count;
 					kernelsize -= count;
 
 					if (kernelsize > 0 && kernelsize <= sizeof(buf))
@@ -253,29 +255,26 @@ int asusimg2rtkimg(char *src_name)
 				else { // Write Rootfs
 					if (first_read_root) {
 						fwrite(buf+16, 1, count-16, pDstFile);
+						write_total_size += (count-16);
+
 						first_read_root = 0;
 					}
-					else
+					else {
 						fwrite(buf, 1, count, pDstFile);
+						write_total_size += count;
+					}
 				}
 
 				filesize -= count;
 
 			} while(filesize > 0);
 
-			fclose(pSrcFile);
-			fclose(pDstFile);
-
-			if (remove(src_name) == 0) { // Delete asus trx image
-				if (rename("/tmp/linux.trx.tmp", "/tmp/linux.trx") == 0) // rename rtk trx image
-					return 1;
-				else {
-					_dprintf("rename failed\n");
-					return 0;
-				}
-			}
-			else {
-				_dprintf("Delete linux.trx failed\n");
+			/* resize new firmware file */
+			fseek(pDstFile, 0, SEEK_SET);
+			if (ftruncate(pDstFile_fd, write_total_size)) {
+				_dprintf("ftruncate file error.\n");
+				fclose(pSrcFile);
+				fclose(pDstFile);
 				return 0;
 			}
 		}
@@ -283,8 +282,10 @@ int asusimg2rtkimg(char *src_name)
 			_dprintf("Open file failed\n");
 			return 0;
 		}
-
-	return 0;
+		
+	fclose(pSrcFile);
+	fclose(pDstFile);
+	return 1;
 }
 int copy_file2file(char * src_name,long src_offset, char *dst_name,long dst_offset,char* errorInfo)
 {

@@ -81,7 +81,7 @@ ieee80211_mhz2ieee(u_int freq)
 }
 /////////////
 
-#if defined(RTCONFIG_WIFI_QCA9557_QCA9882) || defined(RTCONFIG_QCA953X) || defined(RTCONFIG_QCA956X) || defined(RTCONFIG_SOC_IPQ40XX)
+#if defined(RTCONFIG_WIFI_QCA9557_QCA9882) || defined(RTCONFIG_QCA953X) || defined(RTCONFIG_QCA956X) || defined(RTCONFIG_QCN550X) || defined(RTCONFIG_SOC_IPQ40XX)
 const char WIF_5G[] = "ath1";
 const char WIF_2G[] = "ath0";
 const char STA_5G[] = "sta1";
@@ -1556,6 +1556,31 @@ int get_channel(const char *ifname)
 	freq = (int)(frd / 1e6);
 	return get_ch(freq);
 }
+
+#if defined(RTAC58U)
+extern char *readfile(char *fname,int *fsize);
+/* check if /proc/nvram have same mid string
+ * @return:
+ * 	0:	not found
+ * 	1:	matched
+ */
+int check_mid(char *mid)
+{
+	char *buf, *pt;
+	int fsize, ret=0;
+	buf = readfile("/proc/nvram", &fsize);
+	if (!buf) return ret;
+	pt = strstr(buf, "MID : ");
+	if (pt) {
+		int len = strlen(mid);
+		pt += 6; // len of "MID : "
+		if ((memcmp(pt, mid, len)==0) && (*(pt+len) ==  '\n'))
+			ret = 1;
+	}
+	free(buf);
+	return ret;
+}
+#endif
 
 #ifdef RTCONFIG_AMAS
 void add_beacon_vsie(char *hexdata)

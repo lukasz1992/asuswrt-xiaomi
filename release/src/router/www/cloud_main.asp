@@ -68,11 +68,11 @@ function initial(){
 	show_menu();
 	if(is_CN){
 		$("#googleplay").hide();
-		$("#wandoujia").show();
+		$("#googleApp_CN").show();
 	}
 	else{
 		$("#googleplay").show();
-		$("#wandoujia").hide();
+		$("#googleApp_CN").hide();
 	}
 	document.getElementById("app_state").style.display = "";
 	
@@ -691,12 +691,9 @@ function update_applist(e){
   										<tr>
    												<td><div class="formfontdesc" id="usbHint"><#AiCloud_maintext_note#></div></td> 
   										</tr>
-											<tr>
-   												<td><div class="formfontdesc" id="usbHint2"><#Learn_more#> : <a href="http://www.asus.com/search/results.aspx?SearchKey=AiCloud&SearchType=FAQ&IsSupport=True&Page=1" target="_blank" style="color:#FC0;text-decoration: underline; font-family:Lucida Console;">GO</a></div></td> 
-  										</tr>  
-  										<!--tr>
-   												<td valign="top"><div id="cloud_movie" style="box-shadow: 2px 2px 15px #222;margin-top: 50px;width:400px;height:241px;margin-left:165px;background:url(images/movie.jpg) no-repeat center;cursor:pointer" onClick="window.open('http://www.youtube.com/watch?v=MgIAfG5ZhPs')"></div></td>
-  										</tr-->  	   
+										<tr>
+   												<td><div class="formfontdesc" id="usbHint2"><#Learn_more#> : <a href="https://www.asus.com/search/results.aspx?SearchKey=AiCloud&SearchType=FAQ&IsSupport=True&Page=1" target="_blank" style="color:#FC0;text-decoration: underline; font-family:Lucida Console;">GO</a></div></td> 
+  										</tr>  	   
   										<tr>
    												<td align="center" width="740px" height="60px">
 													<div id="gotonext">
@@ -714,7 +711,7 @@ function update_applist(e){
 
 									  <tr class="block_bg">
 									    <td colspan="5" class="cloud_main_radius">
-												<div style="padding:10px;width:95%;font-style:italic;font-size:14px;">
+												<div style="padding:10px;width:95%;font-size:14px;">
 												<#AiCloud_maintext_note#>
 													<br/><br/>
 													<table width="100%" >
@@ -725,19 +722,19 @@ function update_applist(e){
 																 	<div id="accessMethod"></div>
 																 	</li>
 																	<li style="margin-top:-5px;">
-																	 <#FAQ_Find#> <a style="font-weight: bolder;text-decoration: underline;" href="http://www.asus.com/search/results.aspx?SearchKey=AiCloud&SearchType=FAQ&IsSupport=True&Page=1" target="_blank">GO</a>
+																	 <#FAQ_Find#> <a style="font-weight: bolder;text-decoration: underline;" href="https://www.asus.com/search/results.aspx?SearchKey=AiCloud&SearchType=FAQ&IsSupport=True&Page=1" target="_blank">GO</a>
 																	</li>
 																</ul>
 															</td>
 															<td>							
 																<a id="googleplay" href="https://play.google.com/store/apps/details?id=com.asustek.aicloud" target="_blank">
-																	<div style="width:172px;height:51px;background:url('images/cloudsync/googleplay.png') no-repeat;background-size:75%;"></div>
+																	<div style="width:172px;height:51px;background:url('images/googleplay.png') no-repeat;background-size:75%;"></div>
 																</a>												
-																<a id="wandoujia" href="http://www.wandoujia.com/apps/com.asus.aihome" target="_blank" style="display:none">
-																	<div style="width:130px;height:51px;text-align: center;line-height:51px;line-height: 51px;font-size: 20px;font-weight: bold;text-decoration: underline;">豌豆荚</div>
+																<a id="googleApp_CN" href="https://dlcdnets.asus.com/pub/ASUS/LiveUpdate/Release/Wireless/ASUSRouter_Android_Release.apk" target="_blank" style="display:none">
+																	<div style="width:130px;text-align: center;font-size: 20px;border: 1px solid #BDBDBD;border-radius: 6px;padding: 7px 4px;margin-bottom:12px;">Android App</div>
 																</a>			
 																<a href="https://itunes.apple.com/us/app/aicloud-lite/id527118674" target="_blank">
-																	<div style="width:172px;height:51px;background:url('images/cloudsync/AppStore.png') no-repeat;background-size:75%;"></div>
+																	<div style="width:172px;height:51px;background:url('images/AppStore.png') no-repeat;background-size:75%;"></div>
 																</a>	
 															</td>
 														</tr>
@@ -766,7 +763,7 @@ function update_applist(e){
 									    <td width="1px"></td>
 
 									    <td>
-											<div style="padding:10px;width:95%;font-style:italic;font-size:14px;">
+											<div style="padding:10px;width:95%;font-size:14px;">
 												<#aicloud_disk_desc#>												
 											</div>
 										</td>
@@ -818,7 +815,7 @@ function update_applist(e){
 												&nbsp;
 											</td>
 									    <td width="">
-												<div style="padding:10px;width:95%;font-style:italic;font-size:14px;">
+												<div style="padding:10px;width:95%;font-size:14px;">
 													<#smart_access_desc#>
 												</div>
 											</td>
@@ -867,7 +864,7 @@ function update_applist(e){
 												&nbsp;
 											</td>
 									    <td width="">
-												<div style="padding:10px;width:95%;font-style:italic;font-size:14px;">
+												<div style="padding:10px;width:95%;font-size:14px;">
 													<#smart_sync_desc#>
 												</div>
 											</td>

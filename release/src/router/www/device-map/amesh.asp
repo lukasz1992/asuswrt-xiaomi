@@ -407,12 +407,12 @@ function gen_current_onboardinglist(_onboardingList, _wclientlist, _wiredclientl
 							code += "</div>";
 							code += "<div class='horizontal_line'></div>";
 							code += "<div style='position:relative;'>";
-								code += "<div class='amesh_router_info_text location' title='" + alias + "'>";
+								code += "<div class='amesh_router_info_text location' title='" + htmlEnDeCode.htmlEncode(alias) + "'>";
 								var location = alias;
 								if(alias.length > 22) {
 									location = alias.substring(0, 20) + "..";
 								}
-								code += "<span class='amesh_node_content'>" + location + "</span>";
+								code += "<span class='amesh_node_content'>" + htmlEnDeCode.htmlEncode(location) + "</span>";
 								code += "</div>";
 								code += "<div class='amesh_router_info_text'><#Full_Clients#>: ";
 								var re_client_num = 0;
@@ -640,7 +640,7 @@ function scenario() {
 	description += "<br>";
 	description += "2. Make sure your AiMesh node is up to date. (Firmware version need to support AiMesh)";/* untranslated */
 	description += "<br>";
-	description += "<a style='font-weight:bolder;text-decoration:underline;color:#FC0;' href='http://www.asus.com/support/' target='_blank'>Find supported firmware</a>";/* untranslated */
+	description += "<a style='font-weight:bolder;text-decoration:underline;color:#FC0;' href='https://www.asus.com/support/' target='_blank'><#AiMesh_Desc3_note#></a>";
 	gen_each_step_content(description, 3);
 
 	interval = setInterval(set_slider, 15000);
@@ -1322,7 +1322,7 @@ function popAMeshClientListEditTable(event) {
 		}
 	}
 	var title_name = node_info.model_name + " in " +  alias;
-	$popupBgHtml.find("#aimesh_node_title_name").html(title_name);
+	$popupBgHtml.find("#aimesh_node_title_name").html(htmlEnDeCode.htmlEncode(title_name));
 
 	if(router_icon_array[node_info.model_name] == 0) {
 		var imageUrl = 'http://ec2-54-202-251-7.us-west-2.compute.amazonaws.com/find/productIcons/' + handle_cloud_icon_model_name(node_info.model_name) + '.png';
@@ -1389,7 +1389,7 @@ function popAMeshClientListEditTable(event) {
 			var data = new Object();
 			data.cfg_alias = $popupBgHtml.find("#aimesh_node_location_input").val();
 			var title_name = node_info.model_name + " in " +  $popupBgHtml.find("#aimesh_node_location_input").val();
-			$popupBgHtml.find("#aimesh_node_title_name").html(title_name);
+			$popupBgHtml.find("#aimesh_node_title_name").html(htmlEnDeCode.htmlEncode(title_name));
 			set_AiMesh_node_config(data, node_info.mac)
 		}
 	);
@@ -1422,9 +1422,9 @@ function popAMeshClientListEditTable(event) {
 					$popupBgHtml.find("#aimesh_node_location_select").val("");
 				var data = new Object();
 				data.cfg_alias = $popupBgHtml.find("#aimesh_node_location_input").val();
-				var title_name = "AiMesh node in " + $popupBgHtml.find("#aimesh_node_location_input").val();
-				$popupBgHtml.find("#aimesh_node_title_name").html(title_name);
-				set_AiMesh_node_config(data, node_info.mac)
+				var title_name = node_info.model_name + " in " +  $popupBgHtml.find("#aimesh_node_location_input").val();
+				$popupBgHtml.find("#aimesh_node_title_name").html(htmlEnDeCode.htmlEncode(title_name));
+				set_AiMesh_node_config(data, node_info.mac);
 			}
 		}
 	);

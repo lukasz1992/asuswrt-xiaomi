@@ -789,6 +789,8 @@ function checkWLReady(){
 										if(	document.form.wl0_auth_mode_x.value == "shared" ||	document.form.wl1_auth_mode_x.value == "shared"
 										||	document.form.wl0_auth_mode_x.value == "psk"	||	document.form.wl0_auth_mode_x.value == "wpa"
 										||	document.form.wl1_auth_mode_x.value == "psk"	||	document.form.wl1_auth_mode_x.value == "wpa"
+										||	document.form.wl0_auth_mode_x.value == "wpa2"    ||	document.form.wl0_auth_mode_x.value == "wpa2"
+										||	document.form.wl1_auth_mode_x.value == "wpawpa2"    ||	document.form.wl1_auth_mode_x.value == "wpawpa2"
 										||	document.form.wl0_auth_mode_x.value == "open" && (document.form.wl0_wep_x.value == "1" || document.form.wl0_wep_x.value == "2")
 										||	document.form.wl1_auth_mode_x.value == "open" && (document.form.wl1_wep_x.value == "1" || document.form.wl1_wep_x.value == "2")){
 											alert("<#note_auth_wpa_WPS#>");
@@ -799,7 +801,8 @@ function checkWLReady(){
 									else{		//Broadcom, Ralink normal case
 										if(document.form.wps_band.value == 0){
 											if(	document.form.wl0_auth_mode_x.value == "shared"
-											||	document.form.wl0_auth_mode_x.value == "psk"	||	document.form.wl0_auth_mode_x.value == "wpa"
+											||	document.form.wl0_auth_mode_x.value == "psk"
+											||	document.form.wl0_auth_mode_x.value == "wpa" ||	document.form.wl0_auth_mode_x.value == "wpa2" || document.form.wl0_auth_mode_x.value == "wpawpa2"
 											||	document.form.wl0_auth_mode_x.value == "open" && (document.form.wl0_wep_x.value == "1" || document.form.wl0_wep_x.value == "2")){
 												alert(band_string + " : <#note_auth_wpa_WPS#>");
 												$('#iphone_switch').animate({backgroundPosition: -37}, "slow", function() {});
@@ -814,7 +817,8 @@ function checkWLReady(){
 										}
 										else if(document.form.wps_band.value == 1){			//5G
 											if(	document.form.wl1_auth_mode_x.value == "shared"
-											||	document.form.wl1_auth_mode_x.value == "psk"	||	document.form.wl1_auth_mode_x.value == "wpa"
+											||	document.form.wl1_auth_mode_x.value == "psk"
+											||	document.form.wl1_auth_mode_x.value == "wpa" ||	document.form.wl1_auth_mode_x.value == "wpa2" || document.form.wl1_auth_mode_x.value == "wpawpa2"
 											||	document.form.wl1_auth_mode_x.value == "open" && (document.form.wl1_wep_x.value == "1" || document.form.wl1_wep_x.value == "2")){
 												alert(band_string + " : <#note_auth_wpa_WPS#>");
 												$('#iphone_switch').animate({backgroundPosition: -37}, "slow", function() {});
@@ -830,7 +834,8 @@ function checkWLReady(){
 										}
 										else if(document.form.wps_band.value == 2){		//5G-2
 											if(	document.form.wl2_auth_mode_x.value == "shared"
-											||	document.form.wl2_auth_mode_x.value == "psk"	||	document.form.wl2_auth_mode_x.value == "wpa"
+											||	document.form.wl2_auth_mode_x.value == "psk"
+											||	document.form.wl2_auth_mode_x.value == "wpa" ||	document.form.wl2_auth_mode_x.value == "wpa2" || document.form.wl2_auth_mode_x.value == "wpawpa2"
 											||	document.form.wl2_auth_mode_x.value == "open" && (document.form.wl2_wep_x.value == "1" || document.form.wl2_wep_x.value == "2")){
 												alert(band_string + " : <#note_auth_wpa_WPS#>");
 												$('#iphone_switch').animate({backgroundPosition: -37}, "slow", function() {});
@@ -893,7 +898,7 @@ function checkWLReady(){
 							</td>
 							<td style="border:0px">
 								<input class="button_gen" type="button" onClick="resetWPS();" id="Reset_OOB" name="Reset_OOB" value="<#CTL_Reset_OOB#>" style="padding:0 0.3em 0 0.3em;" >
-								<br><span id="Reset_OOB_desc"><#WLANConfig11b_x_ResetWPS_desc#>Pressing the reset button resets the network name (SSID) and WPA encryption key.</span>
+								<br><span id="Reset_OOB_desc"><#WLANConfig11b_x_ResetWPS_desc#></span>
 							</td>
 						</tr></table>
 					</div>

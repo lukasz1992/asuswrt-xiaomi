@@ -295,6 +295,8 @@ unsigned char A_BAND_REGION_19_CHANNEL_LIST[]={56, 60, 64, 100, 104, 108, 112, 1
 unsigned char A_BAND_REGION_20_CHANNEL_LIST[]={36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 149, 153, 157, 161};
 unsigned char A_BAND_REGION_21_CHANNEL_LIST[]={36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 149, 153, 157, 161};
 unsigned char A_BAND_REGION_22_CHANNEL_LIST[]={36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 132, 136, 140, 149, 153, 157, 161 ,165};
+unsigned char A_BAND_REGION_24_CHANNEL_LIST[]={36, 40, 44, 48, 52, 56, 60, 64, 132, 136, 140, 144, 149, 153, 157, 161 ,165};
+unsigned char A_BAND_REGION_25_CHANNEL_LIST[]={36, 40, 44, 48, 52, 56, 60, 64};
 
 unsigned char G_BAND_REGION_0_CHANNEL_LIST[]={1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 unsigned char G_BAND_REGION_1_CHANNEL_LIST[]={1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
@@ -323,6 +325,8 @@ unsigned char G_BAND_REGION_5_CHANNEL_LIST[]={1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
 #define A_BAND_REGION_20			20
 #define A_BAND_REGION_21			21
 #define A_BAND_REGION_22			22
+#define A_BAND_REGION_24			24
+#define A_BAND_REGION_25			25
 
 #define G_BAND_REGION_0				0
 #define G_BAND_REGION_1				1
@@ -476,7 +480,12 @@ COUNTRY_CODE_TO_COUNTRY_REGION allCountry[] = {
 	{"RU", A_BAND_REGION_6, G_BAND_REGION_1},
 #else
 	{"RO", A_BAND_REGION_0, G_BAND_REGION_1},
+#if defined(RTAC85P)
+	{"RU", A_BAND_REGION_24, G_BAND_REGION_1},
+	{"IL", A_BAND_REGION_25, G_BAND_REGION_1},
+#else
 	{"RU", A_BAND_REGION_0, G_BAND_REGION_1},
+#endif
 #endif
 	{"SA", A_BAND_REGION_0, G_BAND_REGION_1},
 	{"SG", A_BAND_REGION_0, G_BAND_REGION_1},
@@ -638,6 +647,14 @@ int get_channel_list_via_country(int unit, const char *country_code, char *buffe
 		case A_BAND_REGION_22:
 			num = sizeof(A_BAND_REGION_22_CHANNEL_LIST)/sizeof(unsigned char);
 			pChannelListTemp = A_BAND_REGION_22_CHANNEL_LIST;
+			break;
+		case A_BAND_REGION_24:
+			num = sizeof(A_BAND_REGION_24_CHANNEL_LIST)/sizeof(unsigned char);
+			pChannelListTemp = A_BAND_REGION_24_CHANNEL_LIST;
+			break;
+		case A_BAND_REGION_25:
+			num = sizeof(A_BAND_REGION_25_CHANNEL_LIST)/sizeof(unsigned char);
+			pChannelListTemp = A_BAND_REGION_25_CHANNEL_LIST;
 			break;
 		default:	// Error. should never happen
 			dbg("countryregionA=%d not support", allCountry[index].RegDomainNum11A);

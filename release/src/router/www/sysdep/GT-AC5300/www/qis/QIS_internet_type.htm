@@ -107,15 +107,6 @@ function QKinternettype_load_body(){
 		
 		if(parent.get_internet_type_reducedmode() == "enable")
 			blocking("dhcppppoe_sec", false);
-	
-		if( !parent.meoVoda_support ){
-			document.getElementById('meoOption').outerHTML = "";
-			document.getElementById('vodafoneOption').outerHTML = "";
-		}
-
-		if( !parent.movistarTriple_support ){
-			document.getElementById('movistarOption').outerHTML = "";
-		}
 
 		if(parent.based_modelid == "GT-AC5300" || parent.based_modelid == "GT-AC9600"){ //MODELDEP: GT-AC5300 : TRUNK ports
 			if(iptv_port_settings_orig == "12"){

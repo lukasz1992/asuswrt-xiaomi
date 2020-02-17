@@ -100,6 +100,7 @@ void start_yaffs(void)
 		}
 	}
 
+
 	if (nvram_get_int("yaffs_clean_fs")) {
 		_dprintf("Clean /jffs/*\n");
 		system("rm -fr /jffs/*");
@@ -107,15 +108,18 @@ void start_yaffs(void)
 		nvram_commit_x();
 	}
 
+	userfs_prepare(YAFFS_MNT_DIR);
+
 	notice_set("yaffs", format ? "Formatted" : "Loaded");
 
+#if 0 /* disable legacy & asus autoexec */
 	if (((p = nvram_get("yaffs_exec")) != NULL) && (*p != 0)) {
 		chdir(YAFFS_MNT_DIR);
 		system(p);
 		chdir("/");
 	}
 	run_userfile(YAFFS_MNT_DIR, ".asusrouter", YAFFS_MNT_DIR, 3);
-
+#endif
 }
 
 void stop_yaffs(int stop)
@@ -130,8 +134,10 @@ void stop_yaffs(int stop)
 
 	if ((statfs(YAFFS_MNT_DIR, &sf) == 0) && (sf.f_type != 0x73717368)) {
 		// is mounted
+#if 0 /* disable legacy & asus autoexec */
 		run_userfile(YAFFS_MNT_DIR, ".autostop", YAFFS_MNT_DIR, 5);
 		run_nvscript("script_autostop", YAFFS_MNT_DIR, 5);
+#endif
 	}
 #if defined(RTCONFIG_PSISTLOG)
 	if (!stop && !strncmp(get_syslog_fname(0), YAFFS_MNT_DIR "/", sizeof(YAFFS_MNT_DIR) + 1)) {

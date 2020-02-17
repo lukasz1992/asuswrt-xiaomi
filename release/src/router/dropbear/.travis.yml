@@ -1,28 +1,34 @@
 language: c
 
-os:
-  - linux
-  - osx
+git:
+  depth: 3
 
-env:
-  matrix:
-    - BUNDLEDLIBTOM=--disable-bundled-libtom WEXTRAFLAGS=-Werror
-    - BUNDLEDLIBTOM=--enable-bundled-libtom
-    - MULTI=1
-    - NOWRITEV=1
-
-# TODO: remove this section when libtomcrypt compiles on OSX: https://github.com/libtom/libtomcrypt/issues/82
 matrix:
-  exclude:
+  include:
+    # subsequent matrix options use these first settings
+    - os: linux
+      compiler: gcc
+      env: WEXTRAFLAGS=-Werror
+      sudo: false
+    - env: MULTI=1 WEXTRAFLAGS=-Werror
+    # libtom has some warnings, so no WEXTRAFLAGS
+    - env: CONFIGURE_FLAGS=--enable-bundled-libtom WEXTRAFLAGS=""
+    - env: NOWRITEV=1 WEXTRAFLAGS=-Werror
+    # libtomcrypt 1.18.1 fixes clang problems, distro doesn't have that yet
+    - os: linux
+      compiler: clang
+      env: CONFIGURE_FLAGS=--enable-bundled-libtom WEXTRAFLAGS=""
     - os: osx
-      env: BUNDLEDLIBTOM=--disable-bundled-libtom WEXTRAFLAGS=-Werror
+      compiler: clang
+      env: WEXTRAFLAGS=""
 
-compiler:
-  - gcc
-  - clang
+    # Note: the fuzzing malloc wrapper doesn't replace free() in system libtomcrypt, so need bundled.
+    - env: DO_FUZZ=1 CONFIGURE_FLAGS="--enable-fuzz --disable-harden --enable-bundled-libtom" WEXTRAFLAGS="" LDFLAGS=-fsanitize=address EXTRACFLAGS=-fsanitize=address CXX=clang++
+      compiler: clang
+      # sanitizers need ptrace which is privileged https://github.com/travis-ci/travis-ci/issues/9033
+      sudo: required
 
 # container-based builds
-sudo: false
 addons:
   apt:
     packages:
@@ -30,24 +36,31 @@ addons:
     - zlib1g-dev
     - libtomcrypt-dev
     - libtommath-dev
-
+    - mercurial
 
 before_install:
   - if [ "$CC" = "clang" ]; then WEXTRAFLAGS="$WEXTRAFLAGS -Wno-error=incompatible-library-redeclaration" ; fi  # workaround
 
 install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" -a "$BUNDLEDLIBTOM" = "--disable-bundled-libtom" ]; then brew update > /dev/null && brew install libtomcrypt libtommath ; fi
-
-script:
-  - autoconf && autoheader && ./configure "$BUNDLEDLIBTOM" CFLAGS="-O2 -Wall -Wno-pointer-sign $WEXTRAFLAGS" --prefix="$HOME/inst"
+  - autoconf 
+  - autoheader 
+  - ./configure $CONFIGURE_FLAGS CFLAGS="-O2 -Wall -Wno-pointer-sign $WEXTRAFLAGS $EXTRACFLAGS" --prefix="$HOME/inst" || (cat config.log; exit 1)
   - if [ "$NOWRITEV" = "1" ]; then sed -i -e s/HAVE_WRITEV/DONT_HAVE_WRITEV/ config.h ; fi
   - make -j3 
+  - test -z $DO_FUZZ || make fuzzstandalone
   # avoid concurrent install, osx/freebsd is racey (https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=208093)
   - make install 
 
-after_success:
+script:
   - ~/inst/bin/dropbearkey -t rsa -f testrsa
   - ~/inst/bin/dropbearkey -t dss -f testdss
   - ~/inst/bin/dropbearkey -t ecdsa -f testec256 -s 256
   - ~/inst/bin/dropbearkey -t ecdsa -f testec384 -s 384
   - ~/inst/bin/dropbearkey -t ecdsa -f testec521 -s 521
+  - test -z $DO_FUZZ || ./fuzzers_test.sh
+
+branches:
+  only:
+    - master
+    - coverity
+

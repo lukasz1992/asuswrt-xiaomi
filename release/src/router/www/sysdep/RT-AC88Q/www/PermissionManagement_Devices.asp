@@ -291,7 +291,7 @@ function add_device(flag, target){
 		return false;
 	}
 
-	if(!check_macaddr(document.getElementById("device_mac"), check_hwaddr_flag(document.getElementById("device_mac")))){
+	if(!check_macaddr(document.getElementById("device_mac"), check_hwaddr_flag(document.getElementById("device_mac"), 'inner'))){
 		document.getElementById("device_mac").focus();
 		document.getElementById("device_mac").select();
 		return false;	
@@ -492,7 +492,8 @@ function enable_group_all(obj){
 				<td>
 					<input id="device_name" type="text" maxlength="32"class="input_32_table" style="height: 23px;" value="" autocorrect="off" autocapitalize="off">
 					<img id="pull_arrow" height="14px;" src="/images/arrow-down.gif" style="position:absolute;" onclick="pullLANIPList(this);" title="<#select_client#>">
-					<div id="ClientList_Block_PC" style="margin:0 0 0 2px" class="clientlist_dropdown"></div>					
+					<div id="ClientList_Block_PC" style="margin:0 0 0 2px" class="clientlist_dropdown"></div>
+					<div style="color:#FC0;padding: 3px 0 0 2px"><#ADSL_FW_note#> <#ShareNode_WorkGroup_note#><a id="faq" target="_blank" style="padding-left:5px;color: #FFF;text-decoration: underline;"><#ShareNode_WorkGroup_faq#></a></div>
 				</td>
 			</tr>
 			<tr>

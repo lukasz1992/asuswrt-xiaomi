@@ -97,15 +97,6 @@ function QKaccount_load_body(){
 	if(!document.getElementById('vpn_client_check').checked)
 		document.form.wan_proto.value = "pppoe";
 
-	if( !parent.meoVoda_support ){	// MODELDEP: RT-AC3200, RT-AC87U, RT-AC68U, RT-AC66U, RT-AC51U, RT-N66U, RT-N18U
-		document.getElementById('meoOption').outerHTML = "";
-		document.getElementById('vodafoneOption').outerHTML = "";
-	}
-	
-	if( !parent.movistarTriple_support ){
-		document.getElementById('movistarOption').outerHTML = "";
-	}
-
 	if(parent.based_modelid == "GT-AC5300" || parent.based_modelid == "GT-AC9600"){ //MODELDEP: GT-AC5300 : TRUNK ports
 		document.getElementById("voip_lan").innerHTML = "LAN4";
 		document.getElementById("iptv_lan").innerHTML = "LAN8";
@@ -114,7 +105,7 @@ function QKaccount_load_body(){
 		document.getElementById("voip_triple").innerHTML = "LAN4";
 		document.getElementById("iptv_triple").innerHTML = "LAN8";
 	}
-	else if(parent.based_modelid == "RT-AC53"){
+	else if(parent.based_modelid == "RT-N19" || parent.based_modelid == "RT-AC53"){
 		document.getElementById("voip_lan").innerHTML = "LAN1";
 		document.getElementById("iptv_lan").innerHTML = "LAN2";
 		document.getElementById("voip_port3").innerHTML = "VoIP (LAN port 1):";
@@ -211,6 +202,23 @@ function show_prev_button(){
 	}
 }
 
+function update_QKForm()
+{
+	parent.document.QKform.wan_hwaddr_x.value = document.form.wan_hwaddr_x.value;
+	parent.document.QKform.wan_pppoe_username.value = document.form.wan_pppoe_username.value;
+	parent.document.QKform.wan_pppoe_passwd.value = document.form.wan_pppoe_passwd.value;
+	parent.document.QKform.wan_proto.value = document.form.wan_proto.value;
+
+	parent.document.QKform.switch_wantag.value = document.form.switch_wantag.value;
+	parent.document.QKform.switch_stb_x.value = document.form.switch_stb_x.value;
+	parent.document.QKform.switch_wan0tagid.value = document.form.switch_wan0tagid.value;
+	parent.document.QKform.switch_wan0prio.value = document.form.switch_wan0prio.value;
+	parent.document.QKform.switch_wan1tagid.value = document.form.switch_wan1tagid.value;
+	parent.document.QKform.switch_wan1prio.value = document.form.switch_wan1prio.value;
+	parent.document.QKform.switch_wan2tagid.value = document.form.switch_wan2tagid.value;
+	parent.document.QKform.switch_wan2prio.value = document.form.switch_wan2prio.value;
+}
+
 function submitForm(o, s){
 	if(parent.ISMOBILE){
 		document.form.wan_pppoe_username.value = document.form.wan_pppoe_username_m.value;
@@ -247,9 +255,10 @@ function submitForm(o, s){
 
 	if(!document.form.specialisp.checked){
 		document.form.switch_wantag.value = "none";
-		set_ISP_profile();
-	}	
+	}
 
+	set_ISP_profile();
+	update_QKForm();
 	if(now_flag == "auto_way"){
 		//parent.showLoading();
 		simple_showLoading();
@@ -282,9 +291,6 @@ function submitForm(o, s){
 			document.form.action_wait.value = "0";
 			//simple_showLoading();
 		}
-
-		// uinfi
-		set_ISP_profile();
 
 		if(original_switch_wantag != document.form.switch_wantag.value){
 			/*
@@ -334,11 +340,6 @@ function submitForm(o, s){
 	}
 	else if(document.form.wan_proto.value == 'pptp'|| document.form.wan_proto.value == 'l2tp'){
 		document.form.next_page.value = "QIS_internet_ip.htm";
-
-		parent.document.QKform.wan_hwaddr_x.value = document.form.wan_hwaddr_x.value;
-		parent.document.QKform.wan_pppoe_username.value = document.form.wan_pppoe_username.value;
-		parent.document.QKform.wan_pppoe_passwd.value = document.form.wan_pppoe_passwd.value;
-		parent.document.QKform.wan_proto.value = document.form.wan_proto.value;
 		location.href = document.form.next_page.value;
 		return false;	//do not submit form
 	}
@@ -694,6 +695,16 @@ function set_ISP_profile(){
 		document.form.switch_wan1prio.value = "0";
 		document.form.switch_wan2tagid.value = "";
 		document.form.switch_wan2prio.value = "0";
+	}
+	else if(isp == "manual"){
+		if(document.form.switch_wan1tagid.value == "" && document.form.switch_wan2tagid.value == "")
+			document.form.switch_stb_x.value = "0";
+		else if(document.form.switch_wan1tagid.value == "" && document.form.switch_wan2tagid.value != "")
+			document.form.switch_stb_x.value = "3";
+		else if(document.form.switch_wan1tagid.value != "" && document.form.switch_wan2tagid.value == "")
+			document.form.switch_stb_x.value = "4";
+		else
+			document.form.switch_stb_x.value = "6";
 	}
 }
 

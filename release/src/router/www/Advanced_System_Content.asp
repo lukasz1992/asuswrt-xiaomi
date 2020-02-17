@@ -52,6 +52,10 @@
 	border: 1px solid #999;
 	color: #999;
 }
+.highlight{
+	background: #78535b;
+    border: 1px solid #f06767;
+}
 </style>
 <script>
 time_day = uptimeStr.substring(5,7);//Mon, 01 Aug 2011 16:25:44 +0800(1467 secs since boot....
@@ -109,9 +113,8 @@ function initial(){
 	restrict_rulelist_array = JSON.parse(JSON.stringify(orig_restrict_rulelist_array));
 
 	show_menu();
-
-	httpApi.faqURL("faq", "1034294", "https://www.asus.com", "/support/FAQ/");
-	httpApi.faqURL("ntp_faq", "1037370", "https://www.asus.com", "/support/FAQ/");
+	httpApi.faqURL("1034294", function(url){document.getElementById("faq").href=url;});
+	httpApi.faqURL("1037370", function(url){document.getElementById("ntp_faq").href=url;});
 	show_http_clientlist();
 	display_spec_IP(document.form.http_client.value);
 
@@ -231,6 +234,10 @@ function initial(){
 		document.form.telnetd_enable[0].disabled = false;
 		document.form.telnetd_enable[1].disabled = false;
 	}
+
+	if(powerline_support)
+		document.getElementById("plc_sleep_tr").style.display = "";
+
 	// load shell_timeout_x
 	document.form.shell_timeout_x.value = orig_shell_timeout_x;
 
@@ -418,6 +425,9 @@ function applyRule(){
 		else
 			document.form.dns_probe.value = "0";
 
+		if(document.form.https_lanport.value != '<% nvram_get("https_lanport"); %>')
+			alert('<#Change_HttpsLanport_Hint#>');
+
 		showLoading();
 
 		var action_script_tmp = "restart_time;restart_upnp;";
@@ -496,7 +506,14 @@ function validForm(){
 		document.form.http_passwd2.focus();
 		document.form.http_passwd2.select();
 		return false;
-	}	
+	}
+
+	if(document.form.http_passwd2.value.length > 16){
+		showtext(document.getElementById("alert_msg2"),"* <#JS_max_password#>");
+		document.form.http_passwd2.focus();
+		document.form.http_passwd2.select();
+		return false;
+	}
 
 	if(document.form.http_passwd2.value != document.form.v_password2.value){
 		showtext(document.getElementById("alert_msg2"),"* <#File_Pop_content_alert_desc7#>");
@@ -570,9 +587,26 @@ function validForm(){
 		return false;
 	}
 
+	if(document.form.sshd_enable.value != 0){
+		if (!validator.range(document.form.sshd_port_x, 1, 65535))
+			return false;
+		else if(isPortConflict(document.form.sshd_port.value, "ssh")){
+			alert(isPortConflict(document.form.sshd_port.value, "ssh"));
+			document.form.sshd_port.focus();
+			return false;
+		}
+		else{
+			document.form.sshd_port.value = document.form.sshd_port_x.value;
+			document.form.sshd_port.disabled = false;
+		}
+	}
+	else{
+		document.form.sshd_port.disabled = true;
+	}
+
 	if (!validator.range(document.form.http_lanport, 1, 65535))
 		/*return false;*/ document.form.http_lanport = 80;
-	if (HTTPS_support && !validator.range(document.form.https_lanport, 1, 65535) && !tmo_support)
+	if (HTTPS_support && !validator.range(document.form.https_lanport, 1025, 65535) && !tmo_support)
 		return false;
 
 	if (document.form.misc_http_x[0].checked) {
@@ -584,14 +618,16 @@ function validForm(){
 	else{
 		document.form.misc_httpport_x.value = '<% nvram_get("misc_httpport_x"); %>';
 		document.form.misc_httpsport_x.value = '<% nvram_get("misc_httpsport_x"); %>';
-	}	
-
-	if(document.form.sshd_enable.value != 0){
-		if (!validator.range(document.form.sshd_port, 1, 65535))
-			return false;
 	}
-	else{
-		document.form.sshd_port.disabled = true;
+
+	if(document.form.sshd_port_x.value == document.form.https_lanport.value){
+		alert("<#SSH_HttpsLanPort_Conflict_Hint#>");
+		$("#sshd_port_x").addClass("highlight");
+		$("#port_conflict_sshdport").show();
+		$("#https_lanport_input").addClass("highlight");
+		$("#port_conflict_httpslanport").show();
+		document.form.sshd_port_x.focus();
+		return false;
 	}
 
 	if(!validator.rangeAllowZero(document.form.shell_timeout_x, 10, 999, orig_shell_timeout_x))
@@ -601,22 +637,26 @@ function validForm(){
 			isPortConflict(document.form.misc_httpport_x.value)){
 		alert(isPortConflict(document.form.misc_httpport_x.value));
 		document.form.misc_httpport_x.focus();
+		document.form.misc_httpport_x.select();
 		return false;
 	}
 	else if(!document.form.misc_httpsport_x.disabled &&
 			isPortConflict(document.form.misc_httpsport_x.value) && HTTPS_support){
 		alert(isPortConflict(document.form.misc_httpsport_x.value));
 		document.form.misc_httpsport_x.focus();
+		document.form.misc_httpsport_x.select();
 		return false;
 	}
 	else if(isPortConflict(document.form.https_lanport.value) && HTTPS_support && !tmo_support){
 		alert(isPortConflict(document.form.https_lanport.value));
 		document.form.https_lanport.focus();
+		document.form.https_lanport.select();
 		return false;
 	}
 	else if(document.form.misc_httpsport_x.value == document.form.misc_httpport_x.value && HTTPS_support){
 		alert("<#https_port_conflict#>");
 		document.form.misc_httpsport_x.focus();
+		document.form.misc_httpsport_x.select();
 		return false;
 	}
 	else if(!validator.rangeAllowZero(document.form.http_autologout, 10, 999, '<% nvram_get("http_autologout"); %>'))
@@ -648,7 +688,7 @@ function validForm(){
 		}
 
 		if(WebUI_selected <= 0){
-			alert("Please select at least one Web UI of Access Type and enable it in [Allow only specified IP address]");   //Untranslated 2017/08
+			alert("<#JS_access_type#> <#System_login_specified_Iplist_enable#>");
 			document.form.http_client_ip_x_0.focus();
 			return false;
 		}
@@ -997,7 +1037,7 @@ function addRow(obj, upper){
 			access_type_value += parseInt($(this).val());
 	});	
 	if(access_type_value == 0) {
-		alert("Please select at least one Access Type.");/*untranslated*/
+		alert("<#JS_access_type#>");
 		return false;
 	}
 	else{
@@ -1403,6 +1443,15 @@ function pullPingTargetList(obj){
 	else
 		hidePingTargetList();
 }
+
+function reset_portconflict_hint(){
+	if($("#sshd_port_x").hasClass("highlight"))
+		$("#sshd_port_x").removeClass("highlight");
+	if($("#https_lanport_input").hasClass("highlight"))
+		$("#https_lanport_input").removeClass("highlight");
+	$("#port_conflict_sshdport").hide();
+	$("#port_conflict_httpslanport").hide();
+}
 </script>
 </head>
 
@@ -1439,6 +1488,7 @@ function pullPingTargetList(obj){
 <input type="hidden" name="http_lanport" value="<% nvram_get("http_lanport"); %>">
 <input type="hidden" name="dns_probe" value="<% nvram_get("dns_probe"); %>">
 <input type="hidden" name="wandog_enable" value="<% nvram_get("wandog_enable"); %>">
+<input type="hidden" name="sshd_port" value="<% nvram_get("sshd_port"); %>" disabled>
 
 <table class="content" align="center" cellpadding="0" cellspacing="0">
   <tr>
@@ -1481,7 +1531,7 @@ function pullPingTargetList(obj){
 				<tr>
 					<th width="40%"><a class="hintstyle" href="javascript:void(0);" onClick="openHint(11,4)"><#PASS_new#></a></th>
 					<td>
-						<input type="password" autocomplete="off" name="http_passwd2" tabindex="2" onKeyPress="return validator.isString(this, event);" onkeyup="chkPass(this.value, 'http_passwd');" onpaste="setTimeout('paste_password();', 10)" class="input_18_table" maxlength="16" onBlur="clean_scorebar(this);" autocorrect="off" autocapitalize="off"/>
+						<input type="password" autocomplete="new-password" name="http_passwd2" tabindex="2" onKeyPress="return validator.isString(this, event);" onkeyup="chkPass(this.value, 'http_passwd');" onpaste="setTimeout('paste_password();', 10)" class="input_18_table" maxlength="17" onBlur="clean_scorebar(this);" autocorrect="off" autocapitalize="off"/>
 						&nbsp;&nbsp;
 						<div id="scorebarBorder" style="margin-left:180px; margin-top:-25px; display:none;" title="<#LANHostConfig_x_Password_itemSecur#>">
 							<div id="score"></div>
@@ -1492,7 +1542,7 @@ function pullPingTargetList(obj){
 				<tr>
 					<th><a class="hintstyle" href="javascript:void(0);" onClick="openHint(11,4)"><#PASS_retype#></a></th>
 					<td>
-						<input type="password" autocomplete="off" name="v_password2" tabindex="3" onKeyPress="return validator.isString(this, event);" onpaste="setTimeout('paste_password();', 10)" class="input_18_table" maxlength="16" autocorrect="off" autocapitalize="off"/>
+						<input type="password" autocomplete="off" name="v_password2" tabindex="3" onKeyPress="return validator.isString(this, event);" onpaste="setTimeout('paste_password();', 10)" class="input_18_table" maxlength="17" autocorrect="off" autocapitalize="off"/>
 						<div style="margin:-25px 0px 5px 175px;"><input type="checkbox" name="show_pass_1" onclick="pass_checked(document.form.http_passwd2);pass_checked(document.form.v_password2);"><#QIS_show_pass#></div>
 						<span id="alert_msg2" style="color:#FC0;margin-left:8px;display:inline-block;"></span>
 					
@@ -1676,7 +1726,7 @@ function pullPingTargetList(obj){
 					<td>
 						<input type="radio" name="btn_ez_radiotoggle" id="turn_WPS" class="input" style="display:none;" value="0"><label for="turn_WPS"><#WPS_btn_actWPS#></label>
 						<input type="radio" name="btn_ez_radiotoggle" id="turn_WiFi" class="input" style="display:none;" value="1" <% nvram_match_x("", "btn_ez_radiotoggle", "1", "checked"); %>><label for="turn_WiFi" id="turn_WiFi_str"><#WPS_btn_toggle#></label>
-						<input type="radio" name="btn_ez_radiotoggle" id="turn_LED" class="input" style="display:none;" value="0" <% nvram_match_x("", "btn_ez_mode", "1", "checked"); %>><label for="turn_LED" id="turn_LED_str">Turn LED On/Off</label>
+						<input type="radio" name="btn_ez_radiotoggle" id="turn_LED" class="input" style="display:none;" value="0" <% nvram_match_x("", "btn_ez_mode", "1", "checked"); %>><label for="turn_LED" id="turn_LED_str"><#LED_switch#></label>
 					</td>
 				</tr>
 				<tr id="pwrsave_tr">
@@ -1715,6 +1765,24 @@ function pullPingTargetList(obj){
 						<input type="text" maxlength="2" class="input_3_table" name="reboot_time_x_min" onKeyPress="return validator.isNumber(this,event);" onblur="validator.timeRange(this, 1);" autocorrect="off" autocapitalize="off">
 					</td>
 				</tr>
+				<tr id="ncb_enable_option_tr" style="display:none">
+					<th><#Enable_ncb_notice#></th>
+					<td>
+						<select name="ncb_enable_option" class="input_option">
+							<option value="0" <% nvram_match("ncb_enable", "0", "selected"); %>><#Enable_ncb_Non_Block#></option>
+							<option value="1" <% nvram_match("ncb_enable", "1", "selected"); %>><#Enable_ncb_Limited_Block#></option>
+							<option value="2" <% nvram_match("ncb_enable", "2", "selected"); %>><#Enable_ncb_All_Block#></option>
+						</select>
+					</td>
+				</tr>
+
+				<tr id="sw_mode_radio_tr" style="display:none">
+					<th><#OP_AP_item#></th>
+					<td>
+						<input type="radio" name="sw_mode_radio" value="1" <% nvram_match_x("","sw_mode","3", "checked"); %> ><#checkbox_Yes#>
+						<input type="radio" name="sw_mode_radio" value="0" <% nvram_match_x("","sw_mode","1", "checked"); %> ><#checkbox_No#>
+					</td>
+				</tr>
 			</table>
 
 			<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3"  class="FormTable" style="margin-top:8px;">
@@ -1743,7 +1811,9 @@ function pullPingTargetList(obj){
 				<tr id="sshd_port_tr">
 					<th width="40%"><#Port_SSH#></th>
 					<td>
-						<input type="text" class="input_6_table" maxlength="5" name="sshd_port" onKeyPress="return validator.isNumber(this,event);" value='<% nvram_get("sshd_port"); %>' autocorrect="off" autocapitalize="off">
+						<input type="text" class="input_6_table" maxlength="5" id="sshd_port_x" name="sshd_port_x" onKeyPress="return validator.isNumber(this,event);" autocorrect="off" autocapitalize="off" value='<% nvram_get("sshd_port_x"); %>' onkeydown="reset_portconflict_hint();">
+						<span id="port_conflict_sshdport" style="color: #e68282; display: none;">Port Conflict</span>
+						<div style="color: #FFCC00;">* <#SSH_Port_Suggestion#></div>
 					</td>
 				</tr>
 				<!--tr id="remote_access_tr" style="display:none">
@@ -1782,7 +1852,14 @@ function pullPingTargetList(obj){
 				<tr id="auth_keys_tr">
 					<th><#Authorized_Keys#></th>
 					<td>
-						<textarea rows="5" cols="55" class="textarea_ssh_table"  name="sshd_authkeys" maxlength="2999"><% nvram_get("sshd_authkeys"); %></textarea>
+						<textarea rows="5" class="textarea_ssh_table" style="width:98%; overflow:auto; word-break:break-all;" name="sshd_authkeys" maxlength="2999"><% nvram_get("sshd_authkeys"); %></textarea>
+					</td>
+				</tr>
+				<tr id="plc_sleep_tr" style="display:none;">
+					<th align="right"><a class="hintstyle" href="javascript:void(0);" onClick="openHint(11,12);">Enable PLC sleep automatically<!--untranslated--></a></th>
+					<td>
+						<input type="radio" name="plc_sleep_enabled" value="1" <% nvram_match_x("","plc_sleep_enabled","1", "checked"); %> ><#checkbox_Yes#>
+						<input type="radio" name="plc_sleep_enabled" value="0" <% nvram_match_x("","plc_sleep_enabled","0", "checked"); %> ><#checkbox_No#>
 					</td>
 				</tr>
 				<tr>
@@ -1814,8 +1891,10 @@ function pullPingTargetList(obj){
 				<tr id="https_lanport">
 					<th>HTTPS LAN port</th>
 					<td>
-						<input type="text" maxlength="5" class="input_6_table" name="https_lanport" value="<% nvram_get("https_lanport"); %>" onKeyPress="return validator.isNumber(this,event);" onBlur="change_url(this.value, 'https_lan');" autocorrect="off" autocapitalize="off">
-						<span id="https_access_page"></span>
+						<input type="text" maxlength="5" class="input_6_table" id="https_lanport_input" name="https_lanport" value="<% nvram_get("https_lanport"); %>" onKeyPress="return validator.isNumber(this,event);" onBlur="change_url(this.value, 'https_lan');" autocorrect="off" autocapitalize="off" onkeydown="reset_portconflict_hint();">
+						<span id="port_conflict_httpslanport" style="color: #e68282; display: none;">Port Conflict</span>
+						<div id="https_access_page" style="color: #FFCC00;"></div>
+						<div style="color: #FFCC00;">* <#HttpsLanport_Hint#></div>
 					</td>
 				</tr>
 			</table>
@@ -1889,7 +1968,7 @@ function pullPingTargetList(obj){
 			<div id="http_clientlist_Block"></div>
 			<div class="apply_gen">
 				<input name="button" type="button" class="button_gen" onclick="applyRule();" value="<#CTL_apply#>"/>
-			</div>   
+			</div>
 		</td>
 	</tr>
 </tbody>

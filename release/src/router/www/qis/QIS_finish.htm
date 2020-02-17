@@ -26,6 +26,7 @@ span{
 <script type="text/javascript" src="/qis/QISMobilePlugin.js"></script>
 <script type="text/JavaScript" src="/js/jquery.js"></script>
 <script type="text/javascript" src="/help.js"></script>
+<script type="text/javascript" src="/js/httpApi.js"></script>
 <script>
 /*
 	# restart needed service after loading this page immediately by restartService();
@@ -248,7 +249,7 @@ function doLiveUpdate(_do){
 		document.start_update.submit();
 	}
 	else{
-		setTimeout("parent.location.href='/'", 3000);
+		finish_qis();
 	}
 }
 
@@ -444,6 +445,17 @@ function checkIsNewFirmware(){
 
 	}
 	else{
+		setTimeout(function(){
+			finish_qis();
+		}, 1000);
+	}
+}
+
+var retry_cnt = 24;
+function finish_qis(){
+	var cur_rc_service = httpApi.nvramGet(["rc_service"], true).rc_service;
+
+	if( cur_rc_service == ""){
 		if(parent.sysReboot || isWLclient())
 			restartService();
 		else if(parent.changeSubnet){
@@ -457,6 +469,16 @@ function checkIsNewFirmware(){
 				parent.location.href = '/';
 			}, delayTimeout);
 		}
+	}
+	else{
+		if(retry_cnt > 0){
+			setTimeout(function(){
+				finish_qis();
+			}, 5000);
+			retry_cnt--;
+		}
+		else
+			parent.location.href = '/';
 	}
 }
 
@@ -568,7 +590,9 @@ function QKfinish_load_body(){
 	var shown_str;
 
 	// disable click button for low-end HW SPEC
-	if(document.restartForm.productid.value == "RT-AC51U+"){
+	if(document.restartForm.productid.value == "RT-AC51U+"
+	|| document.restartForm.productid.value == "RT-ACRH26"
+	|| document.restartForm.productid.value == "RT-AC85P"){
 		$("#nextButton").hide();
 		$("#loadingIcon").show();
 
@@ -581,6 +605,11 @@ function QKfinish_load_body(){
 	parent.detect_firmware();
 	document.getElementById("QISmain").style.display = "";
 	parent.document.title = "<#Web_Title#> - <#QKSet_all_title#>";
+
+	var linkInternet = httpApi.isConnected();
+	if(linkInternet){
+		document.getElementById("main_manual").style.display = "";
+	}
 
 	if(gobi_support){
 		$("#freqtitle2")[0].style.display = "none";
@@ -1405,6 +1434,7 @@ var startQuery = function(){
 		}
 	});
 };
+
 </script>
 </head>
 
@@ -1671,7 +1701,7 @@ var startQuery = function(){
 
 <div id="AreaHint" style="margin-top:10px; margin-left:5px;">
 	<div><img style="width: 720px; *width: 710px; height: 2px;" src="/images/New_ui/export/line_export.png"></div>
-	<div id="main_manual" style="padding-left:20px;margin-top:10px">
+	<div id="main_manual" style="padding-left:20px;margin-top:10px;display:none;">
 		<span><#ASUS_Registration#></span>
 	</div>	
 </div>

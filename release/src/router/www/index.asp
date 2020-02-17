@@ -976,7 +976,6 @@ function change_wan_unit(wan_unit_flag){
 }
 
 function show_ddns_fail_hint() {
-	var ddns_return_code = '<% nvram_get_ddns("LANHostConfig","ddns_return_code"); %>';
 	var str="";
 	if(sw_mode != 3 && document.getElementById("connect_status").className == "connectstatusoff")
 		str = "<#Disconnected#>";
@@ -988,7 +987,8 @@ function show_ddns_fail_hint() {
 	else 
 		str = "<#LANHostConfig_x_DDNS_alarm_2#>";
 
-	overlib(str);
+	if(str != "")
+		overlib(str);
 }
 
 function check_dualwan(flag){

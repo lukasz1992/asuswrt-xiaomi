@@ -128,15 +128,6 @@ function QKaccount_load_body(){
 	}
 	else
 		document.getElementById('vpn_client_check').checked = false;
-
-	if( !parent.meoVoda_support ){
-		document.getElementById('meoOption').outerHTML = "";
-		document.getElementById('vodafoneOption').outerHTML = "";
-	}
-	
-	if( !parent.movistarTriple_support ){
-		document.getElementById('movistarOption').outerHTML = "";
-	}
 	
 	if(parent.dual_ewan || parent.dualwan_enabled){
 		if((parent.dual_ewan && parent.cur_wan_unit == 0) || (parent.dualwan_enabled && parent.ewan_index == 0)){

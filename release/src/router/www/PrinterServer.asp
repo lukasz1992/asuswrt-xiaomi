@@ -69,11 +69,11 @@
 function initial(){
 	show_menu();
 	//id="faq" href="https://www.asus.com/US/support/FAQ/114046"
-        httpApi.faqURL("faq1", "114046", "https://www.asus.com", "/support/FAQ/");
+        httpApi.faqURL("114046", function(url){document.getElementById("faq1").href=url;});
 	//id="faq" href="https://www.asus.com/US/support/FAQ/114024"
-        httpApi.faqURL("faq2", "114024", "https://www.asus.com", "/support/FAQ/");
+        httpApi.faqURL("114024", function(url){document.getElementById("faq2").href=url;});
 	//id="faq" href="https://www.asus.com/US/support/FAQ/113661"
-        httpApi.faqURL("faq3", "113661", "https://www.asus.com", "/support/FAQ/");
+        httpApi.faqURL("113661", function(url){document.getElementById("faq3").href=url;});
 }
 
 function showMethod(flag1, flag2){
@@ -151,7 +151,7 @@ function showMethod(flag1, flag2){
 											<ul class="">
 												<li>
 													<a id="faq1" href="" target="_blank" style="text-decoration:underline;font-size:14px;font-weight:bolder;color:#FFF"><#asus_ez_print_share#> FAQ</a>&nbsp;&nbsp;
-													<a href="http://dlcdnet.asus.com/pub/ASUS/LiveUpdate/Release/Wireless/Printer.zip" style="text-decoration:underline;font-size:14px;font-weight:bolder;color:#FC0">Download Now!</a>
+													<a href="http://dlcdnet.asus.com/pub/ASUS/LiveUpdate/Release/Wireless/Printer.zip" style="text-decoration:underline;font-size:14px;font-weight:bolder;color:#FC0"><#Download_now#></a>
 												</li>
 												<li style="margin-top:10px;">
 													<a id="faq2" href="" target="_blank" style="text-decoration:underline;font-size:14px;font-weight:bolder;color:#FFF"><#LPR_print_share#> FAQ (Windows)</a>&nbsp;&nbsp;

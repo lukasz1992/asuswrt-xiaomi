@@ -194,7 +194,7 @@ int get_list_strings_count(char **list, int size, char *str)
 int main(int argc, char *argv[])
 {
 	FILE *fp;
-	int n=0;
+	int n=0, spnego = 0;
 	char p_computer_name[16]; // computer_name's len is CKN_STR15.
 	disk_info_t *follow_disk, *disks_info = NULL;
 	partition_info_t *follow_partition;
@@ -203,6 +203,9 @@ int main(int argc, char *argv[])
 	int sh_num;
 	char **folder_list = NULL;
 	int acc_num, first;
+#if defined(RTCONFIG_SOC_IPQ8074) || defined(RTCONFIG_SOC_IPQ8064)
+	int max_user = 32;
+#endif
 #ifdef RTCONFIG_PERMISSION_MANAGEMENT
 	PMS_ACCOUNT_INFO_T *account_list, *follow_account;
 	int group_num;
@@ -218,6 +221,10 @@ int main(int argc, char *argv[])
 	int dup, same_m_pt = 0;
 	char unique_share_name[PATH_MAX];
 	int st_samba_mode = nvram_get_int("st_samba_mode");
+
+#if defined(RTCONFIG_SAMBA36X)
+	spnego = 1;
+#endif
 
 	unlink("/var/log.samba");
 
@@ -248,6 +255,18 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+#if defined(RTCONFIG_SAMBA36X) && defined(RTCONFIG_QCA)
+	fprintf(fp, "max protocol = SMB2\n"); /* enable SMB1 & SMB2 simultaneously, rewrite when GUI is ready!! */
+	/* min protocol = SMB2, min protocol = LANMAN2, max protocol = SMB3 ... */
+	fprintf(fp, "smb encrypt = disabled\n");
+	fprintf(fp, "min receivefile size = 16384\n");
+	fprintf(fp, "passdb backend = smbpasswd\n");
+	fprintf(fp, "smb passwd file = /etc/samba/smbpasswd\n");
+#endif
+#if defined(RTCONFIG_SAMBA36X)
+	fprintf(fp, "username level = 20\n");
+#endif
+
 	fprintf(fp, "unix charset = UTF8\n");		// ASUS add
 	fprintf(fp, "display charset = UTF8\n");	// ASUS add
 	fprintf(fp, "load printers = no\n");	//Andy Chiu, 2017/1/20. Add for Samba printcap issue.
@@ -271,14 +290,14 @@ int main(int argc, char *argv[])
 //#if defined(RTCONFIG_TFAT) || defined(RTCONFIG_TUXERA_NTFS) || defined(RTCONFIG_TUXERA_HFS)
 		if(nvram_get_int("enable_samba_tuxera") == 1){
 			fprintf(fp, "auth methods = guest\n");
-			fprintf(fp, "guest account = admin\n");
+			fprintf(fp, "guest account = %s\n", nvram_get("http_username")? : "admin");
 			fprintf(fp, "map to guest = Bad Password\n");
 			fprintf(fp, "guest ok = yes\n");
 		}
 		else{
 #if defined(RTCONFIG_SAMBA36X)
 			fprintf(fp, "auth methods = guest\n");
-			fprintf(fp, "guest account = admin\n");
+			fprintf(fp, "guest account = %s\n", nvram_get("http_username")? : "admin");
 			fprintf(fp, "map to guest = Bad Password\n");
 			fprintf(fp, "guest ok = yes\n");
 #else
@@ -289,7 +308,7 @@ int main(int argc, char *argv[])
 #else
 #if defined(RTCONFIG_SAMBA36X)
 		fprintf(fp, "auth methods = guest\n");
-		fprintf(fp, "guest account = admin\n");
+		fprintf(fp, "guest account = %s\n", nvram_get("http_username")? : "admin");
 		fprintf(fp, "map to guest = Bad Password\n");
 		fprintf(fp, "guest ok = yes\n");
 #else
@@ -311,8 +330,15 @@ int main(int argc, char *argv[])
 	fprintf(fp, "force create mode = 0777\n");
 
 	/* max users */
-	if(strcmp(nvram_safe_get("st_max_user"), "") != 0)
+#if defined(RTCONFIG_SOC_IPQ8074) || defined(RTCONFIG_SOC_IPQ8064)
+	if (nvram_get_int("st_max_user") > max_user)
+		max_user = nvram_get_int("st_max_user");
+	fprintf(fp, "max connections = %d\n", max_user);
+#else
+	if(strcmp(nvram_safe_get("st_max_user"), "") != 0){
 		fprintf(fp, "max connections = %s\n", nvram_safe_get("st_max_user"));
+	}
+#endif
 
 	if(!nvram_get_int("stop_samba_speedup")){
 #if defined(RTCONFIG_SOC_IPQ8064)
@@ -328,7 +354,7 @@ int main(int argc, char *argv[])
 #endif
 	}
 	fprintf(fp, "obey pam restrictions = no\n");
-	fprintf(fp, "use spnego = no\n");		// ASUS add
+	fprintf(fp, "use spnego = %s\n", spnego? "yes" : "no");		// ASUS add
 	fprintf(fp, "client use spnego = no\n");	// ASUS add
 //	fprintf(fp, "client use spnego = yes\n");	// ASUS add
 	fprintf(fp, "disable spoolss = yes\n");		// ASUS add

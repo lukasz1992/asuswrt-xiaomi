@@ -363,7 +363,20 @@ PSTA_ERR:
 #endif
 #endif
 
+int wl_cap(int unit, char *cap_check)
+{
+	char ifname[NVRAM_MAX_PARAM_LEN];
+	char cap[WLC_IOCTL_SMLEN];
+	char caps[WLC_IOCTL_SMLEN * 2];
+	char *next = NULL;
 
+	wl_ifname(unit, 0, ifname);
+	if (!wl_iovar_get(ifname, "cap", (void *)caps, sizeof(caps))) {
+		foreach(cap, caps, next) {
+			if (!strcmp(cap, cap_check))
+				return 1;
+		}
+	}
 
-
-
+	return 0;
+}

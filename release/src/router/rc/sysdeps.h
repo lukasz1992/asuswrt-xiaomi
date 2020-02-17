@@ -36,7 +36,7 @@ extern void generate_wl_para(char *ifname, int unit, int subunit);
 extern void reinit_hwnat(int unit);
 #elif defined(RTCONFIG_QCA)
 
-#if defined(RTCONFIG_SOC_QCA9557) || defined(RTCONFIG_QCA953X) || defined(RTCONFIG_QCA956X) || defined(RTCONFIG_SOC_IPQ40XX)
+#if defined(RTCONFIG_SOC_QCA9557) || defined(RTCONFIG_QCA953X) || defined(RTCONFIG_QCA956X) || defined(RTCONFIG_QCN550X) || defined(RTCONFIG_SOC_IPQ40XX)
 #define reinit_hwnat(unit) reinit_sfe(unit)
 extern void reinit_sfe(int unit);
 static inline void tweak_wifi_ps(const char *wif) { }

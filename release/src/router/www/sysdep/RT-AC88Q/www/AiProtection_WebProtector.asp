@@ -89,6 +89,9 @@ function initial(){
 
 	generate_group_list();
 	//showDropdownClientList('setClientIP', 'mac', 'all', 'ClientList_Block_PC', 'pull_arrow', 'all');
+
+	if(!ASUS_EULA.status("tm"))
+		ASUS_EULA.config(eula_confirm, cancel);
 }
 
 function device_object(name, mac, type, type_name, description, group_array){
@@ -593,76 +596,80 @@ function edit_table(){
 var ctf_disable = '<% nvram_get("ctf_disable"); %>';
 var ctf_fa_mode = '<% nvram_get("ctf_fa_mode"); %>';
 function applyRule(){
-	var wrs_filter_row = "";
-	if(document.form.PC_devicename.value != ""){
-		alert("You must press add icon to add a new rule first.");
-		return false;
-	}
+	document.form.action_script.value = "restart_wrs;restart_firewall";
 
-	if(wrs_filter != ""){
-		if(edit_table())
-			wrs_filter_row =  wrs_filter.split("<");
-		else
+	if(document.form.wrs_enable.value == "1") {
+		var wrs_filter_row = "";
+		if(document.form.PC_devicename.value != ""){
+			alert("<#JS_add_rule#>");
 			return false;
-	}
+		}
 
-	var wrs_rulelist = "";
-	for(i=0;i<wrs_filter_row.length;i++){
-		var wrs_filter_col = wrs_filter_row[i].split(">");
-		for(j=0;j<wrs_filter_col.length;j++){
-			if(j == 0){
-				if(wrs_rulelist == ""){
+		if(wrs_filter != ""){
+			if(edit_table())
+				wrs_filter_row =  wrs_filter.split("<");
+			else
+				return false;
+		}
+
+		var wrs_rulelist = "";
+		for(i=0;i<wrs_filter_row.length;i++){
+			var wrs_filter_col = wrs_filter_row[i].split(">");
+			for(j=0;j<wrs_filter_col.length;j++){
+				if(j == 0){
+					if(wrs_rulelist == ""){
+						wrs_rulelist += wrs_filter_col[j] + ">";
+					}
+					else{
+						wrs_rulelist += "<" + wrs_filter_col[j] + ">";
+					}
+				}
+				else if(j == 1){
 					wrs_rulelist += wrs_filter_col[j] + ">";
 				}
 				else{
-					wrs_rulelist += "<" + wrs_filter_col[j] + ">";
-				}
-			}
-			else if(j == 1){
-				wrs_rulelist += wrs_filter_col[j] + ">";
-			}
-			else{
-				var cate_id_array = wrs_filter_col[j].split(",");
-				var wrs_first_cate = 0;
-				for(k=0;k<cate_id_array.length;k++){
-					if(cate_id_array[k] == 1){
-						if(wrs_first_cate == 0){
-							if(wrs_id_array[j-2][k] != ""){
-								wrs_rulelist += wrs_id_array[j-2][k];
-								wrs_first_cate = 1;
+					var cate_id_array = wrs_filter_col[j].split(",");
+					var wrs_first_cate = 0;
+					for(k=0;k<cate_id_array.length;k++){
+						if(cate_id_array[k] == 1){
+							if(wrs_first_cate == 0){
+								if(wrs_id_array[j-2][k] != ""){
+									wrs_rulelist += wrs_id_array[j-2][k];
+									wrs_first_cate = 1;
+								}
 							}
-						}
-						else{
-							if(wrs_id_array[j-2][k] != ""){
-								wrs_rulelist += "," + wrs_id_array[j-2][k];
+							else{
+								if(wrs_id_array[j-2][k] != ""){
+									wrs_rulelist += "," + wrs_id_array[j-2][k];
+								}
 							}
 						}
 					}
-				}
 
-				if(j != wrs_filter_col.length-1){
-					wrs_rulelist += ">";
+					if(j != wrs_filter_col.length-1){
+						wrs_rulelist += ">";
+					}
 				}
 			}
 		}
+
+		document.form.wrs_rulelist.value = wrs_rulelist;
+		if(ctf_disable == 0 && ctf_fa_mode == 2){
+			if(!confirm(Untranslated.ctf_fa_hint)){
+				return false;
+			}
+			else{
+				document.form.action_script.value = "reboot";
+				document.form.action_wait.value = "<% nvram_get("reboot_time"); %>";
+			}
+		}
+
+		if(reset_wan_to_fo.change_status)
+			reset_wan_to_fo.change_wan_mode(document.form);
 	}
 
-	document.form.action_script.value = "restart_wrs;restart_firewall";
-	document.form.wrs_rulelist.value = wrs_rulelist;
-	if(ctf_disable == 0 && ctf_fa_mode == 2){
-		if(!confirm(Untranslated.ctf_fa_hint)){
-			return false;
-		}
-		else{
-			document.form.action_script.value = "reboot";
-			document.form.action_wait.value = "<% nvram_get("reboot_time"); %>";
-		}
-	}
-
-	if(reset_wan_to_fo(document.form, document.form.wrs_enable.value)) {
-		showLoading();
-		document.form.submit();
-	}
+	showLoading();
+	document.form.submit();
 }
 
 function translate_category_id(){
@@ -726,7 +733,26 @@ function cancel(){
 function eula_confirm(){
 	document.form.TM_EULA.value = 1;
 	document.form.wrs_enable.value = 1;
+	document.form.action_wait.value = "15";
 	applyRule();
+}
+function switch_control(_status){
+	if(_status) {
+		if(reset_wan_to_fo.check_status()) {
+			if(ASUS_EULA.check("tm")){
+				document.form.wrs_enable.value = 1;
+				applyRule();
+			}
+		}
+		else
+			cancel();
+	}
+	else {
+		document.form.wrs_enable.value = 0;
+		showhide("list_table",0);
+		document.form.wrs_rulelist.disabled = true;
+		applyRule();
+	}
 }
 
 function generate_group_list(){
@@ -832,26 +858,10 @@ function setGroup(name){
 												<script type="text/javascript">
 													$('#radio_web_restrict_enable').iphoneSwitch('<% nvram_get("wrs_enable"); %>',
 														function(){
-															curState = 1;
-															ASUS_EULA.config(eula_confirm, cancel);
-
-															if(ASUS_EULA.check("tm")){
-																document.form.wrs_enable.value = 1;
-																showhide("list_table",1);
-																applyRule();
-															}
+															switch_control(1);
 														},
 														function(){
-															document.form.wrs_enable.value = 0;
-															showhide("list_table",0);
-															document.form.wrs_rulelist.disabled = true;
-															if(document.form.wrs_enable_ori.value == 1){
-																applyRule();
-															}
-															else{
-																curState = 0;
-															}
-
+															switch_control(0);
 														}
 													);
 												</script>

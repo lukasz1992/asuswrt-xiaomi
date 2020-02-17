@@ -64,6 +64,9 @@ endif # CONFIG_VISUALIZATION
 	rm -rf $(INSTALLDIR)/www/model_patch
 	rm -rf $(INSTALLDIR)/www/.gitignore
 	rm -rf `find $(INSTALLDIR) -name "*.bak"`
+	rm -rf $(INSTALLDIR)/www/device-map/compatibility.asp
+	cp -rf $(INSTALLDIR)/www/images/new/* $(INSTALLDIR)/www/images/
+	rm -rf $(INSTALLDIR)/www/images/new
 
 ifeq ($(RTCONFIG_AMAS),y)
 	cp $(TOP)/www/sysdep/BLUECAVE/www/QIS_wizard.htm $(INSTALLDIR)/www/QIS_wizard.htm
@@ -356,7 +359,6 @@ endif
 ifeq ($(RTCONFIG_OPENVPN), y)
 	cd $(INSTALLDIR)/www && ln -sf ../etc/openvpn/server1/client.ovpn && cd $(TOP)/www
 else
-	rm -rf $(INSTALLDIR)/www/merlin.js
 	rm -rf $(INSTALLDIR)/www/ajax_openvpn_server.asp
 	rm -rf $(INSTALLDIR)/www/Advanced_VPN_OpenVPN.asp
 ifneq ($(RTCONFIG_ACCEL_PPTPD), y)
@@ -404,6 +406,18 @@ ifneq ($(RTCONFIG_BWDPI)$(RTCONFIG_BWDPI_DEP),y)
 	rm -rf $(INSTALLDIR)/www/images/New_ui/mals.svg
 	rm -rf $(INSTALLDIR)/www/images/New_ui/recount.svg
 	rm -rf $(INSTALLDIR)/www/images/New_ui/recount_hover.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/add.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/add_hover.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/disable.svg
+	rm -rf $(INSTALLDIR)/www/images/save.svg
+	rm -rf $(INSTALLDIR)/www/images/save_hover.svg
+	rm -rf $(INSTALLDIR)/www/images/save_active.svg
+	rm -rf $(INSTALLDIR)/www/images/delete.svg
+	rm -rf $(INSTALLDIR)/www/images/delete_hover.svg
+	rm -rf $(INSTALLDIR)/www/images/delete_active.svg
+	rm -rf $(INSTALLDIR)/www/images/edit.svg
+	rm -rf $(INSTALLDIR)/www/images/edit_hover.svg
+	rm -rf $(INSTALLDIR)/www/images/edit_active.svg
 ifneq ($(RTCONFIG_PARENTALCTRL),y)
 	rm -rf $(INSTALLDIR)/www/blocking.asp
 endif
@@ -449,7 +463,6 @@ endif
 
 ifneq ($(RTCONFIG_DROPBOXCLIENT),y)
 	rm -rf $(INSTALLDIR)/www/images/cloudsync/dropbox.png
-	rm -rf $(INSTALLDIR)/www/dropbox_callback.htm
 endif
 
 ifneq ($(RTCONFIG_FTPCLIENT),y)
@@ -538,13 +551,10 @@ ifneq ($(RTCONFIG_WTFAST), y)
 	rm -rf $(INSTALLDIR)/www/images/wtfast_back_hover.svg
 	rm -rf $(INSTALLDIR)/www/images/wtfast_device.svg
 	rm -rf $(INSTALLDIR)/www/images/wtfast_point.gif
-	rm -rf $(INSTALLDIR)/www/images/New_ui/add.svg
-	rm -rf $(INSTALLDIR)/www/images/New_ui/add_hover.svg
 ifneq ($(RTCONFIG_BWDPI)$(RTCONFIG_BWDPI_DEP),y)
 	rm -rf $(INSTALLDIR)/www/images/New_ui/delete.svg
 	rm -rf $(INSTALLDIR)/www/images/New_ui/delete_hover.svg
 endif
-	rm -rf $(INSTALLDIR)/www/images/New_ui/disable.svg
 	rm -rf $(INSTALLDIR)/www/images/New_ui/enable.svg
 	rm -rf $(INSTALLDIR)/www/images/New_ui/logout.svg
 	rm -rf $(INSTALLDIR)/www/images/New_ui/logout_hover.svg
@@ -719,4 +729,8 @@ endif
 
 ifneq ($(RTCONFIG_DBLOG),y)
 	rm -rf $(INSTALLDIR)/www/images/New_ui/dblog_diag.gif
+endif
+
+ifneq ($(RTCONFIG_UUPLUGIN), y)
+	rm -rf $(INSTALLDIR)/www/images/uu_accelerator.png
 endif

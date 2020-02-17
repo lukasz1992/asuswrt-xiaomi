@@ -1389,12 +1389,16 @@ void init_syspara(void)
 		}
 		else if (strcmp(dst, "5G_BAND14") == 0)
 			nvram_set("wl1_country_code", "US");
+		else if (strcmp(dst, "5G_BAND12") == 0)
+			nvram_set("wl1_country_code", "IL");
 		else if (strcmp(dst, "5G_BAND24") == 0)
 			nvram_set("wl1_country_code", "TW");
 		else if (strcmp(dst, "5G_BAND4") == 0)
 			nvram_set("wl1_country_code", "CN");
 		else if (strcmp(dst, "5G_BAND124") == 0)
 			nvram_set("wl1_country_code", "IN");
+		else if (strcmp(dst, "5G_ALL") == 0)
+			nvram_set("wl1_country_code", "RU");
 		else
 			nvram_set("wl1_country_code", "DB");
 	}
@@ -1627,7 +1631,7 @@ void generate_wl_para(int unit, int subunit)
 {
 }
 
-#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2)  || defined(RTAC54U) || defined(RTAC1200GA1)  || defined(RTAC1200GU) || defined(RTAC53) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26)
+#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2)  || defined(RTAC54U) || defined(RTAC1200GA1)  || defined(RTAC1200GU) || defined(RTAC53) || defined(RTAC85U) || defined(RTN800HP) || defined(RTACRH26)
 #define HW_NAT_WIFI_OFFLOADING		(0xFF00)
 #define HW_NAT_DEVNAME			"hwnat0"
 static void adjust_hwnat_wifi_offloading(void)
@@ -1691,7 +1695,7 @@ void reinit_hwnat(int unit)
 	if (nvram_get_int("qos_enable") == 1)
 		act = 0;
 
-#if defined(RTN14U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTAC54U) || defined(RTN56UB2) || defined(RTAC1200GA1)  || defined(RTAC1200GU) || defined(RTAC53) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26)
+#if defined(RTN14U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTAC54U) || defined(RTN56UB2) || defined(RTAC1200GA1)  || defined(RTAC1200GU) || defined(RTAC53) || defined(RTAC85U) || defined(RTN800HP) || defined(RTACRH26)
 	if (act > 0 && !nvram_match("switch_wantag", "none") && !nvram_match("switch_wantag", ""))
 		act = 0;
 #endif

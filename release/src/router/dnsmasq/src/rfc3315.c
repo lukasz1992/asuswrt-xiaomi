@@ -1,4 +1,4 @@
-/* dnsmasq is Copyright (c) 2000-2017 Simon Kelley
+/* dnsmasq is Copyright (c) 2000-2018 Simon Kelley
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,11 +21,11 @@
 
 struct state {
   unsigned char *clid;
-  int clid_len, iaid, ia_type, interface, hostname_auth, lease_allocate;
+  int clid_len, ia_type, interface, hostname_auth, lease_allocate;
   char *client_hostname, *hostname, *domain, *send_domain;
   struct dhcp_context *context;
   struct in6_addr *link_address, *fallback, *ll_addr, *ula_addr;
-  unsigned int xid, fqdn_flags;
+  unsigned int xid, fqdn_flags, iaid;
   char *iface_name;
   void *packet_options, *end;
   struct dhcp_netid *tags, *context_tags;
@@ -134,21 +134,41 @@ static int dhcp6_maybe_relay(struct state *state, void *inbuff, size_t sz,
       else
 	{
 	  struct dhcp_context *c;
+	  struct shared_network *share = NULL;
 	  state->context = NULL;
-	   
+
 	  if (!IN6_IS_ADDR_LOOPBACK(state->link_address) &&
 	      !IN6_IS_ADDR_LINKLOCAL(state->link_address) &&
 	      !IN6_IS_ADDR_MULTICAST(state->link_address))
 	    for (c = daemon->dhcp6; c; c = c->next)
-	      if ((c->flags & CONTEXT_DHCP) &&
-		  !(c->flags & (CONTEXT_TEMPLATE | CONTEXT_OLD)) &&
-		  is_same_net6(state->link_address, &c->start6, c->prefix) &&
-		  is_same_net6(state->link_address, &c->end6, c->prefix))
-		{
-		  c->preferred = c->valid = 0xffffffff;
-		  c->current = state->context;
-		  state->context = c;
-		}
+	      {
+		for (share = daemon->shared_networks; share; share = share->next)
+		  {
+		    if (share->shared_addr.s_addr != 0)
+		      continue;
+		    
+		    if (share->if_index != 0 ||
+			!IN6_ARE_ADDR_EQUAL(state->link_address, &share->match_addr6))
+		      continue;
+		    
+		    if ((c->flags & CONTEXT_DHCP) &&
+			!(c->flags & (CONTEXT_TEMPLATE | CONTEXT_OLD)) &&
+			is_same_net6(&share->shared_addr6, &c->start6, c->prefix) &&
+			is_same_net6(&share->shared_addr6, &c->end6, c->prefix))
+		      break;
+		  }
+		
+		if (share ||
+		    ((c->flags & CONTEXT_DHCP) &&
+		     !(c->flags & (CONTEXT_TEMPLATE | CONTEXT_OLD)) &&
+		     is_same_net6(state->link_address, &c->start6, c->prefix) &&
+		     is_same_net6(state->link_address, &c->end6, c->prefix)))
+		  {
+		    c->preferred = c->valid = 0xffffffff;
+		    c->current = state->context;
+		    state->context = c;
+		  }
+	      }
 	  
 	  if (!state->context)
 	    {
@@ -221,21 +241,25 @@ static int dhcp6_maybe_relay(struct state *state, void *inbuff, size_t sz,
       if (opt6_ptr(opt, 0) + opt6_len(opt) > end) 
         return 0;
      
-      int o = new_opt6(opt6_type(opt));
-      if (opt6_type(opt) == OPTION6_RELAY_MSG)
+      /* Don't copy MAC address into reply. */
+      if (opt6_type(opt) != OPTION6_CLIENT_MAC)
 	{
-	  struct in6_addr align;
-	  /* the packet data is unaligned, copy to aligned storage */
-	  memcpy(&align, inbuff + 2, IN6ADDRSZ); 
-	  state->link_address = &align;
-	  /* zero is_unicast since that is now known to refer to the 
-	     relayed packet, not the original sent by the client */
-	  if (!dhcp6_maybe_relay(state, opt6_ptr(opt, 0), opt6_len(opt), client_addr, 0, now))
-	    return 0;
+	  int o = new_opt6(opt6_type(opt));
+	  if (opt6_type(opt) == OPTION6_RELAY_MSG)
+	    {
+	      struct in6_addr align;
+	      /* the packet data is unaligned, copy to aligned storage */
+	      memcpy(&align, inbuff + 2, IN6ADDRSZ); 
+	      state->link_address = &align;
+	      /* zero is_unicast since that is now known to refer to the 
+		 relayed packet, not the original sent by the client */
+	      if (!dhcp6_maybe_relay(state, opt6_ptr(opt, 0), opt6_len(opt), client_addr, 0, now))
+		return 0;
+	    }
+	  else
+	    put_opt6(opt6_ptr(opt, 0), opt6_len(opt));
+	  end_opt6(o);
 	}
-      else if (opt6_type(opt) != OPTION6_CLIENT_MAC)
-	put_opt6(opt6_ptr(opt, 0), opt6_len(opt));
-      end_opt6(o);	    
     }
   
   return 1;
@@ -486,36 +510,64 @@ static int dhcp6_no_relay(struct state *state, int msg_type, void *inbuff, size_
 	 }
     }	 
   
-  if (state->clid)
+  if (state->clid &&
+      (config = find_config(daemon->dhcp_conf, state->context, state->clid, state->clid_len, state->mac, state->mac_len, state->mac_type, NULL)) &&
+      have_config(config, CONFIG_NAME))
     {
-      config = find_config(daemon->dhcp_conf, state->context, state->clid, state->clid_len, state->mac, state->mac_len, state->mac_type, NULL);
-      
-      if (have_config(config, CONFIG_NAME))
+      state->hostname = config->hostname;
+      state->domain = config->domain;
+      state->hostname_auth = 1;
+    }
+  else if (state->client_hostname)
+    {
+      state->domain = strip_hostname(state->client_hostname);
+            
+      if (strlen(state->client_hostname) != 0)
 	{
-	  state->hostname = config->hostname;
-	  state->domain = config->domain;
-	  state->hostname_auth = 1;
-	}
-      else if (state->client_hostname)
-	{
-	  state->domain = strip_hostname(state->client_hostname);
+	  state->hostname = state->client_hostname;
 	  
-	  if (strlen(state->client_hostname) != 0)
+	  if (!config)
 	    {
-	      state->hostname = state->client_hostname;
-	      if (!config)
-		{
-		  /* Search again now we have a hostname. 
-		     Only accept configs without CLID here, (it won't match)
-		     to avoid impersonation by name. */
-		  struct dhcp_config *new = find_config(daemon->dhcp_conf, state->context, NULL, 0, NULL, 0, 0, state->hostname);
-		  if (new && !have_config(new, CONFIG_CLID) && !new->hwaddr)
-		    config = new;
-		}
+	      /* Search again now we have a hostname. 
+		 Only accept configs without CLID here, (it won't match)
+		 to avoid impersonation by name. */
+	      struct dhcp_config *new = find_config(daemon->dhcp_conf, state->context, NULL, 0, NULL, 0, 0, state->hostname);
+	      if (new && !have_config(new, CONFIG_CLID) && !new->hwaddr)
+		config = new;
 	    }
 	}
     }
-
+      
+  if (state->hostname)
+    {
+      struct dhcp_match_name *m;
+      size_t nl = strlen(state->hostname);
+      
+      for (m = daemon->dhcp_name_match; m; m = m->next)
+	{
+	  size_t ml = strlen(m->name);
+	  char save = 0;
+	  
+	  if (nl < ml)
+	    continue;
+	  if (nl > ml)
+	    {
+	      save = state->hostname[ml];
+	      state->hostname[ml] = 0;
+	    }
+	  
+	  if (hostname_isequal(state->hostname, m->name) &&
+	      (save == 0 || m->wildcard))
+	    {
+	      m->netid->next = state->tags;
+	      state->tags = m->netid;
+	    }
+	  
+	  if (save != 0)
+	    state->hostname[ml] = save;
+	}
+    }
+    
   if (config)
     {
       struct dhcp_netid_list *list;
@@ -884,7 +936,7 @@ static int dhcp6_no_relay(struct state *state, int msg_type, void *inbuff, size_
 
 	     if (!ia_option)
 	       {
-		 /* If we get a request with a IA_*A without addresses, treat it exactly like
+		 /* If we get a request with an IA_*A without addresses, treat it exactly like
 		    a SOLICT with rapid commit set. */
 		 save_counter(start);
 		 goto request_no_address; 
@@ -1643,7 +1695,7 @@ static void end_ia(int t1cntr, unsigned int min_time, int do_fuzz)
 {
   if (t1cntr != 0)
     {
-      /* go back an fill in fields in IA_NA option */
+      /* go back and fill in fields in IA_NA option */
       int sav = save_counter(t1cntr);
       unsigned int t1, t2, fuzz = 0;
 
@@ -2094,7 +2146,7 @@ void relay_upstream6(struct dhcp_relay *relay, ssize_t sz,
 {
   /* ->local is same value for all relays on ->current chain */
   
-  struct all_addr from;
+  union all_addr from;
   unsigned char *header;
   unsigned char *inbuff = daemon->dhcp_packet.iov_base;
   int msg_type = *inbuff;
@@ -2107,7 +2159,7 @@ void relay_upstream6(struct dhcp_relay *relay, ssize_t sz,
   get_client_mac(peer_address, scope_id, mac, &maclen, &mactype, now);
 
   /* source address == relay address */
-  from.addr.addr6 = relay->local.addr.addr6;
+  from.addr6 = relay->local.addr6;
     
   /* Get hop count from nested relayed message */ 
   if (msg_type == DHCP6RELAYFORW)
@@ -2127,7 +2179,7 @@ void relay_upstream6(struct dhcp_relay *relay, ssize_t sz,
 
       header[0] = DHCP6RELAYFORW;
       header[1] = hopcount;
-      memcpy(&header[2],  &relay->local.addr.addr6, IN6ADDRSZ);
+      memcpy(&header[2],  &relay->local.addr6, IN6ADDRSZ);
       memcpy(&header[18], peer_address, IN6ADDRSZ);
  
       /* RFC-6939 */
@@ -2148,12 +2200,12 @@ void relay_upstream6(struct dhcp_relay *relay, ssize_t sz,
 	  union mysockaddr to;
 	  
 	  to.sa.sa_family = AF_INET6;
-	  to.in6.sin6_addr = relay->server.addr.addr6;
+	  to.in6.sin6_addr = relay->server.addr6;
 	  to.in6.sin6_port = htons(DHCPV6_SERVER_PORT);
 	  to.in6.sin6_flowinfo = 0;
 	  to.in6.sin6_scope_id = 0;
 
-	  if (IN6_ARE_ADDR_EQUAL(&relay->server.addr.addr6, &multicast))
+	  if (IN6_ARE_ADDR_EQUAL(&relay->server.addr6, &multicast))
 	    {
 	      int multicast_iface;
 	      if (!relay->interface || strchr(relay->interface, '*') ||
@@ -2192,7 +2244,7 @@ unsigned short relay_reply6(struct sockaddr_in6 *peer, ssize_t sz, char *arrival
   memcpy(&link, &inbuff[2], IN6ADDRSZ); 
   
   for (relay = daemon->relay6; relay; relay = relay->next)
-    if (IN6_ARE_ADDR_EQUAL(&link, &relay->local.addr.addr6) &&
+    if (IN6_ARE_ADDR_EQUAL(&link, &relay->local.addr6) &&
 	(!relay->interface || wildcard_match(relay->interface, arrival_interface)))
       break;
       

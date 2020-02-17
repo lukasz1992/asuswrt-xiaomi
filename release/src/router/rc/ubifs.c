@@ -267,8 +267,11 @@ void start_ubifs(void)
 	}
 #endif
 
+	userfs_prepare(UBIFS_MNT_DIR);
+
 	notice_set("ubifs", format ? "Formatted" : "Loaded");
 
+#if 0 /* disable legacy & asus autoexec */
 #ifndef RTCONFIG_NVRAM_FILE
 	if (((p = nvram_get("ubifs_exec")) != NULL) && (*p != 0)) {
 		chdir(UBIFS_MNT_DIR);
@@ -277,6 +280,7 @@ void start_ubifs(void)
 	}
 #endif
 	run_userfile(UBIFS_MNT_DIR, ".asusrouter", UBIFS_MNT_DIR, 3);
+#endif
 
 #ifndef RTCONFIG_NVRAM_FILE
 #if defined(RTCONFIG_TEST_BOARDDATA_FILE)
@@ -310,8 +314,10 @@ void stop_ubifs(int stop)
 
 	if ((statfs(UBIFS_MNT_DIR, &sf) == 0) && (sf.f_type != 0x73717368)) {
 		// is mounted
+#if 0 /* disable legacy & asus autoexec */
 		run_userfile(UBIFS_MNT_DIR, ".autostop", UBIFS_MNT_DIR, 5);
 		run_nvscript("script_autostop", UBIFS_MNT_DIR, 5);
+#endif
 	}
 #if defined(RTCONFIG_PSISTLOG)
 	if (!stop && !strncmp(get_syslog_fname(0), UBIFS_MNT_DIR "/", sizeof(UBIFS_MNT_DIR) + 1)) {

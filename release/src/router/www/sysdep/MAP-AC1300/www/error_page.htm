@@ -318,7 +318,7 @@ function initial(){
 	var nowIP = login_ip_str_now();
 	var html_code = '';
 	var url_flag = "";
-	var html_code_notlogin = "<ul><li><span>Please check with your network administrator.</span></li></ul>";
+	var html_code_notlogin = "<ul><li><span><#web_redirect_suggestion_admin#></span></li></ul>";
 	var showtext = function(obj, str){if(obj)obj.innerHTML=str;}
 
 	if(casenum == 1){
@@ -362,7 +362,7 @@ function initial(){
 			//html_code += "</div>";
 			$("#animation_field").show();
 			detect_ppp_connect();
-			$("#page_title").html("Please Wait for Internet Reconnecting");
+			$("#page_title").html("<#web_redirect_reconnecting#>");
 			$("#reason_title").hide();
 			$("#reason_field").hide();
 			$("#suggest_title").hide();

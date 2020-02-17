@@ -121,17 +121,9 @@ function initial(){
 		document.form.switch_stb_x.remove(1);
 		show_gaming_note(iptv_port_settings_orig);
 	}
-	if( !meoVoda_support ){
-		document.getElementById('meoOption').outerHTML = "";
-		document.getElementById('vodafoneOption').outerHTML = "";
-	}
 
 	if(hnd_support || based_modelid == "BLUECAVE"){
 		document.getElementById('meoOption').outerHTML = "";
-	}
-	
-	if( !movistarTriple_support ){
-		document.getElementById('movistarOption').outerHTML = "";
 	}
 }
 

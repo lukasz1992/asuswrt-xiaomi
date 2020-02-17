@@ -588,7 +588,7 @@ function _change_wl_unit(val){
 		document.form.wl_subunit.value = (val == '<% nvram_get("wlc_band"); %>') ? 1 : -1;
 	
 	if(smart_connect_support && (isSwMode("rt") || isSwMode("ap")))
-		document.form.current_page.value = "Advanced_Wireless_Content.asp?flag=" + document.form.smart_connect_t.value;
+		document.form.current_page.value = "Advanced_Wireless_Content.asp?flag=" + document.form.smart_connect_x.value;
 
 	change_wl_unit();
 }

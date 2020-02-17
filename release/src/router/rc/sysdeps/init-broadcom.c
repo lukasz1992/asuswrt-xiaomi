@@ -1752,7 +1752,7 @@ void init_switch()
 #ifdef CONFIG_BCMWL5
 	// ctf should be disabled when some functions are enabled
 	if ((nvram_get_int("qos_enable") == 1 && nvram_get_int("qos_type") == 0) ||
-	    (check_wl_guest_bw_enable()  && (nvram_get_int("qos_enable") && nvram_get_int("qos_type") == 2)) ||
+	    (check_wl_guest_bw_enable() || (nvram_get_int("qos_enable") && nvram_get_int("qos_type") == 2)) ||
 	    nvram_get_int("ctf_disable_force")
 #ifndef RTCONFIG_BCMARM
 	|| sw_mode() == SW_MODE_REPEATER
@@ -2824,7 +2824,7 @@ int wl_max_no_vifs(int unit)
 {
 	char nv_interface[NVRAM_MAX_PARAM_LEN];
 	char cap[WLC_IOCTL_SMLEN];
-	char caps[WLC_IOCTL_SMLEN];
+	char caps[WLC_IOCTL_SMLEN * 2];
 	char *name = NULL;
 	char *next = NULL;
 	int max_no_vifs = 0;
@@ -2848,7 +2848,7 @@ int wl_max_no_vifs(int unit)
 		name = nv_interface;
 	}
 
-	if (!wl_iovar_get(name, "cap", (void *)caps, WLC_IOCTL_SMLEN)) {
+	if (!wl_iovar_get(name, "cap", (void *)caps, sizeof(caps))) {
 		foreach(cap, caps, next) {
 			if (!strcmp(cap, "mbss16"))
 				max_no_vifs = 16;
@@ -2862,11 +2862,7 @@ int wl_max_no_vifs(int unit)
 #ifdef RTCONFIG_PSR_GUEST
 	if (!atoi(nvram_safe_get("ure_disable")) || is_psr(unit)) {
 		if (is_psr(unit) && nvram_match(strcat_r(prefix, "psr_guest", tmp), "1"))
-#ifdef HND_ROUTER
-			max_no_vifs = 4;
-#else
-			max_no_vifs = 5;
-#endif
+			max_no_vifs = min(max_no_vifs, 5);
 		else
 			max_no_vifs = 2;
 	}
@@ -3796,8 +3792,12 @@ void generate_wl_para(char *ifname, int unit, int subunit)
 
 #ifdef RTCONFIG_EMF
 		/* Wireless IGMP Snooping */
-		i = nvram_get_int(strcat_r(prefix, "igs", tmp)) || is_psta(unit) || is_psr(unit);
-		nvram_set_int(strcat_r(prefix, "wmf_bss_enable", tmp), i ? 1 : 0);
+		i = nvram_get_int(strcat_r(prefix, "igs", tmp));
+		nvram_set_int(strcat_r(prefix, "wmf_bss_enable", tmp), i
+#ifdef RTCONFIG_PROXYSTA
+				|| is_psta(unit) || is_psr(unit)
+#endif
+		       		? 1 : 0);
 #ifdef RTCONFIG_BCMWL6
 		nvram_set_int(strcat_r(prefix, "wmf_ucigmp_query", tmp), 1);
 		nvram_set_int(strcat_r(prefix, "wmf_mdata_sendup", tmp), 1);
@@ -3834,6 +3834,17 @@ void generate_wl_para(char *ifname, int unit, int subunit)
 			nvram_set_int(strcat_r(prefix, "probresp_sw", tmp), 1);
 		else
 			nvram_set_int(strcat_r(prefix, "probresp_sw", tmp), 0);
+#endif
+
+#ifdef RTCONFIG_BCMARM
+		if (is_ure(unit)
+#if defined(RTCONFIG_BCMWL6) && defined(RTCONFIG_PROXYSTA)
+			|| is_psta(unit) || is_psr(unit)
+#endif
+		) {
+			if (!nvram_get_int(strcat_r(prefix, "mfp", tmp)))
+				nvram_set_int(strcat_r(prefix, "mfp", tmp), 1);
+		}
 #endif
 
 		dbG("bw: %s\n", nvram_safe_get(strcat_r(prefix, "bw", tmp)));
@@ -3910,6 +3921,15 @@ void generate_wl_para(char *ifname, int unit, int subunit)
 #ifdef RTCONFIG_BCMARM
 			if (!nvram_get_int("dwds_ctrl"))
 			nvram_set(strcat_r(prefix, "dwds", tmp), is_ure(unit) ? "0" : "1");
+
+			if (is_ure(unit)
+#if defined(RTCONFIG_BCMWL6) && defined(RTCONFIG_PROXYSTA)
+				|| is_psta(unit) || is_psr(unit)
+#endif
+			) {
+				if (!nvram_get_int(strcat_r(prefix2, "mfp", tmp)))
+					nvram_set_int(strcat_r(prefix, "mfp", tmp), 1);
+			}
 #endif
 		}
 		else
@@ -5033,7 +5053,10 @@ _dprintf("*** Multicast IPTV: config Singtel TR069 on wan port ***\n");
 				if (switch_stb <= 6) {
 					/* Add wan bridge */
 					eval("brctl", "addbr", "br1");
-					eval("brctl", "stp", "br1", "on");
+					eval("bcmmcastctl", "mode", "-i",  "br1",  "-p", "1",  "-m", "0");
+					eval("bcmmcastctl", "mode", "-i",  "br1",  "-p", "2",  "-m", "0");
+					if (!nvram_match("switch_wantag", "unifi_home"))
+						eval("brctl", "stp", "br1", "on");
 					eval("ifconfig", "br1", "up");
 					eval("brctl", "addif", "br1", "eth0.v0");
 					set_wan_phy("");
@@ -5219,6 +5242,8 @@ _dprintf("*** Multicast IPTV: config Singtel TR069 on wan port ***\n");
 				eval("vlanctl", "--if", ethPort1, "--tx", "--tags", "1", "--filter-vid", vlan_entry, "0", "--filter-txif", vlanDev1, "--pop-tag", "--rule-append");
 				eval("ifconfig", vlanDev1, "allmulti", "up");
 				eval("brctl", "addif", "br1", vlanDev1);
+				if (nvram_match("switch_wantag", "unifi_home"))
+					eval("ethswctl", "-c", "hwstp",  "-i",  vlanDev1, "-o",  "disable");
 			}
 		}
 		else if (nvram_match("switch_stb_x", "5") && nvram_match("switch_wantag", "none")) {
@@ -6897,9 +6922,11 @@ void set_acs_ifnames()
 
 	nvram_set("acs_ifnames", acs_ifnames);
 
+	if ((num_of_wl_if() == 3 && !(nvram_get_hex("wl2_band5grp") & WL_5G_BAND_4))
 #ifdef RTCONFIG_TCODE
-	if (strncmp(nvram_safe_get("territory_code"), "UA", 2) && !nvram_match("location_code", "RU"))
+		|| (num_of_wl_if() == 2 && strncmp(nvram_safe_get("territory_code"), "UA", 2) && !nvram_match("location_code", "RU"))
 #endif
+	)
 		nvram_set("acs_band3", "1");
 
 	/* exclude acsd from selecting chanspec 12, 12u, 13, 13u, 14, 14u */

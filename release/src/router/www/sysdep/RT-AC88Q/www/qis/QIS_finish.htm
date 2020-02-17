@@ -26,7 +26,7 @@ span{
 <script type="text/javascript" src="/qis/QISMobilePlugin.js"></script>
 <script type="text/JavaScript" src="/js/jquery.js"></script>
 <script type="text/javascript" src="/help.js"></script>
-
+<script type="text/JavaScript" src="/js/httpApi.js"></script>
 <script>
 <% wanlink(); %>
 <% first_wanlink(); %>
@@ -329,7 +329,12 @@ function QKfinish_load_body(){
 		parent.yadns_stage++;
 		checkIsNewFirmware();
 	}
-		
+	
+	var linkInternet = httpApi.isConnected();
+	if(linkInternet){
+		document.getElementById("main_manual").style.display = "";
+	}
+
 	document.getElementById("QISmain").style.display = "";
 	parent.document.title = "<#Web_Title#> - <#QKSet_all_title#>";
 
@@ -1167,7 +1172,7 @@ function repage(){
 }
 
 function gotoASUS(){
-	parent.location.href = "http://www.asus.com/support/";
+	parent.location.href = "https://www.asus.com/support/";
 }
 
 var wans_dualwan_orig = '<% nvram_get("wans_dualwan"); %>';
@@ -1695,7 +1700,7 @@ function detect_redirect(){
 
 <div id="AreaHint" style="margin-top:10px; margin-left:5px;">
 	<div><img style="width: 720px; *width: 710px; height: 2px;" src="/images/New_ui/export/line_export.png"></div>
-	<div id="main_manual" style="padding-left:20px;margin-top:10px">
+	<div id="main_manual" style="padding-left:20px;margin-top:10px;display:none;">
 		<span><#ASUS_Registration#></span>
 	</div>
 </div>

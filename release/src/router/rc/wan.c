@@ -473,11 +473,13 @@ wan_prefix(char *ifname, char *prefix)
 	int unit;
 
 	if ((unit = wan_ifunit(ifname)) < 0 &&
-	    (unit = wanx_ifunit(ifname)) < 0){
+	    (unit = wanx_ifunit(ifname)) < 0) {
+#ifdef DEBUG
 		if(wan_ifunit(ifname) < 0)
 			logmessage("wan", "[%s] exit [%d], ifname:[%s]", __FUNCTION__, __LINE__, ifname);
 		if(wanx_ifunit(ifname) < 0)
 			logmessage("wan", "[%s] exit [%d], ifname:[%s]", __FUNCTION__, __LINE__, ifname);
+#endif
 		return -1;
 	}
 
@@ -1761,6 +1763,10 @@ stop_wan_if(int unit)
 		stop_igmpproxy();
 	}
 
+#ifdef RTCONFIG_OPENVPN
+	stop_ovpn_eas();
+#endif
+
 #ifdef RTCONFIG_VPNC
 	/* Stop VPN client */
 	stop_vpnc();
@@ -1769,7 +1775,7 @@ stop_wan_if(int unit)
 	/* Stop l2tp */
 	if (strcmp(wan_proto, "l2tp") == 0) {
 		kill_pidfile_tk("/var/run/l2tpd.pid");
-		usleep(1000*10000);
+		usleep(1000*1000);
 	}
 
 	/* Stop pppd */
@@ -1784,6 +1790,16 @@ stop_wan_if(int unit)
 	/* Stop pre-authenticator */
 	stop_auth(unit, 0);
 
+#if 1
+	/* Clean WAN interface */
+	snprintf(wan_ifname, sizeof(wan_ifname), "%s", nvram_safe_get(strcat_r(prefix, "ifname", tmp)));
+	if (*wan_ifname && *wan_ifname != '/') {
+#ifdef RTCONFIG_IPV6
+		disable_ipv6(wan_ifname);
+#endif
+		ifconfig(wan_ifname, IFUP, "0.0.0.0", NULL);
+	}
+#else
 	/* Bring down WAN interfaces */
 	// Does it have to?
 	snprintf(wan_ifname, sizeof(wan_ifname), "%s", nvram_safe_get(strcat_r(prefix, "ifname", tmp)));
@@ -1806,6 +1822,7 @@ stop_wan_if(int unit)
 #endif
 		}
 	}
+#endif
 
 #ifdef RTCONFIG_DSL
 #ifdef RTCONFIG_DUALWAN
@@ -1936,9 +1953,6 @@ int update_resolvconf(void)
 		goto error;
 	}
 
-#ifdef RTCONFIG_OPENVPN
-	if (!write_ovpn_resolv(fp, fp_servers))
-#endif
 	{
 		for (unit = WAN_UNIT_FIRST; unit < WAN_UNIT_MAX; unit++) {
 			char *wan_xdns, *wan_xdomain;
@@ -1965,6 +1979,10 @@ int update_resolvconf(void)
 			do {
 #ifdef RTCONFIG_YANDEXDNS
 				if (yadns_mode != YADNS_DISABLED)
+					break;
+#endif
+#ifdef RTCONFIG_OPENVPN
+				if (write_ovpn_resolv_dnsmasq(fp_servers))
 					break;
 #endif
 #ifdef RTCONFIG_DUALWAN
@@ -2088,18 +2106,22 @@ void wan6_up(const char *wan_ifname)
 	struct in_addr addr4;
 	struct in6_addr addr;
 	char gateway[INET6_ADDRSTRLEN];
-	int mtu, service = get_ipv6_service();
+	int mtu, service, accept_defrtr;
 
-	if (!wan_ifname || (strlen(wan_ifname) <= 0) ||
-		(service == IPV6_DISABLED))
+	if (!wan_ifname || *wan_ifname == '\0')
 		return;
 
+	service = get_ipv6_service();
 	switch (service) {
 	case IPV6_NATIVE_DHCP:
 #ifdef RTCONFIG_6RELAYD
 	case IPV6_PASSTHROUGH:
 #endif
+		accept_defrtr = service == IPV6_NATIVE_DHCP && /* limit to native by now */
+				nvram_match(ipv6_nvname("ipv6_ifdev"), "ppp") ?
+				nvram_get_int(ipv6_nvname("ipv6_accept_defrtr")) : 1;
 		ipv6_sysconf(wan_ifname, "accept_ra", 1);
+		ipv6_sysconf(wan_ifname, "accept_ra_defrtr", accept_defrtr);
 		ipv6_sysconf(wan_ifname, "forwarding", 0);
 		break;
 	case IPV6_MANUAL:
@@ -2109,6 +2131,8 @@ void wan6_up(const char *wan_ifname)
 	case IPV6_6RD:
 		update_6rd_info();
 		break;
+	case IPV6_DISABLED:
+		return;
 	}
 
 	set_intf_ipv6_dad(wan_ifname, 0, 1);
@@ -2736,7 +2760,7 @@ wan_up(const char *pwan_ifname)
 				break;
 			}
 		}
-		fclose(fp);
+		pclose(fp);
 	}
 #else
 	snprintf(tmp, sizeof(tmp), "ip neigh show %s dev %s 2>/dev/null", gateway, wan_ifname);
@@ -3364,9 +3388,6 @@ stop_wan(void)
 	fc_fini();
 #endif
 
-#ifdef RTCONFIG_OPENVPN
-	stop_ovpn_eas();
-#endif
 #if defined(RTCONFIG_PPTPD) || defined(RTCONFIG_ACCEL_PPTPD)
 	if (nvram_get_int("pptpd_enable"))
 		stop_pptpd();

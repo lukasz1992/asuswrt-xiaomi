@@ -2722,13 +2722,16 @@ void write_UrlFilter(char *chain, char *lan_if, char *lan_ip, char *logdrop, FIL
 	char config_rule[20];
 	char timef[256];
 
+	char *ptr, *p, *pvalue;
+	char list[256], list2[256];
+
 	snprintf(config_rule, sizeof(config_rule), "-d %s", lan_ip);
 #ifdef RTCONFIG_IPV6
 	char config_rulev6[128];
 	snprintf(config_rulev6, sizeof(config_rulev6), "-d %s", nvram_safe_get("ipv6_rtr_addr"));
 
 	/* Prevent v6 lan ip is NULL */
-	if(strlen(config_rulev6) <= 3)
+	if (strlen(config_rulev6) <= 3)
 		strcpy(config_rulev6, "");
 
 #endif
@@ -2743,7 +2746,7 @@ void write_UrlFilter(char *chain, char *lan_if, char *lan_ip, char *logdrop, FIL
 
 			// Handle source type format
 			srcips[0] = '\0';
-			if(addr && *addr)
+			if (addr && *addr)
 			{
 				char srcAddr[32];
 				int src_type = addr_type_parse(addr, srcAddr, sizeof(srcAddr));
@@ -2755,51 +2758,84 @@ void write_UrlFilter(char *chain, char *lan_if, char *lan_ip, char *logdrop, FIL
 					snprintf(srcips, sizeof(srcips), "-m iprange --src-range %s", srcAddr);
 			}
 
-			if(!strcmp(chain, "FORWARD") && nvram_match("url_mode_x", "0"))
-			{
-#ifndef HND_ROUTER
+			if (!strcmp(chain, "FORWARD") && nvram_match("url_mode_x", "0"))
 				fprintf(fp, "-I FORWARD %s -p tcp %s -m webstr --url \"%s\" -j REJECT --reject-with tcp-reset\n", srcips, timef, url);
-#else
-				fprintf(fp, "-I FORWARD %s -p tcp %s -m webstr --url %s -j REJECT --reject-with tcp-reset\n", srcips, timef, url);
-#endif
-			}
-#ifndef HND_ROUTER
-			fprintf(fp, "%s %s -i %s %s %s -p udp --dport 53 %s -m string --string \"%s\" --algo bm -j %s\n",
-#else
-			fprintf(fp, "%s %s -i %s %s %s -p udp --dport 53 %s -m string --string %s --algo bm -j %s\n",
-#endif
-			(strcmp(chain, "INPUT") == 0) ? "-A" : "-I", chain, lan_if, srcips,
-			(strcmp(chain, "INPUT") == 0 && nvram_match("url_mode_x", "0")) ? config_rule : "", timef, url,
-			(nvram_get_int("url_mode_x") == 0) ? logdrop : "ACCEPT");
-#ifdef RTCONFIG_IPV6
-			if(ipv6_enabled())
-			{
-				if(!strcmp(chain, "FORWARD") && nvram_match("url_mode_x", "0"))
-				{
-					fprintf(fp_ipv6, "-I FORWARD -p tcp %s -m webstr --url \"%s\" -j REJECT --reject-with tcp-reset\n", timef, url);
+
+			// Handle xxx.yyy.* format
+			if (strstr(url, ".")) {
+				memset(list, 0, sizeof(list));
+				memset(list2, 0, sizeof(list2));
+
+				ptr = pvalue = strdup(url);
+				while (pvalue && (p = strsep(&pvalue, ".")) != NULL) {
+					if (!strlen(p)) {
+						pvalue++;
+						continue;
+					}
+
+					snprintf(list2, sizeof(list2), "%s|%02d|%s", list, strlen(p), p);
+					strlcpy(list, list2, sizeof(list));
 				}
-#ifndef HND_ROUTER
-				fprintf(fp_ipv6, "%s %s -i %s %s -p udp --dport 53 %s -m string --string \"%s\" --algo bm -j %s\n",
-#else
-				fprintf(fp_ipv6, "%s %s -i %s %s -p udp --dport 53 %s -m string --string %s --algo bm -j %s\n",
-#endif
+
+				fprintf(fp, "%s %s -i %s %s %s -p udp --dport 53 %s -m string --icase --hex-string \"%s\" --algo bm -j %s\n",
+				(strcmp(chain, "INPUT") == 0) ? "-A" : "-I", chain, lan_if, srcips,
+				(strcmp(chain, "INPUT") == 0 && nvram_match("url_mode_x", "0")) ? config_rule : "", timef, list,
+				(nvram_get_int("url_mode_x") == 0) ? logdrop : "ACCEPT");
+
+				free(ptr);
+			} else {
+				fprintf(fp, "%s %s -i %s %s %s -p udp --dport 53 %s -m string --icase --string \"%s\" --algo bm -j %s\n",
+				(strcmp(chain, "INPUT") == 0) ? "-A" : "-I", chain, lan_if, srcips,
+				(strcmp(chain, "INPUT") == 0 && nvram_match("url_mode_x", "0")) ? config_rule : "", timef, url,
+				(nvram_get_int("url_mode_x") == 0) ? logdrop : "ACCEPT");
+			}
+#ifdef RTCONFIG_IPV6
+			if (ipv6_enabled())
+			{
+				if (!strcmp(chain, "FORWARD") && nvram_match("url_mode_x", "0"))
+					fprintf(fp_ipv6, "-I FORWARD -p tcp %s -m webstr --url \"%s\" -j REJECT --reject-with tcp-reset\n", timef, url);
+
+				// Handle xxx.yyy.* format
+				if (strstr(url, ".")) {
+					memset(list, 0, sizeof(list));
+					memset(list2, 0, sizeof(list2));
+
+					ptr = pvalue = strdup(url);
+					while (pvalue && (p = strsep(&pvalue, ".")) != NULL) {
+						if (!strlen(p)) {
+							pvalue++;
+							continue;
+						}
+
+						snprintf(list2, sizeof(list2), "%s|%02d|%s", list, strlen(p), p);
+						strlcpy(list, list2, sizeof(list));
+					}
+
+					fprintf(fp_ipv6, "%s %s -i %s %s -p udp --dport 53 %s -m string --icase --hex-string \"%s\" --algo bm -j %s\n",
+					(strcmp(chain, "INPUT") == 0) ? "-A" : "-I", chain, lan_if,
+					(strcmp(chain, "INPUT") == 0 && nvram_match("url_mode_x", "0")) ? config_rulev6 : "", timef, list,
+					(nvram_get_int("url_mode_x") == 0) ? logdrop : "ACCEPT");
+
+					free(ptr);
+				} else {
+					fprintf(fp_ipv6, "%s %s -i %s %s -p udp --dport 53 %s -m string --icase --string \"%s\" --algo bm -j %s\n",
 					(strcmp(chain, "INPUT") == 0) ? "-A" : "-I", chain, lan_if,
 					(strcmp(chain, "INPUT") == 0 && nvram_match("url_mode_x", "0")) ? config_rulev6 : "", timef, url,
 					(nvram_get_int("url_mode_x") == 0) ? logdrop : "ACCEPT");
+				}
 			}
 #endif
 		}
-		if(nv) free(nv);
+		if (nv) free(nv);
 	}
 
 	if (nvram_match("url_mode_x", "1") && nvram_match("url_enable_x", "1")) {
-		fprintf(fp, "-A %s -i %s -p udp --dport 53 -m string --string \"asus\" --algo bm -j ACCEPT\n", chain, lan_if);
+		fprintf(fp, "-A %s -i %s -p udp --dport 53 -m string --icase --hex-string \"|04|asus|03|com|00|\" --algo bm -j ACCEPT\n", chain, lan_if);
 		fprintf(fp, "-A %s -i br0 -p udp --dport 53 -j DROP\n", chain);
 #ifdef RTCONFIG_IPV6
-		if(ipv6_enabled())
+		if (ipv6_enabled())
 		{
-			fprintf(fp_ipv6, "-A %s -i %s -p udp --dport 53 -m string --string \"asus\" --algo bm -j ACCEPT\n",
-			chain, lan_if);
+			fprintf(fp_ipv6, "-A %s -i %s -p udp --dport 53 -m string --icase --hex-string \"|04|asus|03|com|00|\" --algo bm -j ACCEPT\n", chain, lan_if);
 			fprintf(fp_ipv6, "-A %s -i br0 -p udp --dport 53 -j DROP\n", chain);
 		}
 #endif
@@ -3851,6 +3887,9 @@ TRACE_PT("write wl filter\n");
 	}
 #endif
 
+	// extra filter
+	write_extra_filter(fp);
+
 	fprintf(fp, "COMMIT\n\n");
 	if(fp) fclose(fp);
 
@@ -3869,6 +3908,10 @@ TRACE_PT("write wl filter\n");
 		{
 			fprintf(fp_ipv6, "-A FORWARD -j %s\n", logdrop);
 		}
+
+		// extra filter
+		write_extra_filter6(fp_ipv6);
+
 		fprintf(fp_ipv6, "COMMIT\n\n");
 		fclose(fp_ipv6);
 		eval("ip6tables-restore", "/tmp/filter_rules_ipv6");
@@ -4956,6 +4999,9 @@ TRACE_PT("write wl filter\n");
 	}
 #endif
 
+	// extra filter
+	write_extra_filter(fp);
+
 	fprintf(fp, "COMMIT\n\n");
 	if(fp) fclose(fp);
 
@@ -4974,6 +5020,10 @@ TRACE_PT("write wl filter\n");
 		{
 			fprintf(fp_ipv6, "-A FORWARD -j %s\n", logdrop);
 		}
+
+		// extra filter
+		write_extra_filter6(fp_ipv6);
+
 		fprintf(fp_ipv6, "COMMIT\n\n");
 		fclose(fp_ipv6);
 		eval("ip6tables-restore", "/tmp/filter_rules_ipv6");
@@ -4988,31 +5038,13 @@ write_porttrigger(FILE *fp, char *wan_if, int is_nat)
 	char *nv, *nvp, *b;
 	char *out_proto, *in_proto, *out_port, *in_port, *desc;
 	char out_protoptr[16], in_protoptr[16];
+	char chain[sizeof("triggers_") + IFNAMSIZ];
 	int first = 1;
-#ifdef RTCONFIG_DUALWAN
-	char dualwan_mode[8];
-	char dualwan_wans[16];
-#endif
 
-	if(is_nat) {
+	if (is_nat) {
 		fprintf(fp, "-A VSERVER -j TRIGGER --trigger-type dnat\n");
 		return;
 	}
-
-#ifdef RTCONFIG_DUALWAN
-	memset(dualwan_mode, 0, 8);
-	strcpy(dualwan_mode, nvram_safe_get("wans_mode"));
-	memset(dualwan_wans, 0, 16);
-	strcpy(dualwan_wans, nvram_safe_get("wans_dualwan"));
-	/* load balance mode, skip port trigger on secondary wan */
-	if(strcmp(dualwan_mode, "lb") == 0 &&
-		strcmp(dualwan_wans, "wan none") != 0){
-		if(nvram_match("wan1_gw_ifname", wan_if)){
-			_dprintf("porttrigger, this is secondary wan[%s], skip port trigger\n", wan_if);
-			return;
-		}
-	}
-#endif
 
 	nvp = nv = strdup(nvram_safe_get("autofw_rulelist"));
 	while (nv && (b = strsep(&nvp, "<")) != NULL) {
@@ -5022,8 +5054,9 @@ write_porttrigger(FILE *fp, char *wan_if, int is_nat)
 			continue;
 
 		if (first) {
-			fprintf(fp, ":triggers - [0:0]\n");
-			fprintf(fp, "-A FORWARD -o %s -j triggers\n", wan_if);
+			snprintf(chain, sizeof(chain), "triggers_%s", wan_if);
+			fprintf(fp, ":%s - [0:0]\n", chain);
+			fprintf(fp, "-A FORWARD -o %s -j %s\n", wan_if, chain);
 			fprintf(fp, "-A FORWARD -i %s -j TRIGGER --trigger-type in\n", wan_if);
 			first = 0;
 		}
@@ -5033,8 +5066,9 @@ write_porttrigger(FILE *fp, char *wan_if, int is_nat)
 		/* parse_ports() of libipt_TRIGGER.c only accepts '-', not ':'. */
 		if ((p = strchr(in_port, ':')) != NULL)
 			*p = '-';
-		fprintf(fp, "-A FORWARD -p %s -m %s --dport %s "
+		fprintf(fp, "-A %s -p %s -m %s --dport %s "
 			"-j TRIGGER --trigger-type out --trigger-proto %s --trigger-match %s --trigger-relate %s\n",
+			chain,
 			out_protoptr, out_protoptr, out_port,
 			in_protoptr, out_port, in_port);
 	}
@@ -5080,7 +5114,7 @@ mangle_setting(char *wan_if, char *wan_ip, char *lan_if, char *lan_ip, char *log
 	}
 #endif
 
-#if defined(RTAC58U) || defined(RTAC88U)
+#if defined(RTAC58U) || defined(RTAC59U) || defined(RTAC88U)
 	if (nvram_match("switch_wantag", "stuff_fibre")) {
 		eval("iptables", "-t", "mangle", "-A", "POSTROUTING", "-p", "udp", "--dport", "53", "-j", "CLASSIFY", "--set-class", "0:3");
 		eval("iptables", "-t", "mangle", "-A", "POSTROUTING", "-d", "27.111.14.67", "-j", "CLASSIFY", "--set-class", "0:3");
@@ -5685,6 +5719,12 @@ int start_firewall(int wanunit, int lanunit)
 		modprobe("ip6t_ROUTE");
 		modprobe("ip6t_LOG");
 		modprobe("xt_length");
+	} else {
+		modprobe_r("xt_length");
+		modprobe_r("ip6t_LOG");
+		modprobe_r("ip6t_ROUTE");
+		modprobe_r("ip6t_REJECT");
+		modprobe_r("nf_conntrack_ipv6");
 	}
 #endif
 	if (nvram_get_int("ttl_inc_enable") || nvram_get_int("ttl_spoof_enable")) {
@@ -5906,17 +5946,6 @@ int start_firewall(int wanunit, int lanunit)
 #if defined(RTCONFIG_APP_PREINSTALLED) || defined(RTCONFIG_APP_NETINSTALLED)
 	if(strcmp(nvram_safe_get("apps_dev"), "") != 0)
 		run_app_script(NULL, "firewall-start");
-#endif
-
-#ifdef RTCONFIG_IPV6
-	if (get_ipv6_service() != IPV6_DISABLED)
-	{
-		modprobe_r("xt_length");
-		modprobe_r("ip6t_LOG");
-		modprobe_r("ip6t_ROUTE");
-		modprobe_r("ip6t_REJECT");
-		modprobe_r("nf_conntrack_ipv6");
-	}
 #endif
 
 #ifdef RTCONFIG_OPENVPN

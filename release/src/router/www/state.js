@@ -321,6 +321,15 @@ var is_CN = in_territory_code("CN");
 var is_TW_sku = in_territory_code("TW");
 var is_US_sku = in_territory_code("US");
 var is_UA_sku = in_territory_code("UA");
+var is_RU_sku = (function(){
+	var location = '<% nvram_get("location_code"); %>';
+	if(location != ''){
+		return (location.indexOf("RU") != -1);
+	}
+	else{
+		return in_territory_code("RU");
+	}
+})();
 
 //wireless
 var wl_nband_title = [];
@@ -483,16 +492,6 @@ function isSupport(_ptn){
 
 		return false;
 	}
-	else if(_ptn == "meoVoda"){
-		var meoVoda_support_models = ["RT-N14U", "BRT-AC828", "RT-AD7200", "RT-AC5300", "GT-AC5300", "RT-AC3200", "RT-AC3100", "RT-AC1200G+", "RT-AC88U", "RT-AC86U", "AC2900", "RT-AC87U", 
-							  "RT-AC68U", "RT-AC68A", "4G-AC68U", "RT-AC66U", "RT-AC56U", "RT-AC51U", "RT-N66U", "RT-N18U", "BLUECAVE", "RT-N800HP"];
-		return (meoVoda_support_models.indexOf(based_modelid) >= 0)? true : false;
-	}
-	else if(_ptn == "movistarTriple"){
-		var movistarTriple_support_models = ["BRT-AC828", "RT-AC5300", "GT-AC5300", "RT-AC3200", "RT-AC3100", "RT-AC1200G+", "RT-AC88U", "RT-AC87U", "RT-AC68U", 
-									 "RT-AC68A", "4G-AC68U", "RT-AC66U", "RT-AC56U", "RT-AC56S", "RT-AC51U", "RT-N66U", "RT-N18U", "BLUECAVE", "RT-N800HP"];
-		return (movistarTriple_support_models.indexOf(based_modelid) >= 0)? true : false;
-	}
 	else if(_ptn == "dpi_mals" || _ptn == "dpi_vp" || _ptn == "dpi_cc" || _ptn == "adaptive_qos" || _ptn == "webs_filter" || _ptn == "apps_filter" || _ptn == "web_history" || _ptn == "bandwidth_monitor"){
 		return uiSupport(_ptn);
 	}
@@ -586,7 +585,7 @@ var userRSSI_support = isSupport("user_low_rssi");
 var timemachine_support = isSupport("timemachine");
 var kyivstar_support = isSupport("kyivstar");
 var email_support = isSupport("email");
-var feedback_support = isSupport("feedback");
+var frs_feedback_support = isSupport("frs_feedback");
 var swisscom_support = isSupport("swisscom");
 var tmo_support = isSupport("tmo");
 var atf_support = isSupport("atf");
@@ -641,9 +640,8 @@ var hnd_support = isSupport("hnd");
 var tagged_based_vlan = isSupport("tagged_based_vlan");
 var vpn_fusion_support = isSupport("vpn_fusion");
 var cfg_sync_support = isSupport("cfg_sync");
-var meoVoda_support = isSupport("meoVoda");
-var movistarTriple_support = isSupport("movistarTriple");
 var utf8_ssid_support = isSupport("utf8_ssid");
+var uu_support = uiSupport('uu_accel');
 
 var QISWIZARD = "QIS_wizard.htm";
 
@@ -656,6 +654,8 @@ var sdk_5 = sdk_version_array[0] == 5 ? true : false;
 var bcm_mumimo_support = isSupport("mumimo");		//Broadcom MU-MIMOs
 var nt_center_support = isSupport("nt_center");
 var dblog_support = isSupport("dblog");
+var qca_support = isSupport("qca");
+var geforceNow_support = isSupport("nvgfn");
 
 if(nt_center_support)
 	document.write('<script type="text/javascript" src="/client_function.js"></script>');
@@ -757,6 +757,7 @@ var realip_ip = "";
 var external_ip = 0;
 
 var link_internet = '<% nvram_get("link_internet"); %>';
+var le_restart_httpd_chk = "";
 
 if(lyra_hide_support){
 	var Android_app_link = "https://play.google.com/store/apps/details?id=com.asus.hive";
@@ -958,11 +959,11 @@ function show_banner(L3){// L3 = The third Level of Menu
 		banner_code +='</div>';
 		banner_code +='<div style="display:table-cell;vertical-align:middle;width:100%;text-align:center">';
 		if(is_CN){
-			Android_app_link = "http://www.wandoujia.com/apps/com.asus.aihome";
-			banner_code +='<div style="padding-left: 30px;"><a href="'+Android_app_link+'" target="_blank"><div style="width:172px;font-size:24px;font-weight:bold;text-decoration:underline"><#WanDouJia#></div></a></div>';
+			Android_app_link = "https://dlcdnets.asus.com/pub/ASUS/LiveUpdate/Release/Wireless/ASUSRouter_Android_Release.apk";
+			banner_code +='<div style="padding-left: 30px;"><a href="'+Android_app_link+'" target="_blank"><div style="width:172px;font-size:24px;border:1px solid #BDBDBD;padding: 10px 4px;border-radius: 6px;">Android App</div></a></div>';
 		}
 		else{
-			banner_code +='<div style="padding-left: 30px;"><a href="'+Android_app_link+'" target="_blank"><div style="width:172px;height:60px;background:url(\'images/cloudsync/googleplay.png\') no-repeat;"></div></a></div>';
+			banner_code +='<div style="padding-left: 30px;"><a href="'+Android_app_link+'" target="_blank"><div style="width:172px;height:60px;background:url(\'images/googleplay.png\') no-repeat;"></div></a></div>';
 		}
 		
 		banner_code +='</div>';	
@@ -973,7 +974,7 @@ function show_banner(L3){// L3 = The third Level of Menu
 		banner_code +='<div><img src="images/New_ui/asus_router_ios_qr.png" style="width:75px;height:75px;"></div>';
 		banner_code +='</div>';
 		banner_code +='<div style="display:table-cell;vertical-align:middle;width:100%;text-align:center">';
-		banner_code +='<div style="padding-left: 30px;"><a href="'+IOS_app_link+'" target="_blank"><div style="width:172px;height:51px;background:url(\'images/cloudsync/AppStore.png\') no-repeat;"></div></a></div>';
+		banner_code +='<div style="padding-left: 30px;"><a href="'+IOS_app_link+'" target="_blank"><div style="width:172px;height:51px;background:url(\'images/AppStore.png\') no-repeat;"></div></a></div>';
 		banner_code +='</div>';	
 		banner_code +='</div>';
 		
@@ -992,7 +993,7 @@ function show_banner(L3){// L3 = The third Level of Menu
 	if(cooler_support)
 		banner_code +='<td width="30"><div id="cooler_status" class="" style="display:none;"></div></td>\n';
 	
-	if(multissid_support != -1)
+	if(multissid_support != -1 && !isSwMode('mb') && !isSwMode('re'))
 		banner_code +='<td width="30"><div id="guestnetwork_status" style="width:30px;" class="guestnetworkstatusoff"></div></td>\n';
 
 	if(dsl_support)
@@ -1259,14 +1260,16 @@ function show_menu(){
 		Session.set("menuList", menuList);
 		Session.set("menuExclude", menuExclude);
 		showMenuTree(menuList, menuExclude);
+		
 	});
 
 	if(nt_center_support){
 		notification.update_NT_Center();
 	}
-
+	
 	notification.run();
 	browser_compatibility();
+
 }
 
 var goToPage = function(menu, tab, obj){
@@ -1543,16 +1546,16 @@ function show_footer(){
 			
 	footer_code += "<td width=\"335\" id=\"bottom_help_link\" align=\"left\"><a style=\"font-weight: bolder;text-decoration:underline;cursor:pointer;\" href=\"https://www.asus.com"+ href_lang +"Networking/"+ model_name_supportsite + tracing_path_Manual +"\" target=\"_blank\"><#Manual#></a>&nbsp|&nbsp<a style=\"font-weight: bolder;text-decoration:underline;cursor:pointer;\" href=\"https://www.asus.com"+ href_lang +"Networking/" + model_name_supportsite + tracing_path_Utility +"\" target=\"_blank\"><#Utility#></a>";
 
-	if(dsl_support && feedback_support){
+	footer_code += '&nbsp|&nbsp<a id="registration_link" target="_blank" href="https://account.asus.com/" target="_self" style="font-weight: bolder;text-decoration:underline;cursor:pointer;"><#Product_Registration#></a>';
+
+	if(dsl_support && frs_feedback_support){
 		footer_code += '&nbsp|&nbsp<a id="fb_link" href="/Advanced_Feedback.asp" target="_self" style="font-weight: bolder;text-decoration:underline;cursor:pointer;"><#menu_feedback#></a>';
 	}
-	else if(feedback_support){
+	else if(frs_feedback_support){
 		var header_info = [<% get_header_info(); %>];
 		var location_href = '/Advanced_Feedback.asp?origPage=' + header_info[0].current_page;
-		footer_code += '&nbsp|&nbsp<a id="fb_link" href="'+location_href+'" target="_blank" style="font-weight: bolder;text-decoration:underline;cursor:pointer;"><#menu_feedback#></a>';
+		footer_code += '&nbsp|&nbsp<a id="fb_link" href="'+location_href+'" target="_self" style="font-weight: bolder;text-decoration:underline;cursor:pointer;"><#menu_feedback#></a>';
 	}
-	
-	footer_code += '&nbsp|&nbsp<a id="registration_link" target="_blank" href="https://account.asus.com/" target="_self" style="font-weight: bolder;text-decoration:underline;cursor:pointer;"><#Product_Registration#></a>';
 	
 	footer_code += '</td>';
 	footer_code += '<td width="270" id="bottom_help_FAQ" align="right" style="font-family:Arial, Helvetica, sans-serif;">FAQ&nbsp&nbsp<input type="text" id="FAQ_input" class="input_FAQ_table" maxlength="40" onKeyPress="submitenter(this,event);" autocorrect="off" autocapitalize="off"></td>';
@@ -1769,8 +1772,8 @@ function show_top_status(){
 		}
 	}
 
-	if(ssid_status_2g.length >18){
-		document.getElementById('elliptic_ssid_2g').innerHTML = extend_display_ssid(ssid_status_2g)+"...";
+	if(htmlEnDeCode.htmlDecode(ssid_status_2g).length >18){
+		document.getElementById('elliptic_ssid_2g').innerHTML = htmlEnDeCode.htmlEncode((htmlEnDeCode.htmlDecode(ssid_status_2g)).substring(0,15)) + "...";
 	}
 	else{
 		document.getElementById('elliptic_ssid_2g').innerHTML = ssid_status_2g;
@@ -1779,8 +1782,8 @@ function show_top_status(){
 	if(!lyra_hide_support)
 		document.getElementById('elliptic_ssid_2g').title = "2.4 GHz: \n"+ htmlEnDeCode.htmlDecode(ssid_status_2g);
 
-	if(ssid_status_5g.length >18){
-		document.getElementById('elliptic_ssid_5g').innerHTML = extend_display_ssid(ssid_status_5g)+"...";
+	if(htmlEnDeCode.htmlDecode(ssid_status_5g).length >18){
+		document.getElementById('elliptic_ssid_5g').innerHTML = htmlEnDeCode.htmlEncode((htmlEnDeCode.htmlDecode(ssid_status_5g)).substring(0,15)) + "...";
 	}
 	else{
 		document.getElementById('elliptic_ssid_5g').innerHTML = ssid_status_5g;
@@ -1789,8 +1792,8 @@ function show_top_status(){
 	document.getElementById('elliptic_ssid_5g').title = "5 GHz: \n"+ htmlEnDeCode.htmlDecode(ssid_status_5g);
 
 	if(wl_info.band5g_2_support){
-		if(ssid_status_5g_2.length >18){
-			document.getElementById('elliptic_ssid_5g_2').innerHTML = extend_display_ssid(ssid_status_5g_2)+"...";
+		if(htmlEnDeCode.htmlDecode(ssid_status_5g_2).length >18){
+			document.getElementById('elliptic_ssid_5g_2').innerHTML = htmlEnDeCode.htmlEncode((htmlEnDeCode.htmlDecode(ssid_status_5g_2)).substring(0,15)) + "...";
 		}
 		else{
 			document.getElementById('elliptic_ssid_5g_2').innerHTML = ssid_status_5g_2;
@@ -1869,84 +1872,6 @@ function show_top_status(){
 			document.getElementById("op_link").style.cursor= "auto";			
 		}
 	}
-}
-
-function extend_display_ssid(ssid){		//"&amp;"5&; "&lt;"4< ; "&gt;"4> ; "&nbsp;"6space
-		//alert(ssid.substring(0,20)+" : "+ssid.substring(0,20).lastIndexOf("&nbsp;")+" <&nbsp>");
-		if(ssid.substring(0,20).lastIndexOf("&nbsp;") >=15 || ssid.substring(0,20).lastIndexOf("&nbsp;") < 10 ){
-				//alert(ssid.substring(0,19)+" : "+ssid.substring(0,19).lastIndexOf("&amp;")+" <&amp>");
-			if(ssid.substring(0,19).lastIndexOf("&amp;") >=15 || ssid.substring(0,19).lastIndexOf("&amp;") < 11 ){
-						//alert(ssid.substring(0,18)+" : "+ssid.substring(0,18).lastIndexOf("&lt;")+" <&lt>");
-				if(ssid.substring(0,18).lastIndexOf("&lt;") >=15 || ssid.substring(0,19).lastIndexOf("&lt;") < 12 ){
-								//alert(ssid.substring(0,18)+" : "+ssid.substring(0,18).lastIndexOf("&gt;")+" <&gt>");
-					if(ssid.substring(0,18).lastIndexOf("&gt;") >=15 || ssid.substring(0,19).lastIndexOf("&gt;") < 12 ){
-							//alert(ssid.substring(0,15));
-						return ssid.substring(0,15);
-					}
-					else{
-						switch(ssid.substring(0,18).lastIndexOf("&gt;")){
-							case 12:
-								return ssid.substring(0,16);
-								break;
-							case 13:
-								return ssid.substring(0,17);	
-								break;
-							case 14:
-								return ssid.substring(0,18);		
-								break;	
-						}
-					}
-				}
-				else{
-					switch(ssid.substring(0,18).lastIndexOf("&lt;")){
-						case 12:
-							return ssid.substring(0,16);
-							break;
-						case 13:
-							return ssid.substring(0,17);
-							break;
-						case 14:
-							return ssid.substring(0,18);
-							break;
-					}			
-				}
-			}
-			else{
-				switch (ssid.substring(0,19).lastIndexOf("&amp;")){
-					case 11:
-						return ssid.substring(0,16);
-						break;
-					case 12:
-						return ssid.substring(0,17);
-						break;
-					case 13:
-						return ssid.substring(0,18);
-						break;
-					case 14:
-						return ssid.substring(0,19);
-						break;
-				}
-			}
-		}
-		else{
-			switch (ssid.substring(0,20).lastIndexOf("&nbsp;")){
-				case 10:			
-					return ssid.substring(0,16);
-					break;			
-				case 11:
-					return ssid.substring(0,17);
-					break;
-				case 12:
-					return ssid.substring(0,18);
-					break;
-				case 13:
-					return ssid.substring(0,19);
-					break;
-				case 14:
-					return ssid.substring(0,20);
-					break;					
-			}
-		}
 }
 
 function go_setting(page){
@@ -2054,6 +1979,21 @@ function logout(){
 
 function reboot(){
 	if(confirm("<#Main_content_Login_Item7#>")){
+		var win_time = window.setTimeout(function() {}, 0);
+		while (win_time--)
+			window.clearTimeout(win_time);
+		var win_inter = window.setInterval(function() {}, 0);
+		while (win_inter--)
+			window.clearInterval(win_inter);
+		var iframe_len = frames.length;
+		for(var i = 0; i < iframe_len; i += 1) {
+			var ifr_time = frames[i].window.setTimeout(function() {}, 0);
+			while (ifr_time--)
+				frames[i].window.clearTimeout(ifr_time);
+			var ifr_inter = frames[i].window.setInterval(function() {}, 0);
+			while (ifr_inter--)
+				frames[i].window.clearInterval(ifr_inter);
+		}
 		document.rebootForm.submit();
 	}
 }
@@ -2397,13 +2337,14 @@ function hadPlugged(deviceType){
 
 //Update current system status
 var AUTOLOGOUT_MAX_MINUTE = parseInt('<% nvram_get("http_autologout"); %>') * 20;
+var error_num = 5;
 function updateStatus(){
 	if(stopFlag == 1) return false;
 	if(AUTOLOGOUT_MAX_MINUTE == 1) location = "Logout.asp"; // 0:disable auto logout, 1:trigger auto logout. 
 
 	require(['/require/modules/makeRequest.js'], function(makeRequest){
 		if(AUTOLOGOUT_MAX_MINUTE != 0) AUTOLOGOUT_MAX_MINUTE--;
-		makeRequest.start('/ajax_status.xml', refreshStatus, function(){stopFlag = 1;});
+		makeRequest.start('/ajax_status.xml', refreshStatus, function(){ if(error_num > 0){ error_num--; updateStatus(); }	else stopFlag = 1; });
 	});
 }
 
@@ -2521,6 +2462,7 @@ function refreshStatus(xhr){
 	rssi_5g = wanStatus[30].firstChild.nodeValue.replace("rssi_5g=", "");
 	rssi_5g_2 = wanStatus[31].firstChild.nodeValue.replace("rssi_5g_2=", "");
 	link_internet = wanStatus[32].firstChild.nodeValue.replace("link_internet=", "");
+	le_restart_httpd = wanStatus[34].firstChild.nodeValue.replace("le_restart_httpd=", "");
 
 	var vpnStatus = devicemapXML[0].getElementsByTagName("vpn");
 	vpnc_proto = vpnStatus[0].firstChild.nodeValue.replace("vpnc_proto=", "");
@@ -3038,7 +2980,7 @@ function refreshStatus(xhr){
 	}
 
 	// guest network
-	if(multissid_support != -1 && (gn_array_5g.length > 0 || (wl_info.band5g_2_support && gn_array_5g_2.length > 0))){
+	if(multissid_support != -1 && !isSwMode('mb') && !isSwMode('re') && (gn_array_5g.length > 0 || (wl_info.band5g_2_support && gn_array_5g_2.length > 0))){
 		if(based_modelid == "RT-AC87U"){	//workaround for RT-AC87U
 			for(var i=0; i<gn_array_2g.length; i++){
 				if(gn_array_2g[i][0] == 1){
@@ -3081,7 +3023,7 @@ function refreshStatus(xhr){
 		document.getElementById("guestnetwork_status").onmouseout = function(){nd();}
 		
 	}
-	else if(multissid_support != -1 && gn_array_5g.length == 0){
+	else if(multissid_support != -1 && !isSwMode('mb') && !isSwMode('re') && gn_array_5g.length == 0){
 		for(var i=0; i<gn_array_2g.length; i++){
 			if(gn_array_2g[i][0] == 1){
 				document.getElementById("guestnetwork_status").className = "guestnetworkstatuson";
@@ -3229,7 +3171,12 @@ function refreshStatus(xhr){
 		setTimeout(function(){notification.updateNTDB_Status();}, 10000);
 	else
 		notification.updateNTDB_Status()
-	
+
+	if(letsencrypt_support && le_restart_httpd == "1" && le_restart_httpd_chk == ""){
+		alert("<#LANHostConfig_x_DDNSLetsEncrypt_ReloginHint#>");
+		le_restart_httpd_chk = le_restart_httpd;
+	}
+
 	if(window.frames["statusframe"] && window.frames["statusframe"].stopFlag == 1 || stopFlag == 1){
 		return 0;
 	}
@@ -3361,15 +3308,33 @@ function set_variable(_variable, _val){
 	document.form.appendChild(NewInput);
 }
 
-function isPortConflict(_val){
-	if(_val == '<% nvram_get("http_lanport"); %>')
-		return "<#portConflictHint#> HTTP LAN port.";
-	else if(_val == '<% nvram_get("dm_http_port"); %>')
-		return "<#portConflictHint#> Download Master.";
-	else if(_val == '<% nvram_get("webdav_http_port"); %>')
-		return "<#portConflictHint#> Cloud Disk.";
-	else if(_val == '<% nvram_get("webdav_https_port"); %>')
-		return "<#portConflictHint#> Cloud Disk.";
+function isPortConflict(_val, service){
+	var str = "(" + _val + ") <#portConflictHint#>: ";
+
+	if(_val == '<% nvram_get("http_lanport"); %>'){
+		str = str + "HTTP LAN port.";
+		return str;
+	}
+	else if(_val == '<% nvram_get("dm_http_port"); %>'){
+		str = str + "<#DM_title#>.";
+		return str;
+	}
+	else if(_val == '<% nvram_get("webdav_http_port"); %>'){
+		str = str + "Cloud Disk.";
+		return str;
+	}
+	else if(_val == '<% nvram_get("webdav_https_port"); %>'){
+		str = str + "Cloud Disk.";
+		return str;
+	}
+	else if(service != "ssh" && _val == '<% nvram_get("sshd_port"); %>'){
+		str = str + "SSH.";
+		return str;
+	}
+	else if(service != "openvpn" && _val == '<% nvram_get("vpn_server_port"); %>'){
+		str = str + "OpenVPN.";
+		return str;
+	}
 	else
 		return false;
 }
@@ -3700,47 +3665,57 @@ function check_dual_wan_status() {
 }
 
 //change dual wan mode from load balance to fail-over
-function reset_wan_to_fo(_formObj, _controllerStatus) {
-	var confirm_status = true;
-
-	if(_controllerStatus == "1") {
-		if(!check_bwdpi_engine_status()) {
-			var dual_wan_lb_status = (check_dual_wan_status().status == "1" && check_dual_wan_status().mode == "lb") ? true : false;
-
-			if(dual_wan_lb_status) {
-				var confirm_hint = 'Dual-WAN "load balance" mode will be switched to "fail-over" while enable "AiProtection" features, Are you sure to continue?'/*untranslated*/
-				var confirm_flag = confirm(confirm_hint);
-				if(confirm_flag) {
-					var gen_hidden_item = function(_name, _value, _formObj) {
-						var input = document.createElement('input');
-						input.type = 'hidden';
-						input.name = _name;
-						input.value = _value;
-						_formObj.appendChild(input);
-					};
-
-					var removeElement = function(element) {
-						element && element.parentNode && element.parentNode.removeChild(element);
-					}
-
-					if(_formObj.children.wans_mode != null) {
-						removeElement(_formObj.children.wans_mode);
-					}
-					gen_hidden_item("wans_mode", "fo", _formObj);
-
-					_formObj.action_script.value = "reboot";
-					_formObj.action_wait.value = '<% nvram_get("reboot_time"); %>';
-				
-					confirm_status = true;
-				}
-				else {
-					confirm_status = false;
-				}
+var reset_wan_to_fo = {
+	"change_status" : false,
+	"check_status" : function(){
+		var status = true;
+		if(reset_wan_to_fo.check_bwdpi_dual_wan()){
+			if(reset_wan_to_fo.show_confirm_hint()){
+				reset_wan_to_fo.change_status = true;
+				return true;
 			}
+			else{
+				reset_wan_to_fo.change_status = false;
+				return false;
+			}
+
 		}
+		return status;
+	},
+	"check_bwdpi_dual_wan" : function(){
+		//check bwdpi_engine disable and dual wan enable and mode is lb
+		return (!check_bwdpi_engine_status() && check_dual_wan_status().status == "1" && check_dual_wan_status().mode == "lb") ? true : false;
+	},
+	"show_confirm_hint" : function(){
+		var confirm_hint = 'Dual-WAN "load balance" mode will be switched to "fail-over" while enable "AiProtection" features, Are you sure to continue?';/*untranslated*/
+		var confirm_flag = confirm(confirm_hint);
+		if(confirm_flag)
+			return true;
+		else
+			return false;
+	},
+	"change_wan_mode" : function(_formObj){
+		var gen_hidden_item = function(_name, _value, _formObj) {
+			var input = document.createElement('input');
+			input.type = 'hidden';
+			input.name = _name;
+			input.value = _value;
+			_formObj.appendChild(input);
+		};
+
+		var removeElement = function(element) {
+			element && element.parentNode && element.parentNode.removeChild(element);
+		}
+
+		if(_formObj.children.wans_mode != null) {
+			removeElement(_formObj.children.wans_mode);
+		}
+		gen_hidden_item("wans_mode", "fo", _formObj);
+
+		_formObj.action_script.value = "reboot";
+		_formObj.action_wait.value = '<% nvram_get("reboot_time"); %>';
 	}
-	return confirm_status;
-}
+};
 
 function get_protocol() {
 	var protocol = "http:";
@@ -3784,5 +3759,20 @@ var sort_by = function(field, reverse, primer){
 
 	return function (a, b) {
 		return a = key(a), b = key(b), reverse * ((a > b) - (b > a));
+	}
+}
+
+function getRadioValue(obj) {
+	for (var i=0; i<obj.length; i++) {
+		if (obj[i].checked)
+			return obj[i].value;
+	}
+	return 0;
+}
+
+function setRadioValue(obj,val) {
+	for (var i=0; i<obj.length; i++) {
+		if (obj[i].value==val)
+			obj[i].checked = true;
 	}
 }

@@ -1,3 +1,200 @@
+version 2.81
+	Impove cache behaviour for TCP connections. For ease of
+	implementaion, dnsmasq has always forked a new process to handle
+	each incoming TCP connection. A side-effect of this is that
+	any DNS queries answered from TCP connections are not cached:
+	when TCP connections were rare, this was not a problem.
+	With the coming of DNSSEC, it's now the case that some
+	DNSSEC queries have answers which spill to TCP, and if,
+	for instance, this applies to the keys for the root then
+	those never get cached, and performance is very bad.
+	This fix passes cache entries back from the TCP child process to
+	the main server process, and fixes the problem.
+
+	Remove the NO_FORK compile-time option, and support for uclinux.
+	In an era where everything has an MMU, this looks like
+	an anachronism, and it adds to (Ok, multiplies!) the
+	combinatorial explosion of compile-time options. Thanks to
+	Kevin Darbyshire-Bryant for the patch.
+
+	Fix line-counting when reading /etc/hosts and friends; for
+	correct error messages. Thanks to Christian Rosentreter
+	for reporting this.
+
+	Fix bug in DNS non-terminal code, added in 2.80, which could
+	sometimes cause a NODATA rather than an NXDOMAIN reply.
+	Thanks to Norman Rasmussen, Sven Mueller and Maciej Żenczykowski
+	for spotting and diagnosing the bug and providing patches.
+
+	Support TCP-fastopen (RFC-7413) on both incoming and
+	outgoing TCP connections, if supported and enabled in the OS.
+
+	Improve kernel-capability manipulation code under Linux. Dnsmasq
+	now fails early if a required capability is not available, and
+	tries not to request capabilities not required by its
+	configuration.
+
+	Add --shared-network config. This enables allocation of addresses
+	the DHCP server in subnets where the server (or relay) doesn't
+	have an interface on the network in that subnet. Many thanks to
+	kamp.de for sponsoring this feature.
+	
+	Fix broken contrib/lease_tools/dhcp_lease_time.c. A packet
+	validation check got borked in commit 2b38e382 and release 2.80.
+	Thanks to Tomasz Szajner for spotting this.
+
+	Fix compilation against nettle version 3.5 and later.
+
+	Fix spurious DNSSEC validation failures when the auth section
+	of a reply contains unsigned RRs from a signed zone, 
+	with the exception that NSEC and NSEC3 RRs must always be signed.
+        Thanks to Tore Anderson for spotting and diagnosing the bug.
+
+	Add --dhcp-ignore-clid. This disables reading of DHCP client
+	identifier option (option 61), so clients are only identified by
+	MAC addresses.
+
+	Fix a bug which stopped --dhcp-name-match from working when a hostname
+	is supplied in --dhcp-host. Thanks to James Feeney for spotting this.
+
+	
+version 2.80
+	Add support for RFC 4039 DHCP rapid commit. Thanks to Ashram Method
+	for the initial patch and motivation.
+
+	Alter the default for dnssec-check-unsigned. Versions of
+	dnsmasq prior to 2.80 defaulted to not checking unsigned
+	replies, and used --dnssec-check-unsigned to switch
+        this on. Such configurations will continue to work as before,
+        but those which used the default of no checking will need to be
+        altered to explicitly select no checking. The new default is
+        because switching off checking for unsigned replies is
+	inherently dangerous. Not only does it open the possiblity of forged
+        replies, but it allows everything to appear to be working even
+        when the upstream namesevers do not support DNSSEC, and in this
+        case no DNSSEC validation at all is occuring.
+
+        Fix DHCP broken-ness when --no-ping AND --dhcp-sequential-ip
+	are set. Thanks to Daniel Miess for help with this.
+
+	Add a facilty to store DNS packets sent/recieved in a
+	pcap-format file for later debugging. The file location
+	is given by the --dumpfile option, and a bitmap controlling
+	which packets should be dumped is given by the --dumpmask
+	option.
+
+	Handle the case of both standard and constructed dhcp-ranges on the
+	same interface better. We don't now contruct a dhcp-range if there's
+	already one specified. This allows the specified interface to
+	have different parameters and avoids advertising the same
+	prefix twice. Thanks to Luis Marsano for spotting this case.
+
+	Allow zone transfer in authoritative mode if auth-peer is specified,
+	even if auth-sec-servers is not. Thanks to Raphaël Halimi for
+	the suggestion.
+
+	Fix bug which sometimes caused dnsmasq to wrongly return answers
+	without DNSSEC RRs to queries with the do-bit set, but only when
+	DNSSEC validation was not enabled.
+	Thanks to Petr Menšík for spotting this.
+
+	Fix missing fatal errors with some malformed options
+	(server, local, address, rebind-domain-ok, ipset, alias).
+	Thanks to Eugene Lozovoy for spotting the problem.
+
+	Fix crash on startup with a --synth-domain which has no prefix.
+	Introduced in 2.79. Thanks to Andreas Engel for the bug report.
+
+	Fix missing EDNS0 section in some replies generated by local
+	DNS configuration which confused systemd-resolvd. Thanks to
+	Steve Dodd for characterising the problem.
+
+	Add --dhcp-name-match config option. 
+
+	Add --caa-record config option.
+
+	Implement --address=/example.com/# as (more efficient) syntactic
+	sugar for --address=/example.com/0.0.0.0 and
+	--address=/example.com/::
+	Returning null addresses is a useful technique for ad-blocking.
+	Thanks to Peter Russell for the suggestion.
+	
+	Change anti cache-snooping behaviour with queries with the
+	recursion-desired bit unset. Instead to returning SERVFAIL, we
+	now always forward, and never answer from the cache. This
+	allows "dig +trace" command to work. 
+	
+	Include in the example config file a formulation which
+	stops DHCP clients from claiming the DNS name "wpad".
+	This is a fix for the CERT Vulnerability VU#598349.
+
+	
+version 2.79
+	Fix parsing of CNAME arguments, which are confused by extra spaces.
+	Thanks to Diego Aguirre for spotting the bug.
+
+	Where available, use IP_UNICAST_IF or IPV6_UNICAST_IF to bind
+	upstream servers to an interface, rather than SO_BINDTODEVICE.
+	Thanks to Beniamino Galvani for the patch.
+
+	Always return a SERVFAIL answer to DNS queries without the
+	recursion desired bit set, UNLESS acting as an authoritative
+	DNS server. This avoids a potential route to cache snooping.
+
+	Add support for Ed25519 signatures in DNSSEC validation.
+
+	No longer support RSA/MD5 signatures in DNSSEC validation,
+	since these are not secure. This behaviour is mandated in
+	RFC-6944.
+
+	Fix incorrect error exit code from dhcp_release6 utility.
+	Thanks Gaudenz Steinlin for the bug report.
+
+	Use SIGINT (instead of overloading SIGHUP) to turn on DNSSEC
+	time validation when --dnssec-no-timecheck is in use.
+	Note that this is an incompatible change from earlier releases.
+
+	Allow more than one --bridge-interface option to refer to an
+	interface, so that we can use
+	--bridge-interface=int1,alias1
+	--bridge-interface=int1,alias2
+	as an alternative to
+	--bridge-interface=int1,alias1,alias2
+	Thanks to Neil Jerram for work on this.
+
+	Fix for DNSSEC with wildcard-derived NSEC records.
+	It's OK for NSEC records to be expanded from wildcards,
+	but in that case, the proof of non-existence is only valid
+	starting at the wildcard name, *.<domain> NOT the name expanded
+	from the wildcard. Without this check it's possible for an
+	attacker to craft an NSEC which wrongly proves non-existence.
+	Thanks to Ralph Dolmans for finding this, and co-ordinating 
+	the vulnerability tracking and fix release.
+	CVE-2017-15107 applies.
+
+	Remove special handling of A-for-A DNS queries. These
+	are no longer a significant problem in the global DNS.
+	http://cs.northwestern.edu/~ychen/Papers/DNS_ToN15.pdf
+	Thanks to Mattias Hellström for the initial patch.
+
+	Fix failure to delete dynamically created dhcp options
+	from files in -dhcp-optsdir directories. Thanks to
+	Lindgren Fredrik for the bug report.
+
+	Add to --synth-domain the ability to create names using
+	sequential numbers, as well as encodings of IP addresses.
+	For instance,
+	--synth-domain=thekelleys.org.uk,192.168.0.50,192.168.0.70,internal-*
+	creates 21 domain names of the form
+	internal-4.thekelleys.org.uk over the address range given, with
+	internal-0.thekelleys.org.uk being 192.168.0.50 and
+	internal-20.thekelleys.org.uk being 192.168.0.70
+	Thanks to Andy Hawkins for the suggestion.
+
+	Tidy up Crypto code, removing workarounds for ancient
+	versions of libnettle. We now require libnettle 3.
+
+
 version 2.78
         Fix logic of appending ".<layer>" to PXE basename. Thanks to Chris
 	Novakovic for the patch.
@@ -1526,7 +1723,7 @@ version 2.56
 
 	By default, setting an IPv4 address for a domain but not
 	an IPv6 address causes dnsmasq to return
-	an NODATA reply for IPv6 (or vice-versa). So
+	a NODATA reply for IPv6 (or vice-versa). So
 	--address=/google.com/1.2.3.4 stops IPv6 queries for
 	*google.com from being forwarded. Make it possible to
 	override this behaviour by defining the semantics if the
@@ -2032,13 +2229,13 @@ version 2.47
 
 	Support arbitrarily encapsulated DHCP options, suggestion
 	and initial patch from Samium Gromoff. This is useful for
-	(eg) gPXE, which expect all its private options to be
+	(eg) iPXE, which expect all its private options to be
 	encapsulated inside a single option 175. So, eg, 
 
 	dhcp-option = encap:175, 190, "iscsi-client0"
 	dhcp-option = encap:175, 191, "iscsi-client0-secret"
 
-	will provide iSCSI parameters to gPXE.
+	will provide iSCSI parameters to iPXE.
 
 	Enhance --dhcp-match to allow testing of the contents of a
 	client-sent option, as well as its presence. This

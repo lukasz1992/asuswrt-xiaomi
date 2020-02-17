@@ -152,15 +152,6 @@ function QKinternettype_load_body(){
 		
 		if(parent.get_internet_type_reducedmode() == "enable")
 			blocking("dhcppppoe_sec", false);
-	
-		if( !parent.meoVoda_support ){
-			document.getElementById('meoOption').outerHTML = "";
-			document.getElementById('vodafoneOption').outerHTML = "";
-		}
-
-		if( !parent.movistarTriple_support ){
-			document.getElementById('movistarOption').outerHTML = "";
-		}
 
 		if(!iptv_support){
 			document.getElementById("specialISP_tr").style.display = "none";

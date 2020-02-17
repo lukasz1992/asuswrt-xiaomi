@@ -391,7 +391,7 @@ function showWlHint(updateFlag){
 		wlHintCss += "</style>";
 
 		var wlHintJs = '<script>setInterval(function(){var a;if(window.XMLHttpRequest)a=new XMLHttpRequest;else{if(!window.ActiveXObject)return!1;a=new ActiveXObject("Microsoft.XMLHTTP")}a.onreadystatechange=function(){4==a.readyState&&200==a.status&&(top.location.href="/")},a.open("GET","/httpd_check.xml",!0),a.send(null)},';
-		wlHintJs += (action_script == "reboot")?restart_time*1000:"3e3";
+		wlHintJs += (action_script == "reboot")?restart_time*1000:"5000";
 		wlHintJs += ');<\x2Fscript>';
 
 		var wlHintHtml = '';
@@ -570,6 +570,16 @@ function initial(){
 				showWlHint();
 				return;
 			}
+			else if(getflag == "finish"){
+				if(parent.document.getElementById("hidden_frame")){
+					setTimeout("parent.location.href='/qis/QIS_finish.htm';", restart_time*1000);  // Get
+				}
+				else{
+					parent.parent.showLoading(restart_time, "waiting");
+					setTimeout("showdr_advise('finish');", (restart_time+1)*1000);
+				}
+			}
+
 			if(current_page.indexOf("<% abs_index_page(); %>") >= 0){
 				parent.showLoading(restart_time, "waiting");
 			}

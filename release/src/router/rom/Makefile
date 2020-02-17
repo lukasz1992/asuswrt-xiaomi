@@ -60,9 +60,25 @@ all:
 clean:
 #	rm -f rom/etc/motd
 
+certs/ca-bundle.crt:
+	certs/mk-ca-bundle.pl -fu $@
+
+certs: dummy
+	certs/mk-ca-bundle.pl -fu certs/ca-bundle.crt
+
+certs-install: certs/ca-bundle.crt
+	install -d $(INSTALLDIR)/rom/etc/ssl/certs
+	install -m 0644 certs/ca-bundle.crt $(INSTALLDIR)/rom/etc/ssl/certs/ca-certificates.crt
+	sed -r '/^\s*(#|$$)/d;/\-BEGIN/{h;d};H;/\-END/{x;/\-BEGIN/p};d' -i $(INSTALLDIR)/rom/etc/ssl/certs/ca-certificates.crt
+
 install:
 	mkdir -p $(INSTALLDIR)
 	( tar --exclude=.svn --exclude=*.bak -cpf - rom ) | ( cd $(INSTALLDIR) && tar -xpf - )
+
+	$(MAKE) certs-install
+ifeq ($(RTCONFIG_LETSENCRYPT),y)
+	install -m 0644 certs/DST_Root_CA_X3.pem $(INSTALLDIR)/rom/etc/ssl/certs/letsencrypt.pem
+endif
 
 ifeq ($(RTAC88U),y)
 	install -m 0644 smb.conf $(INSTALLDIR)/rom/smb.conf
@@ -125,12 +141,12 @@ ifeq ($(RTCONFIG_USB_MODEM),y)
 	install -m 0644 spn_*.dat $(INSTALLDIR)/rom
 	install -m 0755 apps_scripts/find_modem_*.sh $(INSTALLDIR)/usr/sbin
 	install -m 0755 apps_scripts/modem_*.sh $(INSTALLDIR)/usr/sbin
-	install -m 0755 apps_scripts/3ginfo.sh $(INSTALLDIR)/usr/sbin
 ifeq ($(RTCONFIG_INTERNAL_GOBI),y)
 	install -m 0755 apps_scripts/gobi_update.sh $(INSTALLDIR)/usr/sbin
 endif
 endif
 endif
+	install -m 0755 apps_scripts/3ginfo.sh $(INSTALLDIR)/usr/sbin
 
 ifeq ($(RTCONFIG_DSL),y)
 	cp -f webs_scripts/notif_update.sh $(INSTALLDIR)/usr/sbin/notif_update.sh
@@ -234,11 +250,9 @@ endif
 
 	install -m 0755 webs_scripts/GoogleDNS_Update.sh $(INSTALLDIR)/usr/sbin
 
-ifeq ($(RTCONFIG_LETSENCRYPT),y)
-	install -m 0644 rom/etc/ssl/certs/DST_Root_CA_X3.pem $(INSTALLDIR)/rom/etc/ssl/certs/letsencrypt.pem
-endif
-
 ifeq ($(HND_ROUTER),y)
 	mkdir -p $(INSTALL_DIR)/rom/rom/usr/share/zoneinfo
 	cp -rf zoneinfo/* $(INSTALL_DIR)/rom/rom/usr/share/zoneinfo/
 endif
+
+.PHONY: dummy

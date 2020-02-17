@@ -93,15 +93,6 @@ function QKaccount_load_body(){
 	if(!document.getElementById('vpn_client_check').checked)
 		document.form.wan_proto.value = "pppoe";
 
-	if( !parent.meoVoda_support ){	// MODELDEP: RT-AC3200, RT-AC87U, RT-AC68U, RT-AC66U, RT-AC51U, RT-N66U, RT-N18U
-		document.getElementById('meoOption').outerHTML = "";
-		document.getElementById('vodafoneOption').outerHTML = "";
-	}
-	
-	if( !parent.movistarTriple_support ){
-		document.getElementById('movistarOption').outerHTML = "";
-	}
-
 	if(parent.based_modelid == "GT-AC5300" || parent.based_modelid == "GT-AC9600"){ //MODELDEP: GT-AC5300 : TRUNK ports
 		if(iptv_port_settings_orig == "12"){
 			document.getElementById("voip_lan").innerHTML = "LAN2";	//P3

@@ -33,8 +33,6 @@ obj-y += pcre
 obj-y += samba
 obj-y += sqlite
 obj-y += subsequent
-#obj-y += wb
-#obj-y += push_log
 obj-y += lighttpd
 obj-y += Aicloud-ipk
 
@@ -55,8 +53,6 @@ clean:
 	@$(MAKE) -C $(CURRENT)/sqlite clean
 	@$(MAKE) -C $(CURRENT)/lighttpd-1.4.39 clean
 	@$(MAKE) -C $(CURRENT)/samba-3.5.8 clean -f Makefile.ipk
-	@$(MAKE) -C $(CURRENT)/wb clean -f Makefile.ipk
-	#@$(MAKE) -C $(CURRENT)/push_log clean
 	@rm -rf AiCloud-ipk/opt/tmp/lib/*
 	@rm -rf AiCloud-ipk/opt/tmp/bin/*
 	@rm -rf AiCloud-ipk/CONTROL/control
@@ -189,16 +185,6 @@ samba:
 	@$(MAKE) -C $(CURRENT)/samba-3.5.8 -f Makefile.ipk
 	cp -rf $(CURRENT)/samba-3.5.8/source3/bin/libsmbclient.so.0 AiCloud-ipk/opt/tmp/lib/
 
-wb/stamp-h1:
-
-wb:wb/stamp-h1
-	@$(MAKE) -C $(CURRENT)/wb -f Makefile.ipk
-	cp -rf $(CURRENT)/wb/libws.so AiCloud-ipk/opt/tmp/lib/
-push/stamp-h1:
-
-push_log:push/stamp-h1
-	@$(MAKE) -C $(CURRENT)/push_log
-	cp -rf $(CURRENT)/push_log/libpush_log.so AiCloud-ipk/opt/tmp/lib/
 lighttpd:
 	cd $(CURRENT)/lighttpd-1.4.39 && ./autogen.sh \
 	#AR=$(AR) AS=$(AS) LD=$(LD) NM=$(NM) CC=$(CC) CPP="$(CC) -E" GCC=$(CC) CXX=$(CXX) RANLIB=$(RANLIB) STRIP=$(STRIP) \

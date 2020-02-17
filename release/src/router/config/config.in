@@ -281,6 +281,11 @@ config RTCONFIG_BCMWL6A
 	depends on RTCONFIG_BCMARM && RTCONFIG_BCMWL6
 	default n
 
+config RTCONFIG_BCM4708
+	bool "BCM WL 6.37.14"
+	depends on RTCONFIG_BCMARM && RTCONFIG_BCMWL6
+	default n
+
 config RTCONFIG_WIRELESSWAN
 	bool "Wireless WAN Function"
 	default n
@@ -386,6 +391,10 @@ config RTCONFIG_USER_LOW_RSSI
 
 config RTCONFIG_NEW_USER_LOW_RSSI
 	bool "User specified accepted min rssi"
+	default n
+
+config RTCONFIG_FRS_FEEDBACK
+	bool "Feedback features Support"
 	default n
 
 config RTCONFIG_PUSH_EMAIL
@@ -719,6 +728,10 @@ config RTCONFIG_NEWSSID_REV2
 	bool "New ASUS_2GMAC_xG rule"
 	default n
 
+config RTCONFIG_NEWSSID_REV4
+	bool "RT-V4 SSID rule"
+	default n
+
 config RTCONFIG_QCA
 	bool "Qualcomm Atheros Chip Support"
 	default n
@@ -750,23 +763,18 @@ config RTCONFIG_NSS_IPSEC
 	depends on RTCONFIG_SOC_IPQ8064
 	default n
 
-config RTCONFIG_PCIE_QCA9880
-	bool "Qualcomm Atheros QCA9880 WiFi chip"
+config RTCONFIG_PCIE_AR9888
+	bool "Qualcomm Atheros QCA9880/QCA9882 WiFi chip"
 	depends on RTCONFIG_QCA
 	default n
 
-config RTCONFIG_PCIE_QCA9882
-	bool "Qualcomm Atheros QCA9882 WiFi chip"
+config RTCONFIG_PCIE_QCA9888
+	bool "Qualcomm Atheros QCA9886/QCA9888 WiFi chip"
 	depends on RTCONFIG_QCA
 	default n
 
 config RTCONFIG_PCIE_QCA9984
 	bool "Qualcomm Atheros QCA9994 WiFi chip (Cascade)"
-	depends on RTCONFIG_QCA
-	default n
-
-config RTCONFIG_PCIE_QCA9888
-	bool "Qualcomm Atheros QCA9888 WiFi chip"
 	depends on RTCONFIG_QCA
 	default n
 
@@ -811,6 +819,10 @@ config RTCONFIG_QCA953X
 
 config RTCONFIG_QCA956X
 	bool "Qualcomm Atheros QCA956X Chip Support"
+	default n
+
+config RTCONFIG_QCN550X
+	bool "Qualcomm Atheros QCN550X Chip Support"
 	default n
 
 config RTCONFIG_SOC_IPQ40XX
@@ -1755,4 +1767,8 @@ config RTCONFIG_LIBASUSLOG
 
 config RTCONFIG_WTF_REDEEM
 	bool "wtf_redeem support"
+	default n
+
+config RTCONFIG_UUPLUGIN
+	bool "UU plugin support"
 	default n

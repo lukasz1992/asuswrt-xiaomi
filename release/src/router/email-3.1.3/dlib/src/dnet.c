@@ -172,7 +172,7 @@ dnetUseTls(dsocket *sd)
 		return ERROR;
 	}
 	_genRandomSeed();
-	sd->ctx = SSL_CTX_new(TLSv1_client_method());
+	sd->ctx = SSL_CTX_new(TLSv1_2_client_method());
 	if (!sd->ctx) {
 		return ERROR;
 	}

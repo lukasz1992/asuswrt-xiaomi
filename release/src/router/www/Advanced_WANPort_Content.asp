@@ -119,8 +119,9 @@ function initial(){
 	
 	addWANOption(document.form.wans_primary, wans_caps_primary.split(" "));
 	addWANOption(document.form.wans_second, wans_caps_secondary.split(" "));
-	httpApi.faqURL("dualwan_faq", "1011718", "https://www.asus.com", "/support/FAQ/");
-	httpApi.faqURL("network_detect_faq", "1037368", "https://www.asus.com", "/support/FAQ/");
+
+	httpApi.faqURL("1011718", function(url){document.getElementById("dualwan_faq").href=url;});
+	httpApi.faqURL("1037368", function(url){document.getElementById("network_detect_faq").href=url;});
 
    	document.form.wans_mode.value = wans_mode_orig;
 
@@ -150,6 +151,11 @@ function initial(){
 	if(based_modelid == "RT-AC87U"){ //MODELDEP: RT-AC87 : Quantenna port
                 document.form.wans_lanport1.remove(0);   //Primary LAN1
                 document.form.wans_lanport2.remove(0);   //Secondary LAN1
+	}else if(based_modelid == "RT-N19"){
+		document.form.wans_lanport1.remove(3);
+		document.form.wans_lanport1.remove(2);
+		document.form.wans_lanport2.remove(3);
+		document.form.wans_lanport2.remove(2);
 	}
 
 	if(based_modelid == "GT-AC5300"){ //MODELDEP: GT-AC5300 : TRUNK PORT

@@ -78,13 +78,13 @@ enum signkey_type signkey_type_from_name(const char* name, unsigned int namelen)
 #if DROPBEAR_ECDSA
 			/* Some of the ECDSA key sizes are defined even if they're not compiled in */
 			if (0
-#ifndef DROPBEAR_ECC_256
+#if !DROPBEAR_ECC_256
 				|| i == DROPBEAR_SIGNKEY_ECDSA_NISTP256
 #endif
-#ifndef DROPBEAR_ECC_384
+#if !DROPBEAR_ECC_384
 				|| i == DROPBEAR_SIGNKEY_ECDSA_NISTP384
 #endif
-#ifndef DROPBEAR_ECC_521
+#if !DROPBEAR_ECC_521
 				|| i == DROPBEAR_SIGNKEY_ECDSA_NISTP521
 #endif
 				) {
@@ -102,7 +102,8 @@ enum signkey_type signkey_type_from_name(const char* name, unsigned int namelen)
 	return DROPBEAR_SIGNKEY_NONE;
 }
 
-/* Returns a pointer to the key part specific to "type" */
+/* Returns a pointer to the key part specific to "type".
+Be sure to check both (ret != NULL) and (*ret != NULL) */
 void **
 signkey_key_ptr(sign_key *key, enum signkey_type type) {
 	switch (type) {
@@ -167,7 +168,8 @@ int buf_get_pub_key(buffer *buf, sign_key *key, enum signkey_type *type) {
 		key->dsskey = m_malloc(sizeof(*key->dsskey));
 		ret = buf_get_dss_pub_key(buf, key->dsskey);
 		if (ret == DROPBEAR_FAILURE) {
-			m_free(key->dsskey);
+			dss_key_free(key->dsskey);
+			key->dsskey = NULL;
 		}
 	}
 #endif
@@ -177,7 +179,8 @@ int buf_get_pub_key(buffer *buf, sign_key *key, enum signkey_type *type) {
 		key->rsakey = m_malloc(sizeof(*key->rsakey));
 		ret = buf_get_rsa_pub_key(buf, key->rsakey);
 		if (ret == DROPBEAR_FAILURE) {
-			m_free(key->rsakey);
+			rsa_key_free(key->rsakey);
+			key->rsakey = NULL;
 		}
 	}
 #endif
@@ -201,7 +204,6 @@ int buf_get_pub_key(buffer *buf, sign_key *key, enum signkey_type *type) {
 	TRACE2(("leave buf_get_pub_key"))
 
 	return ret;
-	
 }
 
 /* returns DROPBEAR_SUCCESS on success, DROPBEAR_FAILURE on fail.
@@ -236,7 +238,8 @@ int buf_get_priv_key(buffer *buf, sign_key *key, enum signkey_type *type) {
 		key->dsskey = m_malloc(sizeof(*key->dsskey));
 		ret = buf_get_dss_priv_key(buf, key->dsskey);
 		if (ret == DROPBEAR_FAILURE) {
-			m_free(key->dsskey);
+			dss_key_free(key->dsskey);
+			key->dsskey = NULL;
 		}
 	}
 #endif
@@ -246,7 +249,8 @@ int buf_get_priv_key(buffer *buf, sign_key *key, enum signkey_type *type) {
 		key->rsakey = m_malloc(sizeof(*key->rsakey));
 		ret = buf_get_rsa_priv_key(buf, key->rsakey);
 		if (ret == DROPBEAR_FAILURE) {
-			m_free(key->rsakey);
+			rsa_key_free(key->rsakey);
+			key->rsakey = NULL;
 		}
 	}
 #endif
@@ -294,7 +298,7 @@ void buf_put_pub_key(buffer* buf, sign_key *key, enum signkey_type type) {
 #if DROPBEAR_ECDSA
 	if (signkey_is_ecdsa(type)) {
 		ecc_key **eck = (ecc_key**)signkey_key_ptr(key, type);
-		if (eck) {
+		if (eck && *eck) {
 			buf_put_ecdsa_pub_key(pubkeys, *eck);
 		}
 	}
@@ -331,7 +335,7 @@ void buf_put_priv_key(buffer* buf, sign_key *key, enum signkey_type type) {
 #if DROPBEAR_ECDSA
 	if (signkey_is_ecdsa(type)) {
 		ecc_key **eck = (ecc_key**)signkey_key_ptr(key, type);
-		if (eck) {
+		if (eck && *eck) {
 			buf_put_ecdsa_priv_key(buf, *eck);
 			TRACE(("leave buf_put_priv_key: ecdsa done"))
 			return;
@@ -396,7 +400,7 @@ static char hexdig(unsigned char x) {
 /* Since we're not sure if we'll have md5 or sha1, we present both.
  * MD5 is used in preference, but sha1 could still be useful */
 #if DROPBEAR_MD5_HMAC
-static char * sign_key_md5_fingerprint(unsigned char* keyblob,
+static char * sign_key_md5_fingerprint(const unsigned char* keyblob,
 		unsigned int keybloblen) {
 
 	char * ret;
@@ -431,7 +435,7 @@ static char * sign_key_md5_fingerprint(unsigned char* keyblob,
 }
 
 #else /* use SHA1 rather than MD5 for fingerprint */
-static char * sign_key_sha1_fingerprint(unsigned char* keyblob, 
+static char * sign_key_sha1_fingerprint(const unsigned char* keyblob,
 		unsigned int keybloblen) {
 
 	char * ret;
@@ -468,7 +472,7 @@ static char * sign_key_sha1_fingerprint(unsigned char* keyblob,
 
 /* This will return a freshly malloced string, containing a fingerprint
  * in either sha1 or md5 */
-char * sign_key_fingerprint(unsigned char* keyblob, unsigned int keybloblen) {
+char * sign_key_fingerprint(const unsigned char* keyblob, unsigned int keybloblen) {
 
 #if DROPBEAR_MD5_HMAC
 	return sign_key_md5_fingerprint(keyblob, keybloblen);
@@ -478,7 +482,7 @@ char * sign_key_fingerprint(unsigned char* keyblob, unsigned int keybloblen) {
 }
 
 void buf_put_sign(buffer* buf, sign_key *key, enum signkey_type type, 
-	buffer *data_buf) {
+	const buffer *data_buf) {
 	buffer *sigblob;
 	sigblob = buf_new(MAX_PUBKEY_SIZE);
 
@@ -495,7 +499,7 @@ void buf_put_sign(buffer* buf, sign_key *key, enum signkey_type type,
 #if DROPBEAR_ECDSA
 	if (signkey_is_ecdsa(type)) {
 		ecc_key **eck = (ecc_key**)signkey_key_ptr(key, type);
-		if (eck) {
+		if (eck && *eck) {
 			buf_put_ecdsa_sign(sigblob, *eck, data_buf);
 		}
 	}
@@ -513,7 +517,7 @@ void buf_put_sign(buffer* buf, sign_key *key, enum signkey_type type,
  * If FAILURE is returned, the position of
  * buf is undefined. If SUCCESS is returned, buf will be positioned after the
  * signature blob */
-int buf_verify(buffer * buf, sign_key *key, buffer *data_buf) {
+int buf_verify(buffer * buf, sign_key *key, const buffer *data_buf) {
 	
 	char *type_name = NULL;
 	unsigned int type_name_len = 0;
@@ -546,7 +550,7 @@ int buf_verify(buffer * buf, sign_key *key, buffer *data_buf) {
 #if DROPBEAR_ECDSA
 	if (signkey_is_ecdsa(type)) {
 		ecc_key **eck = (ecc_key**)signkey_key_ptr(key, type);
-		if (eck) {
+		if (eck && *eck) {
 			return buf_ecdsa_verify(buf, *eck, data_buf);
 		}
 	}
@@ -566,7 +570,7 @@ int buf_verify(buffer * buf, sign_key *key, buffer *data_buf) {
    of the key if it is successfully decoded */
 int cmp_base64_key(const unsigned char* keyblob, unsigned int keybloblen, 
 					const unsigned char* algoname, unsigned int algolen, 
-					buffer * line, char ** fingerprint) {
+					const buffer * line, char ** fingerprint) {
 
 	buffer * decodekey = NULL;
 	int ret = DROPBEAR_FAILURE;
@@ -576,6 +580,10 @@ int cmp_base64_key(const unsigned char* keyblob, unsigned int keybloblen,
 
 	/* now we have the actual data */
 	len = line->len - line->pos;
+	if (len == 0) {
+		/* base64_decode doesn't like NULL argument */
+		return DROPBEAR_FAILURE;
+	}
 	decodekeylen = len * 2; /* big to be safe */
 	decodekey = buf_new(decodekeylen);
 
@@ -618,4 +626,9 @@ out:
 	decodekey = NULL;
 	return ret;
 }
+#endif
+
+#if DROPBEAR_FUZZ
+const char * const * fuzz_signkey_names = signkey_names;
+
 #endif

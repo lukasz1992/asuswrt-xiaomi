@@ -5,7 +5,7 @@
 #             packet encryption, packet authentication, and
 #             packet compression.
 #
-#  Copyright (C) 2002-2010 OpenVPN Technologies, Inc. <sales@openvpn.net>
+#  Copyright (C) 2002-2018 OpenVPN Inc <sales@openvpn.net>
 #  Copyright (C) 2006-2012 Alon Bar-Lev <alon.barlev@gmail.com>
 #
 
@@ -18,7 +18,7 @@ dist_doc_DATA = \
 	management-notes.txt
 
 dist_noinst_DATA = \
-	README.plugins
+	README.plugins interactive-service-notes.rst
 
 if WIN32
 dist_noinst_DATA += openvpn.8

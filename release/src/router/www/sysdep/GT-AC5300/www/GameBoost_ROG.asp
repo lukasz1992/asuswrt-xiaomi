@@ -1471,7 +1471,7 @@ function cancel(){
 							<td>
 								<div style=" *width:136px;margin:5px 0px 0px 300px;" class="titlebtn" align="center" onClick="applyRule();">
 									<span><#CTL_apply#></span>
-									<div style="margin:-30px 0 0px -480px;"><a style="text-decoration:underline;" href="http://www.asus.com/support/FAQ/1008717/" target="_blank"><#Bandwidth_monitor_WANLAN#> FAQ</a></div>
+									<div style="margin:-30px 0 0px -480px;"><a style="text-decoration:underline;" href="https://www.asus.com/support/FAQ/1008717/" target="_blank"><#Bandwidth_monitor_WANLAN#> FAQ</a></div>
 								</div>
 							</td>
 						</tr>

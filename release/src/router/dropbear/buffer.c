@@ -67,7 +67,7 @@ void buf_free(buffer* buf) {
 }
 
 /* overwrite the contents of the buffer to clear it */
-void buf_burn(buffer* buf) {
+void buf_burn(const buffer* buf) {
 	
 	m_burn(buf->data, buf->size);
 
@@ -91,7 +91,7 @@ buffer* buf_resize(buffer *buf, unsigned int newsize) {
 
 /* Create a copy of buf, allocating required memory etc. */
 /* The new buffer is sized the same as the length of the source buffer. */
-buffer* buf_newcopy(buffer* buf) {
+buffer* buf_newcopy(const buffer* buf) {
 	
 	buffer* ret;
 
@@ -109,6 +109,7 @@ void buf_setlen(buffer* buf, unsigned int len) {
 		dropbear_exit("Bad buf_setlen");
 	}
 	buf->len = len;
+	buf->pos = MIN(buf->pos, buf->len);
 }
 
 /* Increment the length of the buffer */
@@ -183,7 +184,7 @@ void buf_putbyte(buffer* buf, unsigned char val) {
 
 /* returns an in-place pointer to the buffer, checking that
  * the next len bytes from that position can be used */
-unsigned char* buf_getptr(buffer* buf, unsigned int len) {
+unsigned char* buf_getptr(const buffer* buf, unsigned int len) {
 
 	if (len > BUF_MAX_INCR || buf->pos + len > buf->len) {
 		dropbear_exit("Bad buf_getptr");
@@ -193,7 +194,7 @@ unsigned char* buf_getptr(buffer* buf, unsigned int len) {
 
 /* like buf_getptr, but checks against total size, not used length.
  * This allows writing past the used length, but not past the size */
-unsigned char* buf_getwriteptr(buffer* buf, unsigned int len) {
+unsigned char* buf_getwriteptr(const buffer* buf, unsigned int len) {
 
 	if (len > BUF_MAX_INCR || buf->pos + len > buf->size) {
 		dropbear_exit("Bad buf_getwriteptr");
@@ -208,6 +209,7 @@ char* buf_getstring(buffer* buf, unsigned int *retlen) {
 
 	unsigned int len;
 	char* ret;
+	void* src = NULL;
 	len = buf_getint(buf);
 	if (len > MAX_STRING_LEN) {
 		dropbear_exit("String too long");
@@ -216,8 +218,9 @@ char* buf_getstring(buffer* buf, unsigned int *retlen) {
 	if (retlen != NULL) {
 		*retlen = len;
 	}
+	src = buf_getptr(buf, len);
 	ret = m_malloc(len+1);
-	memcpy(ret, buf_getptr(buf, len), len);
+	memcpy(ret, src, len);
 	buf_incrpos(buf, len);
 	ret[len] = '\0';
 

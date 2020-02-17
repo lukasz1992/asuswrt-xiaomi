@@ -121,11 +121,11 @@ var flag = '<% get_parameter("flag"); %>';
 var realip_state = "";
 
 var StatusList = {
-	"NoInetrnet": "Internet is disconnected. Please check your WAN connection for remote control",
-	"SvrFail": "Server connection failed",
-	"StepAccount": "Please follow steps to pair your account",
+	"NoInetrnet": "<#Alexa_Status_Disconnect#>",
+	"SvrFail": "<#Alexa_Server_Failed#>",
+	"StepAccount": "<#Alexa_Status_Account#>",
 	"EnableRemoteCtrl": "<#Alexa_Register1#>",
-	"Success": "IFTTT account is registered"
+	"Success": "<#IFTTT_Registered#>"
 }
 
 var AccLinkStatus = {

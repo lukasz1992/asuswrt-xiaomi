@@ -2,7 +2,6 @@
 #define DROPBEAR_DROPBEAR_ECC_H
 
 #include "includes.h"
-#include "options.h"
 
 #include "buffer.h"
 
@@ -29,7 +28,7 @@ void buf_put_ecc_raw_pubkey_string(buffer *buf, ecc_key *key);
 ecc_key * buf_get_ecc_raw_pubkey(buffer *buf, const struct dropbear_ecc_curve *curve);
 int buf_get_ecc_privkey_string(buffer *buf, ecc_key *key);
 
-mp_int * dropbear_ecc_shared_secret(ecc_key *pub_key, ecc_key *priv_key);
+mp_int * dropbear_ecc_shared_secret(ecc_key *pub_key, const ecc_key *priv_key);
 
 #endif
 

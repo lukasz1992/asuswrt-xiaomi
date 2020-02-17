@@ -122,11 +122,11 @@ var flag = '<% get_parameter("flag"); %>';
 var realip_state = "";
 
 var StatusList = {
-	"NoInetrnet": "Internet is disconnected. Please check your WAN connection for remote control",
-	"SvrFail": "Server connection failed",
-	"StepAccount": "Please follow steps to pair your account",
+	"NoInetrnet": "<#Alexa_Status_Disconnect#>",
+	"SvrFail": "<#Alexa_Server_Failed#>",
+	"StepAccount": "<#Alexa_Status_Account#>",
 	"EnableRemoteCtrl": "<#Alexa_Register1#>",
-	"Success": "Amazon Alexa account is registered"
+	"Success": "<#Alexa_Registered#>"
 }
 
 var AccLinkStatus = {
@@ -148,11 +148,11 @@ var AccLinkStatus = {
 function initial(){
 	show_menu();
 	//	https://www.asus.com/us/support/FAQ/1033393
-	httpApi.faqURL("faq", "1033393", "https://www.asus.com", "/support/FAQ/");
+	httpApi.faqURL("1033393", function(url){document.getElementById("faq").href=url;});
 
 	if(!ifttt_support){
 		document.getElementById("divSwitchMenu").style.display = "none";
-		document.getElementById("formfonttitle").innerHTML = "Amazon Alexa";
+		document.getElementById("formfonttitle").innerHTML = "<#Alexa_Title#>";
 	}
 	if('<% nvram_get("fw_lw_enable_x"); %>' == '1')
 		document.getElementById("network_services_Remind").style.display = "";
@@ -417,9 +417,9 @@ function show_account_state(){
 							<tr>
 								<td bgcolor="#4D595D" valign="top">
 									<div>&nbsp;</div>
-									<div id="formfonttitle" class="formfonttitle">Alexa & IFTTT - Amazon Alexa</div>
-									<div id="divSwitchMenu" style="margin-top:-40px;float:right;"><div style="width:110px;height:30px;float:left;border-top-left-radius:8px;border-bottom-left-radius:8px;" class="block_filter_pressed"><div class="tab_font_color" style="text-align:center;padding-top:5px;font-size:14px">Amazon Alexa</div></div><div style="width:110px;height:30px;float:left;border-top-right-radius:8px;border-bottom-right-radius:8px;" class="block_filter"><a href="Advanced_Smart_Home_IFTTT.asp"><div class="block_filter_name">IFTTT</div></a></div></div>
-									<div style="margin-left:5px;margin-top:10px;margin-bottom:10px"><img src="/images/New_ui/export/line_export.png"></div>
+									<div id="formfonttitle" class="formfonttitle">Alexa & IFTTT - <#Alexa_Title#></div>
+									<div id="divSwitchMenu" style="margin-top:-40px;float:right;"><div style="width:110px;height:30px;float:left;border-top-left-radius:8px;border-bottom-left-radius:8px;" class="block_filter_pressed"><div class="tab_font_color" style="text-align:center;padding-top:5px;font-size:14px"><#Alexa_Title#></div></div><div style="width:110px;height:30px;float:left;border-top-right-radius:8px;border-bottom-right-radius:8px;" class="block_filter"><a href="Advanced_Smart_Home_IFTTT.asp"><div class="block_filter_name">IFTTT</div></a></div></div>
+									<div style="margin:10px 0 10px 5px;" class="splitLine"></div>
 									<div class="div_table">
 											<div class="div_tr">
 												<div class="div_td div_desc" style="width:55%">

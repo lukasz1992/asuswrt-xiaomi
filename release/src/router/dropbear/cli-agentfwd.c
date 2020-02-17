@@ -52,6 +52,7 @@ const struct ChanType cli_chan_agent = {
 	new_agent_chan,
 	NULL,
 	NULL,
+	NULL,
 	NULL
 };
 
@@ -108,7 +109,7 @@ static int new_agent_chan(struct Channel * channel) {
    data        Any data, depending on packet type.  Encoding as in the ssh packet
                protocol.
 */
-static buffer * agent_request(unsigned char type, buffer *data) {
+static buffer * agent_request(unsigned char type, const buffer *data) {
 
 	buffer * payload = NULL;
 	buffer * inbuf = NULL;
@@ -130,7 +131,7 @@ static buffer * agent_request(unsigned char type, buffer *data) {
 	}
 	buf_setpos(payload, 0);
 
-	ret = atomicio(write, fd, buf_getptr(payload, payload->len), payload->len);
+	ret = atomicio(vwrite, fd, buf_getptr(payload, payload->len), payload->len);
 	if ((size_t)ret != payload->len) {
 		TRACE(("write failed fd %d for agent_request, %s", fd, strerror(errno)))
 		goto out;
@@ -230,7 +231,7 @@ out:
 	}
 }
 
-void cli_setup_agent(struct Channel *channel) {
+void cli_setup_agent(const struct Channel *channel) {
 	if (!getenv("SSH_AUTH_SOCK")) {
 		return;
 	}
@@ -254,7 +255,7 @@ void cli_load_agent_keys(m_list *ret_list) {
 }
 
 void agent_buf_sign(buffer *sigblob, sign_key *key, 
-		buffer *data_buf) {
+		const buffer *data_buf) {
 	buffer *request_data = NULL;
 	buffer *response = NULL;
 	unsigned int siglen;

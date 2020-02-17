@@ -133,11 +133,12 @@ static int erp_check_wl_auth_stat()
 		}
 		unit++;
 	}
+	if(mac_list) free(mac_list);
 
 	return total_sta_cnt;
 
 exit:
-        if(mac_list) free(mac_list);
+	if(mac_list) free(mac_list);
 	return -1;
 
 }

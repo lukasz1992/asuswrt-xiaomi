@@ -1,4 +1,4 @@
-/* dnsmasq is Copyright (c) 2000-2017 Simon Kelley
+/* dnsmasq is Copyright (c) 2000-2018 Simon Kelley
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -59,24 +59,20 @@ void tftp_request(struct listener *listen, time_t now)
   char *name = NULL;
   char *prefix = daemon->tftp_prefix;
   struct tftp_prefix *pref;
-  struct all_addr addra;
-#ifdef HAVE_IPV6
+  union all_addr addra;
   /* Can always get recvd interface for IPv6 */
   int check_dest = !option_bool(OPT_NOWILD) || listen->family == AF_INET6;
-#else
-  int check_dest = !option_bool(OPT_NOWILD);
-#endif
   union {
     struct cmsghdr align; /* this ensures alignment */
-#ifdef HAVE_IPV6
     char control6[CMSG_SPACE(sizeof(struct in6_pktinfo))];
-#endif
 #if defined(HAVE_LINUX_NETWORK)
     char control[CMSG_SPACE(sizeof(struct in_pktinfo))];
 #elif defined(HAVE_SOLARIS_NETWORK)
-    char control[CMSG_SPACE(sizeof(unsigned int))];
+    char control[CMSG_SPACE(sizeof(struct in_addr)) +
+		 CMSG_SPACE(sizeof(unsigned int))];
 #elif defined(IP_RECVDSTADDR) && defined(IP_RECVIF)
-    char control[CMSG_SPACE(sizeof(struct sockaddr_dl))];
+    char control[CMSG_SPACE(sizeof(struct in_addr)) +
+		 CMSG_SPACE(sizeof(struct sockaddr_dl))];
 #endif
   } control_u; 
 
@@ -174,7 +170,6 @@ void tftp_request(struct listener *listen, time_t now)
 	  
 #endif
 
-#ifdef HAVE_IPV6
       if (listen->family == AF_INET6)
         {
           for (cmptr = CMSG_FIRSTHDR(&msg); cmptr; cmptr = CMSG_NXTHDR(&msg, cmptr))
@@ -190,19 +185,16 @@ void tftp_request(struct listener *listen, time_t now)
                 if_index = p.p->ipi6_ifindex;
               }
         }
-#endif
       
       if (!indextoname(listen->tftpfd, if_index, namebuff))
 	return;
 
       name = namebuff;
       
-      addra.addr.addr4 = addr.in.sin_addr;
+      addra.addr4 = addr.in.sin_addr;
 
-#ifdef HAVE_IPV6
       if (listen->family == AF_INET6)
-	addra.addr.addr6 = addr.in6.sin6_addr;
-#endif
+	addra.addr6 = addr.in6.sin6_addr;
 
       if (daemon->tftp_interfaces)
 	{
@@ -222,7 +214,7 @@ void tftp_request(struct listener *listen, time_t now)
 	      if (!option_bool(OPT_CLEVERBIND))
 		enumerate_interfaces(0); 
 	      if (!loopback_exception(listen->tftpfd, listen->family, &addra, name) &&
-		  !label_exception(if_index, listen->family, &addra) )
+		  !label_exception(if_index, listen->family, &addra))
 		return;
 	    }
 	  
@@ -234,7 +226,7 @@ void tftp_request(struct listener *listen, time_t now)
 #endif
 	}
 
-      strncpy(ifr.ifr_name, name, IF_NAMESIZE);
+      safe_strncpy(ifr.ifr_name, name, IF_NAMESIZE);
       if (ioctl(listen->tftpfd, SIOCGIFMTU, &ifr) != -1)
 	{
 	  mtu = ifr.ifr_mtu;  
@@ -262,7 +254,6 @@ void tftp_request(struct listener *listen, time_t now)
       addr.in.sin_len = sizeof(addr.in);
 #endif
     }
-#ifdef HAVE_IPV6
   else
     {
       addr.in6.sin6_port = htons(port);
@@ -272,7 +263,6 @@ void tftp_request(struct listener *listen, time_t now)
       addr.in6.sin6_len = sizeof(addr.in6);
 #endif
     }
-#endif
 
   if (!(transfer = whine_malloc(sizeof(struct tftp_transfer))))
     return;
@@ -310,10 +300,9 @@ void tftp_request(struct listener *listen, time_t now)
 		{ 
 		  if (listen->family == AF_INET)
 		    addr.in.sin_port = htons(port);
-#ifdef HAVE_IPV6
 		  else
-		     addr.in6.sin6_port = htons(port);
-#endif
+		    addr.in6.sin6_port = htons(port);
+		  
 		  continue;
 		}
 	      my_syslog(MS_TFTP | LOG_ERR, _("unable to get free port for TFTP"));

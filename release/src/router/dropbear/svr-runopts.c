@@ -30,6 +30,8 @@
 #include "algo.h"
 #include "ecdsa.h"
 
+#include <grp.h>
+
 svr_runopts svr_opts; /* GLOBAL */
 
 static void printhelp(const char * progname);
@@ -64,15 +66,19 @@ static void printhelp(const char * progname) {
 #else
 					"-E		Log to stderr rather than syslog\n"
 #endif
-#ifdef DO_MOTD
+#if DO_MOTD
 					"-m		Don't display the motd on login\n"
 #endif
 					"-w		Disallow root logins\n"
+#ifdef HAVE_GETGROUPLIST
+					"-G		Restrict logins to members of specified group\n"
+#endif
 #if DROPBEAR_SVR_PASSWORD_AUTH || DROPBEAR_SVR_PAM_AUTH
 					"-s		Disable password logins\n"
 					"-g		Disable password logins for root\n"
 					"-B		Allow blank password logins\n"
 #endif
+					"-T		Maximum authentication tries (default %d)\n"
 #if DROPBEAR_SVR_LOCALTCPFWD
 					"-j		Disable local port forwarding\n"
 #endif
@@ -87,7 +93,7 @@ static void printhelp(const char * progname) {
 					"		(default port is %s if none specified)\n"
 					"-P PidFile	Create pid file PidFile\n"
 					"		(default %s)\n"
-#ifdef INETD_MODE
+#if INETD_MODE
 					"-i		Start for inetd\n"
 #endif
 					"-W <receive_window_buffer> (default %d, larger may be faster, max 1MB)\n"
@@ -107,6 +113,7 @@ static void printhelp(const char * progname) {
 #if DROPBEAR_ECDSA
 					ECDSA_PRIV_FILENAME,
 #endif
+					MAX_AUTH_TRIES,
 					DROPBEAR_MAX_PORTS, DROPBEAR_DEFPORT, DROPBEAR_PIDFILE,
 					DEFAULT_RECV_WINDOW, DEFAULT_KEEPALIVE, DEFAULT_IDLE_TIMEOUT);
 }
@@ -114,11 +121,12 @@ static void printhelp(const char * progname) {
 void svr_getopts(int argc, char ** argv) {
 
 	unsigned int i, j;
-	char ** next = 0;
+	char ** next = NULL;
 	int nextisport = 0;
 	char* recv_window_arg = NULL;
 	char* keepalive_arg = NULL;
 	char* idle_timeout_arg = NULL;
+	char* maxauthtries_arg = NULL;
 	char* keyfile = NULL;
 	char c;
 
@@ -129,9 +137,14 @@ void svr_getopts(int argc, char ** argv) {
 	svr_opts.forced_command = NULL;
 	svr_opts.forkbg = 1;
 	svr_opts.norootlogin = 0;
+#ifdef HAVE_GETGROUPLIST
+	svr_opts.restrict_group = NULL;
+	svr_opts.restrict_group_gid = 0;
+#endif
 	svr_opts.noauthpass = 0;
 	svr_opts.norootpass = 0;
 	svr_opts.allowblankpass = 0;
+	svr_opts.maxauthtries = MAX_AUTH_TRIES;
 	svr_opts.inetdmode = 0;
 	svr_opts.portcount = 0;
 	svr_opts.hostkey = NULL;
@@ -152,7 +165,7 @@ void svr_getopts(int argc, char ** argv) {
 	opts.ipv4 = 1;
 	opts.ipv6 = 1;
 	*/
-#ifdef DO_MOTD
+#if DO_MOTD
 	svr_opts.domotd = 1;
 #endif
 #ifndef DISABLE_SYSLOG
@@ -206,7 +219,7 @@ void svr_getopts(int argc, char ** argv) {
 					opts.listen_fwd_all = 1;
 					break;
 #endif
-#ifdef INETD_MODE
+#if INETD_MODE
 				case 'i':
 					svr_opts.inetdmode = 1;
 					break;
@@ -217,7 +230,7 @@ void svr_getopts(int argc, char ** argv) {
 				case 'P':
 					next = &svr_opts.pidfile;
 					break;
-#ifdef DO_MOTD
+#if DO_MOTD
 				/* motd is displayed by default, -m turns it off */
 				case 'm':
 					svr_opts.domotd = 0;
@@ -226,6 +239,11 @@ void svr_getopts(int argc, char ** argv) {
 				case 'w':
 					svr_opts.norootlogin = 1;
 					break;
+#ifdef HAVE_GETGROUPLIST
+				case 'G':
+					next = &svr_opts.restrict_group;
+					break;
+#endif
 				case 'W':
 					next = &recv_window_arg;
 					break;
@@ -234,6 +252,9 @@ void svr_getopts(int argc, char ** argv) {
 					break;
 				case 'I':
 					next = &idle_timeout_arg;
+					break;
+				case 'T':
+					next = &maxauthtries_arg;
 					break;
 #if DROPBEAR_SVR_PASSWORD_AUTH || DROPBEAR_SVR_PAM_AUTH
 				case 's':
@@ -289,7 +310,7 @@ void svr_getopts(int argc, char ** argv) {
 			if (*next == NULL) {
 				dropbear_exit("Invalid null argument");
 			}
-			next = 0x00;
+			next = NULL;
 
 			if (keyfile) {
 				addhostkey(keyfile);
@@ -324,6 +345,18 @@ void svr_getopts(int argc, char ** argv) {
 		}
 		buf_setpos(svr_opts.banner, 0);
 	}
+
+#ifdef HAVE_GETGROUPLIST
+	if (svr_opts.restrict_group) {
+		struct group *restrictedgroup = getgrnam(svr_opts.restrict_group);
+
+		if (restrictedgroup){
+			svr_opts.restrict_group_gid = restrictedgroup->gr_gid;
+		} else {
+			dropbear_exit("Cannot restrict logins to group '%s' as the group does not exist", svr_opts.restrict_group);
+		}
+	}
+#endif
 	
 	if (recv_window_arg) {
 		opts.recv_window = atol(recv_window_arg);
@@ -331,6 +364,16 @@ void svr_getopts(int argc, char ** argv) {
 			dropbear_exit("Bad recv window '%s'", recv_window_arg);
 		}
 	}
+
+	if (maxauthtries_arg) {
+		unsigned int val = 0;
+		if (m_str_to_uint(maxauthtries_arg, &val) == DROPBEAR_FAILURE 
+			|| val == 0) {
+			dropbear_exit("Bad maxauthtries '%s'", maxauthtries_arg);
+		}
+		svr_opts.maxauthtries = val;
+	}
+
 	
 	if (keepalive_arg) {
 		unsigned int val;
@@ -480,10 +523,13 @@ static void addhostkey(const char *keyfile) {
 	svr_opts.num_hostkey_files++;
 }
 
+
 void load_all_hostkeys() {
 	int i;
-	int disable_unset_keys = 1;
 	int any_keys = 0;
+#ifdef DROPBEAR_ECDSA
+	int loaded_any_ecdsa = 0;
+#endif
 
 	svr_opts.hostkey = new_sign_key();
 
@@ -493,26 +539,23 @@ void load_all_hostkeys() {
 		m_free(hostkey_file);
 	}
 
+	/* Only load default host keys if a host key is not specified by the user */
+	if (svr_opts.num_hostkey_files == 0) {
 #if DROPBEAR_RSA
-	loadhostkey(RSA_PRIV_FILENAME, 0);
+		loadhostkey(RSA_PRIV_FILENAME, 0);
 #endif
 
 #if DROPBEAR_DSS
-	loadhostkey(DSS_PRIV_FILENAME, 0);
+		loadhostkey(DSS_PRIV_FILENAME, 0);
 #endif
 
 #if DROPBEAR_ECDSA
-	loadhostkey(ECDSA_PRIV_FILENAME, 0);
+		loadhostkey(ECDSA_PRIV_FILENAME, 0);
 #endif
-
-#if DROPBEAR_DELAY_HOSTKEY
-	if (svr_opts.delay_hostkey) {
-		disable_unset_keys = 0;
 	}
-#endif
 
 #if DROPBEAR_RSA
-	if (disable_unset_keys && !svr_opts.hostkey->rsakey) {
+	if (!svr_opts.delay_hostkey && !svr_opts.hostkey->rsakey) {
 		disablekey(DROPBEAR_SIGNKEY_RSA);
 	} else {
 		any_keys = 1;
@@ -520,39 +563,54 @@ void load_all_hostkeys() {
 #endif
 
 #if DROPBEAR_DSS
-	if (disable_unset_keys && !svr_opts.hostkey->dsskey) {
+	if (!svr_opts.delay_hostkey && !svr_opts.hostkey->dsskey) {
 		disablekey(DROPBEAR_SIGNKEY_DSS);
 	} else {
 		any_keys = 1;
 	}
 #endif
 
-
 #if DROPBEAR_ECDSA
+	/* We want to advertise a single ecdsa algorithm size.
+	- If there is a ecdsa hostkey at startup we choose that that size.
+	- If we generate at runtime we choose the default ecdsa size.
+	- Otherwise no ecdsa keys will be advertised */
+
+	/* check if any keys were loaded at startup */
+	loaded_any_ecdsa = 
+		0
 #if DROPBEAR_ECC_256
-	if ((disable_unset_keys || ECDSA_DEFAULT_SIZE != 256)
-		&& !svr_opts.hostkey->ecckey256) {
-		disablekey(DROPBEAR_SIGNKEY_ECDSA_NISTP256);
-	} else {
-		any_keys = 1;
-	}
+		|| svr_opts.hostkey->ecckey256
 #endif
-
 #if DROPBEAR_ECC_384
-	if ((disable_unset_keys || ECDSA_DEFAULT_SIZE != 384)
-		&& !svr_opts.hostkey->ecckey384) {
-		disablekey(DROPBEAR_SIGNKEY_ECDSA_NISTP384);
-	} else {
-		any_keys = 1;
+		|| svr_opts.hostkey->ecckey384
+#endif
+#if DROPBEAR_ECC_521
+		|| svr_opts.hostkey->ecckey521
+#endif
+		;
+	any_keys |= loaded_any_ecdsa;
+
+	/* Or an ecdsa key could be generated at runtime */
+	any_keys |= svr_opts.delay_hostkey;
+
+	/* At most one ecdsa key size will be left enabled */
+#if DROPBEAR_ECC_256
+	if (!svr_opts.hostkey->ecckey256
+		&& (!svr_opts.delay_hostkey || loaded_any_ecdsa || ECDSA_DEFAULT_SIZE != 256 )) {
+		disablekey(DROPBEAR_SIGNKEY_ECDSA_NISTP256);
 	}
 #endif
-
+#if DROPBEAR_ECC_384
+	if (!svr_opts.hostkey->ecckey384
+		&& (!svr_opts.delay_hostkey || loaded_any_ecdsa || ECDSA_DEFAULT_SIZE != 384 )) {
+		disablekey(DROPBEAR_SIGNKEY_ECDSA_NISTP384);
+	}
+#endif
 #if DROPBEAR_ECC_521
-	if ((disable_unset_keys || ECDSA_DEFAULT_SIZE != 521)
-		&& !svr_opts.hostkey->ecckey521) {
+	if (!svr_opts.hostkey->ecckey521
+		&& (!svr_opts.delay_hostkey || loaded_any_ecdsa || ECDSA_DEFAULT_SIZE != 521 )) {
 		disablekey(DROPBEAR_SIGNKEY_ECDSA_NISTP521);
-	} else {
-		any_keys = 1;
 	}
 #endif
 #endif /* DROPBEAR_ECDSA */

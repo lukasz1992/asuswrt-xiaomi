@@ -1,4 +1,8 @@
-﻿.qisBackgroundIndex{
+﻿option{
+	background-color: #FFF;
+	color: #000;
+}
+.qisBackgroundIndex{
 	background:url('qis_background.png') #FFF no-repeat;
 	background-size: cover;
 }
@@ -44,6 +48,15 @@
 }
 #lyraSignin{
 	color: #4E87CC;
+}
+.sort_background{
+	background-color: #FFFFFF;
+}
+.sort_field{
+	background: #4E87CC;
+}
+.ap_title_container{
+	color: #007AFF;
 }
 .pageDesc{
 	margin: 35px 0 30px 25px;
@@ -102,6 +115,9 @@
 	box-shadow: inset 0px 0px 10px rgba(0,122,255,0.15);
 }
 .ap_ssid{
+	color: #888;
+}
+.ap_band{
 	color: #888;
 }
 .icon_wifi_1{

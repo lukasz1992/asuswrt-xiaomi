@@ -12,9 +12,6 @@
  * called by a name other than "ssh" or "Secure Shell".
  */
 
-/* actually from atomicio, but is only used in scp code */
-#define vwrite (ssize_t (*)(int, void *, size_t))write
-
 char	*chop(char *);
 char	*strdelim(char **);
 void	 set_nonblock(int);
@@ -30,8 +27,8 @@ struct passwd *pwcopy(struct passwd *);
 typedef struct arglist arglist;
 struct arglist {
 	char    **list;
-	int     num;
-	int     nalloc;
+	u_int   num;
+	u_int   nalloc;
 };
 void	 addargs(arglist *, char *, ...);
 void	 replacearg(arglist *, u_int, char *, ...);

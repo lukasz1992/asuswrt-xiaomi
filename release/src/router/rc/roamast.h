@@ -128,25 +128,6 @@
 #define xR_MAX  4
 extern int xTxR;
 #elif defined(RTCONFIG_QCA)
-typedef struct _WLANCONFIG_LIST {
-         char addr[18];
-         unsigned int aid;
-         unsigned int chan;
-         char txrate[6];
-         char rxrate[6];
-         unsigned int rssi;
-         unsigned int idle;
-         unsigned int txseq;
-         unsigned int rcseq;
-         char caps[12];
-         char acaps[10];
-         char erp[7];
-         char state_maxrate[20];
-         char wps[4];
-         char rsn[4];
-         char wme[4];
-         char mode[31];
-} WLANCONFIG_LIST;
 #endif
 
 typedef struct rast_sta_info {
@@ -285,7 +266,6 @@ struct maclist {
 #endif
 
 #if defined(RTCONFIG_RALINK) || defined(CONFIG_BCMWL5)
-extern void get_stainfo(int bssidx, int vifidx);
 extern int rast_stamon_get_rssi(int bssidx, struct ether_addr *addr);
 extern void rast_set_maclist(int bssidx, int vifidx);
 //extern void rast_add_to_maclist(int bssidx, int vifidx, struct ether_addr *addr);
@@ -301,7 +281,7 @@ extern int rast_send_bsstrans_req(int bssidx, int vifidx, struct ether_addr *sta
 extern void rast_retrieve_bs_data(int bssidx, int vifidx);
 #endif
 
-#if defined(RTCONFIG_LANTIQ)
+#if defined(RTCONFIG_RALINK) || defined(RTCONFIG_LANTIQ) || defined(CONFIG_BCMWL5) || defined(RTCONFIG_REALTEK) || defined(RTCONFIG_QCA)
 extern void get_stainfo(int bssidx, int vifidx);
 #endif
 

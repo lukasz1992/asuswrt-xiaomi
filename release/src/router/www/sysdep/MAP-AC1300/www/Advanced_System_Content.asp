@@ -1587,9 +1587,9 @@ function control_all_rule_status(obj) {
 					<th align="right"><a class="hintstyle" href="javascript:void(0);" onClick="openHint(11,6);"><#Enable_ncb_notice#></a></th>
 					<td>
 						<select name="ncb_enable_option" class="input_option">
-							<option value="0" <% nvram_match("ncb_enable", "0", "selected"); %>>All Non-Block</option>
-							<option value="1" <% nvram_match("ncb_enable", "1", "selected"); %>>Limited Block</option>
-							<option value="2" <% nvram_match("ncb_enable", "2", "selected"); %>>All Block</option>
+							<option value="0" <% nvram_match("ncb_enable", "0", "selected"); %>><#Enable_ncb_Non_Block#></option>
+							<option value="1" <% nvram_match("ncb_enable", "1", "selected"); %>><#Enable_ncb_Limited_Block#></option>
+							<option value="2" <% nvram_match("ncb_enable", "2", "selected"); %>><#Enable_ncb_All_Block#></option>
 						</select>				  	
 					</td>
 				</tr>

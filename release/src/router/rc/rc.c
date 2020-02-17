@@ -259,6 +259,11 @@ static int rctest_main(int argc, char *argv[])
 	else if (strcmp(argv[1], "rc_service")==0) {
 		notify_rc(argv[2]);
 	}
+#if defined(RTCONFIG_FRS_FEEDBACK)
+	else if (strcmp(argv[1], "sendfeedback")==0) {
+		start_sendfeedback();
+	}
+#endif
 #ifdef RTCONFIG_BCM_7114
 	else if (strcmp(argv[1], "spect")==0) {
 		start_dfs();
@@ -571,10 +576,10 @@ static int rctest_main(int argc, char *argv[])
 }
 #endif
 
-#if defined(RTCONFIG_SOC_IPQ8064) || defined(RTCONFIG_SOC_IPQ40XX) || defined(RTCONFIG_LANTIQ) || defined(RPAC51) || defined(MAPAC1750)
+#if defined(RTCONFIG_SOC_IPQ8064) || defined(RTCONFIG_SOC_IPQ40XX) || defined(RTCONFIG_LANTIQ) || defined(RTAC59U) || defined(RPAC51) || defined(MAPAC1750)
 /* download firmware */
 #ifndef FIRMWARE_DIR
-#if defined(RTCONFIG_SOC_IPQ8064) || defined(RTCONFIG_SOC_IPQ40XX) || defined(RPAC51) || defined(MAPAC1750)
+#if defined(RTCONFIG_SOC_IPQ8064) || defined(RTCONFIG_SOC_IPQ40XX) || defined(RTAC59U) || defined(RPAC51) || defined(MAPAC1750)
 #define FIRMWARE_DIR	"/lib/firmware"
 #else
 #define FIRMWARE_DIR	"/tmp"
@@ -689,7 +694,7 @@ static int hotplug_main(int argc, char *argv[])
 			return coma_uevent();
 #endif /* LINUX_2_6_36 */
 #endif
-#if defined(RTCONFIG_SOC_IPQ8064) || defined(RTCONFIG_SOC_IPQ40XX) || defined(RTCONFIG_LANTIQ) || defined(RPAC51) || defined(MAPAC1750)
+#if defined(RTCONFIG_SOC_IPQ8064) || defined(RTCONFIG_SOC_IPQ40XX) || defined(RTCONFIG_LANTIQ) || defined(RTAC59U) || defined(RPAC51) || defined(MAPAC1750)
 		else if(!strcmp(argv[1], "firmware")) {
 			hotplug_firmware();
 		}
