@@ -128,15 +128,9 @@ typedef struct usb_ctrlrequest devctrlrequest;
 
 #ifdef RTMP_MAC_PCI
  #define AP_PROFILE_PATH_RBUS		"/etc/Wireless/RT2860/RT2860AP.dat"
-#if (CONFIG_RT_FIRST_CARD == 7602 || CONFIG_RT_FIRST_CARD == 7612 || CONFIG_RT_FIRST_CARD == 7620)
- #define AP_PROFILE_PATH		"/etc/Wireless/RT2860/RT2860AP.dat"
- #define SINGLE_SKU_TABLE_FILE_NAME	"/etc/Wireless/RT2860/SingleSKU.dat"
- #define CARD_INFO_PATH			"/etc/Wireless/RT2860/RT2860APCard.dat"
-#else
  #define AP_PROFILE_PATH		"/etc/Wireless/iNIC/iNIC_ap.dat"
  #define SINGLE_SKU_TABLE_FILE_NAME	"/etc/Wireless/iNIC/SingleSKU.dat"
  #define CARD_INFO_PATH			"/etc/Wireless/iNIC/RT2860APCard.dat"
-#endif
 #define AP_DRIVER_VERSION		"3.0.5.0"
 #endif /* RTMP_MAC_PCI */
 
@@ -146,15 +140,9 @@ typedef struct usb_ctrlrequest devctrlrequest;
 
 #ifdef RTMP_MAC_PCI
  #define STA_PROFILE_PATH_RBUS		"/etc/Wireless/RT2860/RT2860STA.dat"
-#if (CONFIG_RT_FIRST_CARD == 7602 || CONFIG_RT_FIRST_CARD == 7612 || CONFIG_RT_FIRST_CARD == 7620)
- #define STA_PROFILE_PATH		"/etc/Wireless/RT2860/RT2860STA.dat"
- #define SINGLE_SKU_TABLE_FILE_NAME	"/etc/Wireless/RT2860/SingleSKU.dat"
- #define CARD_INFO_PATH			"/etc/Wireless/RT2860/RT2860STACard.dat"
-#else
  #define STA_PROFILE_PATH		"/etc/Wireless/iNIC/iNIC_sta.dat"
  #define SINGLE_SKU_TABLE_FILE_NAME	"/etc/Wireless/iNIC/SingleSKU.dat"
  #define CARD_INFO_PATH			"/etc/Wireless/iNIC/RT2860STACard.dat"
-#endif
 #define STA_DRIVER_VERSION		"3.0.1.0"
 #endif /* RTMP_MAC_PCI */
 
@@ -716,6 +704,7 @@ extern ULONG		RTDebugFunc;
 do{                                   \
 	ULONG __gLevel = (Level) & 0xff;\
 	ULONG __fLevel = ((Level) & 0xffffff00);\
+    if (__gLevel <= RT_DEBUG_ERROR) /*reduce driver size*/ \
     if (__gLevel <= RTDebugLevel)      \
     {                               \
     	if ((RTDebugFunc == 0) || \

@@ -34,27 +34,8 @@
   *
   ************************************************************************/
 
-#if (CONFIG_RT_FIRST_CARD == 7602 || CONFIG_RT_FIRST_CARD == 7612 || CONFIG_RT_FIRST_CARD == 7620)
-#if defined (CONFIG_RT_FIRST_IF_RF_OFFSET)
-#define DEFAULT_RF_OFFSET		CONFIG_RT_FIRST_IF_RF_OFFSET
-#else
-#define DEFAULT_RF_OFFSET		0x40000
-#endif
-#elif (CONFIG_RT_SECOND_CARD == 7602 || CONFIG_RT_SECOND_CARD == 7612)
-#if defined (CONFIG_RT_SECOND_IF_RF_OFFSET)
-#define DEFAULT_RF_OFFSET		CONFIG_RT_SECOND_IF_RF_OFFSET
-#else
 #define DEFAULT_RF_OFFSET		0x48000
-#endif
-#endif
-
-#if (CONFIG_RT_FIRST_CARD == 7612 || CONFIG_RT_SECOND_CARD == 7612)
 #define EEPROM_DEFAULT_FILE_PATH	"/etc_ro/Wireless/MT7612E_EEPROM.bin"
-#elif (CONFIG_RT_FIRST_CARD == 7602 || CONFIG_RT_SECOND_CARD == 7602)
-#define EEPROM_DEFAULT_FILE_PATH	"/etc_ro/Wireless/MT7602E_EEPROM.bin"
-#elif (CONFIG_RT_FIRST_CARD == 7620)
-#define EEPROM_DEFAULT_FILE_PATH	"/etc_ro/Wireless/MT7620_AP_2T2R-4L_V15.BIN"
-#endif
 
 /* For ioctl check usage */
 #define EEPROM_IS_PROGRAMMED		0x80

@@ -2691,6 +2691,8 @@ copy_mac_table_entry(RT_802_11_MAC_ENTRY *pDst, MAC_TABLE_ENTRY *pEntry)
 
 	pDst->TxRate.word = pEntry->HTPhyMode.word;
 	pDst->LastRxRate = pEntry->LastRxRate;
+
+	pDst->padding[0] = pDst->padding[1] = pDst->padding[2] = 0;
 }
 
 

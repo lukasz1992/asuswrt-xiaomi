@@ -368,7 +368,7 @@ COUNTRY_REGION_CH_DESC Country_Region_ChDesc_5GHZ[] =
 	{REGION_4_A_BAND, Country_Region4_ChDesc_5GHZ},
 	{REGION_5_A_BAND, Country_Region5_ChDesc_5GHZ},
 	{REGION_6_A_BAND, Country_Region6_ChDesc_5GHZ},
-	{REGION_7_A_BAND, Country_Region7_ChDesc_5GHZ},
+	{REGION_7_A_BAND, Country_Region1_ChDesc_5GHZ},
 	{REGION_8_A_BAND, Country_Region8_ChDesc_5GHZ},
 	{REGION_9_A_BAND, Country_Region9_ChDesc_5GHZ},
 	{REGION_10_A_BAND, Country_Region10_ChDesc_5GHZ},

@@ -63,7 +63,7 @@ typedef VOID	pregs;
  ***********************************************************************************/
 #ifdef CONFIG_AP_SUPPORT
 #ifdef RTMP_MAC_PCI
-#define AP_PROFILE_PATH			"/etc/Wireless/RT2860AP/RT2860AP.dat"
+#define AP_PROFILE_PATH			"/etc/Wireless/RT2860/RT2860.dat"
 #define AP_RTMP_FIRMWARE_FILE_NAME "/etc/Wireless/RT2860AP/RT2860AP.bin"
 #define AP_DRIVER_VERSION			"4.0.1.0_rev2"
 #ifdef MULTIPLE_CARD_SUPPORT

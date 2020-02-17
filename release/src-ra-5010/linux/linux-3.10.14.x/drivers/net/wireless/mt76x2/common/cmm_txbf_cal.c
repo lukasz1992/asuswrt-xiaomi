@@ -883,6 +883,7 @@ static void mt76x2_ITxBFLnaParams(UCHAR lnaValues[3], int channel, ITXBF_LNA_PAR
 */
 
 #ifdef MT76x2
+#ifdef RALINK_ATE
 static void mt76x2_ITxBFPhaseParams( RTMP_ADAPTER *pAd, UCHAR phaseValues[2], UCHAR channel, ITXBF_PHASE_PARAMS *phaseParams)
 {
      INT chanIdx; 
@@ -975,6 +976,7 @@ static void mt76x2_ITxBFPhaseParams( RTMP_ADAPTER *pAd, UCHAR phaseValues[2], UC
          }
     }
 }
+#endif
 #endif /*MT76x2*/
 
 
@@ -1960,6 +1962,7 @@ INT mt76x2_ITxBFDividerCalibration(
 			Update BBP Registers. Quantize DeltaPhase to 90 or 180 depending on band. Then
 			update original phase calibration values from EEPROM and set R176 for Ant 0 and Ant2
 		*/
+#ifdef RALINK_ATE
 		ITxBFGetEEPROM(pAd, &phaseParams, 0, 0, 0);
 		mt76x2_ITxBFPhaseParams(pAd, phaseValues, channel, &phaseParams);
 
@@ -1985,6 +1988,7 @@ INT mt76x2_ITxBFDividerCalibration(
 		/* Enable TX Phase Compensation */
 		RTMP_IO_READ32(pAd, TXBE_R12, &value32);
 		RTMP_IO_WRITE32(pAd, TXBE_R12, value32 | 0x08);
+#endif
 		break;
 
 	case 3:
@@ -1992,6 +1996,7 @@ INT mt76x2_ITxBFDividerCalibration(
 			Update BBP Registers. Quantize DeltaPhase to 90 or 180 depending on band. Then
 			update original phase calibration values from EEPROM and set R176 for Ant 0 and Ant2
 		*/
+#ifdef RALINK_ATE
 		ITxBFGetEEPROM(pAd, &phaseParams, 0, 0, 0);
 		mt76x2_ITxBFPhaseParams(pAd, phaseValues, channel, &phaseParams);
 
@@ -2013,9 +2018,10 @@ INT mt76x2_ITxBFDividerCalibration(
 		       	" Tx phase compensated value = 0x%x\n"
 		       	" ============================================================ \n", 
 		       	groupIdx,divParams.E1aDivPhase[groupIdx],divPhase[0], phaseValues[0], phaseValues[0] + divPhase[0]));
-
+#endif
 		break;
 	case 10:
+ #ifdef RALINK_ATE
         /*Save divPhase in efuse if its a group center channel */        
         /* Update EEPROM */        
         ITxBFGetEEPROM(pAd, 0, 0, &divParams, 0);
@@ -2047,6 +2053,7 @@ INT mt76x2_ITxBFDividerCalibration(
 		         " ============================================================ \n", 
 		         groupIdx, divParams.E1aDivPhase[groupIdx], divPhase[0]));
         }
+#endif
 		break;
 
 	default:

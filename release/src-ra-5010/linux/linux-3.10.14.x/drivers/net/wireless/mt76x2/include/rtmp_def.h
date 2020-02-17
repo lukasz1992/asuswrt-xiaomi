@@ -1859,15 +1859,6 @@ enum WIFI_MODE{
 #define IS_OPMODE_AP(_x)		((_x)->OpMode == OPMODE_AP)
 #define IS_OPMODE_STA(_x)		((_x)->OpMode == OPMODE_STA)
 
-#if (CONFIG_RT_FIRST_CARD == 7602 || CONFIG_RT_FIRST_CARD == 7612 || CONFIG_RT_FIRST_CARD == 7620)
-#define INF_MAIN_DEV_NAME		"ra"
-#define INF_MBSSID_DEV_NAME		"ra"
-#define INF_WDS_DEV_NAME		"wds"
-#define INF_APCLI_DEV_NAME		"apcli"
-#define INF_MESH_DEV_NAME		"mesh"
-#define INF_P2P_DEV_NAME		"p2p"
-#define INF_MONITOR_DEV_NAME		"mon"
-#else
 #define INF_MAIN_DEV_NAME		"rai"
 #define INF_MBSSID_DEV_NAME		"rai"
 #define INF_WDS_DEV_NAME		"wdsi"
@@ -1875,7 +1866,6 @@ enum WIFI_MODE{
 #define INF_MESH_DEV_NAME		"meshi"
 #define INF_P2P_DEV_NAME		"p2pi"
 #define INF_MONITOR_DEV_NAME		"moni"
-#endif
 
 /* WEP Key TYPE */
 #define WEP_HEXADECIMAL_TYPE    0

@@ -31,11 +31,6 @@
 #ifndef	__RT_CONFIG_H__
 #define	__RT_CONFIG_H__
 
-#if (CONFIG_RT_FIRST_CARD == 7602 || CONFIG_RT_FIRST_CARD == 7612 || CONFIG_RT_FIRST_CARD == 7620) && \
-    (CONFIG_RT_SECOND_CARD == 7602 || CONFIG_RT_SECOND_CARD == 7612)
-#define DRIVER_HAS_MULTI_DEV
-#endif
-
 #include "rtmp_comm.h"
 
 #include "rtmp_def.h"

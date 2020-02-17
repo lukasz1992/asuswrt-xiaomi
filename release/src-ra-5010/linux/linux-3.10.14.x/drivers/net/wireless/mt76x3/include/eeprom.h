@@ -32,23 +32,8 @@
 #include "eeprom/mt_e2p_def.h"
 #endif
 
-#if (CONFIG_RT_FIRST_CARD == 7603)
-#if defined (CONFIG_RT_FIRST_IF_RF_OFFSET)
-#define DEFAULT_RF_OFFSET		CONFIG_RT_FIRST_IF_RF_OFFSET
-#else
 #define DEFAULT_RF_OFFSET		0x40000
-#endif
-#elif (CONFIG_RT_SECOND_CARD == 7603)
-#if defined (CONFIG_RT_SECOND_IF_RF_OFFSET)
-#define DEFAULT_RF_OFFSET		CONFIG_RT_SECOND_IF_RF_OFFSET
-#else
-#define DEFAULT_RF_OFFSET		0x48000
-#endif
-#endif
-
-#if (CONFIG_RT_FIRST_CARD == 7603 || CONFIG_RT_SECOND_CARD == 7603)
 #define EEPROM_DEFAULT_FILE_PATH	"/etc_ro/Wireless/MT7603E_EEPROM.bin"
-#endif
 
 /* For ioctl check usage */
 #define EEPROM_IS_PROGRAMMED		0x80

@@ -30,8 +30,8 @@
 #endif
 
 #if defined (CONFIG_RA_HW_NAT)  || defined (CONFIG_RA_HW_NAT_MODULE)
-#include "../../../../../../net/nat/hw_nat/ra_nat.h"
-#include "../../../../../../net/nat/hw_nat/frame_engine.h"
+#include "../../../../net/nat/hw_nat/ra_nat.h"
+#include "../../../../net/nat/hw_nat/frame_engine.h"
 #endif
 
 
@@ -52,7 +52,7 @@ struct dev_type_name_map{
 #define xdef_to_str(s)			def_to_str(s)
 #define def_to_str(s)			#s
 
-#define FIRST_AP_PROFILE_PATH		"/etc/Wireless/RT2860/RT2860AP.dat"
+#define FIRST_AP_PROFILE_PATH		"/etc/Wireless/RT2860/RT2860.dat"
 #define FIRST_CHIP_ID			xdef_to_str(CONFIG_RT_FIRST_CARD)
 
 #define SECOND_AP_PROFILE_PATH		"/etc/Wireless/iNIC/iNIC_ap.dat"
@@ -84,19 +84,6 @@ static struct dev_type_name_map prefix_map[] =
 INT get_dev_config_idx(RTMP_ADAPTER *pAd)
 {
 	INT idx = 0;
-#if (CONFIG_RT_FIRST_CARD == 7603) && \
-    (CONFIG_RT_SECOND_CARD == 7603)
-	INT first_card = 0, second_card = 0;
-
-	A2Hex(first_card, FIRST_CHIP_ID);
-	A2Hex(second_card, SECOND_CHIP_ID);
-	DBGPRINT(RT_DEBUG_TRACE, ("chip_id1=0x%x, chip_id2=0x%x, pAd->MACVersion=0x%x\n", first_card, second_card, pAd->MACVersion));
-
-	if (IS_RT8592(pAd))
-		idx = 0;
-	else if (IS_RT5392(pAd) || IS_MT76x0(pAd) || IS_MT76x2(pAd))
-		idx = 1;
-#endif
 
 	pAd->dev_idx = idx;
 
@@ -131,20 +118,6 @@ static UCHAR *get_dev_profile(RTMP_ADAPTER *pAd)
 #ifdef CONFIG_AP_SUPPORT
 		IF_DEV_CONFIG_OPMODE_ON_AP(pAd)
 		{
-#if (CONFIG_RT_FIRST_CARD == 7603) && \
-    (CONFIG_RT_SECOND_CARD == 7603)
-			INT card_idx = get_dev_config_idx(pAd);
-			if (card_idx == 0)
-			{
-				src = FIRST_AP_PROFILE_PATH;
-			}
-			else
-			if (card_idx == 1)
-			{
-				src = SECOND_AP_PROFILE_PATH;
-			}
-			else
-#endif
 			{
 				src = AP_PROFILE_PATH;
 			}

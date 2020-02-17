@@ -1083,6 +1083,7 @@ typedef struct _RT_802_11_MAC_ENTRY {
 	UINT32 ConnectedTime;
 	MACHTTRANSMIT_SETTING TxRate;
 	UINT32 LastRxRate;
+    UINT32 padding[3];
 } RT_802_11_MAC_ENTRY, *PRT_802_11_MAC_ENTRY;
 
 typedef struct _RT_802_11_MAC_TABLE {
