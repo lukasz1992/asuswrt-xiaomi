@@ -1501,6 +1501,7 @@ misc_defaults(int restore_defaults)
 		case MODEL_RTAC85U:
 		case MODEL_RTAC85P:
 		case MODEL_RTACRH26:
+        case MODEL_RTMIR3G:
 			nvram_set("reboot_time", "90");		// default is 70 sec
 			break;
 #endif
@@ -3866,6 +3867,40 @@ int init_nvram(void)
 		nvram_set("wl1_HT_RxStream", "4");
 		break;
 #endif /*  RTAC85P  */
+
+#if defined(RTMIR3G)
+	case MODEL_RTMIR3G:
+		nvram_set("boardflags", "0x100"); // although it is not used in ralink driver, set for vlan
+		nvram_set("vlan1hwname", "et0");  // vlan. used to get "%smacaddr" for compare and find parent interface.
+		nvram_set("lan_ifname", "br0");
+
+		wl_ifaces[WL_2G_BAND] = "ra0";
+                wl_ifaces[WL_5G_BAND] = "rai0";
+		set_basic_ifname_vars("eth3", "vlan1", wl_ifaces, "usb", "vlan1", NULL, "vlan3", NULL, 0);
+
+		nvram_set_int("btn_rst_gpio", 18|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_usb_gpio", 10|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_wan_gpio", 13|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
+
+		eval("rtkswitch", "11");
+
+		nvram_set("ehci_ports", "1-1");
+		nvram_set("ohci_ports", "2-1");
+		nvram_set("ct_max", "300000"); // force
+
+		if (nvram_get("wl_mssid") && nvram_match("wl_mssid", "1"))
+			add_rc_support("mssid");
+		add_rc_support("2.4G 5G noupdate usbX1");
+		add_rc_support("rawifi");
+		add_rc_support("switchctrl");
+		add_rc_support("11AC");
+		nvram_set("wl0_HT_TxStream", "2");
+		nvram_set("wl0_HT_RxStream", "2");
+		nvram_set("wl1_HT_TxStream", "2");
+		nvram_set("wl1_HT_RxStream", "2");
+		break;
+#endif /* RT-MIR3G */
 
 #if defined(RTACRH26) 
 	case MODEL_RTACRH26:
@@ -10122,6 +10157,111 @@ static void sysinit(void)
 		putenv(defenv[i]);
 	}
 
+#ifdef RTMIR3G
+    // check if flash needs to be repaired
+    {
+        unsigned char *buf;
+        unsigned char force_reboot = 0;
+        int f = open("/dev/mtd10", O_RDONLY | O_SYNC);
+        if (f < 0) { // Everything OK, run check for broken RootFS
+            int i = nvram_get_int("flash_stage");
+            if ((i > 0) && (i < 3)) {
+                _dprintf("MIR3G: Interrupted upgrade detected\n");
+                buf = malloc(0x100000 * 34);
+                if (buf) {
+                    if (!MTDPartitionRead((i == 1) ? "linux" : "linux2", buf, 0, 0x400000))
+                    if (!MTDPartitionRead((i == 1) ? "RootFS" : "RootFS2", &buf[0x400000], 0, 0x1E00000)) {
+                        force_reboot = 1;
+                        led_control(0, 0);
+                        led_control(1, 1);
+                        int j1 = open((i == 1) ? "/dev/mtdblock6" : "/dev/mtdblock4", O_WRONLY | O_SYNC, DEFFILEMODE);
+                        _dprintf("MIR3G: Flashing (1/2)...\n");
+                        if (!write(j1, buf, 0x400000))
+                            _dprintf("MIR3G: Failed\n");
+                        close(j1);
+                        j1 = open((i == 1) ? "/dev/mtdblock7" : "/dev/mtdblock5", O_WRONLY | O_SYNC, DEFFILEMODE);
+                        _dprintf("MIR3G: Flashing (2/2)...\n");
+                        if (!write(j1, buf, 0x1E00000))
+                            _dprintf("MIR3G: Failed\n");
+                        close(j1);
+                    }
+                    free(buf);
+                }
+            } else if (!system("dmesg | grep -q 'WARNING: Mounted RootFS2 as RootFS is broken'")) {
+                _dprintf("MIR3G: Broken RootFS detected\n");
+                buf = malloc(0x100000 * 30);
+                if (buf) {
+                    if (!MTDPartitionRead("RootFS2", buf, 0, 0x1E00000)) {
+                        force_reboot = 1;
+                        led_control(0, 0);
+                        led_control(1, 1);
+                        int j1 = open("/dev/mtdblock5", O_WRONLY | O_SYNC, DEFFILEMODE);
+                        _dprintf("MIR3G: Flashing...\n");
+                        if (write(j1, buf, 0x1E00000))
+                            _dprintf("MIR3G: Restored RootFS from RootFS2\n");
+                        else
+                            _dprintf("MIR3G: Failed\n");
+                        close(j1);
+                    }
+                    free(buf);
+                }
+            }
+        } else { // newly flashed image, process it!
+            unsigned int offset;
+            _dprintf("MIR3G: Need to reflash new image\n");
+            buf = malloc(0x100000 * 34);
+            if (buf) {
+                read(f, &buf[0x400000], 0x1E00000);
+                close(f);
+                f = open("/dev/mtd4", O_RDONLY | O_SYNC);
+                if (f >= 0) {
+                    read(f, buf, 0x400000);
+                    close(f);
+                    offset = buf[63] + buf[62] * 0x100 + buf[61] * 0x10000;
+                    if ((buf[60] == 169) && (offset > 0x100000) && (offset < 0x200000) && (buf[offset] == 'h') && (buf[offset + 1] == 's') && (buf[offset + 2] == 'q') && (buf[offset + 3] == 's')) {
+                        memset(&buf[offset], 0xFF, 0x400000 - offset);
+			offset = (buf[offset + 0x2B] << 24) | (buf[offset + 0x2A] << 16) | (buf[offset + 0x29] << 8) | (buf[offset + 0x28]);
+                        if ((offset > 0x1000000) && (offset < 0x1E00000))
+                            memset(&buf[offset + 0x400000], 0xFF, 0x1E00000 - offset);
+                        force_reboot = 1;
+			led_control(0, 0);
+			led_control(1, 1);
+                        int j1 = open("/dev/mtdblock7", O_WRONLY | O_SYNC, DEFFILEMODE);
+                        _dprintf("MIR3G: Flashing (1/4)...\n");
+                        if (!write(j1, &buf[0x400000], 0x1E00000))
+                            _dprintf("MIR3G: Failed\n");
+                        close(j1);
+                        j1 = open("/dev/mtdblock6", O_WRONLY | O_SYNC, DEFFILEMODE);
+                        _dprintf("MIR3G: Flashing (2/4)...\n");
+                        if (!write(j1, buf, 0x400000))
+                            _dprintf("MIR3G: Failed\n");
+                        close(j1);
+                        j1 = open("/dev/mtdblock4", O_WRONLY | O_SYNC, DEFFILEMODE);
+                        _dprintf("MIR3G: Flashing (3/4)...\n");
+                        if (!write(j1, buf, 0x400000))
+                            _dprintf("MIR3G: Failed\n");
+                        close(j1);
+                        j1 = open("/dev/mtdblock5", O_WRONLY | O_SYNC, DEFFILEMODE);
+                        _dprintf("MIR3G: Flashing (4/4)...\n");
+                        if (!write(j1, &buf[0x400000], 0x1E00000))
+                            _dprintf("MIR3G: Failed\n");
+                        close(j1);
+                    }
+                }
+                free(buf);
+            }
+        }
+        if (force_reboot) {
+            _dprintf("MIR3G: Rebooting...\n");
+            nvram_set_int("flash_stage", 0);
+            nvram_commit();
+            sync(); /* sync disks */
+            sleep(1);
+            f_write("/proc/sysrq-trigger", "b", 1, 0 , 0); /* machine reset */
+        }
+    }
+#endif
+
 	if (!noconsole) {
 		printf("\n\nHit ENTER for console...\n\n");
 		run_shell(1, 0);
@@ -10358,10 +10498,12 @@ static void sysinit(void)
 	write_caldata_file();
 #endif
 
+#if defined(RTCONFIG_TCODE)
 #if !defined(CONFIG_BCMWL5)	//Broadcom set this in check_wl_territory_code()
 	void handle_location_code_for_wl(void);
 	handle_location_code_for_wl();
 #endif	/* CONFIG_BCMWL5 */
+#endif
 
 	init_gpio();   // for system dependent part
 #if defined(RTCONFIG_CONCURRENTREPEATER)
@@ -10727,7 +10869,7 @@ int init_main(int argc, char *argv[])
 			eval("rtk_hciattach","-n","-s","115200","/dev/ttyS1","rtk_h5","115200");
 #endif
 #endif
-			if (nvram_match("Ate_power_on_off_enable", "1")) {
+			/*if (nvram_match("Ate_power_on_off_enable", "1")) {
 				Ate_on_off_led_start();
 				rc_check = nvram_get_int("Ate_rc_check");
 				boot_check = nvram_get_int("Ate_boot_check");
@@ -10780,7 +10922,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 				nvram_commit();
 				dbG("*** Start rc: %d\n",rc_check);
 				logmessage("ATE", "*** Start rc: %d\n",rc_check);
-			}
+			}*/
 #ifdef RTCONFIG_IPV6
 			if ( !(ipv6_enabled() && is_routing_enabled()) )
 				f_write_string("/proc/sys/net/ipv6/conf/all/disable_ipv6", "1", 0, 0);
@@ -10896,7 +11038,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 			}
 #endif
 #ifdef RTCONFIG_RALINK
-			if(nvram_match("Ate_wan_to_lan", "1"))
+			/*if(nvram_match("Ate_wan_to_lan", "1"))
 			{
 				printf("\n\n## ATE mode:set WAN to LAN... ##\n\n");
 				set_wantolan();
@@ -10922,15 +11064,15 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 #endif
 				stop_wanduck();
 				killall_tk("udhcpc");
-			}
+			}*/
 #endif
 
-			if (nvram_match("Ate_power_on_off_enable", "3")|| //Show alert light
+/*			if (nvram_match("Ate_power_on_off_enable", "3")|| //Show alert light
 				nvram_match("Ate_power_on_off_enable", "4")||
 				nvram_match("Ate_power_on_off_enable", "5")  ) {
 				start_telnetd();
 				Ate_on_off_led_fail_loop();	// keep loop in this function
-			}
+			}*/
 
 #if defined(RTCONFIG_BCM_7114) || defined(HND_ROUTER)
 			if(!factory_debug()) {
@@ -10941,7 +11083,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 #endif
 
 			//For 66U normal boot & check device
-			if (((get_model()==MODEL_RTN66U) || (get_model()==MODEL_RTAC66U))
+/*			if (((get_model()==MODEL_RTN66U) || (get_model()==MODEL_RTAC66U))
 			&& nvram_match("Ate_power_on_off_enable", "0")) {
 			    ate_dev_status();
 			    if (nvram_get_int("dev_fail_reboot")!=0) {
@@ -10966,7 +11108,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 					}
 				}
 			    }
-			}
+			}*/
 
 #ifdef RTCONFIG_USB
 #if defined(RTCONFIG_BT_CONN)	// usb blietooth device "hci0" need to be checked before Ate_power_on_off for checking its init state
@@ -11001,7 +11143,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 #endif	/* RTCONFIG_USB */
 
 
-			if (nvram_match("Ate_power_on_off_enable", "1")) {
+			/*if (nvram_match("Ate_power_on_off_enable", "1")) {
 				dev_check = nvram_get_int("Ate_dev_check");
 				dev_fail = nvram_get_int("Ate_dev_fail");
 
@@ -11099,7 +11241,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 			}
 			else {
 				ate_run_arpstrom();
-			}
+			}*/
 
 #ifdef RTCONFIG_USB
 #if ! defined(RTCONFIG_BT_CONN)	// usb bluetooth "hci0" is init in the front
@@ -11244,7 +11386,7 @@ int reboothalt_main(int argc, char *argv[])
 	_dprintf(reboot ? "Rebooting..." : "Shutting down...");
 	kill(1, reboot ? SIGTERM : SIGQUIT);
 
-#if defined(RTN14U) || defined(RTN65U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTCONFIG_QCA) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTAC54U) || defined(RTN56UB2) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26)
+#if defined(RTN14U) || defined(RTN65U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTCONFIG_QCA) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTAC54U) || defined(RTN56UB2) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26) || defined(RTMIR3G)
 	def_reset_wait = 50;
 #endif
 

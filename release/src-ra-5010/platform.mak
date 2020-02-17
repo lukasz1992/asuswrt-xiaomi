@@ -209,8 +209,6 @@ define platformKernelConfig
 			echo "CONFIG_PCIE_PORT0=y" >>$(1); \
 			sed -i "/CONFIG_PCIE_PORT1/d" $(1); \
 			echo "CONFIG_PCIE_PORT1=y" >>$(1); \
-			sed -i "/CONFIG_RALINK_SPDIF/d" $(1); \
-			echo "CONFIG_RALINK_SPDIF=m" >>$(1); \
 			sed -i "/CONFIG_RCU_CPU_STALL_DETECTOR/d" $(1); \
 			echo "CONFIG_RCU_CPU_STALL_DETECTOR=y" >>$(1); \
 			sed -i "/CONFIG_CRYPTO_PCRYPT/d" $(1); \
@@ -539,7 +537,7 @@ define platformKernelConfig
 			sed -i "/CONFIG_RLT_MAC/d" $(1); \
 			echo "#CONFIG_RLT_MAC is not set" >>$(1); \
 		fi; \
-		if [ "$(RTN56UB1)" = "y" ] ||  [ "$(RTN56UB2)" = "y" ] ; then \
+		if [ "$(RTN56UB1)" = "y" ] ||  [ "$(RTN56UB2)" = "y" ] || [ "$(RTMIR3G)" = "y" ]; then \
 			sed -i "/CONFIG_RA_HW_NAT_IPV6/d" $(1); \
 			echo "CONFIG_RA_HW_NAT_IPV6=y" >>$(1); \
 			sed -i "/CONFIG_RAETH_8023AZ_EEE/d" $(1); \

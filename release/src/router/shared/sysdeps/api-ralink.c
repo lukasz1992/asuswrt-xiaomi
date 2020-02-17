@@ -27,7 +27,7 @@
 
 typedef uint32_t __u32;
 
-#if defined(RTN14U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2) ||defined(RTAC54U) || defined(RTAC51UP)|| defined(RTAC53) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC1200) || defined(RTN11P_B1) || defined(RPAC87) || defined(RTAC85U) || defined(RTAC85P) || defined(RTAC65U) || defined(RTN800HP) || defined(RTACRH26)
+#if defined(RTN14U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2) ||defined(RTAC54U) || defined(RTAC51UP)|| defined(RTAC53) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC1200) || defined(RTN11P_B1) || defined(RPAC87) || defined(RTAC85U) || defined(RTAC85P) || defined(RTAC65U) || defined(RTN800HP) || defined(RTACRH26) || defined(RTMIR3G)
 const char WIF_5G[]	= "rai0";
 const char WIF_2G[]	= "ra0";
 const char WDSIF_5G[]	= "wdsi";
@@ -135,6 +135,24 @@ int wl_ioctl(const char *ifname, int cmd, struct iwreq *pwrq)
 	return ret;
 }
 
+#if defined(RTMIR3G)
+unsigned int get_radio_status(char *ifname)
+{
+	struct ifreq ifr;
+	int sfd;
+	int ret;
+
+	if ((sfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) >= 0)
+	{
+		strcpy(ifr.ifr_name, ifname);
+		ret = ioctl(sfd, SIOCGIFFLAGS, &ifr);
+		close(sfd);
+		if (ret == 0)
+			return !!(ifr.ifr_flags & IFF_UP);
+	}
+	return 0;
+}
+#else
 unsigned int get_radio_status(char *ifname)
 {
 	struct iwreq wrq;
@@ -148,6 +166,7 @@ unsigned int get_radio_status(char *ifname)
 
 	return data;
 }
+#endif
 
 int get_radio(int unit, int subunit)
 {
@@ -344,7 +363,7 @@ typedef struct CountryCodeToCountryRegion {
 
 COUNTRY_CODE_TO_COUNTRY_REGION allCountry[] = {
 	/* {Country Number, ISO Name, Country Name, Support 11A, 11A Country Region, Support 11G, 11G Country Region} */
-	{"DB", A_BAND_REGION_7, G_BAND_REGION_5},
+	{"DB", A_BAND_REGION_12, G_BAND_REGION_1},
 	{"AL", A_BAND_REGION_0, G_BAND_REGION_1},
 	{"DZ", A_BAND_REGION_0, G_BAND_REGION_1},
 #ifdef RTCONFIG_LOCALE2012

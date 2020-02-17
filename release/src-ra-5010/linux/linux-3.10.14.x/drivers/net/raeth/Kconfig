@@ -253,10 +253,13 @@ config ETH_ONE_PORT_ONLY
 choice
         prompt "Switch Board Layout Type"
         depends on LAN_WAN_SUPPORT || P5_RGMII_TO_MAC_MODE ||  GE1_RGMII_FORCE_1000 || GE1_TRGMII_FORCE_1200 || GE2_RGMII_FORCE_1000
-	default WAN_AT_P0
+	default WAN_AT_P1
 
 	config  WAN_AT_P4
 	        bool "LLLL/W"
+
+	config  WAN_AT_P1
+		bool "L/W/LLL"
 		
 	config  WAN_AT_P0
 	        bool "W/LLLL"

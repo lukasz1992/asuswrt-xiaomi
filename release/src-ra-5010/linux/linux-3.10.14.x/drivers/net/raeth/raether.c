@@ -2198,6 +2198,8 @@ static irqreturn_t esw_interrupt(int irq, void *dev_id)
 		//link down --> link up : send signal to user application
 		//link up --> link down : ignore
 		if ((stat & (1<<25)) || !(stat_curr & (1<<25)))
+#elif CONFIG_WAN_AT_P1
+		if ((stat & (1<<26)) || !(stat_curr & (1<<26)))
 #else
 		if ((stat & (1<<29)) || !(stat_curr & (1<<29)))
 #endif
@@ -5834,6 +5836,33 @@ void LANWANPartition(void)
 	mii_mgr_write(31, 0x90, 0x80001001);//VTCR, VID=1
 	IsSwitchVlanTableBusy();
 	mii_mgr_write(31, 0x94, 0x40500001);//VAWD1
+	mii_mgr_write(31, 0x90, 0x80001002);//VTCR, VID=2
+	IsSwitchVlanTableBusy();
+#endif
+#ifdef CONFIG_WAN_AT_P1
+	printk("set LAN/WAN LWLLL\n");
+	/*LWLLL, wan at P1*/
+	/*LAN/WAN ports as security mode*/
+	mii_mgr_write(31, 0x2004, 0xff0003);//port0
+	mii_mgr_write(31, 0x2104, 0xff0003);//port1
+	mii_mgr_write(31, 0x2204, 0xff0003);//port2
+	mii_mgr_write(31, 0x2304, 0xff0003);//port3
+	mii_mgr_write(31, 0x2404, 0xff0003);//port4
+
+	/*set PVID*/
+	mii_mgr_write(31, 0x2014, 0x10001);//port0
+	mii_mgr_write(31, 0x2114, 0x10002);//port1
+	mii_mgr_write(31, 0x2214, 0x10001);//port2
+	mii_mgr_write(31, 0x2314, 0x10001);//port3
+	mii_mgr_write(31, 0x2414, 0x10001);//port4
+	/*port6 */
+	/*VLAN member*/
+	IsSwitchVlanTableBusy();
+	mii_mgr_write(31, 0x94, 0x407d0001);//VAWD1
+	mii_mgr_write(31, 0x90, 0x80001001);//VTCR, VID=1
+	IsSwitchVlanTableBusy();
+
+	mii_mgr_write(31, 0x94, 0x40620001);//VAWD1
 	mii_mgr_write(31, 0x90, 0x80001002);//VTCR, VID=2
 	IsSwitchVlanTableBusy();
 #endif

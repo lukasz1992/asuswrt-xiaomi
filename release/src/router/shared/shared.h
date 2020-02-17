@@ -698,6 +698,7 @@ enum {
 	MODEL_GTAX6000S,
 	MODEL_RTAC1200V2,
 	MODEL_RTN19,
+	MODEL_RTMIR3G,
 };
 
 /* NOTE: Do not insert new entries in the middle of this enum,

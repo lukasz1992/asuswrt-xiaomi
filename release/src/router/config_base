@@ -235,7 +235,7 @@ RTCONFIG_SAMBASRV=y
 # RTCONFIG_DYN_DICT_NAME is not set
 # CONFIG_LIBBCM is not set
 # CONFIG_LIBUPNP is not set
-RTCONFIG_WPS=y
+# RTCONFIG_WPS is not set
 # RTCONFIG_NFC is not set
 # RTCONFIG_WPS_ENROLLEE is not set
 # RTCONFIG_WIFI_CLONE is not set

@@ -47,7 +47,7 @@ extern const char APCLI_2G[];
 #define INIC_VLAN_ID_START	4 //first vlan id used for RT3352 iNIC MII
 #define INIC_VLAN_IDX_START	2 //first available index to set vlan id and its group.
 
-#if defined(RTCONFIG_WLMODULE_MT7610_AP)
+#if defined(RTCONFIG_WLMODULE_MT7610_AP) || defined(RTMIR3G)
 #define RT_802_11_MAC_ENTRY_for_5G		RT_802_11_MAC_ENTRY_11AC
 #define MACHTTRANSMIT_SETTING_for_5G		MACHTTRANSMIT_SETTING_11AC
 #else
@@ -82,19 +82,34 @@ typedef union  _MACHTTRANSMIT_SETTING {
 // MIMO Tx parameter, ShortGI, MCS, STBC, etc.  these are fields in TXWI. Don't change this definition!!!
 typedef union  _MACHTTRANSMIT_SETTING_2G {
 	struct  {
+#if defined(RTMIR3G)
+	unsigned short	MCS:6;	// MCS
+    unsigned short  ldpc:1;
+    unsigned short	BW:2;
+	unsigned short	ShortGI:1;
+	unsigned short	STBC:1;
+	unsigned short	rsv:2;
+	unsigned short	MODE:3;
+#else
 	unsigned short	MCS:7;	// MCS
 	unsigned short	BW:1;	//channel bandwidth 20MHz or 40 MHz
 	unsigned short	ShortGI:1;
 	unsigned short	STBC:2;	//SPACE
 	unsigned short	rsv:3;
 	unsigned short	MODE:2;	// Use definition MODE_xxx.
+#endif
 	} field;
 	unsigned short	word;
  } MACHTTRANSMIT_SETTING_2G, *PMACHTTRANSMIT_SETTING_2G;
 
 typedef union  _MACHTTRANSMIT_SETTING_11AC {
 	struct  {
+#if defined(RTMIR3G)
+	unsigned short	MCS:6;	// MCS
+    unsigned short  ldpc:1;
+#else
 	unsigned short	MCS:7;	// MCS
+#endif
 	unsigned short	BW:2;	//channel bandwidth 20MHz or 40 MHz
 	unsigned short	ShortGI:1;
 	unsigned short	STBC:1;	//SPACE
@@ -354,7 +369,7 @@ typedef enum _RT_802_11_PHY_MODE {
 #define OFFSET_MAC_ADDR_2G	0x40004 //only one MAC
 #define OFFSET_MAC_GMAC2	0x4018E
 #define OFFSET_MAC_GMAC0	0x40194
-#elif defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2) || defined(RTAC51UP) || defined(RTAC53) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC1200)  || defined(RPAC87) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26)
+#elif defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC54U) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2) || defined(RTAC51UP) || defined(RTAC53) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC1200)  || defined(RPAC87) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26) || defined(RTMIR3G)
 #if defined(RTN800HP)
 #define OFFSET_MAC_ADDR_2G	0x40004
 #define OFFSET_MAC_ADDR		0x40004 //only one MAC
@@ -362,7 +377,7 @@ typedef enum _RT_802_11_PHY_MODE {
 #define OFFSET_MAC_ADDR_2G	0x40004
 #define OFFSET_MAC_ADDR		0x48004
 #endif
-#if defined(RTAC85U) || defined(RTAC85P) || defined(RPAC87) || defined(RTAC1200GU) || defined(RTACRH26)
+#if defined(RTAC85U) || defined(RTAC85P) || defined(RPAC87) || defined(RTAC1200GU) || defined(RTACRH26) || defined(RTMIR3G)
 #define OFFSET_MAC_GMAC0	0x4E000
 #define OFFSET_MAC_GMAC2	0x4E006
 #elif defined(RTN800HP)
@@ -380,7 +395,7 @@ typedef enum _RT_802_11_PHY_MODE {
 #endif
 #if defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTN56UB2) || defined(RTAC1200GA1) || defined(RTAC1200GU)
 #define OFFSET_FIX_CHANNEL      0x40170
-#elif defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26)
+#elif defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26) || defined(RTMIR3G)
 #define OFFSET_BR_STP      0x4ff7e	// 1 bytes
 #endif
 

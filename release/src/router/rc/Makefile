@@ -236,7 +236,7 @@ endif
 
 OBJS := rc.o init.o interface.o lan.o wireless.o wan.o pppd.o auth.o services.o
 OBJS += firewall.o ppp.o services.o common.o
-OBJS += watchdog.o ntp.o $(if $(RTCONFIG_MULTIWAN_CFG),qos_multiwan.o,qos.o) udhcpc.o ate.o
+OBJS += watchdog.o ntp.o $(if $(RTCONFIG_MULTIWAN_CFG),qos_multiwan.o,qos.o) udhcpc.o
 OBJS += format.o
 
 ifeq ($(RTCONFIG_NETOOL),y)
@@ -490,7 +490,7 @@ OBJS += traffic_limiter.o
 endif
 
 ifeq ($(RTCONFIG_NOTIFICATION_CENTER),y)
-OBJS += nt_mail.o
+OBJS += $(if $(wildcard nt_mail.c),nt_mail.o,prebuild/nt_mail.o)
 endif
 
 ifeq ($(RTCONFIG_IPERF),y)

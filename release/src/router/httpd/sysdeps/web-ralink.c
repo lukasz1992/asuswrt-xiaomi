@@ -286,7 +286,7 @@ char* GetBW(int BW)
 		case BW_40:
 			return "40M";
 
-#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU)
+#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTMIR3G)
 		case BW_80:
 			return "80M";
 #endif
@@ -311,7 +311,7 @@ char* GetPhyMode(int Mode)
 		case MODE_HTGREENFIELD:
 			return "GREEN";
 
-#if defined(RTAC52U) || defined(RTAC51U)  || defined(RTN54U) || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200)  || defined(RTAC1200GA1) || defined(RTAC1200GU)
+#if defined(RTAC52U) || defined(RTAC51U)  || defined(RTN54U) || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200)  || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTMIR3G)
 		case MODE_VHT:
 			return "VHT";
 #endif
@@ -601,17 +601,27 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	else if (phy_mode==PHY_11G)
 		ret+=websWrite(wp, "Phy Mode	: 11g\n");
 	else if (phy_mode==PHY_11ABGN_MIXED)
-		ret+=websWrite(wp, "Phy Mode	: 11a/b/g/n\n");
+		ret+=websWrite(wp, "Phy Mode	: 11a/b/g/n/an\n");
 	else if (phy_mode==PHY_11N)
 		ret+=websWrite(wp, "Phy Mode	: 11n\n");
 	else if (phy_mode==PHY_11GN_MIXED)
 		ret+=websWrite(wp, "Phy Mode	: 11g/n\n");
 	else if (phy_mode==PHY_11AN_MIXED)
-		ret+=websWrite(wp, "Phy Mode	: 11a/n\n");
+		ret+=websWrite(wp, "Phy Mode	: 11a/an\n");
 	else if (phy_mode==PHY_11BGN_MIXED)
 		ret+=websWrite(wp, "Phy Mode	: 11b/g/n\n");
 	else if (phy_mode==PHY_11AGN_MIXED)
-		ret+=websWrite(wp, "Phy Mode	: 11a/g/n\n");
+		ret+=websWrite(wp, "Phy Mode	: 11a/g/n/an\n");
+	else if (phy_mode==PHY_11N_5G)
+		ret+=websWrite(wp, "Phy Mode	: 11an\n");
+	else if (phy_mode==PHY_11VHT_N_ABG_MIXED)
+		ret+=websWrite(wp, "Phy Mode	: 11a/b/g/n/an/ac\n");
+	else if (phy_mode==PHY_11VHT_N_AG_MIXED)
+		ret+=websWrite(wp, "Phy Mode	: 11a/g/n/an/ac\n");
+	else if (phy_mode==PHY_11VHT_N_A_MIXED)
+		ret+=websWrite(wp, "Phy Mode	: 11a/an/ac\n");
+	else if (phy_mode==PHY_11VHT_N_MIXED)
+		ret+=websWrite(wp, "Phy Mode	: 11an/ac\n");
 
 	ret+=websWrite(wp, "Channel		: %d\n", channel);
 
@@ -649,7 +659,7 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 				Entry->Psm ? "Yes" : "NO ",								\
 				GetPhyMode(Entry->TxRate.field.MODE),							\
 				GetBW(Entry->TxRate.field.BW),								\
-				Entry->TxRate.field.MCS,								\
+				Entry->TxRate.field.MCS & 15,								\
 				Entry->TxRate.field.ShortGI ? "Yes" : "NO ",						\
 				Entry->TxRate.field.STBC ? "Yes" : "NO ",						\
 				_gr(Entry->TxRate),									\

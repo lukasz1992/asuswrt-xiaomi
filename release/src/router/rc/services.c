@@ -2337,7 +2337,7 @@ int start_wlceventd(void)
 	if (factory_debug())
 #endif
 #else
-	if (IS_ATE_FACTORY_MODE())
+	if (0)
 #endif
 	return ret;
 
@@ -2371,7 +2371,7 @@ int start_wlc_nt(void)
 	if (factory_debug())
 #endif
 #else
-	if (IS_ATE_FACTORY_MODE())
+	if (0)
 #endif
 	return ret;
 
@@ -8843,292 +8843,6 @@ again:
 		kill(1, SIGTERM);
 #endif
 	}
-	else if(strcmp(script, "upgrade_ate") == 0) {
-		FILE *fp;
-		int ate_upgrade_reboot;
-		int ate_upgrade_reset;
-		char upgrade_file[64] = "/tmp/linux.trx";
-
-#ifdef RTCONFIG_SMALL_FW_UPDATE
-		snprintf(upgrade_file,sizeof(upgrade_file),"/tmp/mytmpfs/linux.trx");
-#endif
-
-		if(cmd[1] == NULL)	ate_upgrade_reboot = 1;
-		else			ate_upgrade_reboot = atoi(cmd[1]);
-		if(cmd[2] == NULL)	ate_upgrade_reset = 0;
-		else			ate_upgrade_reset = atoi(cmd[2]);
-		_dprintf("REBOOT = %d, RESET = %d\n", ate_upgrade_reboot, ate_upgrade_reset);
-#ifdef CONFIG_BCMWL5
-		if (!factory_debug() && !nvram_match(ATE_UPGRADE_MODE_STR(), "1"))
-#else
-		if (!IS_ATE_FACTORY_MODE() && !nvram_match(ATE_UPGRADE_MODE_STR(), "1"))
-#endif
-		{
-			_dprintf("Only support under ATE test mode, Skip...\n");
-			if ((fp = fopen("/tmp/ate_upgrade_state", "w")) != NULL) {
-				fprintf(fp, "Not ATE Mode\n");
-				fclose(fp);
-			}
-			else	_dprintf("Fail to open /tmp/ate_upgrade_state\n");
-
-			if (f_exists(upgrade_file))
-				unlink(upgrade_file);
-
-			goto skip;
-		}
-
-		if(action & RC_SERVICE_STOP) {
-			if ((fp = fopen("/tmp/ate_upgrade_state", "w")) != NULL) {
-				fprintf(fp, "stop_upgarde_ate\n");
-				fclose(fp);
-			}
-			else	_dprintf("Fail to open /tmp/ate_upgrade_state\n");
-
-#ifdef RTCONFIG_WIRELESSREPEATER
-			if(sw_mode() == SW_MODE_REPEATER)
-				stop_wlcconnect();
-#endif
-
-			stop_hour_monitor_service();
-
-			// what process need to stop to free memory or
-			// to avoid affecting upgrade
-			//stop_misc();
-			stop_logger();
-			stop_upnp();
-#if defined(RTCONFIG_MDNS)
-			stop_mdns();
-#endif
-			stop_all_webdav();
-#ifdef RTCONFIG_CAPTIVE_PORTAL
-			stop_uam_srv();
-#endif
-#if defined(RTN56U)
-			stop_if_misc();
-#endif
-#ifdef RTCONFIG_USB
-			/* fix upgrade fail issue : remove wl_high before rmmod ehci_hcd */
-			if (get_model() == MODEL_RTAC53U){
-				eval("wlconf", "eth1", "down");
-				eval("wlconf", "eth2", "down");
-				modprobe_r("wl_high");
-				modprobe_r("wl");
-			}
-
-#if !defined(RTN53) && !defined(RTN56UB1) && !defined(RTN56UB2) && !defined(RTAC1200GA1) && !defined(RTAC1200GU)
-#ifndef RTCONFIG_ERPTEST
-			stop_usb();
-#else
-			stop_usb(0);
-#endif
-#ifndef RTCONFIG_NO_USBPORT
-			stop_usbled();
-#endif
-			remove_storage_main(1);
-			remove_usb_module();
-#endif
-
-#endif
-			remove_conntrack();
-			stop_udhcpc(-1);
-#ifdef RTCONFIG_IPV6
-#ifdef RTCONFIG_6RELAYD
-			stop_6relayd();
-#endif
-			stop_dhcp6c();
-#endif
-
-#ifdef RTCONFIG_TR069
-			stop_tr();
-#endif
-			stop_jffs2(1);
-#ifdef RTCONFIG_JFFS2USERICON
-			stop_lltdc();
-#endif
-			stop_networkmap();
-
-#ifdef RTCONFIG_QCA_PLC_UTILS
-			reset_plc();
-#endif
-#ifdef RTCONFIG_CFGSYNC
-			stop_cfgsync();
-#endif
-#if defined(RTCONFIG_AMAS) && defined(RTCONFIG_BCMWL6)
-			stop_obd();
-#endif
-		}
-		if(action & RC_SERVICE_START) {
-			int sw = 0, r;
-
-			if ((fp = fopen("/tmp/ate_upgrade_state", "w")) != NULL) {
-				fprintf(fp, "start_upgarde_ate\n");
-				fclose(fp);
-			}
-			else	_dprintf("Fail to open /tmp/ate_upgrade_state\n");
-
-#ifdef RTCONFIG_DSL
-#ifdef RTCONFIG_RALINK
-			_dprintf("to do start_tc_upgrade\n");
-			start_tc_upgrade();
-#else
-			do_upgrade_adsldrv();
-#endif
-#endif
-
-			limit_page_cache_ratio(90);
-
-			/* flash it if exists */
-			if (f_exists(upgrade_file)) {
-#ifdef RTCONFIG_CONCURRENTREPEATER
-#ifdef RPAC68U
-				set_led(LED_BLINK_SLOW, LED_BLINK_SLOW);
-#else
-				nvram_set_int("led_status", LED_FIRMWARE_UPGRADE);
-#endif
-#endif
-				/* stop wireless here */
-#ifdef RTCONFIG_SMALL_FW_UPDATE
-/* TODO should not depend on platform, move to stop_lan_wl()?
- * cope with stop_usb() above for BRCM AP dependencies */
-#ifdef CONFIG_BCMWL5
-/* TODO should not depend on exact interfaces */
-				eval("wlconf", "eth1", "down");
-				eval("wlconf", "eth2", "down");
-/* TODO fix fini_wl() for BCM USBAP */
-				modprobe_r("wl_high");
-				modprobe_r("wl");
-#ifdef RTCONFIG_USB
-#if defined(RTN53)
-#ifndef RTCONFIG_ERPTEST
-				stop_usb();
-#else
-				stop_usb(0);
-#endif
-#ifndef RTCONFIG_NO_USBPORT
-				stop_usbled();
-#endif
-				remove_storage_main(1);
-				remove_usb_module();
-#endif
-#endif
-#endif
-#elif defined(RTCONFIG_TEMPROOTFS)
-				stop_lan_wl();
-				stop_dnsmasq();
-				stop_networkmap();
-				stop_wpsaide();
-#if defined(RTCONFIG_QCA) || defined(RTCONFIG_RALINK)
-#ifdef RTCONFIG_CONCURRENTREPEATER
-				stop_wlcconnect();
-#endif	//RTCONFIG_CONCURRENTREPEATE
-#if defined(RTCONFIG_QCA) || defined(RTCONFIG_LANTIQ)
-				stop_wifi_service();
-#endif	//RTCONFIG_QCA
-#endif
-#endif
-				if (!(r = build_temp_rootfs(TMP_ROOTFS_MNT_POINT)))
-					sw = 1;
-#ifdef RTCONFIG_DUAL_TRX
-				if (!nvram_match("nflash_swecc", "1"))
-				{
-					_dprintf(" Write FW to the 2nd partition.\n");
-					if (nvram_contains_word("rc_support", "nandflash"))	/* RT-AC56S,U/RT-AC68U/RT-N16UHP */
-						eval("mtd-write2", upgrade_file, "linux2");
-					else
-						eval("mtd-write", "-i", upgrade_file, "-d", "linux2");
-				}
-#endif
-				if (nvram_contains_word("rc_support", "nandflash")) {	/* RT-AC56S,U/RT-AC68U/RT-N16UHP */
-#ifdef HND_ROUTER
-					eval("hnd-write", upgrade_file);
-#elif defined(RTCONFIG_ALPINE) || defined(RTCONFIG_LANTIQ)
-					update_trx("/tmp/linux.trx");
-#else
-					eval("mtd-write2", upgrade_file, "linux");
-#endif
-				}
-				else
-				{
-#if defined(RTAC1200G) || defined(RTAC1200GP)
-					eval("mtd-write2", upgrade_file, "linux");
-#else
-#ifdef RTCONFIG_REALTEK
-#ifndef CONFIG_MTD_NAND
-					eval("mtd-write", "-i", "/tmp/linux.trx", "-d", "linux");
-#else
-#ifdef CONFIG_ASUS_DUAL_IMAGE_ENABLE
-					eval("mtd-write", "-i", "/tmp/linux.trx", "-d", "linux");
-#else
-					eval("mtd-write", "-i", "/tmp/linux.trx", "-d", "linux");
-					eval("mtd-write", "-i", "/tmp/root.trx", "-d", "rootfs");
-#endif
-#endif
-#else /* !RTCONFIG_REALTEK */
-#if defined(RTCONFIG_QCA) && defined(RTCONFIG_FITFDT)
-					{
-						char *upgrade_file2 = "/tmp/linux2.trx";
-						char command_buf[256];
-						sprintf(command_buf,"dd if=%s of=%s bs=%d skip=1", upgrade_file, upgrade_file2, get_imageheader_size());
-						system(command_buf);
-						unlink(upgrade_file);
-						eval("mtd-write", "-i", upgrade_file2, "-d", "linux");
-					}
-#else
-					eval("mtd-write", "-i", upgrade_file, "-d", "linux");
-#endif /* RTCONFIG_QCA && RTCONFIG_FITFDT */
-#endif /* RTCONFIG_REALTEK */
-#endif // RTAC1200G
-				}
-
-				if ((fp = fopen("/tmp/ate_upgrade_state", "w")) != NULL) {
-					fprintf(fp, "Upgarde Complete\n");
-					fclose(fp);
-				}
-				else	_dprintf("Fail to open /tmp/ate_upgrade_state\n");
-
-				/* erase trx and free memory on purpose */
-				unlink(upgrade_file);
-
-				if(ate_upgrade_reset) {
-					_dprintf("[ATE] Reset Default...\n");
-#ifndef HND_ROUTER
-					nvram_set("restore_defaults", "1");
-					nvram_set(ASUS_STOP_COMMIT, "1");
-#endif
-					ResetDefault();
-				}
-
-				if (sw) {
-					_dprintf("switch to temp rootfilesystem\n");
-					if (!(r = switch_root(TMP_ROOTFS_MNT_POINT))) {
-						/* Do nothing. If switch_root() success, never reach here. */
-					} else {
-						if(ate_upgrade_reboot)	{
-							_dprintf("[ATE] REBOOT...\n");
-							kill(1, SIGTERM);
-						}
-					}
-				} else {
-					if(ate_upgrade_reboot) {
-						_dprintf("[ATE] REBOOT...\n");
-						kill(1, SIGTERM);
-					}
-				}
-			}
-			else {
-				// recover? or reboot directly
-				//kill(1, SIGTERM);
-				if ((fp = fopen("/tmp/ate_upgrade_state", "w")) != NULL) {
-						fprintf(fp, "Can't find firmware image\n");
-						fclose(fp);
-				}
-				else	_dprintf("Fail to open /tmp/ate_upgrade_state\n");
-
-				_dprintf("firmware image not found...\n");
-
-			}
-		}
-	}
 	else if(strcmp(script, "upgrade") == 0) {
 		if(action&RC_SERVICE_STOP) {
 			g_upgrade = 1;
@@ -9275,7 +8989,9 @@ again:
 				stop_lan_wl();
 				stop_dnsmasq();
 				stop_networkmap();
+#if defined(RTCONFIG_WPS)
 				stop_wpsaide();
+#endif
 #if defined(RTCONFIG_QCA) || defined(RTCONFIG_RALINK)
 #ifdef RTCONFIG_CONCURRENTREPEATER
 				stop_wlcconnect();
@@ -9293,6 +9009,7 @@ again:
 #endif
 				if (!(r = build_temp_rootfs(TMP_ROOTFS_MNT_POINT)))
 					sw = 1;
+#if !defined(RTMIR3G)
 #ifdef RTCONFIG_DUAL_TRX
 				if (!nvram_match("nflash_swecc", "1"))
 				{
@@ -9344,6 +9061,74 @@ again:
 #endif /* RTCONFIG_REALTEK */
 #endif // RTAC1200G
 				}
+#else   // RTMIR3G - do the magic update
+        {
+            FILE *fr;
+            // allocate memory of block size
+            unsigned char *data = malloc(0x20000);
+            int offset, i, j1, j2, stage = 1;
+            if (data == NULL)
+                goto err;
+            // get size of header and verify value
+            fr = fopen(upgrade_file, "rb");
+            if (fr == NULL)
+                goto err;
+            fread(data, 64, 1, fr);
+            if (data[60] != 169)
+                goto err;
+            offset = data[63] + data[62] * 0x100 + data[61] * 0x10000;
+            if (offset < 0x100000 || offset > 0x200000)
+                goto err;
+            // seek to squashfs and check signature
+            if (fseek(fr, offset, 0))
+                goto err;
+            fread(data, 4, 1, fr);
+            if (data[0] != 'h' || data[1] != 's' || data[2] != 'q' || data[3] != 's')
+                goto err;
+            j1 = open("/dev/mtdblock6", O_WRONLY | O_SYNC, DEFFILEMODE);
+            j2 = open("/dev/mtdblock7", O_WRONLY | O_SYNC, DEFFILEMODE);
+            // OK, start upgrade
+            _dprintf("MIR3G: Flashing (1/2)...\n");
+            led_control(0, 0);
+            led_control(1, 1);
+write_job:
+            fseek(fr, 0, 0);
+            nvram_set_int("flash_stage", stage);
+            nvram_commit();
+            for (i = 0; i < 32; i++) {
+                if ((i << 17) < offset) {
+                    fread(data, 0x20000, 1, fr);
+                    if (((i + 1) << 17) > offset)
+                        memset(&data[offset % 0x20000], 0xFF, 0x20000 - (offset % 0x20000));
+                } else
+                    memset(data, 0xFF, 0x20000);
+                write(j1, data, 0x20000);
+            }
+            close(j1);
+            fseek(fr, offset, 0);
+            for (i = 0; i < 240; i++) {
+                memset(data, 0xFF, 0x20000);
+                if (!feof(fr))
+                    fread(data, 0x20000, 1, fr);
+                write(j2, data, 0x20000);
+            }
+            close(j2);
+            if (stage++ == 1) {
+                j1 = open("/dev/mtdblock4", O_WRONLY | O_SYNC, DEFFILEMODE);
+                j2 = open("/dev/mtdblock5", O_WRONLY | O_SYNC, DEFFILEMODE);
+                _dprintf("MIR3G: Flashing (2/2)...\n");
+                goto write_job;
+            } else
+                goto ok;
+    err:
+            kill(1, SIGTERM);
+    ok:
+            fclose(fr);
+            _dprintf("MIR3G: Rebooting...\n");
+            nvram_set_int("flash_stage", 0);
+            nvram_commit();
+        }
+#endif
 				/* erase trx and free memory on purpose */
 				unlink(upgrade_file);
 				if (sw) {

@@ -309,7 +309,7 @@ function initial(){
 			based_modelid == "RT-AC68U" || based_modelid == "RT-AC68A" || based_modelid == "DSL-AC68U" || based_modelid == "4G-AC68U" ||
 			based_modelid == "RT-AC87U" || based_modelid == "EA-AC87" ||
 			based_modelid == "RT-AC88U" || based_modelid == "RT-AC86U" || based_modelid == "AC2900" || based_modelid == "RT-AC3100" ||
-			based_modelid == "RT-AC5300" || based_modelid == "GT-AC5300")
+			based_modelid == "RT-AC5300" || based_modelid == "GT-AC5300" || based_modelid == "RT-MIR3G")
 		{
 			if(no_vht_support){
 				inputCtrl(document.form.wl_txbf, 0);

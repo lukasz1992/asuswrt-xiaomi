@@ -16,6 +16,10 @@ config  MODEL_RPAC87
 	bool "RP-AC87"
 	default n
 
+config  MODEL_RTMIR3G
+	bool "RT-MIR3G"
+	default n
+
 config  MODEL_RTAC65U
 	bool "RT-AC65U"
 	default n
