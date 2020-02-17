@@ -58,6 +58,9 @@ obj-$(CONFIG_MWIFIEX)	+= mwifiex/
 obj-$(CONFIG_BRCMFMAC)	+= brcm80211/
 obj-$(CONFIG_BRCMSMAC)	+= brcm80211/
 
+obj-$(CONFIG_RALINK_MT7612E) += rlt_wifi/
+obj-$(CONFIG_RALINK_MT7603E) += mt_wifi/
+
 ifneq ($(CONFIG_RLT_AP_SUPPORT),)
 obj-$(CONFIG_RLT_AP_SUPPORT)       += rlt_wifi_ap/
 endif

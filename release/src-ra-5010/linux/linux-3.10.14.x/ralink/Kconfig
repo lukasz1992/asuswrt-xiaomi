@@ -370,7 +370,9 @@ endchoice
 #source "drivers/net/wireless/rlt_wifi/Kconfig"
 #source "drivers/net/wireless/mt_wifi/embedded/Kconfig"
 #source "drivers/net/wireless/mt_wifi_7615E_4411/embedded/Kconfig"
-source "drivers/net/wireless/mt_wifi_7615E_4421/embedded/Kconfig"
+#source "drivers/net/wireless/mt_wifi_7615E_4421/embedded/Kconfig"
+source "drivers/net/wireless/rlt_wifi/Kconfig"
+source "drivers/net/wireless/mt_wifi/Kconfig"
 
 endif # WIFI_DRIVER
 
