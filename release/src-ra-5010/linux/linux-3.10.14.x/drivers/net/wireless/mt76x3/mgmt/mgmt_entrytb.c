@@ -433,7 +433,8 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
 			pEntry->RSNIE_Len = 0;
 			NdisZeroMemory(pEntry->R_Counter, sizeof(pEntry->R_Counter));
 			pEntry->ReTryCounter = PEER_MSG1_RETRY_TIMER_CTR;
-			tr_entry->PortSecured = WPA_802_1X_PORT_NOT_SECURED;			
+			tr_entry->PortSecured = WPA_802_1X_PORT_NOT_SECURED;
+			pEntry->AllowInsPTK = TRUE;
 
 			do
 			{

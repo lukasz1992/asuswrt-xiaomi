@@ -1283,11 +1283,13 @@ SendAssocResponse:
 			pFtIe = (PFT_FTIE)(ftie_ptr + 2);
 			NdisMoveMemory(pFtIe->MIC, ft_mic, FT_MIC_LEN);
 
-			/* Install pairwise key */
-			WPAInstallPairwiseKey(pAd, pEntry->apidx, pEntry, TRUE);
+			/* Only first allow install from assoc, later or rekey or instal from auth (backward compatability with not patched clients) */
+			if (pEntry->AllowInsPTK == TRUE) {
+			    WPAInstallPairwiseKey(pAd, pEntry->apidx, pEntry, TRUE);
+			    pEntry->AllowInsPTK = FALSE;
+			}
 
-			/* Update status and set Port as Secured */
-			pEntry->WpaState = AS_PTKINITDONE;
+			/* set Port as Secured */
 			pEntry->PrivacyFilter = Ndis802_11PrivFilterAcceptAll;
 		    pEntry->PortSecured = WPA_802_1X_PORT_SECURED;
 		}
