@@ -7,17 +7,13 @@ This is modified version of AsusWrt that works with Xiaomi Mi R3G router.
 
 ## How to build
 1. cd release/src-ra-5010
-2. make rt-ac57u
+2. make rt-mir3g
 
 ## Important notes
 - First boot after takes some minutes, don't interrupt it
+- I do not take responsibility of any damages - you do everything on your own risk
 
 ## Missing features
 - No repeater support
 - No dual-wan support
 
-## TODO
-1. Upload source code
-2. Provide a detailed description of changes
-3. Do some tests of Guest WiFi
-4. Do some tests of IPTV page
