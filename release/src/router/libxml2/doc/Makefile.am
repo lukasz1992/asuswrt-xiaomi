@@ -24,7 +24,7 @@ EXTRA_DIST=xmlcatalog_man.xml tutorial/*.html tutorial/*.c tutorial/*.pdf \
 	   README.docs symbols.xml
 
 
-man_MANS = xmllint.1 xmlcatalog.1
+man_MANS = 
 
 if REBUILD_DOCS
 all: web $(top_builddir)/NEWS libxml2.xsa $(man_MANS)

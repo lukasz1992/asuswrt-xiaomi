@@ -238,13 +238,6 @@ if test $shared -eq 1; then
   elif test -z "$old_cc" -a -z "$old_cflags"; then
     echo No shared library support.
     shared=0;
-  else
-    echo Tested $CC -w -c $SFLAGS $test.c
-    $CC -w -c $SFLAGS $test.c
-    echo Tested $LDSHARED $SFLAGS -o $test$shared_ext $test.o
-    $LDSHARED $SFLAGS -o $test$shared_ext $test.o
-    echo 'No shared library support; try without defining CC and CFLAGS'
-    shared=0;
   fi
 fi
 if test $shared -eq 0; then
