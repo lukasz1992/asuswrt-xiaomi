@@ -217,7 +217,7 @@ extern struct ethtool_ops	ra_virt_ethtool_ops;
 #endif // CONFIG_PSEUDO_SUPPORT //
 #endif // (CONFIG_ETHTOOL //
 
-#if defined(CONFIG_MODEL_RTAC85U) || defined(CONFIG_MODEL_RTAC85P) || defined(CONFIG_MODEL_RTAC65U) || defined(CONFIG_MODEL_RTN800HP)	|| defined(CONFIG_MODEL_RTACRH26) //ASUS_EXT
+#if defined(CONFIG_MODEL_RTAC85U) || defined(CONFIG_MODEL_RTAC85P) || defined(CONFIG_MODEL_RTAC65U) || defined(CONFIG_MODEL_RTN800HP)	|| defined(CONFIG_MODEL_RTACRH26) || defined(CONFIG_MODEL_RTMIR3G) //ASUS_EXT
 int first_gsw_init=0;
 #endif
 
@@ -6221,7 +6221,7 @@ int __init ra2882eth_init(void)
 
 void fe_sw_init(void)
 {
-#if defined (CONFIG_MODEL_RTAC85U) || defined(CONFIG_MODEL_RTAC85P) || defined(CONFIG_MODEL_RTAC65U) || defined(CONFIG_MODEL_RTN800HP) || defined(CONFIG_MODEL_RTACRH26)  	//only initialize at boot time.
+#if defined (CONFIG_MODEL_RTAC85U) || defined(CONFIG_MODEL_RTAC85P) || defined(CONFIG_MODEL_RTAC65U) || defined(CONFIG_MODEL_RTN800HP) || defined(CONFIG_MODEL_RTACRH26) || defined(CONFIG_MODEL_RTMIR3G) 	//only initialize at boot time.
  	   if(!first_gsw_init) 
 		first_gsw_init=1;
 	   else  //prevent from resetting vlan 

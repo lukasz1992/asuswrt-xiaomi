@@ -415,6 +415,24 @@ void config_switch()
 			default:
 				break; /* Nothing to do. */
 		}
+#elif defined(RTMIR3G)
+		/* P0    P1    P2    P3    P4    P6    */
+		/* NA    WAN   L1    L2    NA    GMAC1 */
+		
+		/* Convert STB port value for RTMIR3G*/
+		switch (stbport) {
+			case 1: // P1 -> P3
+				stbport = 2;
+				break;
+			case 2: // P2 -> P4
+				stbport = 3;
+				break;
+			case 5: // P1&P2 -> P3&P4
+				stbport = 6;
+				break;
+			default:
+				break; /* Nothing to do. */
+		}
 #else
 		/* stbport:	Model-independent	unifi_malaysia=1	otherwise
 		 * 		IPTV STB port		(RT-N56U)		(RT-N56U)
