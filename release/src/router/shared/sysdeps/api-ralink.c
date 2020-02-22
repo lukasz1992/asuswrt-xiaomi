@@ -363,7 +363,7 @@ typedef struct CountryCodeToCountryRegion {
 
 COUNTRY_CODE_TO_COUNTRY_REGION allCountry[] = {
 	/* {Country Number, ISO Name, Country Name, Support 11A, 11A Country Region, Support 11G, 11G Country Region} */
-	{"DB", A_BAND_REGION_12, G_BAND_REGION_1},
+	{"DB", A_BAND_REGION_21, G_BAND_REGION_1},
 	{"AL", A_BAND_REGION_0, G_BAND_REGION_1},
 	{"DZ", A_BAND_REGION_0, G_BAND_REGION_1},
 #ifdef RTCONFIG_LOCALE2012

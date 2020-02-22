@@ -479,12 +479,12 @@ obj-y += wireless_tools
 
 obj-y += $(if $(RTN65U),rt2880_app,flash)
 ifeq ($(RTN65U),)
-obj-y += $(if $(or $(RTN14U),$(RTAC52U),$(RTAC51U),$(RTN11P),$(RTN300),$(RTN54U),$(RTAC1200HP),$(RTN56UB1),$(RTN56UB2),$(RTAC54U),$(RTAC51UP),$(RTAC53),$(RTAC1200),$(RTAC1200GA1),$(RTAC1200GU),$(RTN600),$(RTN11PB1),$(RPAC87),$(RTAC85U),$(RTAC85P),$(RTN800HP),$(RTACRH26)),reg,hw_nat)
+obj-y += $(if $(or $(RTN14U),$(RTAC52U),$(RTAC51U),$(RTN11P),$(RTN300),$(RTN54U),$(RTAC1200HP),$(RTN56UB1),$(RTN56UB2),$(RTAC54U),$(RTAC51UP),$(RTAC53),$(RTAC1200),$(RTAC1200GA1),$(RTAC1200GU),$(RTN600),$(RTN11PB1),$(RPAC87),$(RTAC85U),$(RTAC85P),$(RTN800HP),$(RTACRH26),$(RTMIR3G)),reg,hw_nat)
 obj-y += $(if $(RTCONFIG_ATED122),ated_1.2.2,ated)
 endif
 obj-y += $(if $(RTCONFIG_MII_MGR),mii_mgr)
 
-ifeq ($(or $(RTAC85P),$(RTN800HP),$(RTACRH26)),y)
+ifeq ($(or $(RTAC85P),$(RTN800HP),$(RTACRH26),$(RTMIR3G)),y)
 obj-y += switch
 endif
 

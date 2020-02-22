@@ -548,7 +548,7 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	else
 		ret+=websWrite(wp, "OP Mode		: AP\n");
 
-#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U)  || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC85U) || defined(RTAC85P) || defined(MTK_REP) || defined(RTACRH26)
+#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U)  || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC85U) || defined(RTAC85P) || defined(MTK_REP) || defined(RTACRH26) || defined(RTMIR3G)
 	if (unit == 1)
 	{
 		char *p = tmp;
