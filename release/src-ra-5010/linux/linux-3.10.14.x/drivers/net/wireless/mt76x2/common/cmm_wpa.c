@@ -300,7 +300,7 @@ VOID WpaEAPOLKeyAction(
 		else
 #endif /* MAC_REPEATER_SUPPORT */
 		{
-			DBGPRINT(RT_DEBUG_OFF, ("%s: CliIdx == 0xFF  pHeader->Addr2(%02X-%02X-%02X-%02X-%02X-%02X) !!!\n",
+			DBGPRINT(RT_DEBUG_TRACE, ("%s: CliIdx == 0xFF  pHeader->Addr2(%02X-%02X-%02X-%02X-%02X-%02X) !!!\n",
 								__FUNCTION__,PRINT_MAC(pHeader->Addr2)));
 			pEntry = MacTableLookup(pAd, pHeader->Addr2);
 		}
@@ -347,7 +347,7 @@ VOID WpaEAPOLKeyAction(
 		if (pEntry->AuthMode < Ndis802_11AuthModeWPA)
 			break;		
 
-		DBGPRINT(RT_DEBUG_OFF, ("Receive EAPoL-Key frame from STA %02X-%02X-%02X-%02X-%02X-%02X wcid(%d)\n", PRINT_MAC(pEntry->Addr), pEntry->wcid));
+		DBGPRINT(RT_DEBUG_TRACE, ("Receive EAPoL-Key frame from STA %02X-%02X-%02X-%02X-%02X-%02X wcid(%d)\n", PRINT_MAC(pEntry->Addr), pEntry->wcid));
 
 		if (eapol_len > Elem->MsgLen - LENGTH_802_11 - LENGTH_802_1_H)
 		{
@@ -2246,7 +2246,7 @@ VOID PeerPairMsg4Action(
 #endif	 
 	 
 	 
-	        DBGPRINT(RT_DEBUG_OFF, ("AP SETKEYS DONE - WPA2, AuthMode(%d)=%s, WepStatus(%d)=%s, GroupWepStatus(%d)=%s\n\n", 
+	        DBGPRINT(RT_DEBUG_TRACE, ("AP SETKEYS DONE - WPA2, AuthMode(%d)=%s, WepStatus(%d)=%s, GroupWepStatus(%d)=%s\n\n", 
 									pEntry->AuthMode, GetAuthMode(pEntry->AuthMode), 
 									pEntry->WepStatus, GetEncryptType(pEntry->WepStatus), 
 									group_cipher, 
@@ -2803,7 +2803,7 @@ VOID PeerGroupMsg2Action(
 			/* send wireless event - for set key done WPA2*/
 				RTMPSendWirelessEvent(pAd, IW_SET_KEY_DONE_WPA2_EVENT_FLAG, pEntry->Addr, pEntry->apidx, 0); 
 
-			DBGPRINT(RT_DEBUG_OFF, ("AP SETKEYS DONE - WPA2, AuthMode(%d)=%s, WepStatus(%d)=%s, GroupWepStatus(%d)=%s\n\n", 
+			DBGPRINT(RT_DEBUG_TRACE, ("AP SETKEYS DONE - WPA2, AuthMode(%d)=%s, WepStatus(%d)=%s, GroupWepStatus(%d)=%s\n\n", 
 										pEntry->AuthMode, GetAuthMode(pEntry->AuthMode), 
 										pEntry->WepStatus, GetEncryptType(pEntry->WepStatus), 
 										group_cipher, GetEncryptType(group_cipher)));
@@ -2841,7 +2841,7 @@ VOID PeerGroupMsg2Action(
 			}
 #endif /* SMART_MESH_MONITOR */
 
-        	DBGPRINT(RT_DEBUG_OFF, ("AP SETKEYS DONE - WPA1, AuthMode(%d)=%s, WepStatus(%d)=%s, GroupWepStatus(%d)=%s\n\n", 
+        	DBGPRINT(RT_DEBUG_TRACE, ("AP SETKEYS DONE - WPA1, AuthMode(%d)=%s, WepStatus(%d)=%s, GroupWepStatus(%d)=%s\n\n", 
 										pEntry->AuthMode, GetAuthMode(pEntry->AuthMode), 
 										pEntry->WepStatus, GetEncryptType(pEntry->WepStatus), 
 										group_cipher, GetEncryptType(group_cipher)));

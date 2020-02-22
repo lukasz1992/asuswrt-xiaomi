@@ -6604,12 +6604,12 @@ VOID MtAsicACQueue(RTMP_ADAPTER *pAd, UINT8 ucation, UINT8 BssidIdx, UINT32 u4Ac
 
 	if (ACQCR_0 && Value_0) {
 		RTMP_IO_WRITE32(pAd, ACQCR_0, Value_0);
-		DBGPRINT(RT_DEBUG_ERROR, ("%s: Write CR:%x, Value=%x\n", __FUNCTION__, ACQCR_0, Value_0));
+		DBGPRINT(RT_DEBUG_TRACE, ("%s: Write CR:%x, Value=%x\n", __FUNCTION__, ACQCR_0, Value_0));
 	}
 	
 	if (ACQCR_1 && Value_1) {
 		RTMP_IO_WRITE32(pAd, ACQCR_1, Value_1);
-		DBGPRINT(RT_DEBUG_ERROR, ("%s: Write CR:%x, Value=%x\n", __FUNCTION__, ACQCR_1, Value_1));
+		DBGPRINT(RT_DEBUG_TRACE, ("%s: Write CR:%x, Value=%x\n", __FUNCTION__, ACQCR_1, Value_1));
 	}
 }
 
