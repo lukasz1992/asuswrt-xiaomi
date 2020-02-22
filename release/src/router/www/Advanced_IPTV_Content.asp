@@ -1499,8 +1499,6 @@ function change_mr_enable(switch_stb_x){
 				<option value="4" <% nvram_match( "switch_stb_x", "4", "selected"); %>>LAN4</option>
 				<option value="5" <% nvram_match( "switch_stb_x", "5", "selected"); %>>LAN1 & LAN2</option>
 				<option value="6" <% nvram_match( "switch_stb_x", "6", "selected"); %>>LAN3 & LAN4</option>
-				<option value="7" style="visibility:hidden"></option>
-				<option value="8" style="visibility:hidden"></option>
 			    </select>
 			</td>
 			</tr>
