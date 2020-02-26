@@ -346,6 +346,7 @@ _fn_(_st_ HTSetting)							\
 {									\
 	int rate_count = sizeof(MCSMappingRateTable)/sizeof(int);	\
 	int rate_index = 0;						\
+	char shift = 0;							\
 									\
 	if (HTSetting.field.MODE >= MODE_VHT)				\
 	{								\
@@ -364,6 +365,7 @@ _fn_(_st_ HTSetting)							\
 			((unsigned char)HTSetting.field.ShortGI * 29) +	\
 			((unsigned char)HTSetting.field.MCS);		\
 		}							\
+		shift = ((unsigned char)HTSetting.field.iTxBf);		\
 	}								\
 	else								\
 	if (HTSetting.field.MODE >= MODE_HTMIX)				\
@@ -382,7 +384,7 @@ _fn_(_st_ HTSetting)							\
 	if (rate_index >= rate_count)					\
 		rate_index = rate_count-1;				\
 									\
-	return (MCSMappingRateTable[rate_index] * 5)/10;		\
+	return ((MCSMappingRateTable[rate_index] << shift)* 5)/10;		\
 }
 
 #if defined(RTCONFIG_HAS_5G)
@@ -548,7 +550,7 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	else
 		ret+=websWrite(wp, "OP Mode		: AP\n");
 
-#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U)  || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC85U) || defined(RTAC85P) || defined(MTK_REP) || defined(RTACRH26) || defined(RTMIR3G)
+#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U)  || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC85U) || defined(RTAC85P) || defined(MTK_REP) || defined(RTACRH26)
 	if (unit == 1)
 	{
 		char *p = tmp;
