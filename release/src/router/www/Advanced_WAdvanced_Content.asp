@@ -318,7 +318,7 @@ function initial(){
 			else{
 				document.getElementById('wl_txbf_desc').innerHTML = "<#WLANConfig11b_x_acBeam#>";
 				inputCtrl(document.form.wl_txbf, 1);
-				inputCtrl(document.form.wl_itxbf, 1);
+				inputCtrl(document.form.wl_itxbf, based_modelid != "RT-MIR3G");
 			}
 		}
 
