@@ -84,8 +84,8 @@ typedef union  _MACHTTRANSMIT_SETTING_2G {
 	struct  {
 #if defined(RTMIR3G)
 	unsigned short	MCS:6;	// MCS
-    unsigned short  ldpc:1;
-    unsigned short	BW:2;
+	unsigned short  ldpc:1;
+	unsigned short	BW:2;
 	unsigned short	ShortGI:1;
 	unsigned short	STBC:1;
 	unsigned short	rsv:2;

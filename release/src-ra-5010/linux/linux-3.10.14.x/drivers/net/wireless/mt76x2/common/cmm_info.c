@@ -3332,9 +3332,6 @@ copy_mac_table_entry(RT_802_11_MAC_ENTRY *pDst, MAC_TABLE_ENTRY *pEntry)
 	pDst->LastRxRate = pEntry->LastRxRate;
 
 	pDst->padding[0] = pDst->padding[1] = pDst->padding[2] = 0;
-
-	// push info about supported spatial streams for VHT inside iTxBf field (it is not used)
-        pDst->TxRate.field.iTxBf = (pEntry->HTPhyMode.field.MODE >= MODE_VHT) && (pEntry->operating_mode.rx_nss == 2);
 }
 
 

@@ -346,7 +346,6 @@ _fn_(_st_ HTSetting)							\
 {									\
 	int rate_count = sizeof(MCSMappingRateTable)/sizeof(int);	\
 	int rate_index = 0;						\
-	char shift = 0;							\
 									\
 	if (HTSetting.field.MODE >= MODE_VHT)				\
 	{								\
@@ -365,7 +364,6 @@ _fn_(_st_ HTSetting)							\
 			((unsigned char)HTSetting.field.ShortGI * 29) +	\
 			((unsigned char)HTSetting.field.MCS);		\
 		}							\
-		shift = ((unsigned char)HTSetting.field.iTxBf);		\
 	}								\
 	else								\
 	if (HTSetting.field.MODE >= MODE_HTMIX)				\
@@ -384,7 +382,7 @@ _fn_(_st_ HTSetting)							\
 	if (rate_index >= rate_count)					\
 		rate_index = rate_count-1;				\
 									\
-	return ((MCSMappingRateTable[rate_index] << shift)* 5)/10;		\
+	return (MCSMappingRateTable[rate_index] * 5)/10;		\
 }
 
 #if defined(RTCONFIG_HAS_5G)
