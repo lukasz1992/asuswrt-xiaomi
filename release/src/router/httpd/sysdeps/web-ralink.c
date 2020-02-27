@@ -346,26 +346,24 @@ _fn_(_st_ HTSetting)							\
 {									\
 	int rate_count = sizeof(MCSMappingRateTable)/sizeof(int);	\
 	int rate_index = 0;						\
-	char shift = 0;							\
 									\
 	if (HTSetting.field.MODE >= MODE_VHT)				\
 	{								\
 		if (HTSetting.field.BW == BW_20) {			\
 			rate_index = 108 +				\
 			((unsigned char)HTSetting.field.ShortGI * 29) +	\
-			((unsigned char)HTSetting.field.MCS % 10);	\
+			((unsigned char)HTSetting.field.MCS);		\
 		}							\
 		else if (HTSetting.field.BW == BW_40) {			\
 			rate_index = 117 +				\
 			((unsigned char)HTSetting.field.ShortGI * 29) +	\
-			((unsigned char)HTSetting.field.MCS % 10);	\
+			((unsigned char)HTSetting.field.MCS);		\
 		}							\
 		else if (HTSetting.field.BW == BW_80) {			\
 			rate_index = 127 +				\
 			((unsigned char)HTSetting.field.ShortGI * 29) +	\
-			((unsigned char)HTSetting.field.MCS % 10);	\
+			((unsigned char)HTSetting.field.MCS);		\
 		}							\
-		shift = (((unsigned char)HTSetting.field.MCS) >= 10);	\
 	}								\
 	else								\
 	if (HTSetting.field.MODE >= MODE_HTMIX)				\
@@ -384,7 +382,7 @@ _fn_(_st_ HTSetting)							\
 	if (rate_index >= rate_count)					\
 		rate_index = rate_count-1;				\
 									\
-	return ((MCSMappingRateTable[rate_index] << shift) * 5) / 10;	\
+	return (MCSMappingRateTable[rate_index] * 5)/10;		\
 }
 
 #if defined(RTCONFIG_HAS_5G)
