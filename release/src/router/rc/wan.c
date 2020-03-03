@@ -427,6 +427,7 @@ start_igmpproxy(char *wan_ifname)
 			"-p", nvram_safe_get("udpxy_enable_x"),
 			"-B", "65536",
 			"-c", nvram_safe_get("udpxy_clients"),
+			"-M", "30",
 			"-a", nvram_get("lan_ifname") ? : "br0");
 	}
 
