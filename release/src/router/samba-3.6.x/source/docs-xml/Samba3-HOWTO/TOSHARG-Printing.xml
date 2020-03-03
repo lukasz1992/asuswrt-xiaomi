@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE chapter PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<chapter id="classicalprinting">
+
+<chapterinfo>
+	<author>
+		<firstname>Kurt</firstname><surname>Pfeifle</surname>
+		<affiliation>
+			<orgname>Danka Deutschland GmbH</orgname>
+			<address><email>kpfeifle@danka.de</email></address>
+		</affiliation>
+	</author>
+	&author.jerry;
+	&author.jht;
+	<pubdate>May 31, 2003</pubdate>
+</chapterinfo>
+
+<title>Classical Printing Support</title>
+
+<sect1>
+<title>Features and Benefits</title>
+
+<para>
+<indexterm><primary>mission-critical</primary></indexterm>
+Printing is often a mission-critical service for the users. Samba can provide this service reliably and
+seamlessly for a client network consisting of Windows workstations.
+</para>
+
+<para>
+<indexterm><primary>print service</primary></indexterm>
+<indexterm><primary>domain member server</primary></indexterm>
+<indexterm><primary>standalone server</primary></indexterm>
+<indexterm><primary>file serving</primary></indexterm>
+<indexterm><primary>dedicated print server</primary></indexterm>
+<indexterm><primary>print server</primary></indexterm>
+<indexterm><primary>printing support</primary></indexterm>
+<indexterm><primary>Point'n'Print</primary></indexterm>
+<indexterm><primary>Add Printer Wizard</primary></indexterm>
+<indexterm><primary>upload drivers</primary></indexterm>
+<indexterm><primary>manage drivers</primary></indexterm>
+<indexterm><primary>install drivers</primary></indexterm>
+<indexterm><primary>print accounting</primary></indexterm>
+<indexterm><primary>Common UNIX Printing System</primary><see>CUPS</see></indexterm>
+A Samba print service may be run on a standalone or domain member server, side by side with file serving
+functions, or on a dedicated print server.  It can be made as tightly or as loosely secured as needs dictate.
+Configurations may be simple or complex. Available authentication schemes are essentially the same as
+described for file services in previous chapters. Overall, Samba's printing support is now able to replace an
+NT or Windows 2000 print server full-square, with additional benefits in many cases. Clients may download and
+install drivers and printers through their familiar <literal>Point'n'Print</literal> mechanism. Printer
+installations executed by <literal>Logon Scripts</literal> are no problem. Administrators can upload and manage
+drivers to be used by clients through the familiar <literal>Add Printer Wizard</literal>. As an additional
+benefit, driver and printer management may be run from the command line or through scripts, making it more
+efficient in case of large numbers of printers. If a central accounting of print jobs (tracking every single
+page and supplying the raw data for all sorts of statistical reports) is required, this function is best
+supported by the newer Common UNIX Printing System (CUPS) as the print subsystem underneath the Samba hood.
+</para>
+
+<para>
+<indexterm><primary>BSD</primary></indexterm>
+<indexterm><primary>CUPS</primary></indexterm>
+This chapter outlines the fundamentals of Samba printing as implemented by the more traditional UNIX
+BSD- and System V-style printing systems. Much of the information in this chapter applies also to CUPS.  If
+you use CUPS, you may be tempted to jump to the next chapter, but you will certainly miss a few things if you
+do. For further information refer to <link linkend="CUPS-printing">CUPS Printing Support</link>.
+</para>
+
+<note>
+<para>
+<indexterm><primary>Windows XP Professional</primary></indexterm>
+<indexterm><primary>Windows 200x/XP</primary></indexterm>
+<indexterm><primary>Windows NT4</primary></indexterm>
+Most of the following examples have been verified on Windows XP Professional clients. Where this document
+describes the responses to commands given, bear in mind that Windows 200x/XP clients are quite similar but may
+differ in minor details. Windows NT4 is somewhat different again.
+</para>
+</note>
+
+</sect1>
+
+<sect1>
+<title>Technical Introduction</title>
+
+<para>
+<indexterm><primary>printing support</primary></indexterm>
+<indexterm><primary>print subsystem</primary></indexterm>
+<indexterm><primary>printing system</primary></indexterm>
+Samba's printing support always relies on the installed print subsystem of the UNIX OS it runs on. Samba is a
+<literal>middleman.</literal> It takes print files from Windows (or other SMB) clients and passes them to the real
+printing system for further processing; therefore, it needs to communicate with both sides: the Windows print
+clients and the UNIX printing system. Hence, we must differentiate between the various client OS types, each
+of which behave differently, as well as the various UNIX print subsystems, which themselves have different
+features and are accessed differently.
+</para>
+
+<para>
+<indexterm><primary>UNIX printing</primary></indexterm>
+<indexterm><primary>CUPS</primary></indexterm>
+This chapter deals with the traditional way of UNIX printing. The next chapter covers in great detail the more
+modern CUPS.
+</para>
+
+<important><para>
+<indexterm><primary>CUPS</primary></indexterm>
+CUPS users, be warned: do not just jump on to the next chapter. You might miss important information only found here!
+</para></important>
+
+<para>
+<indexterm><primary>print configuration</primary></indexterm>
+<indexterm><primary>problematic print</primary></indexterm>
+<indexterm><primary>print processing</primary></indexterm>
+<indexterm><primary>print filtering</primary></indexterm>
+It is apparent from postings on the Samba mailing list that print configuration is one of the most problematic
+aspects of Samba administration today. Many new Samba administrators have the impression that Samba performs
+some sort of print processing. Rest assured, Samba does not perform any type of print processing. It does not
+do any form of print filtering.
+</para>
+
+<para>
+<indexterm><primary>data stream</primary></indexterm>
+<indexterm><primary>local spool area</primary></indexterm>
+<indexterm><primary>spooled file</primary></indexterm>
+<indexterm><primary>local system printing</primary></indexterm>
+Samba obtains from its clients a data stream (print job) that it spools to a local spool area. When the entire
+print job has been received, Samba invokes a local UNIX/Linux print command and passes the spooled file to it.
+It is up to the local system printing subsystems to correctly process the print job and to submit it to the
+printer.
+</para>
+
+<sect2>
+<title>Client to Samba Print Job Processing</title>
+
+<para>
+Successful printing from a Windows client via a Samba print server to a UNIX
+printer involves six (potentially seven) stages:
+</para>
+
+<orderedlist>
+	<listitem><para>Windows opens a connection to the printer share.</para></listitem>
+
+	<listitem><para>Samba must authenticate the user.</para></listitem>
+
+	<listitem><para>Windows sends a copy of the print file over the network
+	into Samba's spooling area.</para></listitem>
+
+	<listitem><para>Windows closes the connection.</para></listitem>
+
+	<listitem><para>Samba invokes the print command to hand the file over
+	to the UNIX print subsystem's spooling area.</para></listitem>
+
+	<listitem><para>The UNIX print subsystem processes the print job.</para></listitem>
+
+	<listitem><para>The print file may need to be explicitly deleted
+	from the Samba spooling area. This item depends on your print spooler
+	configuration settings.</para></listitem>
+</orderedlist>
+</sect2>
+
+<sect2>
+<title>Printing-Related Configuration Parameters</title>
+
+<para>
+<indexterm><primary>global-level</primary></indexterm>
+<indexterm><primary>service-level</primary></indexterm>
+<indexterm><primary>printing behavior</primary></indexterm>
+There are a number of configuration parameters to control Samba's printing behavior. Please refer to the man
+page for &smb.conf; for an overview of these. As with other parameters, there are global-level (tagged with a
+<emphasis>G</emphasis> in the listings) and service-level (<emphasis>S</emphasis>) parameters.
+</para>
+
+<variablelist>
+	<varlistentry><term>Global Parameters</term>
+		<listitem><para> These <emphasis>may not</emphasis> go into
+		individual share definitions. If they go in by error,
+		the <command>testparm</command> utility can discover this
+		(if you run it) and tell you so.
+		</para></listitem>
+	</varlistentry>
+
+	<varlistentry><term>Service-Level Parameters</term>
+		<listitem><para> These may be specified in the
+		<smbconfsection name="[global]"/> section of &smb.conf;.
+		In this case they define the default behavior of all individual
+		or service-level shares (provided they do not have a different
+		setting defined for the same parameter, thus overriding the
+		global default).
+		</para></listitem>
+	</varlistentry>
+</variablelist>
+</sect2>
+
+</sect1>
+
+<sect1>
+<title>Simple Print Configuration</title>
+
+<para>
+<indexterm><primary>BSD Printing</primary></indexterm>
+<indexterm><primary>simple printing</primary></indexterm>
+<indexterm><primary>enables clients to print</primary></indexterm>
+<indexterm><primary>print environment</primary></indexterm>
+<link linkend="simpleprc">Simple Configuration with BSD Printing</link> shows a simple printing configuration.
+If you compare this with your own, you may find additional parameters that have been preconfigured by your OS
+vendor. Following is a discussion and explanation of the parameters. This example does not use many
+parameters.  However, in many environments these are enough to provide a valid &smb.conf; file that enables
+all clients to print.
+</para>
+
+<example id="simpleprc">
+<title>Simple Configuration with BSD Printing</title>
+<smbconfblock>
+<smbconfsection name="[global]"/>
+<smbconfoption name="printing">bsd</smbconfoption>
+<smbconfoption name="load printers">yes</smbconfoption>
+
+<smbconfsection name="[printers]"/>
+<smbconfoption name="path">/var/spool/samba</smbconfoption>
+<smbconfoption name="printable">yes</smbconfoption>
+<smbconfoption name="public">yes</smbconfoption>
+<smbconfoption name="writable">no</smbconfoption>
+</smbconfblock>
+</example>
+
+<para>
+<indexterm><primary>testparm</primary></indexterm>
+<indexterm><primary>misconfigured settings</primary></indexterm>
+<indexterm><primary>pager program</primary></indexterm>
+This is only an example configuration. Samba assigns default values to all configuration parameters. The
+defaults are conservative and sensible. When a parameter is specified in the &smb.conf; file, this overwrites
+the default value. The <command>testparm</command> utility when run as root is capable of reporting all
+settings, both default as well as &smb.conf; file settings. <command>Testparm</command> gives warnings for all
+misconfigured settings. The complete output is easily 360 lines and more, so you may want to pipe it through a
+pager program.
+</para>
+
+<para>  
+<indexterm><primary>configuration syntax</primary></indexterm>
+<indexterm><primary>syntax tolerates spelling errors</primary></indexterm>
+<indexterm><primary>case-insensitive</primary></indexterm>
+The syntax for the configuration file is easy to grasp. You should know that  is not very picky about its
+syntax. As has been explained elsewhere in this book, Samba tolerates some spelling errors (such as
+<smbconfoption name="browseable"/> instead of <smbconfoption name="browsable"/>), and spelling is
+case-insensitive. It is permissible to use <parameter>Yes/No</parameter> or <parameter>True/False</parameter>
+for Boolean settings. Lists of names may be separated by commas, spaces, or tabs.
+</para>
+
+<sect2>
+<title>Verifying Configuration with <command>testparm</command></title>
+
+<para>
+<indexterm><primary>printing-related settings</primary></indexterm>
+<indexterm><primary>lp</primary></indexterm>
+<indexterm><primary>print</primary></indexterm>
+<indexterm><primary>spool</primary></indexterm>
+<indexterm><primary>driver</primary></indexterm>
+<indexterm><primary>ports</primary></indexterm>
+<indexterm><primary>testparm</primary></indexterm>
+<indexterm><primary>smbd</primary></indexterm>
+<indexterm><primary>print configuration</primary></indexterm>
+<indexterm><primary>printer shares </primary></indexterm>
+<indexterm><primary>spooling path</primary></indexterm>
+To see all (or at least most) printing-related settings in Samba, including the im
