@@ -4620,11 +4620,11 @@ int mtk_nand_probe()
     {
 		u32 chip_mode = RALINK_REG(RALINK_SYSCTL_BASE+0x010)&0x0F;    
 		
-		MSG(INIT, "Not Support this Device! \r\n");
+		//MSG(INIT, "Not Support this Device! \r\n");
 		
     	memset(&devinfo, 0 , sizeof(flashdev_info));
 		
-		MSG(INIT, "chip_mode=%08X\n",chip_mode);
+		//MSG(INIT, "chip_mode=%08X\n",chip_mode);
     
     	/* apply bootstrap first */
     	devinfo.addr_cycle = 5;
@@ -4698,7 +4698,7 @@ int mtk_nand_probe()
        //devinfo.pagesize,  sizeof(g_kCMD.au1OOB),nand_chip->ecc.layout->eccbytes);
   
 
-    MSG(INIT, "Support this Device in MTK table! %x \r\n", id);
+    MSG(INIT, "Support this Device in MTK table! %x\n", id);
     hw->nfi_bus_width = devinfo.iowidth;
     DRV_WriteReg32(NFI_ACCCON_REG32, devinfo.timmingsetting);
 
@@ -4794,12 +4794,12 @@ int mtk_nand_probe()
 			nand_chip->bbt[i] |= fact_bbt[i];
 		}
 		//printk("\n");
-		for (i = 0; i < bbt_size; i++)
+		/*for (i = 0; i < bbt_size; i++)
 		{
 			printk("%02x ", nand_chip->bbt[i]);
 			if (!((i+1) & 0x1f))
 				printk("\n");
-		}
+		}*/
 	}
 #endif
 
@@ -5518,23 +5518,18 @@ int ranand_read(char *buf, unsigned int from, int datalen)
     char* buffers, *buffers_orig;
     struct mtd_info *mtd;
     struct nand_chip *nand_chip;
-MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);     
     if (buf == 0)
         return 0;
     
     mtd = &host->mtd;
     nand_chip  = &host->nand_chip;
- MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);        
     buffers_orig = (u8 *)kmalloc(mtd->writesize + mtd->oobsize + 32, GFP_KERNEL);
 
     if (buffers_orig == NULL)
         return 0;
- MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);    
     buffers = (((u32)buffers_orig + 15)/16)*16;
-MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__); 
 /* while (datalen || ooblen) {*/
     while (datalen) {
-MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);         
         int len;
         int ret;
         int offs;
@@ -5549,14 +5544,12 @@ MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
             continue;
         }
 #endif
-MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__); 
         if ((datalen > mtd->writesize) && ((page & 0x1f) == 0))
             printk(".");
 
         //FIXME, something strange here, some page needs 2 more tries to guarantee read success.
         
         mtk_nand_command_bp(mtd, NAND_CMD_READ0, 0, page);
-  MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);       
         //ret = mtk_nand_read_page_hwecc(mtd, (struct nand_chip *)&host->nand_chip, buffers, page);
         ret = mtk_nand_read_page(mtd, (struct nand_chip *)&host->nand_chip, buffers, page);
         
@@ -5569,16 +5562,13 @@ MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
         // data read
         offs = addr & (mtd->writesize-1);
         len = min(datalen, mtd->writesize - offs);
-MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__); 
         if (buf && len > 0) {
-MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);             
             memcpy(buf, buffers + offs, len); // we can not sure ops->buf wether is DMA-able.
             buf += len;
             datalen -= len;
             retlen += len;
             
         }
-MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__); 
         // address go further to next page, instead of increasing of length of write. This avoids some special cases wrong.
         addr = (page+1) << (nand_chip->page_shift);
     }
@@ -5587,7 +5577,6 @@ MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
 #if !defined (__BOOT_NAND__)    
     kfree(buffers_orig); 
 #endif
-    MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__); 
     return retlen;
 }
 //asus

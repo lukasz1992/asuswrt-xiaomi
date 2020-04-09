@@ -1746,7 +1746,7 @@ PNDIS_PACKET GetPacketFromRxRing(
 
 			pRxPacket = pRxCell->pNdisPacket;
 
-			DBGPRINT(RT_DEBUG_OFF, ("Ring No = %d\n", RxRingNo));
+			DBGPRINT(RT_DEBUG_WARN, ("Ring No = %d\n", RxRingNo));
 			hex_dump("Invalid Pkt content", GET_OS_PKT_DATAPTR(pRxPacket), 32);
 		}
 
