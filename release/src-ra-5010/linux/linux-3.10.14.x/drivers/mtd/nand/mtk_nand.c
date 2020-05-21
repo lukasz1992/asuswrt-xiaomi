@@ -4996,6 +4996,9 @@ int mtk_nand_probe()
 	    trx_firmware_size = TRX_FIRMWARE_SIZE * i;
 
         offs = LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + (LARGE_MTD_FACTORY_PART_SIZE*2) + trx_firmware_size;
+// Xiaomi
+        offs = 0x600000;
+// Xiaomi
 
         len =  ranand_read((u_char *)(&hdr), offs, sizeof(hdr));
    
@@ -5022,8 +5025,8 @@ int mtk_nand_probe()
     
         if (rfs_offset != 0) {
             MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
-    	    g_pasStatic_Partition[4 + shift].offset = LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + (LARGE_MTD_FACTORY_PART_SIZE*2) + trx_firmware_size;
-            g_pasStatic_Partition[5 + shift].offset = LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + (LARGE_MTD_FACTORY_PART_SIZE*2) + trx_firmware_size + rfs_offset;
+            g_pasStatic_Partition[4 + shift].offset = offs + trx_firmware_size;
+            g_pasStatic_Partition[5 + shift].offset = offs + trx_firmware_size + rfs_offset;
             g_pasStatic_Partition[5 + shift].mask_flags |= MTD_WRITEABLE;
        
             if (mtd->size > 0x800000) {
@@ -5041,6 +5044,13 @@ int mtk_nand_probe()
     }
 //----- asus add
 
+// Xiaomi
+	g_pasStatic_Partition[1].offset = 0x1e0000;
+	g_pasStatic_Partition[2].offset = 0x100000;
+	g_pasStatic_Partition[3].offset = 0x120000;
+	g_pasStatic_Partition[6].offset = 0x3800000;
+	g_pasStatic_Partition[6].size = 0x2800000;
+// Xiaomi
 	err = add_mtd_partitions(mtd, g_pasStatic_Partition, part_num);
 	//err = mtd_device_register(mtd, g_pasStatic_Partition, part_num);
 #endif
