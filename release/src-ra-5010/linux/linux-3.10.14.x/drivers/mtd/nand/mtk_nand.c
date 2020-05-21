@@ -2230,7 +2230,7 @@ int mtk_nand_exec_write_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize
     PFM_BEGIN(pfm_time_write);
     if (((u32) pPageBuf % 16) && local_buffer_16_align)
     {
-        printk(KERN_INFO "Data buffer not 16 bytes aligned: %p\n", pPageBuf);
+        //printk(KERN_INFO "Data buffer not 16 bytes aligned: %p\n", pPageBuf);
         memcpy(local_buffer_16_align, pPageBuf, mtd->writesize);
         buf = local_buffer_16_align;
     } else
