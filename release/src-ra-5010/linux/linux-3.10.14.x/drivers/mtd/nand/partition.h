@@ -22,6 +22,14 @@ extern unsigned int  CFG_BLOCKSIZE;
 #define TRX_FW_NUM			1
 #endif
 
+// Xiaomi
+#define LARGE_MTD_BOOT_PART_SIZE	0x100000
+#define LARGE_MTD_CONFIG_PART_SIZE	0x20000
+#define LARGE_MTD_FACTORY_PART_SIZE	0x20000
+#define TRX_FIRMWARE_SIZE		(50 * 1024 * 1024) 	//50 MB
+#define TRX_FW_NUM			1
+// Xiaomi
+
 #ifdef CONFIG_RT2880_ROOTFS_IN_FLASH
 #define MTD_ROOTFS_RESERVED_BLOCK	0x80000  // (CFG_BLOCKSIZE<<2)
 #endif
