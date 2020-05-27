@@ -870,5 +870,15 @@ define platformKernelConfig
 		echo "# CONFIG_RAETH_HW_VLAN_TX is not set" >>$(1); \
 		echo "# CONFIG_RA_HW_NAT_PPTP_L2TP is not set" >>$(1); \
 	fi; \
+	if [ "$(WAN_AT_P0)" = "y" ]; then \
+		sed -i "/CONFIG_WAN_AT_P0/d" $(1); \
+		echo "CONFIG_WAN_AT_P0=y" >>$(1); \
+	elif [ "$(WAN_AT_P4)" = "y" ]; then \
+		sed -i "/CONFIG_WAN_AT_P4/d" $(1); \
+		echo "CONFIG_WAN_AT_P4=y" >>$(1); \
+	elif [ "$(WAN_AT_P1)" = "y" ]; then \
+		sed -i "/CONFIG_WAN_AT_P1/d" $(1); \
+		echo "CONFIG_WAN_AT_P1=y" >>$(1); \
+	fi; \
 	)
 endef

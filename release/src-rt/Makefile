@@ -2393,9 +2393,13 @@ define RouterOptions
 	if [ "$(WAN_AT_P4)" = "y" ]; then \
 		sed -i "/RTCONFIG_WAN_AT_P4/d" $(1); \
 		echo "RTCONFIG_WAN_AT_P4=y" >>$(1); \
-	else \
+		sed -i "/RTCONFIG_WAN_AT_P1/d" $(1); \
+		echo "# RTCONFIG_WAN_AT_P1 is not set" >>$(1); \
+	elif [ "$(WAN_AT_P1)" = "y" ]; then \
 		sed -i "/RTCONFIG_WAN_AT_P4/d" $(1); \
 		echo "# RTCONFIG_WAN_AT_P4 is not set" >>$(1); \
+		sed -i "/RTCONFIG_WAN_AT_P1/d" $(1); \
+		echo "RTCONFIG_WAN_AT_P1=y" >>$(1); \
 	fi; \
 	if [ "$(MTK_REP)" = "y" ]; then \
 		sed -i "/RTCONFIG_MTK_REP/d" $(1); \
