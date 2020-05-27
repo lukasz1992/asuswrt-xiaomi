@@ -61,16 +61,13 @@ obj-$(CONFIG_BRCMSMAC)	+= brcm80211/
 ifneq ($(CONFIG_RLT_AP_SUPPORT),)
 obj-$(CONFIG_RLT_AP_SUPPORT)       += rlt_wifi_ap/
 endif
-ifneq ($(CONFIG_RLT_STA_SUPPORT),)
-obj-$(CONFIG_RLT_STA_SUPPORT)      += rlt_wifi_sta/
+ifneq ($(CONFIG_MT7603E_RLT_AP_SUPPORT),)
+obj-$(CONFIG_MT7603E_RLT_AP_SUPPORT)       += mt7603_wifi_ap/
 endif
 ifneq ($(CONFIG_MT_AP_SUPPORT),)
-#obj-$(CONFIG_MT_AP_SUPPORT)       += mt_wifi_ap/
-obj-$(CONFIG_CHIP_MT7615E)       += mt_wifi_ap_7615E_4421/
+obj-$(CONFIG_MT_AP_SUPPORT)       += mt_wifi_ap/
 endif
-ifneq ($(CONFIG_MT_STA_SUPPORT),)
-obj-$(CONFIG_MT_STA_SUPPORT)      += mt_wifi_sta/
-endif
+
 ifneq ($(CONFIG_WIFI_PKT_FWD),)
 obj-y                         += wifi_forward/wifi_hook/
 endif

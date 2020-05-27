@@ -367,10 +367,9 @@ endchoice
 #source "drivers/net/wireless/iNIC_RT305x/Kconfig"
 #source "drivers/net/wireless/RT3680_ap/Kconfig"
 #source "drivers/net/wireless/MT7610_ap/Kconfig"
-#source "drivers/net/wireless/rlt_wifi/Kconfig"
+source "drivers/net/wireless/rlt_wifi/Kconfig"
+source "drivers/net/wireless/mt7603_wifi/Kconfig"
 #source "drivers/net/wireless/mt_wifi/embedded/Kconfig"
-#source "drivers/net/wireless/mt_wifi_7615E_4411/embedded/Kconfig"
-source "drivers/net/wireless/mt_wifi_7615E_4421/embedded/Kconfig"
 
 endif # WIFI_DRIVER
 
