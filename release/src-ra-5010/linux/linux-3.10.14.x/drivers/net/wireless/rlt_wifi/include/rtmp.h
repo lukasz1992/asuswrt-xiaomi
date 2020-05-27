@@ -2330,6 +2330,9 @@ typedef struct _MAC_TABLE_ENTRY {
 	UCHAR PTK[64];
 	UCHAR ReTryCounter;
 	RALINK_TIMER_STRUCT RetryTimer;
+	BOOLEAN AllowInsPTK;
+	UCHAR LastGroupKeyId;
+	UCHAR LastGTK[MAX_LEN_GTK];	
 	NDIS_802_11_AUTHENTICATION_MODE AuthMode;	/* This should match to whatever microsoft defined */
 	NDIS_802_11_WEP_STATUS WepStatus;
 	NDIS_802_11_WEP_STATUS GroupKeyWepStatus;
