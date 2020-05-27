@@ -257,6 +257,9 @@ choice
 
 	config  WAN_AT_P4
 	        bool "LLLL/W"
+
+	config  WAN_AT_P1
+	        bool "L/W/LLL"
 		
 	config  WAN_AT_P0
 	        bool "W/LLLL"
@@ -370,6 +373,11 @@ config  GE_RGMII_INTERNAL_P0_AN
         depends on GE2_INTERNAL_GPHY
 	default y if WAN_AT_P0
 
+config  GE_RGMII_INTERNAL_P1_AN
+	bool
+        depends on GE2_INTERNAL_GPHY
+	default y if WAN_AT_P1
+
 config  GE_RGMII_INTERNAL_P4_AN
 	bool
         depends on GE2_INTERNAL_GPHY
@@ -378,8 +386,9 @@ config  GE_RGMII_INTERNAL_P4_AN
 config  MAC_TO_GIGAPHY_MODE_ADDR2
         hex
 	default 0 if GE_RGMII_INTERNAL_P0_AN
+	default 1 if GE_RGMII_INTERNAL_P1_AN
 	default 4 if GE_RGMII_INTERNAL_P4_AN
-        depends on GE_RGMII_INTERNAL_P0_AN || GE_RGMII_INTERNAL_P4_AN
+        depends on GE_RGMII_INTERNAL_P0_AN || GE_RGMII_INTERNAL_P1_AN || GE_RGMII_INTERNAL_P4_AN
 
 config  MAC_TO_GIGAPHY_MODE_ADDR2
         hex "GE2 Phy Address"

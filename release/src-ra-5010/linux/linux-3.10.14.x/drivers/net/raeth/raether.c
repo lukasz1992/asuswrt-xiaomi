@@ -1520,7 +1520,7 @@ raeth_clean(struct net_device *netdev, int *budget)
 
 void gsw_delay_setting(void) 
 {
-#if defined (CONFIG_GE_RGMII_INTERNAL_P0_AN) || defined (CONFIG_GE_RGMII_INTERNAL_P4_AN) 
+#if defined (CONFIG_GE_RGMII_INTERNAL_P0_AN) || defined (CONFIG_GE_RGMII_INTERNAL_P1_AN) || defined (CONFIG_GE_RGMII_INTERNAL_P4_AN) 
 	END_DEVICE *ei_local = netdev_priv(dev_raether);
 	int reg_int_val = 0;
 	int link_speed = 0;
@@ -2198,6 +2198,8 @@ static irqreturn_t esw_interrupt(int irq, void *dev_id)
 		//link down --> link up : send signal to user application
 		//link up --> link down : ignore
 		if ((stat & (1<<25)) || !(stat_curr & (1<<25)))
+#elif CONFIG_WAN_AT_P1
+		if ((stat & (1<<26)) || !(stat_curr & (1<<26)))
 #else
 		if ((stat & (1<<29)) || !(stat_curr & (1<<29)))
 #endif
@@ -3052,7 +3054,7 @@ int VirtualIF_open(struct net_device * dev)
 
     printk("%s: ===> VirtualIF_open\n", dev->name);
  
-#if defined (CONFIG_GE_RGMII_INTERNAL_P0_AN) || defined (CONFIG_GE_RGMII_INTERNAL_P4_AN)
+#if defined (CONFIG_GE_RGMII_INTERNAL_P0_AN) || defined (CONFIG_GE_RGMII_INTERNAL_P1_AN) || defined (CONFIG_GE_RGMII_INTERNAL_P4_AN)
     *((volatile u32 *)(FE_INT_ENABLE2)) |= (1<<25); //enable GE2 link change intr for MT7530 delay setting
 #endif
 
@@ -4043,7 +4045,7 @@ void setup_fpga_gsw(void)
 #if defined (CONFIG_GE_RGMII_INTERNAL_P0_AN)
 	regValue &= ~((1<<13)|(1<<6));
 	regValue |= ((1<<7)|(1<<16)|(1<<20));
-#elif defined (CONFIG_GE_RGMII_INTERNAL_P4_AN)
+#elif defined (CONFIG_GE_RGMII_INTERNAL_P1_AN) || defined (CONFIG_GE_RGMII_INTERNAL_P4_AN)
 	regValue &= ~((1<<13)|(1<<6)|((1<<20)));
 	regValue |= ((1<<7)|(1<<16));
 #endif
@@ -5808,6 +5810,33 @@ void LANWANPartition(void)
 	IsSwitchVlanTableBusy();
 
 	mii_mgr_write(31, 0x94, 0x40610001);//VAWD1
+	mii_mgr_write(31, 0x90, 0x80001002);//VTCR, VID=2
+	IsSwitchVlanTableBusy();
+#endif
+#ifdef CONFIG_WAN_AT_P1
+	printk("set LAN/WAN LWLLL\n");
+	/*LWLLL, wan at P1*/
+	/*LAN/WAN ports as security mode*/
+	mii_mgr_write(31, 0x2004, 0xff0003);//port0
+	mii_mgr_write(31, 0x2104, 0xff0003);//port1
+	mii_mgr_write(31, 0x2204, 0xff0003);//port2
+	mii_mgr_write(31, 0x2304, 0xff0003);//port3
+	mii_mgr_write(31, 0x2404, 0xff0003);//port4
+
+	/*set PVID*/
+	mii_mgr_write(31, 0x2014, 0x10001);//port0
+	mii_mgr_write(31, 0x2114, 0x10002);//port1
+	mii_mgr_write(31, 0x2214, 0x10001);//port2
+	mii_mgr_write(31, 0x2314, 0x10001);//port3
+	mii_mgr_write(31, 0x2414, 0x10001);//port4
+	/*port6 */
+	/*VLAN member*/
+	IsSwitchVlanTableBusy();
+	mii_mgr_write(31, 0x94, 0x407d0001);//VAWD1
+	mii_mgr_write(31, 0x90, 0x80001001);//VTCR, VID=1
+	IsSwitchVlanTableBusy();
+
+	mii_mgr_write(31, 0x94, 0x40620001);//VAWD1
 	mii_mgr_write(31, 0x90, 0x80001002);//VTCR, VID=2
 	IsSwitchVlanTableBusy();
 #endif

@@ -1538,6 +1538,10 @@ config RTCONFIG_WAN_AT_P4
 	bool "Set WAN Port partiton"
 	default n
 
+config RTCONFIG_WAN_AT_P1
+	bool "Set WAN Port partiton"
+	default n
+
 config RTCONFIG_MTK_REP
 	bool "For MTK Repeater"
 	default n
