@@ -1531,7 +1531,7 @@ static int wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 #if 0// defined(RTN14U)
 	snprintf(header, sizeof(header), "%-4s%-33s%-18s%-9s%-16s%-9s%-8s%-4s%-5s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode"," WPS", " DPID");
 #else
-	snprintf(header, sizeof(header), "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode");
+	snprintf(header, sizeof(header), "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 #endif
 	dbg("\n%s", header);
 	if (wrq.u.data.length > 0)

@@ -2770,7 +2770,7 @@ RTMP_STRING *GetAuthMode(CHAR auth)
     ==========================================================================
 */
 #ifndef WH_EZ_SETUP
-#define	LINE_LEN	(4+65+20+23+9+7+7+3)	/* Channel+SSID(2*32+1)+Bssid+Security+Signal+WiressMode+ExtCh+NetworkType*/
+#define	LINE_LEN	(4+33+18+9+16+9+8)	/* Channel+SSID+Bssid+Enc+Auth+Signal+WiressMode*/
 #endif
 
 #ifdef AIRPLAY_SUPPORT
@@ -2795,8 +2795,7 @@ VOID RTMPCommSiteSurveyData(
 	INT         Rssi = 0;
 	UINT        Rssi_Quality = 0;
 	NDIS_802_11_NETWORK_TYPE    wireless_mode;
-	CHAR		Ssid[2*MAX_LEN_OF_SSID + 2];
-	RTMP_STRING SecurityStr[32] = {0};
+	CHAR		Ssid[MAX_LEN_OF_SSID +1];
 	NDIS_802_11_ENCRYPTION_STATUS	ap_cipher = Ndis802_11EncryptionDisabled;
 	NDIS_802_11_AUTHENTICATION_MODE	ap_auth_mode = Ndis802_11AuthModeOpen;
 #ifdef AIRPLAY_SUPPORT	
@@ -2820,7 +2819,7 @@ VOID RTMPCommSiteSurveyData(
 #endif /* AIRPLAY_SUPPORT */	
 
 		sprintf(Ssid, "0x");
-		for (idx = 0; (idx < MAX_LEN_OF_SSID) && (idx < pBss->SsidLen); idx++)
+		for (idx = 0; (idx < 14) && (idx < pBss->SsidLen); idx++)
 			sprintf(Ssid + 2 + (idx*2), "%02X", (UCHAR)pBss->Ssid[idx]);
 	}
 	sprintf(msg+strlen(msg), "%-33s", Ssid);
@@ -2842,7 +2841,6 @@ VOID RTMPCommSiteSurveyData(
 			pBss->Bssid[5]);
 	
 	/*Security*/
-	RTMPZeroMemory(SecurityStr, 32);
 	if ((Ndis802_11AuthModeWPA <= pBss->AuthMode) &&
 		(pBss->AuthMode <= Ndis802_11AuthModeWPA1PSKWPA2PSK))
 	{
@@ -2918,27 +2916,14 @@ VOID RTMPCommSiteSurveyData(
 				ap_cipher = pBss->WPA.PairCipher;
 		}
 
-		snprintf(SecurityStr, sizeof(SecurityStr), "%s/%s", 
-			GetAuthMode((CHAR)ap_auth_mode), GetEncryptType((CHAR)ap_cipher));
 	}			
 	else
 	{
 		ap_auth_mode = pBss->AuthMode;
 		ap_cipher = pBss->WepStatus;		
-		if (ap_cipher == Ndis802_11WEPDisabled)
-			/*sprintf(SecurityStr, "NONE");*/
-			snprintf(SecurityStr, sizeof(SecurityStr), "%s/%s",
-				GetAuthMode((CHAR)ap_auth_mode), GetEncryptType((CHAR)ap_cipher));
-		else if (ap_cipher == Ndis802_11WEPEnabled)
-			/*sprintf(SecurityStr, "WEP");*/
-			snprintf(SecurityStr, sizeof(SecurityStr), "%s/%s",
-				GetAuthMode((CHAR)ap_auth_mode), GetEncryptType((CHAR)ap_cipher));
-		else
-			snprintf(SecurityStr, sizeof(SecurityStr), "%s/%s", 
-			GetAuthMode((CHAR)ap_auth_mode), GetEncryptType((CHAR)ap_cipher));
 	}
-	
-	sprintf(msg+strlen(msg), "%-23s", SecurityStr);
+
+	sprintf(msg+strlen(msg), "%-9s%-16s", GetEncryptType((CHAR)ap_cipher), GetAuthMode((CHAR)ap_auth_mode));
 
 		/* Rssi*/
 		Rssi = (INT)pBss->Rssi;
@@ -2968,6 +2953,7 @@ VOID RTMPCommSiteSurveyData(
 		else
 			sprintf(msg+strlen(msg),"%-7s", "unknow");
 
+#if 0
 		/* Ext Channel*/
 		if (pBss->AddHtInfoLen > 0)
 		{
@@ -2990,6 +2976,7 @@ VOID RTMPCommSiteSurveyData(
 			sprintf(msg+strlen(msg),"%-3s", " In");
 		/* SSID Length */
 		sprintf(msg + strlen(msg), " %-8d", pBss->SsidLen);
+#endif
         sprintf(msg+strlen(msg),"\n");
 	
 	return;
@@ -3037,6 +3024,7 @@ VOID RTMPIoctlGetSiteSurvey(
 #endif /* AIRPLAY_SUPPORT */	
 
 
+#if 0
 #ifdef WSC_INCLUDED
 	max_len += WPS_LINE_LEN;
 #endif /* WSC_INCLUDED */
@@ -3050,6 +3038,7 @@ VOID RTMPIoctlGetSiteSurvey(
 #ifdef AIRPLAY_SUPPORT
 		max_len += IS_UNICODE_SSID_LEN;
 #endif /* AIRPLAY_SUPPORT */
+#endif
 
 	TotalLen = sizeof(CHAR)*((MAX_LEN_OF_BSS_TABLE + 1)*max_len) + 100;
 
@@ -3075,8 +3064,10 @@ VOID RTMPIoctlGetSiteSurvey(
 		/*BufLen = wrq->u.data.length;*/
 		BufLen = IW_SCAN_MAX_DATA;
 #endif /* AIRPLAY_SUPPORT */
+#if 0
 #ifdef APCLI_OWE_SUPPORT
 	max_len += OWETRANSIE_LINE_LEN;
+#endif
 #endif
 	os_alloc_mem(NULL, (UCHAR **)&this_char, wrq->u.data.length + 1);
 	if (!this_char) {
@@ -3137,13 +3128,14 @@ VOID RTMPIoctlGetSiteSurvey(
 	sprintf(msg + strlen(msg), "%s", "\n");
 #ifdef AIRPLAY_SUPPORT
 		sprintf(msg+strlen(msg),"%-4s%-33s%-4s%-20s%-23s%-9s%-7s%-7s%-3s\n",
-			"Ch", "SSID", "UN", "BSSID", "Security", "Siganl(%)", "W-Mode", " ExtCH"," NT");
+			"Ch", "SSID", "UN", "BSSID", "Security", "Signal(%)", "W-Mode", " ExtCH"," NT");
 #else
-	sprintf(msg + strlen(msg), "%-4s%-4s%-33s%-20s%-23s%-9s%-7s%-7s%-3s%-8s\n",
-		"No", "Ch", "SSID", "BSSID", "Security", "Siganl(%)", "W-Mode", " ExtCH", " NT", " SSID_Len");
+	sprintf(msg+strlen(msg),"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
+	    "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 #endif /* AIRPLAY_SUPPORT */
 
 
+#if 0
 #ifdef WSC_INCLUDED
 	sprintf(msg+strlen(msg)-1,"%-4s%-5s\n", " WPS", " DPID");
 #endif /* WSC_INCLUDED */
@@ -3156,6 +3148,7 @@ VOID RTMPIoctlGetSiteSurvey(
 #ifdef APCLI_OWE_SUPPORT
 	sprintf(msg + strlen(msg) - 1, "%-10s\n", " OWETranIe");
 #endif /* APCLI_OWE_SUPPORT */
+#endif
 
 	WaitCnt = 0;
 
@@ -3190,9 +3183,10 @@ VOID RTMPIoctlGetSiteSurvey(
 						continue;
 				}
 #endif /* AIRPLAY_SUPPORT */
-		sprintf(msg + strlen(msg), "%-4d", i);
+		//sprintf(msg + strlen(msg), "%-4d", i);
 		RTMPCommSiteSurveyData(msg, pBss, TotalLen);
 		
+#if 0
 #ifdef WSC_INCLUDED
         /*WPS*/
         if (pBss->WpsAP & 0x01)
@@ -3225,6 +3219,7 @@ VOID RTMPIoctlGetSiteSurvey(
 			sprintf(msg + strlen(msg), "%-10s\n", " YES");
 		else
 			sprintf(msg + strlen(msg), "%-10s\n", " NO");
+#endif
 #endif
 
 	}

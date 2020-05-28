@@ -2126,7 +2126,7 @@ PSTRING GetAuthMode(CHAR auth)
         		3.) UI needs to prepare at least 4096bytes to get the results
     ==========================================================================
 */
-#define	LINE_LEN	(4+33+20+23+9+7+7+3)	/* Channel+SSID+Bssid+Security+Signal+WiressMode+ExtCh+NetworkType*/
+#define	LINE_LEN	(4+33+18+9+16+9+8)	/* Channel+SSID+Bssid+Enc+Auth+Signal+WiressMode*/
 
 VOID	RTMPCommSiteSurveyData(
 	IN  PSTRING msg,
@@ -2137,7 +2137,6 @@ VOID	RTMPCommSiteSurveyData(
 	UINT        Rssi_Quality = 0;
 	NDIS_802_11_NETWORK_TYPE    wireless_mode;
 	CHAR		Ssid[MAX_LEN_OF_SSID +1];
-	STRING		SecurityStr[32] = {0};
 	NDIS_802_11_ENCRYPTION_STATUS	ap_cipher = Ndis802_11EncryptionDisabled;
 	NDIS_802_11_AUTHENTICATION_MODE	ap_auth_mode = Ndis802_11AuthModeOpen;
 
@@ -2168,7 +2167,6 @@ VOID	RTMPCommSiteSurveyData(
 			pBss->Bssid[5]);
 	
 	/*Security*/
-	RTMPZeroMemory(SecurityStr, 32);
 	if ((Ndis802_11AuthModeWPA <= pBss->AuthMode) &&
 		(pBss->AuthMode <= Ndis802_11AuthModeWPA1PSKWPA2PSK))
 	{
@@ -2257,21 +2255,14 @@ VOID	RTMPCommSiteSurveyData(
 				ap_cipher = pBss->WPA.PairCipher;
 		}
 
-		sprintf(SecurityStr, "%s/%s", GetAuthMode((CHAR)ap_auth_mode), GetEncryptType((CHAR)ap_cipher));		
 	}			
 	else
 	{
 		ap_auth_mode = pBss->AuthMode;
 		ap_cipher = pBss->WepStatus;		
-		if (ap_cipher == Ndis802_11WEPDisabled)
-			sprintf(SecurityStr, "NONE");
-		else if (ap_cipher == Ndis802_11WEPEnabled)
-			sprintf(SecurityStr, "WEP");
-		else
-			sprintf(SecurityStr, "%s/%s", GetAuthMode((CHAR)ap_auth_mode), GetEncryptType((CHAR)ap_cipher));		
 	}
-	
-	sprintf(msg+strlen(msg), "%-23s", SecurityStr);
+
+	sprintf(msg+strlen(msg), "%-9s%-16s", GetEncryptType((CHAR)ap_cipher), GetAuthMode((CHAR)ap_auth_mode));
 
 		/* Rssi*/
 		Rssi = (INT)pBss->Rssi;
@@ -2303,6 +2294,8 @@ VOID	RTMPCommSiteSurveyData(
 		else
 			sprintf(msg+strlen(msg),"%-7s", "unknow");
 
+#if 0
+		
 		/* Ext Channel*/
 		if (pBss->AddHtInfoLen > 0)
 		{
@@ -2323,6 +2316,8 @@ VOID	RTMPCommSiteSurveyData(
 			sprintf(msg+strlen(msg),"%-3s", " Ad");
 		else
 			sprintf(msg+strlen(msg),"%-3s", " In");
+
+#endif
 
         sprintf(msg+strlen(msg),"\n");
 	
@@ -2617,14 +2612,14 @@ VOID RTMPIoctlGetSiteSurvey(
 	memset(msg, 0 , TotalLen);
 	sprintf(msg,"%s","\n");
 
-	sprintf(msg+strlen(msg),"%-4s%-33s%-20s%-23s%-9s%-7s%-7s%-3s\n",
-	    "Ch", "SSID", "BSSID", "Security", "Siganl(%)", "W-Mode", " ExtCH"," NT");	
+	sprintf(msg+strlen(msg),"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
+	    "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 #ifdef CUSTOMER_DCC_FEATURE
 	sprintf(msg+strlen(msg)-1,"%-11s%-10s%-6s%-7s\n", " STA_COUNT", " MED_UTIL", " SNR0", " SNR1");
 	sprintf(msg+strlen(msg)-1,"%-4s\n"," Nss");
 #endif
 
-#ifdef WSC_INCLUDED
+#if 0
 	sprintf(msg+strlen(msg)-1,"%-4s%-5s\n", " WPS", " DPID");
 #endif /* WSC_INCLUDED */
 
@@ -2666,7 +2661,7 @@ VOID RTMPIoctlGetSiteSurvey(
 		else
 			sprintf(msg+strlen(msg)-1," %-3s\n","1");
 #endif
-#ifdef WSC_INCLUDED
+#if 0
         /*WPS*/
         if (pBss->WpsAP & 0x01)
 			sprintf(msg+strlen(msg)-1,"%-4s", " YES");
