@@ -182,7 +182,7 @@ var country_array = [<% get_support_region_list(); %>][0];
 if(country_array == undefined)
 	country_array = [];
 
-var country_selection_list = [["AA", "<#country_AA#>"], ["CN", "<#country_CN#>"], ["SG", "<#country_SG#>"], ["EU", "<#country_EU#>"], ["KR", "<#country_KR#>"], ["RU", "<#country_RU#>"], ["US", "<#country_US#>"], ["AU", "<#country_AU#>"], ["XX", "<#country_AU#>"]];
+var country_selection_list = [["AA", "<#country_AA#>"], ["CN", "<#country_CN#>"], ["SG", "<#country_SG#>"], ["EU", "<#country_EU#>"], ["KR", "<#country_KR#>"], ["RU", "<#country_RU#>"], ["US", "<#country_US#>"], ["AU", "<#country_AU#>"]];
 var country_selection_array = new Array();
 var _AU1_support = false;
 var _AU2_support = false;
@@ -598,8 +598,8 @@ function generate_country_selection(){
 	var matched = false;
 	
 	code += '<select class="input_option" name="location_code">';
-	for(i=0; i<country_array.length; i++){
-		var index = country_array[i];
+	for(i=0; i<country_selection_list.length; i++){
+		var index = country_selection_list[i][0];
 		if(index == "NZ")
 			index = "AU";
 
