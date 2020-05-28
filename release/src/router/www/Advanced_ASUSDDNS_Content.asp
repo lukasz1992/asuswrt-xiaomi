@@ -148,11 +148,11 @@ function get_real_ip(){
 
 function submitForm(){
 	if(letsencrypt_support){
-		if(document.form.ddns_enable_x.value == "1" && document.form.le_enable.value == "1"){
+		if($("input[name='ddns_enable_x']:checked").val() == "1" && $("input[name='le_enable']:checked").val() == "1"){
 			document.form.action_wait.value = "10";
 			document.form.action_script.value = "restart_ddns_le";
 		}
-		else if(http_enable != "0" && document.form.le_enable.value != orig_le_enable){
+		else if(http_enable != "0" && $("input[name='le_enable']:checked").val() != orig_le_enable){
 			document.form.action_wait.value = "10";
 			if(orig_le_enable == "1")
 				document.form.action_script.value = "restart_httpd;restart_webdav;restart_ddns_le";

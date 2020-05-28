@@ -2587,6 +2587,9 @@ int validate_instance(webs_t wp, char *name, json_object *root)
 					if(value)cprintf("%s:%d find %s value=%s\n",__FUNCTION__,__LINE__, tmp,value);
 					if(value&& strcmp(nvram_safe_get(tmp), value))
 					{
+						if(strstr(name, "maclist") && strchr(value, '`') != NULL)
+							continue;
+
 						nvram_check_and_set_for_prefix(name, tmp, value);
 						//nvram_set(tmp, value);
 						found = NVRAM_MODIFIED_BIT|NVRAM_MODIFIED_WL_BIT;
@@ -2604,6 +2607,9 @@ int validate_instance(webs_t wp, char *name, json_object *root)
 				if(check_user_agent(user_agent) == FROM_IFTTT || check_user_agent(user_agent) == FROM_ALEXA)
 					IFTTT_DEBUG("[HTTPD] nvram set %s = %s\n", tmp, value);
 #endif
+				if(strstr(name, "maclist") && strchr(value, '`') != NULL)
+					continue;
+
 				nvram_check_and_set_for_prefix(name, tmp, value);
 #ifdef RTCONFIG_LANTIQ
 				wave_app_flag = wave_handle_app_flag(tmp, wave_app_flag);
@@ -3338,7 +3344,7 @@ int validate_apply(webs_t wp, json_object *root) {
 				}
 #endif
 				if( !strcmp(name, "PM_MY_EMAIL") || !strcmp(name, "PM_SMTP_AUTH_USER") || !strcmp(name, "fb_email")){
-					if (strchr(value, '`') != NULL)
+					if(strchr(value, '`') != NULL)
 						continue;
 				}
 #ifdef RTCONFIG_CFGSYNC
@@ -8048,60 +8054,6 @@ static int get_client_detail_info(struct json_object *clients, struct json_objec
 	if(custom_attr_get)
 		json_object_put(custom_attr_get);
 	CLIENT_DPRINTF("get_client_detail_info finish\n");
-
-	return 0;
-}
-
-static int ej_get_clientlist_maclist(int eid, webs_t wp, int argc, char_t **argv)
-{
-        if(!pids("networkmap")){
-                websWrite(wp, "[]");
-                return 0;
-        }
-
-	struct json_object *macArray = json_object_new_array();
-	P_CLIENT_DETAIL_INFO_TABLE p_client_info_tab;
-	void *shared_client_info = (void *) 0;
-	char mac_buf[32];
-	int i, lock, shm_client_info_id;
-
-	lock = file_lock("networkmap");
-	shm_client_info_id = shmget((key_t)SHMKEY_LAN, sizeof(CLIENT_DETAIL_INFO_TABLE), 0666|IPC_CREAT);
-	if (shm_client_info_id == -1){
-		fprintf(stderr,"shmget failed\n");
-		file_unlock(lock);
-		websWrite(wp, "[]");
-		return 0;
-	}
-
-	shared_client_info = shmat(shm_client_info_id,(void *) 0,0);
-	if (shared_client_info == (void *)-1){
-		fprintf(stderr, "shmat failed\n");
-		file_unlock(lock);
-		websWrite(wp, "[]");
-		return 0;
-	}
-
-	p_client_info_tab = (P_CLIENT_DETAIL_INFO_TABLE)shared_client_info;
-	for(i = 0; i < p_client_info_tab->ip_mac_num; i++) {
-		if(p_client_info_tab->device_flag[i]&(1<<FLAG_EXIST)) {
-			memset(mac_buf, 0, sizeof(mac_buf));
-			sprintf(mac_buf, "%02X:%02X:%02X:%02X:%02X:%02X",
-				p_client_info_tab->mac_addr[i][0],p_client_info_tab->mac_addr[i][1],
-				p_client_info_tab->mac_addr[i][2],p_client_info_tab->mac_addr[i][3],
-				p_client_info_tab->mac_addr[i][4],p_client_info_tab->mac_addr[i][5]
-				);
-			json_object_array_add(macArray, json_object_new_string(mac_buf));
-		}
-	}
-
-	shmdt(shared_client_info);
-	file_unlock(lock);
-
-	websWrite(wp, "%s", json_object_to_json_string(macArray));
-
-	if(macArray)
-		json_object_put(macArray);
 
 	return 0;
 }
@@ -18622,7 +18574,8 @@ int ej_UI_rs_status(int eid, webs_t wp, int argc, char **argv){
 	return 0;
 }
 
-#define WEBDEVINFO_VER 1 //log ej_webdavInfo
+#define WEBDEVINFO_VER 2 //log ej_webdavInfo
+/* lv2: add nvram odmpid, productid, extendno info */
 int ej_webdavInfo(int eid, webs_t wp, int argc, char **argv) {
 
 	char ssid[32];
@@ -18694,6 +18647,9 @@ int ej_webdavInfo(int eid, webs_t wp, int argc, char **argv) {
 	websWrite(wp, "toAPPInfo=['%d'", WEBDEVINFO_VER);
 	websWrite(wp, ",'%u',", ExtendCap);
 	websWrite(wp, "'%s',", get_label_mac());
+	websWrite(wp, "'%s',", nvram_safe_get("odmpid"));
+	websWrite(wp, "'%s',", nvram_safe_get("productid"));
+	websWrite(wp, "'%s',", nvram_safe_get("extendno"));
 	websWrite(wp, "''];\n");
 
 	return 0;
@@ -22513,7 +22469,10 @@ ej_get_new_vpnc_index(int eid, webs_t wp, int argc, char **argv)
 	{
 		if(!idx_array[i])
 		{
-			websWrite(wp, "%d", i + VPNC_UNIT_BASIC);
+			if(check_user_agent(user_agent) == FROM_BROWSER)
+				websWrite(wp, "%d", i + VPNC_UNIT_BASIC);
+			else
+				websWrite(wp, "\"%d\"", i + VPNC_UNIT_BASIC);
 			break;
 		}
 	}
@@ -22562,12 +22521,15 @@ ej_get_vpnc_status(int eid, webs_t wp, int argc, char **argv)
 							break;
 					}
 				}				
-			else
+				else
 				{
 					sb_state_t = 0;
 				}				
 				snprintf(tmp, sizeof(tmp), i? "<%d>%d>%d": "%d>%d>%d", state_t, sb_state_t, prof[i].vpnc_idx);
-				websWrite(wp, tmp);
+				if(check_user_agent(user_agent) == FROM_BROWSER)
+					websWrite(wp, "%s", tmp);
+				else
+					websWrite(wp, "\"%s\"", tmp);
 			}
 			else if(prof[i].protocol == VPNC_PROTO_PPTP || prof[i].protocol == VPNC_PROTO_L2TP)
 			{
@@ -22578,7 +22540,10 @@ ej_get_vpnc_status(int eid, webs_t wp, int argc, char **argv)
 				sb_state_t = atoi(nvram_safe_get(attr_name2));
 
 				snprintf(tmp, sizeof(tmp), i? "<%d>%d>%d": "%d>%d>%d", state_t, sb_state_t, prof[i].vpnc_idx);
-				websWrite(wp, tmp);
+				if(check_user_agent(user_agent) == FROM_BROWSER)
+					websWrite(wp, "%s", tmp);
+				else
+					websWrite(wp, "\"%s\"", tmp);
 			}
 		}
 	}
@@ -22608,7 +22573,10 @@ ej_get_vpnc_nondef_wan_prof_list(int eid, webs_t wp, int argc, char **argv)
 		}
 		snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), i? "<%d>%d":"%d>%d", prof[i].vpnc_idx, flag);	
 	}
-	websWrite(wp, buf);
+	if(check_user_agent(user_agent) == FROM_BROWSER)
+		websWrite(wp, "%s", buf);
+	else
+		websWrite(wp, "\"%s\"", buf);
 	return 0;
 }
 #endif
@@ -23087,7 +23055,6 @@ struct ej_handler ej_handlers[] = {
 	{ "check_passwd_strength", ej_check_passwd_strength},
 	{ "check_wireless_encryption", ej_check_wireless_encryption},
 	{ "get_clientlist", ej_get_clientlist},
-	{ "get_clientlist_maclist", ej_get_clientlist_maclist},
 #if defined(RTCONFIG_BWDPI)
 	{ "bwdpi_status", ej_bwdpi_status},
 	{ "bwdpi_history", ej_bwdpi_history},

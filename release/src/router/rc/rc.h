@@ -1264,6 +1264,7 @@ extern int vpnc_set_dev_policy_rule();
 // ovpn.c
 extern int ovpn_up_main(int argc, char **argv);
 extern int ovpn_down_main(int argc, char **argv);
+extern int ovpn_route_up_main(int argc, char **argv);
 
 // openvpn.c
 #ifdef RTCONFIG_OPENVPN

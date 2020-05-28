@@ -1,4 +1,4 @@
-/* dnsmasq is Copyright (c) 2000-2018 Simon Kelley
+/* dnsmasq is Copyright (c) 2000-2020 Simon Kelley
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -135,7 +135,14 @@ void dhcp6_packet(time_t now)
   if (!indextoname(daemon->dhcp6fd, if_index, ifr.ifr_name))
     return;
 
-  if ((port = relay_reply6(&from, sz, ifr.ifr_name)) == 0)
+  if ((port = relay_reply6(&from, sz, ifr.ifr_name)) != 0)
+    {
+      from.sin6_port = htons(port);
+      while (retry_send(sendto(daemon->dhcp6fd, daemon->outpacket.iov_base, 
+			       save_counter(-1), 0, (struct sockaddr *)&from, 
+			       sizeof(from))));
+    }
+  else
     {
       struct dhcp_bridge *bridge, *alias;
 
@@ -233,20 +240,22 @@ void dhcp6_packet(time_t now)
       port = dhcp6_reply(parm.current, if_index, ifr.ifr_name, &parm.fallback, 
 			 &parm.ll_addr, &parm.ula_addr, sz, &from.sin6_addr, now);
       
+      /* The port in the source address of the original request should
+	 be correct, but at least once client sends from the server port,
+	 so we explicitly send to the client port to a client, and the
+	 server port to a relay. */
+      if (port != 0)
+	{
+	  from.sin6_port = htons(port);
+	  while (retry_send(sendto(daemon->dhcp6fd, daemon->outpacket.iov_base, 
+				   save_counter(-1), 0, (struct sockaddr *)&from, 
+				   sizeof(from))));
+	}
+
+      /* These need to be called _after_ we send DHCPv6 packet, since lease_update_file()
+	 may trigger sending an RA packet, which overwrites our buffer. */
       lease_update_file(now);
       lease_update_dns(0);
-    }
-			  
-  /* The port in the source address of the original request should
-     be correct, but at least once client sends from the server port,
-     so we explicitly send to the client port to a client, and the
-     server port to a relay. */
-  if (port != 0)
-    {
-      from.sin6_port = htons(port);
-      while (retry_send(sendto(daemon->dhcp6fd, daemon->outpacket.iov_base, 
-			       save_counter(0), 0, (struct sockaddr *)&from, 
-			       sizeof(from))));
     }
 }
 
@@ -649,7 +658,8 @@ static int construct_worker(struct in6_addr *local, int prefix,
   char ifrn_name[IFNAMSIZ];
   struct in6_addr start6, end6;
   struct dhcp_context *template, *context;
-
+  struct iname *tmp;
+  
   (void)scope;
   (void)flags;
   (void)valid;
@@ -668,9 +678,15 @@ static int construct_worker(struct in6_addr *local, int prefix,
   if (flags & IFACE_DEPRECATED)
     return 1;
 
-  if (!indextoname(daemon->icmp6fd, if_index, ifrn_name))
-    return 0;
+  /* Ignore interfaces where we're not doing RA/DHCP6 */
+  if (!indextoname(daemon->icmp6fd, if_index, ifrn_name) ||
+      !iface_check(AF_LOCAL, NULL, ifrn_name, NULL))
+    return 1;
   
+  for (tmp = daemon->dhcp_except; tmp; tmp = tmp->next)
+    if (tmp->name && wildcard_match(tmp->name, ifrn_name))
+      return 1;
+
   for (template = daemon->dhcp6; template; template = template->next)
     if (!(template->flags & (CONTEXT_TEMPLATE | CONTEXT_CONSTRUCTED)))
       {
@@ -680,7 +696,7 @@ static int construct_worker(struct in6_addr *local, int prefix,
 	    is_same_net6(local, &template->end6, template->prefix))
 	  {
 	    /* First time found, do fast RA. */
-	    if (template->if_index != if_index || !IN6_ARE_ADDR_EQUAL(&template->local6, local))
+	    if (template->if_index == 0)
 	      {
 		ra_start_unsolicited(param->now, template);
 		param->newone = 1;
