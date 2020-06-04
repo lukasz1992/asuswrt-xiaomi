@@ -3285,6 +3285,9 @@ VOID RTMPIoctlGetMacTableStaInfo(
 			pDst->TxRate.word = pEntry->HTPhyMode.word;
 
 			pDst->LastRxRate = pEntry->LastRxRate;
+			
+			pDst->StreamSnr[0] = pDst->StreamSnr[1] = pDst->StreamSnr[2] = 0;
+			pDst->SoundingRespSnr[0] = pDst->SoundingRespSnr[1] = pDst->SoundingRespSnr[2] = 0;
 									
 			pMacTab->Num += 1;
 		}
@@ -3428,6 +3431,8 @@ VOID RTMPIoctlGetMacTable(
 			pDst->ConnectedTime = pEntry->StaConnectTime;
 			pDst->TxRate.word = pEntry->HTPhyMode.word;
 									
+			pDst->StreamSnr[0] = pDst->StreamSnr[1] = pDst->StreamSnr[2] = 0;
+			pDst->SoundingRespSnr[0] = pDst->SoundingRespSnr[1] = pDst->SoundingRespSnr[2] = 0;
 									
 			pMacTab->Num += 1;
 		}
@@ -7321,6 +7326,9 @@ INT32 GetMacTableStaInfo_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 			pDst->TxRate.word = pEntry->HTPhyMode.word;
 
 			pDst->LastRxRate = pEntry->LastRxRate;
+			
+			pDst->StreamSnr[0] = pDst->StreamSnr[1] = pDst->StreamSnr[2] = 0;
+			pDst->SoundingRespSnr[0] = pDst->SoundingRespSnr[1] = pDst->SoundingRespSnr[2] = 0;
 									
 			pMacTab->Num += 1;
 
