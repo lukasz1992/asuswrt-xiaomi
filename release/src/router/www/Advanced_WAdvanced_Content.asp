@@ -182,7 +182,7 @@ var country_array = [<% get_support_region_list(); %>][0];
 if(country_array == undefined)
 	country_array = [];
 
-var country_selection_list = [["AA", "<#country_AA#>"], ["CN", "<#country_CN#>"], ["SG", "<#country_SG#>"], ["EU", "<#country_EU#>"], ["KR", "<#country_KR#>"], ["RU", "<#country_RU#>"], ["US", "<#country_US#>"], ["AU", "<#country_AU#>"]];
+var country_selection_list = [["EU", "<#country_EU#>"], ["US", "<#country_US#>"], ["RU", "<#country_RU#>"], ["CN", "<#country_CN#>"], ["DB", "Undefined"]];
 var country_selection_array = new Array();
 var _AU1_support = false;
 var _AU2_support = false;
@@ -612,7 +612,7 @@ function generate_country_selection(){
 		}
 	}
 
-	if(!matched){
+	if(0){
 		code += '<option value='+ tcode +' >Default</option>';
 	}
 

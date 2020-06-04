@@ -288,9 +288,7 @@ struct nvram_tuple router_defaults[] = {
 #ifdef RTCONFIG_WL_AUTO_CHANNEL
 	{ "AUTO_CHANNEL", "1", CKN_STR1, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* 0: real channel; 1: Auto; for RT-N12HP & RT-N14UHP */
 #endif
-#ifdef RTCONFIG_TCODE
-	{ "location_code", "", CKN_STR8, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* 0: real channel; 1: Auto; for RT-N12HP & RT-N14UHP */
-#endif
+	{ "location_code", "EU", CKN_STR8, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },
 #ifdef RTCONFIG_RALINK
 	{ "wl_nband", "2", CKN_STR1, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* N-BAND */
 	{ "wl0_nband", "2", CKN_STR1, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* 2.4 GHz */
