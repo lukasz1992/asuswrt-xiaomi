@@ -48,6 +48,7 @@ static const struct model_s model_list[] = {
 	{ "RT-N11P_B1", MODEL_RTN11P_B1},
 	{ "RT-N10P_V3", MODEL_RTN11P_B1},
 	{ "RP-AC87", MODEL_RPAC87},	
+	{ "RT-MIR3G", MODEL_RTMIR3G},
 	{ "RT-AC85U", MODEL_RTAC85U},
 	{ "RT-AC85P", MODEL_RTAC85P},
 	{ "RT-ACRH26", MODEL_RTACRH26},
@@ -191,6 +192,9 @@ int get_fwver(char *buildno, char *extendno) {
  * result is cached for safe multiple use */
 int get_model(void)
 {
+#if defined(RTMIR3G)
+	return MODEL_RTMIR3G;
+#endif
 	static int model = MODEL_UNKNOWN;
 	char *pid;
 	const struct model_s *p;
