@@ -223,6 +223,7 @@ typedef struct {
 #endif
 #define FOE_MAGIC_PCI		    0x7273
 #define FOE_MAGIC_WLAN		    0x7274
+#define FOE_MAGIC_EXTIF		    0x7274
 #define FOE_MAGIC_GE		    0x7275
 #define FOE_MAGIC_PPE		    0x7276
 

@@ -5,10 +5,10 @@ DRV_NAME = mt7603e
 RT_WIFI_DIR = ../mt7603_wifi
 
 else
-ccflags-y = -Idrivers/net/wireless/mtk/mt7603e/mt7603_wifi/include \
-		-Idrivers/net/wireless/mtk/mt7603e/mt7603_wifi/ate/include
-#EXTRA_CFLAGS = -Idrivers/net/wireless/mtk/mt7603e/mt7603_wifi/include \
-		-Idrivers/net/wireless/mtk/mt7603e/mt7603_wifi/ate/include
+ccflags-y = -Idrivers/net/wireless/mt7603_wifi/include \
+		-Idrivers/net/wireless/mt7603_wifi/ate/include
+#EXTRA_CFLAGS = -Idrivers/net/wireless/mt7603_wifi/include \
+		-Idrivers/net/wireless/mt7603_wifi/ate/include
 
 WIFI_HEAD_GEN  = $(shell make -C drivers/net/wireless/rlt_wifi RT28xx_MODE=AP CHIPSET=mt7603e EE_TYPE=$(CONFIG_MT7603E_PA_LNA) sdk_build_tools >/dev/null)
 
@@ -932,7 +932,7 @@ endif
 #  CFLAGS
 ##################
 EXTRA_CFLAGS += -DAGGREGATION_SUPPORT -DPIGGYBACK_SUPPORT -DWMM_SUPPORT  -DLINUX \
-               -Wall -Wstrict-prototypes -Wno-trigraphs -Wframe-larger-than=4096 -Werror
+               -Wall -Wstrict-prototypes -Wno-trigraphs -Wframe-larger-than=4096
 #-DDBG_DIAGNOSE -DDBG_RX_MCS -DDBG_TX_MCS
 
 EXTRA_CFLAGS += -DCONFIG_AP_SUPPORT -DSCAN_SUPPORT -DAP_SCAN_SUPPORT

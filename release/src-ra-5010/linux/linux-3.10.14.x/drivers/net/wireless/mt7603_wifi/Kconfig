@@ -410,7 +410,7 @@ menu "WiFi Operation Modes"
     endchoice
 
     if MT7603E_WIFI_MODE_AP || MT7603E_WIFI_MODE_BOTH
-        source "drivers/net/wireless/mtk/mt7603e/mt7603_wifi_ap/Kconfig"
+        source "drivers/net/wireless/mt7603_wifi_ap/Kconfig"
     endif
 
     #if MT7603E_WIFI_MODE_STA || MT7603E_WIFI_MODE_BOTH
