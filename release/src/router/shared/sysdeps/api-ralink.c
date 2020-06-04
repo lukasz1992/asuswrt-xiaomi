@@ -137,16 +137,17 @@ int wl_ioctl(const char *ifname, int cmd, struct iwreq *pwrq)
 
 unsigned int get_radio_status(char *ifname)
 {
-	struct iwreq wrq;
-	unsigned int data = 0;
+	struct ifreq ifr;
+	int sfd, ret;
 
-	wrq.u.data.length = sizeof(data);
-	wrq.u.data.pointer = (caddr_t) &data;
-	wrq.u.data.flags = ASUS_SUBCMD_RADIO_STATUS;
-	if (wl_ioctl(ifname, RTPRIV_IOCTL_ASUSCMD, &wrq) < 0)
-		printf("ioctl error\n");
-
-	return data;
+	if ((sfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) >= 0) {
+		strcpy(ifr.ifr_name, ifname);
+		ret = ioctl(sfd, SIOCGIFFLAGS, &ifr);
+		close(sfd);
+		if (ret == 0)
+			return !!(ifr.ifr_flags & IFF_UP);
+	}
+	return 0;
 }
 
 int get_radio(int unit, int subunit)

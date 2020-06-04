@@ -1531,7 +1531,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 #endif
-	else if (!strcmp(base, "ATE")) {
+	else if (/*!strcmp(base, "ATE")*/ 0) {
 		if ( argc == 2 || argc == 3 || argc == 4) {
 			asus_ate_command(argv[1], argv[2], argv[3]);
 		}

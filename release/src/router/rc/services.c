@@ -9016,7 +9016,9 @@ again:
 				stop_lan_wl();
 				stop_dnsmasq();
 				stop_networkmap();
+#if defined(RTCONFIG_WPS)
 				stop_wpsaide();
+#endif
 #if defined(RTCONFIG_QCA) || defined(RTCONFIG_RALINK)
 #ifdef RTCONFIG_CONCURRENTREPEATER
 				stop_wlcconnect();
@@ -9275,7 +9277,9 @@ again:
 				stop_lan_wl();
 				stop_dnsmasq();
 				stop_networkmap();
+#if defined(RTCONFIG_WPS)
 				stop_wpsaide();
+#endif
 #if defined(RTCONFIG_QCA) || defined(RTCONFIG_RALINK)
 #ifdef RTCONFIG_CONCURRENTREPEATER
 				stop_wlcconnect();

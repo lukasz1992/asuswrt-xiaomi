@@ -1526,7 +1526,7 @@ void init_syspara(void)
 	_dprintf("bootloader version: %s\n", nvram_safe_get("blver"));
 	_dprintf("firmware version: %s\n", nvram_safe_get("firmver"));
 
-#if !defined (RTCONFIG_WLMODULE_MT7615E_AP)
+#if 0
 	dst = txbf_para;
 	int count_0xff = 0;
 	if (FRead(dst, OFFSET_TXBF_PARA, 33) < 0)
@@ -1945,9 +1945,9 @@ set_wan_tag(char *interface) {
 #endif
 }
 
-#ifdef RA_SINGLE_SKU
 void reset_ra_sku(const char *location, const char *country, const char *reg_spec)
 {
+#ifdef RA_SINGLE_SKU
 	const char *try_list[] = { reg_spec, location, country, "CE", "FCC"};
 	int i;
 	for (i = 0; i < ARRAY_SIZE(try_list); i++) {
@@ -1962,8 +1962,8 @@ void reset_ra_sku(const char *location, const char *country, const char *reg_spe
 
 	cprintf("using %s SKU for %s\n", try_list[i], location);
 	gen_ra_sku(try_list[i]);
-}
 #endif	/* RA_SINGLE_SKU */
+}
 
 
 /*=============================================================================

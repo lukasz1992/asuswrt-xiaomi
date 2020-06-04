@@ -10358,10 +10358,12 @@ static void sysinit(void)
 	write_caldata_file();
 #endif
 
+#if defined(RTCONFIG_TCODE)
 #if !defined(CONFIG_BCMWL5)	//Broadcom set this in check_wl_territory_code()
 	void handle_location_code_for_wl(void);
 	handle_location_code_for_wl();
 #endif	/* CONFIG_BCMWL5 */
+#endif
 
 	init_gpio();   // for system dependent part
 #if defined(RTCONFIG_CONCURRENTREPEATER)
@@ -10727,7 +10729,7 @@ int init_main(int argc, char *argv[])
 			eval("rtk_hciattach","-n","-s","115200","/dev/ttyS1","rtk_h5","115200");
 #endif
 #endif
-			if (nvram_match("Ate_power_on_off_enable", "1")) {
+			if (/*nvram_match("Ate_power_on_off_enable", "1")*/ 0) {
 				Ate_on_off_led_start();
 				rc_check = nvram_get_int("Ate_rc_check");
 				boot_check = nvram_get_int("Ate_boot_check");
@@ -10896,7 +10898,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 			}
 #endif
 #ifdef RTCONFIG_RALINK
-			if(nvram_match("Ate_wan_to_lan", "1"))
+			if(/*nvram_match("Ate_wan_to_lan", "1")*/ 0)
 			{
 				printf("\n\n## ATE mode:set WAN to LAN... ##\n\n");
 				set_wantolan();
@@ -10925,9 +10927,9 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 			}
 #endif
 
-			if (nvram_match("Ate_power_on_off_enable", "3")|| //Show alert light
+			if (/*nvram_match("Ate_power_on_off_enable", "3")|| //Show alert light
 				nvram_match("Ate_power_on_off_enable", "4")||
-				nvram_match("Ate_power_on_off_enable", "5")  ) {
+				nvram_match("Ate_power_on_off_enable", "5")*/ 0 ) {
 				start_telnetd();
 				Ate_on_off_led_fail_loop();	// keep loop in this function
 			}
@@ -10942,7 +10944,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 
 			//For 66U normal boot & check device
 			if (((get_model()==MODEL_RTN66U) || (get_model()==MODEL_RTAC66U))
-			&& nvram_match("Ate_power_on_off_enable", "0")) {
+			&& nvram_match("Ate_power_on_off_enable", "0") && 0) {
 			    ate_dev_status();
 			    if (nvram_get_int("dev_fail_reboot")!=0) {
 				if (strchr(nvram_get("Ate_dev_status"), 'X')) {
@@ -11001,7 +11003,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 #endif	/* RTCONFIG_USB */
 
 
-			if (nvram_match("Ate_power_on_off_enable", "1")) {
+			if (/*nvram_match("Ate_power_on_off_enable", "1")*/ 0) {
 				dev_check = nvram_get_int("Ate_dev_check");
 				dev_fail = nvram_get_int("Ate_dev_fail");
 
@@ -11097,7 +11099,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 					eval("arpstorm");
 				}
 			}
-			else {
+			else if (0) {
 				ate_run_arpstrom();
 			}
 
@@ -11162,7 +11164,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 #endif
 
 #ifdef RTCONFIG_REALTEK
-			if (nvram_match("Ate_power_on_off_enable", "0")) {	/* avoid run in test to let all led off */
+			if (/*nvram_match("Ate_power_on_off_enable", "0")*/ 0) {	/* avoid run in test to let all led off */
 				if (sw_mode() == SW_MODE_REPEATER ||
 				    (sw_mode() == SW_MODE_AP && nvram_get_int("wlc_psta") == 1)) // Repeater and Media bridge mode
 					set_led(LED_OFF_ALL, LED_OFF_ALL);
@@ -11180,7 +11182,7 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 					set_led(wl0_stage, wl1_stage);
 				}
 			}
-			else if (nvram_match("Ate_power_on_off_enable", "2"))
+			else if (/*nvram_match("Ate_power_on_off_enable", "2")*/ 0)
 				setAllLedOn();
 #endif
 
