@@ -151,7 +151,7 @@ config DBDC_MODE
 	depends on CHIP_MT7615E
 	select MULTI_PROFILE_SUPPORT
 #	select DEFAULT_5G_PROFILE
-	default y
+	default n
 
 config MULTI_PROFILE_SUPPORT
     bool "Multi Profile Support"
@@ -338,7 +338,7 @@ config WIFI_EAP_FEATURE
 config ATE_SUPPORT
 	bool "ATE/QA Support"
 	depends on WIFI_DRIVER
-	default y	
+	default n
 
 #config MEMORY_OPTIMIZATION
 #	bool "Memory Optimization"
@@ -469,26 +469,18 @@ menu "WiFi Operation Modes"
 		default WIFI_MODE_AP
 
 		config WIFI_MODE_AP
-				tristate "AP"
 				select MT_AP_SUPPORT
 
 		config WIFI_MODE_STA
-				tristate "STA"
 				select MT_STA_SUPPORT
 
 		config WIFI_MODE_BOTH
-				tristate "APSTA"
 				select MT_AP_SUPPORT
 				select MT_STA_SUPPORT
     endchoice
 
-    if WIFI_MODE_AP || WIFI_MODE_BOTH
-		source "drivers/net/wireless/mtk/mt7615e/mt_wifi_ap/Kconfig"
-    endif
+    source "drivers/net/wireless/mt_wifi_ap/Kconfig"
 
-    if WIFI_MODE_STA || WIFI_MODE_BOTH
-		source "drivers/net/wireless/mtk/mt7615e/mt_wifi_sta/Kconfig"
-    endif
 endmenu	
 
 endif
@@ -516,7 +508,7 @@ if WIFI_MT_MAC
 
 	config CHIP_MT7615E
 		bool
-		default n
+		default y
 
 	config CHIP_MT7622
 		bool

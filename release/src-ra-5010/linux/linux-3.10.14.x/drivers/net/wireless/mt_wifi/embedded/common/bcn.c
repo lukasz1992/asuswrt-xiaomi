@@ -100,10 +100,10 @@ BOOLEAN BeaconTransmitRequired(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, BOOLEAN
 		return FALSE;
 #endif
 
-	if (!WDEV_WITH_BCN_ABILITY(wdev) || ATE_ON(pAd)) {
+	if (!WDEV_WITH_BCN_ABILITY(wdev)) {
 		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
-			("%s():Bcn Tx is blocked, wdev_type=%d, ATE_ON=%d\n", __func__,
-			wdev->wdev_type, ATE_ON(pAd)));
+			("%s():Bcn Tx is blocked, wdev_type=%d\n", __func__,
+			wdev->wdev_type));
 		return result;
 	}
 

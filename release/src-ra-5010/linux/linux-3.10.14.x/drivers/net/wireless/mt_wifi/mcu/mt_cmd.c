@@ -2186,9 +2186,11 @@ INT MtCmdSetTxRxPath(struct _RTMP_ADAPTER *pAd, MT_SWITCH_CHANNEL_CFG SwChCfg)
 	    For test mode, use rx path with bit wise.
 	    Need to modiy tx/rx path and set channel flow here.
 	 */
+#ifdef CONFIG_ATE
 	if (ATE_ON(pAd))
 		CmdChanSwitch.ucRxStreamNum = pSwChCfg->RxStream;
 	else
+#endif
 		CmdChanSwitch.ucRxStreamNum = RxPath;
 
 	CmdChanSwitch.ucDbdcIdx = pSwChCfg->BandIdx;
@@ -2522,12 +2524,12 @@ static INT32 MtCmdFillTxPowerInfo(RTMP_ADAPTER *pAd,
 
 	for (i = EFUSE_CONTENT_START; i <= EFUSE_CONTENT_END; i++) {
 		data = pAd->EEPROMImage[i];
-
+#ifdef CONFIG_ATE
 		if (ATE_ON(pAd)) {
 			if (i == Group)
 				data  = TxPower.Power;
 		}
-
+#endif
 		pAd->EEPROMImage[i] = data;
 		CmdTxPwrCtrl->aucBinContent[i - EFUSE_CONTENT_START] = data;
 	}

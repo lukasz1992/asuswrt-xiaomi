@@ -2286,7 +2286,7 @@ VOID	RTMPCommSiteSurveyData(
 		else if (wireless_mode == Ndis802_11OFDM5_N)
 			sprintf(msg+strlen(msg),"%-7s", "11a/n");
 		else if (wireless_mode == Ndis802_11OFDM5_AC)
-			sprintf(msg+strlen(msg),"%-7s", "11a/n/ac");
+			sprintf(msg+strlen(msg),"%-7s", "11a/n");
 		else if (wireless_mode == Ndis802_11OFDM24)
 			sprintf(msg+strlen(msg),"%-7s", "11b/g");
 		else if (wireless_mode == Ndis802_11OFDM24_N)
