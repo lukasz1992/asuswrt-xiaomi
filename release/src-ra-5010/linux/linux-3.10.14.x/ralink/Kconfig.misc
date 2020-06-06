@@ -27,6 +27,10 @@ config  MODEL_RTMIR3G
 	bool "RT-MIR3G"
 	default n
 
+config  MODEL_RTMIR4A
+	bool "RT-MIR4A"
+	default n
+
 config  SINGLE_SKU_IN_DRIVER
 	bool "Single sku in driver, not file"
 	default n

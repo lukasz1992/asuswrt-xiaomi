@@ -49,6 +49,7 @@ static const struct model_s model_list[] = {
 	{ "RT-N10P_V3", MODEL_RTN11P_B1},
 	{ "RP-AC87", MODEL_RPAC87},	
 	{ "RT-MIR3G", MODEL_RTMIR3G},
+	{ "RT-MIR4A", MODEL_RTMIR4A},
 	{ "RT-AC85U", MODEL_RTAC85U},
 	{ "RT-AC85P", MODEL_RTAC85P},
 	{ "RT-ACRH26", MODEL_RTACRH26},
@@ -194,6 +195,8 @@ int get_model(void)
 {
 #if defined(RTMIR3G)
 	return MODEL_RTMIR3G;
+#elif defined(RTMIR4A)
+	return MODEL_RTMIR4A;
 #endif
 	static int model = MODEL_UNKNOWN;
 	char *pid;
