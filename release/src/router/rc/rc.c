@@ -12,6 +12,20 @@
 #include <time.h>
 #endif
 
+#ifndef RTCONFIG_USB // fix compilation for models without USB
+int is_usb_modem_ready(int wan_type)
+{
+	return 0;
+}
+#endif
+
+#ifndef RTCONFIG_BWDPI // fix compilation for models without DPI
+int check_wrs_switch()
+{
+	return 0;
+}
+#endif
+
 #ifdef RTCONFIG_RALINK
 #include <ralink.h>
 #endif
