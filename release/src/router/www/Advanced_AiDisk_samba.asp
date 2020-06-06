@@ -49,11 +49,6 @@ function initial(){
 	show_menu();
 	document.aidiskForm.protocol.value = PROTOCOL;
 	
-	//complete SMBv1_FAQ link
-	document.getElementById('SMBv1_FAQ').target="_blank";
-	document.getElementById('SMBv1_FAQ').style.textDecoration="underline";
-	httpApi.faqURL("1037477", function(url){document.getElementById("SMBv1_FAQ").href=url;});
-
 	if(is_KR_sku){
 		document.getElementById("radio_anonymous_enable_tr").style.display = "none";
 	}
@@ -792,7 +787,6 @@ function switchUserType(flag){
 			<div style="margin:5px;"><img src="/images/New_ui/export/line_export.png"></div>
 
 			<div class="formfontdesc"><#Samba_desc#></div>
-			<div class="formfontdesc"><#ADSL_FW_note#>&nbsp;<#SMBv1_enable_hint#></div>
 
 			<table width="740px" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable">
 				<tr>

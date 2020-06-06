@@ -83,11 +83,6 @@ function initial(){
 		document.getElementById("aidisk_hyperlink").style.display = "none";
 	}
 
-	//complete SMBv1_FAQ link
-	document.getElementById('SMBv1_FAQ').target="_blank";
-	document.getElementById('SMBv1_FAQ').style.textDecoration="underline";
-	httpApi.faqURL("1037477", function(url){document.getElementById("SMBv1_FAQ").href=url;});
-
 	reset_NM_height();
 }
 
@@ -231,11 +226,6 @@ function switchUSBType(){
 					</select>
 				</div>
 			</form>
-		</td>
-	</tr>
-	<tr>
-		<td height="50" style="padding:10px 15px 0px 15px;">
-			<#ADSL_FW_note#><br><#SMBv1_enable_hint#>
 		</td>
 	</tr>
 	<tr>
