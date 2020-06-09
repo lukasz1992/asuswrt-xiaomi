@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
 #endif
 
 #if defined(RTCONFIG_SAMBA36X)
-	fprintf(fp, "min protocol = SMB2\n"); /* enable SMB1 & SMB2 simultaneously, rewrite when GUI is ready!! */
+	fprintf(fp, "max protocol = SMB2\n"); /* enable SMB1 & SMB2 simultaneously, rewrite when GUI is ready!! */
 	/* min protocol = SMB2, min protocol = LANMAN2, max protocol = SMB3 ... */
 	fprintf(fp, "smb encrypt = disabled\n");
 	fprintf(fp, "min receivefile size = 16384\n");
