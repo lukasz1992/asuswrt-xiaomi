@@ -484,7 +484,7 @@ obj-y += $(if $(RTCONFIG_ATED122),ated_1.2.2,ated)
 endif
 obj-y += $(if $(RTCONFIG_MII_MGR),mii_mgr)
 
-ifeq ($(or $(RTAC85P),$(RTN800HP),$(RTACRH26),$(RTMIR3G),$(RTMIR4A)),y)
+ifeq ($(or $(RTAC85P),$(RTN800HP),$(RTACRH26),$(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
 obj-y += switch
 endif
 

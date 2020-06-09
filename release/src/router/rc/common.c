@@ -1589,7 +1589,7 @@ void stop_if_misc(void)
 
 int mssid_mac_validate(const char *macaddr)
 {
-#if defined(RTMIR3G) || defined(RTMIR4A)
+#if defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
 	return 1;
 #endif
 	unsigned char mac_binary[6];

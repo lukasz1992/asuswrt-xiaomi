@@ -31,6 +31,14 @@ config  MODEL_RTMIR4A
 	bool "RT-MIR4A"
 	default n
 
+config  MODEL_RTRM2100
+	bool "RT-RM2100"
+	default n
+
+config  MODEL_RTR2100
+	bool "RT-R2100"
+	default n
+
 config  SINGLE_SKU_IN_DRIVER
 	bool "Single sku in driver, not file"
 	default n

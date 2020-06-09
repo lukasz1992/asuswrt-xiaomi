@@ -286,7 +286,7 @@ char* GetBW(int BW)
 		case BW_40:
 			return "40M";
 
-#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTMIR3G) || defined(RTMIR4A)
+#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U) || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
 		case BW_80:
 			return "80M";
 #endif
@@ -311,7 +311,7 @@ char* GetPhyMode(int Mode)
 		case MODE_HTGREENFIELD:
 			return "GREEN";
 
-#if defined(RTAC52U) || defined(RTAC51U)  || defined(RTN54U) || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200)  || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTMIR3G) || defined(RTMIR4A)
+#if defined(RTAC52U) || defined(RTAC51U)  || defined(RTN54U) || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200)  || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
 		case MODE_VHT:
 			return "VHT";
 #endif
@@ -548,7 +548,7 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	else
 		ret+=websWrite(wp, "OP Mode		: AP\n");
 
-#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U)  || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC85U) || defined(RTAC85P) || defined(MTK_REP) || defined(RTACRH26) || defined(RTMIR3G) || defined(RTMIR4A)
+#if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U)  || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC85U) || defined(RTAC85P) || defined(MTK_REP) || defined(RTACRH26)
 	if (unit == 1)
 	{
 		char *p = tmp;
@@ -612,6 +612,16 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 		ret+=websWrite(wp, "Phy Mode	: 11b/g/n\n");
 	else if (phy_mode==PHY_11AGN_MIXED)
 		ret+=websWrite(wp, "Phy Mode	: 11a/g/n\n");
+	else if (phy_mode==PHY_11N_5G)
+		ret+=websWrite(wp, "Phy Mode	: 11a/n\n");
+	else if (phy_mode==PHY_11VHT_N_ABG_MIXED)
+		ret+=websWrite(wp, "Phy Mode	: 11a/b/g/n/ac\n");
+	else if (phy_mode==PHY_11VHT_N_AG_MIXED)
+		ret+=websWrite(wp, "Phy Mode	: 11a/g/n/ac\n");
+	else if (phy_mode==PHY_11VHT_N_A_MIXED)
+		ret+=websWrite(wp, "Phy Mode	: 11a/n/ac\n");
+	else if (phy_mode==PHY_11VHT_N_MIXED)
+		ret+=websWrite(wp, "Phy Mode	: 11a/n/ac\n");
 
 	ret+=websWrite(wp, "Channel		: %d\n", channel);
 

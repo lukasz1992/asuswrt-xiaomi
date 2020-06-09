@@ -702,6 +702,8 @@ enum {
 
 #define MODEL_RTMIR3G MODEL_RTAC85U
 #define MODEL_RTMIR4A MODEL_RTAC85U
+#define MODEL_RTRM2100 MODEL_RTAC85U
+#define MODEL_RTR2100 MODEL_RTAC85U
 
 /* NOTE: Do not insert new entries in the middle of this enum,
  * always add them to the end! */
