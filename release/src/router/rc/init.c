@@ -3834,6 +3834,7 @@ int init_nvram(void)
 
 		nvram_set_int("btn_rst_gpio", 18|GPIO_ACTIVE_LOW);
 		nvram_set_int("led_usb_gpio", 10|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_usb3_gpio",10|GPIO_ACTIVE_LOW);
 		nvram_set_int("led_wan_gpio", 13|GPIO_ACTIVE_LOW);
 		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
 
