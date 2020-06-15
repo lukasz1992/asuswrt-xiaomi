@@ -1573,6 +1573,8 @@ void init_syspara(void)
 	_dprintf("bootloader version: %s\n", nvram_safe_get("blver"));
 	_dprintf("firmware version: %s\n", nvram_safe_get("firmver"));
 
+
+#if defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
 	// set country from location_code
 	char *loc_code[] = {"DB", "EU", "RU", "US", "CN", 0};
 	char **curr_loc_code = loc_code;
@@ -1581,8 +1583,13 @@ void init_syspara(void)
 			nvram_set("wl_country_code", *curr_loc_code);
 			nvram_set("wl0_country_code", *curr_loc_code);
 			nvram_set("wl1_country_code", *curr_loc_code);
+#ifdef RTCONFIG_RALINK_DFS
+			if (!strcmp(*curr_loc_code, "EU"))
+				nvram_set("wl1_IEEE80211H", "1");
+#endif
 			break;
 		}
+#endif
 
 #if 0
 	dst = txbf_para;
