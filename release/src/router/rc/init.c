@@ -3846,7 +3846,6 @@ int init_nvram(void)
 		add_rc_support("mssid");
 		add_rc_support("2.4G 5G noupdate usbX1");
 		add_rc_support("rawifi");
-		add_rc_support("switchctrl");
 		add_rc_support("11AC");
 		add_rc_support("loclist");
 		nvram_set("wl0_HT_TxStream", "2");
@@ -3877,7 +3876,6 @@ int init_nvram(void)
 		add_rc_support("mssid");
 		add_rc_support("2.4G 5G noupdate");
 		add_rc_support("rawifi");
-		add_rc_support("switchctrl");
 		add_rc_support("11AC");
 		add_rc_support("loclist");
 		nvram_set("wl0_HT_TxStream", "2");
@@ -3916,7 +3914,6 @@ int init_nvram(void)
 		add_rc_support("mssid");
 		add_rc_support("2.4G 5G noupdate");
 		add_rc_support("rawifi");
-		add_rc_support("switchctrl");
 		add_rc_support("11AC");
 		add_rc_support("loclist");
 		nvram_set("wl0_HT_TxStream", "2");

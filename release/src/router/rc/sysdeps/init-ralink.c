@@ -1749,6 +1749,11 @@ void reinit_hwnat(int unit)
 		return;
 #endif
 
+#if defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+	if (nvram_get_int("apps_analysis") + nvram_get_int("ctf_disable") + nvram_get_int("ctf_disable_force"))
+		act = 0;
+#endif
+
 	/* If QoS is enabled, disable hwnat. */
 	if (nvram_get_int("qos_enable") == 1)
 		act = 0;
