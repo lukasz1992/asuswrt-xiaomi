@@ -708,6 +708,8 @@ else ifeq ($(BUILD_NAME),BLUECAVE)
 	cd $(INSTALLDIR)/www/require && mv menuTrees/menuTree_BLUECAVE.js modules/menuTree.js
 else ifeq ($(BUILD_NAME),$(filter $(BUILD_NAME), MAP-AC1300 MAP-AC2200 VZW-AC1300 MAP-AC1750))
 	cd $(INSTALLDIR)/www/require && mv menuTrees/menuTree_LYRA.js modules/menuTree.js
+else ifeq ($(BUILD_NAME),$(filter $(BUILD_NAME), RT-MIR3G RT-MIR4A RT-RM2100 RT-R2100))
+	cd $(INSTALLDIR)/www/require && mv menuTrees/menuTree_Xiaomi.js modules/menuTree.js
 else ifeq ($(RTCONFIG_BWDPI),y)
 ifeq ($(findstring $(BUILD_NAME),$(MODELS_HAVE_TRAFFIC_ANALYZER)),)
 	cd $(INSTALLDIR)/www/require && mv menuTrees/menuTree_bwdpi_no_traffic_analyzer.js modules/menuTree.js
