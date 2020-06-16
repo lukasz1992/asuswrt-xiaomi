@@ -282,23 +282,6 @@ function initial(){
 		interval_update_AiMesh_fw_status = setInterval(update_AiMesh_fw, 5000);
 	}
 
-	if(bwdpi_support){
-		if(dpi_engine_status.DpiEngine == 1)
-			document.getElementById("sig_ver_field").style.display="";
-		else
-			document.getElementById("sig_ver_field").style.display="none";
-			
-		if(sig_ver_ori == "")
-			document.getElementById("sig_ver_word").innerHTML = "1.008";
-		else
-			document.getElementById("sig_ver_word").innerHTML = sig_ver_ori;
-
-		if(sig_update_t == "" || sig_update_t == "0")
-			document.getElementById("sig_update_date").innerHTML = "";
-		else
-			document.getElementById("sig_update_date").innerHTML = "&nbsp;&nbsp;"+transferTimeFormat(sig_update_t*1000);
-	}
-
 	if(cfg_sync_support){
 		if(cfg_upgrade != "" && cfg_upgrade != "10"){   //Show firmware is still downloading or fw upgrade loading bar if doing webs_upgrade.sh 
 			startDownloading();

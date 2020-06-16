@@ -202,14 +202,6 @@ function initial(){
 		$("#nat_desc").hide();
 	}
 
-	if(bwdpi_support){
-		document.getElementById('guest_image').style.background = "url(images/New_ui/TimeLimits.png)";
-		document.getElementById('content_title').innerHTML = "<#AiProtection_title#> - <#Time_Scheduling#>";
-		document.getElementById('desc_title').innerHTML = "<#ParentalCtrl_Desc_TS#>";
-		document.getElementById('web_title').innerHTML = "<#Web_Title#> - <#Time_Scheduling#>";
-		document.getElementById('PC_enable').innerHTML = "<#ParentalCtrl_Enable_TS#>";
-		document.getElementById('switch_menu').style.display = "";
-	}
 	document.getElementById('disable_NAT').href = "Advanced_SwitchCtrl_Content.asp?af=ctf_disable_force";	//this id is include in string : #ParentalCtrl_disable_NAT#
 
 	show_footer();
@@ -219,7 +211,7 @@ function initial(){
 			document.getElementById("guest_image").parentNode.style.display = "none";
 	}
 
-	if(!yadns_support && !bwdpi_support){
+	if(!yadns_support){
 		document.getElementById('FormTitle').style.webkitBorderRadius = "3px";
 		document.getElementById('FormTitle').style.MozBorderRadius = "3px";
 		document.getElementById('FormTitle').style.BorderRadius = "3px";	
