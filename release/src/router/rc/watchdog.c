@@ -7030,10 +7030,15 @@ wdp:
 	auto_firmware_check();
 #endif
 #ifdef RTCONFIG_BWDPI
+#if !defnied(RTMIR3G) && !defined(RTMIR4A) && !defined(RTRM2100) && !defined(RTR2100)
 	auto_sig_check();		// libbwdpi.so
 	web_history_save();		// libbwdpi.so
 	AiProtectionMonitor_mail_log();	// libbwdpi.so
 	tm_eula_check();		// libbwdpi.so
+#else
+	web_history_save();		// libbwdpi.so
+	tm_eula_check();		// libbwdpi.so
+#endif
 #endif
 
 #ifdef RTCONFIG_NOTIFICATION_CENTER

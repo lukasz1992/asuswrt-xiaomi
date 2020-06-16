@@ -454,6 +454,43 @@ ifneq ($(RTCONFIG_ADBLOCK),y)
 	rm -rf $(INSTALLDIR)/www/AiProtection_AdBlock.asp
 endif
 
+ifeq ($(or $(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
+	rm -rf $(INSTALLDIR)/www/AiProtection_HomeSecurity.asp
+	rm -rf $(INSTALLDIR)/www/AiProtection_Group.asp
+	rm -rf $(INSTALLDIR)/www/AiProtection_HomeProtection.asp
+	rm -rf $(INSTALLDIR)/www/AiProtection_WebProtector.asp
+	rm -rf $(INSTALLDIR)/www/AiProtection_InfectedDevicePreventBlock.asp
+	rm -rf $(INSTALLDIR)/www/AiProtection_IntrusionPreventionSystem.asp
+	rm -rf $(INSTALLDIR)/www/AiProtection_MaliciousSitesBlocking.asp
+	rm -rf $(INSTALLDIR)/www/images/New_ui/infected.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/IPS.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/mals.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/recount.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/recount_hover.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/add.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/add_hover.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/disable.svg
+	rm -rf $(INSTALLDIR)/www/images/save.svg
+	rm -rf $(INSTALLDIR)/www/images/save_hover.svg
+	rm -rf $(INSTALLDIR)/www/images/save_active.svg
+	rm -rf $(INSTALLDIR)/www/images/delete_active.svg
+	rm -rf $(INSTALLDIR)/www/images/edit.svg
+	rm -rf $(INSTALLDIR)/www/images/edit_hover.svg
+	rm -rf $(INSTALLDIR)/www/images/edit_active.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/AiProtection_01.png
+	rm -rf $(INSTALLDIR)/www/images/New_ui/AiProtection_02.png
+	rm -rf $(INSTALLDIR)/www/images/New_ui/AiProtection_03.png
+	rm -rf $(INSTALLDIR)/www/images/New_ui/Home_Protection_Scenario.png
+	rm -rf $(INSTALLDIR)/www/getAiProtectionEvent.asp
+	rm -rf $(INSTALLDIR)/www/getIPSChart.asp
+	rm -rf $(INSTALLDIR)/www/getIPSDetailEvent.asp
+	rm -rf $(INSTALLDIR)/www/getIPSEvent.asp
+	rm -rf $(INSTALLDIR)/www/getNonIPSChart.asp
+	rm -rf $(INSTALLDIR)/www/images/New_ui/HomeProtection.png
+	rm -rf $(INSTALLDIR)/www/images/New_ui/Web_Apps_Restriction.png
+	rm -rf $(INSTALLDIR)/www/images/New_ui/tm_logo_power.png
+endif
+
 ifneq ($(RTCONFIG_ROG),y)
 	rm -rf $(INSTALLDIR)/www/images/ROG_Logo.png
 	rm -rf $(INSTALLDIR)/www/rog.css
@@ -671,6 +708,8 @@ else ifeq ($(BUILD_NAME),BLUECAVE)
 	cd $(INSTALLDIR)/www/require && mv menuTrees/menuTree_BLUECAVE.js modules/menuTree.js
 else ifeq ($(BUILD_NAME),$(filter $(BUILD_NAME), MAP-AC1300 MAP-AC2200 VZW-AC1300 MAP-AC1750))
 	cd $(INSTALLDIR)/www/require && mv menuTrees/menuTree_LYRA.js modules/menuTree.js
+else ifeq ($(BUILD_NAME),$(filter $(BUILD_NAME), RT-MIR3G RT-MIR4A RT-RM2100 RT-R2100))
+	cd $(INSTALLDIR)/www/require && mv menuTrees/menuTree_Xiaomi.js modules/menuTree.js
 else ifeq ($(RTCONFIG_BWDPI),y)
 ifeq ($(findstring $(BUILD_NAME),$(MODELS_HAVE_TRAFFIC_ANALYZER)),)
 	cd $(INSTALLDIR)/www/require && mv menuTrees/menuTree_bwdpi_no_traffic_analyzer.js modules/menuTree.js

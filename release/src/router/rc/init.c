@@ -9113,7 +9113,9 @@ int init_nvram(void)
 	}
 
 	// wrs - white and black list
+#if !defnied(RTMIR3G) && !defined(RTMIR4A) && !defined(RTRM2100) && !defined(RTR2100)
 	add_rc_support("wrs_wbl");
+#endif
 #endif
 
 #ifdef RTCONFIG_HTTPS
