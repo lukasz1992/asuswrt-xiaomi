@@ -3849,6 +3849,7 @@ int init_nvram(void)
 		add_rc_support("rawifi");
 		add_rc_support("11AC");
 		add_rc_support("loclist");
+		add_rc_support("mfp");
 		nvram_set("wl0_HT_TxStream", "2");
 		nvram_set("wl0_HT_RxStream", "2");
 		nvram_set("wl1_HT_TxStream", "2");
@@ -3879,6 +3880,7 @@ int init_nvram(void)
 		add_rc_support("rawifi");
 		add_rc_support("11AC");
 		add_rc_support("loclist");
+		add_rc_support("mfp");
 		nvram_set("wl0_HT_TxStream", "2");
 		nvram_set("wl0_HT_RxStream", "2");
 		nvram_set("wl1_HT_TxStream", "2");
@@ -3917,6 +3919,7 @@ int init_nvram(void)
 		add_rc_support("rawifi");
 		add_rc_support("11AC");
 		add_rc_support("loclist");
+		add_rc_support("mfp");
 		nvram_set("wl0_HT_TxStream", "2");
 		nvram_set("wl0_HT_RxStream", "2");
 		nvram_set("wl1_HT_TxStream", "4");
