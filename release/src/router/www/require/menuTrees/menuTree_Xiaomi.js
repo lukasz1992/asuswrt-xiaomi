@@ -300,16 +300,6 @@ define(function(){
 					retArray.push("menu_GuestNetwork");
 				}
 
-				if(!bwdpi_support){
-					retArray.push("menu_AiProtection");
-					retArray.push("menu_TrafficAnalyzer");
-					retArray.push("menu_BandwidthMonitor");
-				}
-				else{
-					retArray.push("menu_ParentalControl");
-					retArray.push("menu_QoS");
-				}
-
 				if(!usb_support){
 					retArray.push("menu_APP");
 				}
@@ -691,13 +681,6 @@ define(function(){
 			}
 		}
 	}
-
-	if(odmpid == "RT-N66U_C1"){
-		menuTree.list.splice(7,2);
-	}
-	else{
-		menuTree.list.splice(5,2);
-	}
-
+	menuTree.list.splice(4,1);
 	return menuTree;
 });
