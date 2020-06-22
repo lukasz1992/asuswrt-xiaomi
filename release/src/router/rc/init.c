@@ -3868,7 +3868,6 @@ int init_nvram(void)
 		set_basic_ifname_vars("eth3", "vlan1", wl_ifaces, NULL, "vlan1", NULL, "vlan3", NULL, 0);
 
 		nvram_set_int("btn_rst_gpio", 18|GPIO_ACTIVE_LOW);
-		nvram_set_int("led_wan_gpio", 10|GPIO_ACTIVE_LOW);
 		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
 
 		eval("rtkswitch", "11");
@@ -3903,12 +3902,13 @@ int init_nvram(void)
 		set_basic_ifname_vars("eth3", "vlan1", wl_ifaces, NULL, "vlan1", NULL, "vlan3", NULL, 0);
 
 		nvram_set_int("btn_rst_gpio", 18|GPIO_ACTIVE_LOW);
-#if defined(RTRT2100)
+#if defined(RTRM2100)
+		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
 		nvram_set_int("led_wan_gpio", 12|GPIO_ACTIVE_LOW);
 #else
-		nvram_set_int("led_wan_gpio", 14|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_pwr_gpio", 12|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_wan_gpio",  8|GPIO_ACTIVE_LOW);
 #endif
-		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
 
 		eval("rtkswitch", "11");
 
