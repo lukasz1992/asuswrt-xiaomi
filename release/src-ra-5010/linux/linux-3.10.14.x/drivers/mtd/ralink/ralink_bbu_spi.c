@@ -173,8 +173,8 @@ static struct mtd_partition rt2880_partitions[] = {
 #else
         }, {
                 name:           "jffs2", /* mtdblock5 */
-                size:           0x2f0000,
-                offset:         0xd00000,
+                size:           0x200000,
+                offset:         0xdf0000,
 #endif
         } ,{
                 name:           "ALL", /* mtdblock6 */
