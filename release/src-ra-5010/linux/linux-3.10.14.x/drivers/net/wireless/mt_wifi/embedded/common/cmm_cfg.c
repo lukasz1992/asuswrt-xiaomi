@@ -962,6 +962,28 @@ INT RTMP_COM_IoctlHandle(
 			*(ULONG *)pData = wdev->channel;
 
 		break;
+#ifdef SNIFFER_SUPPORT
+
+	case CMD_RTPRIV_IOCTL_SNIFF_INIT:
+		Monitor_Init(pAd, pData);
+		break;
+
+	case CMD_RTPRIV_IOCTL_SNIFF_OPEN:
+		if (Monitor_Open(pAd, pData) != TRUE)
+			return NDIS_STATUS_FAILURE;
+
+		break;
+
+	case CMD_RTPRIV_IOCTL_SNIFF_CLOSE:
+		if (Monitor_Close(pAd, pData) != TRUE)
+			return NDIS_STATUS_FAILURE;
+
+		break;
+
+	case CMD_RTPRIV_IOCTL_SNIFF_REMOVE:
+		Monitor_Remove(pAd);
+		break;
+#endif /*SNIFFER_SUPPORT*/
 
 	case CMD_RTPRIV_IOCTL_BEACON_UPDATE:
 		/* update all beacon contents */
@@ -1316,7 +1338,7 @@ INT RTMP_COM_IoctlHandle(
 					RTMPMaxRssi(pAd, pMacEntry->RssiSample.AvgRssi[0],
 								pMacEntry->RssiSample.AvgRssi[1],
 								pMacEntry->RssiSample.AvgRssi[2]
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 								, pMacEntry->RssiSample.AvgRssi[3]
 #endif
 								);
@@ -1328,7 +1350,7 @@ INT RTMP_COM_IoctlHandle(
 		pStats->noise = RTMPMaxRssi(pAd, pAd->ApCfg.RssiSample.AvgRssi[0],
 									pAd->ApCfg.RssiSample.AvgRssi[1],
 									pAd->ApCfg.RssiSample.AvgRssi[2]
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 									, pMacEntry->RssiSample.AvgRssi[3]
 #endif
 									) -
@@ -1617,6 +1639,58 @@ INT Set_SiteSurvey_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Set_SiteSurvey_Proc\n"));
 	return TRUE;
 }
+
+#ifdef AP_SCAN_SUPPORT
+/*
+    ==========================================================================
+    Description:
+	Issue a Clear site survey command to driver
+	Arguments:
+	    pAdapter                    Pointer to our adapter
+	    wrq                         Pointer to the ioctl argument
+
+    Return Value:
+	None
+
+    Note:
+	Usage:
+	       1.) iwpriv ra0 set ClearSiteSurvey=1
+    ==========================================================================
+*/
+INT Set_ClearSiteSurvey_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	INT32 flag;
+
+	flag = simple_strtol(arg, 0, 10);
+
+	if (strlen(arg) > 1 || flag != 1) {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("Wrong argument type/Value\n"));
+		return FALSE;
+	}
+
+	/* check if the interface is down */
+	if (!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_INTERRUPT_REGISTER_TO_OS)) {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("INFO::Network is down!\n"));
+		return -ENETDOWN;
+	}
+
+	/* Still scanning, Don't clear the scan Table */
+	if (RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_BSS_SCAN_IN_PROGRESS)) {
+		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("%s: Scan in Progress!\n", __func__));
+		return -EINVAL;
+	}
+
+	/* Don't clear the scan table if we are doing partial scan */
+	if ((pAd->ScanCtrl.PartialScan.bScanning == TRUE && pAd->ScanCtrl.PartialScan.LastScanChannel == 0) ||
+		pAd->ScanCtrl.PartialScan.bScanning == FALSE) {
+			BssTableInit(&pAd->ScanTab);
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Clear the Scan table\n"));
+	}
+
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Set_ClearSiteSurvey_Proc\n"));
+	return TRUE;
+}
+#endif /* AP_SCAN_SUPPORT */
 
 
 INT	Set_Antenna_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)

@@ -40,6 +40,9 @@ VOID CliWdsEntyFree(
 	IN PRTMP_ADAPTER pAd,
 	IN PCLIWDS_PROXY_ENTRY pCliWdsEntry);
 
+VOID CliWdsEnryFreeAid(
+	 IN PRTMP_ADAPTER pAd,
+	 IN SHORT Aid);
 
 UCHAR *CliWds_ProxyLookup(RTMP_ADAPTER *pAd, UCHAR *pMac);
 

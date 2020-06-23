@@ -433,16 +433,30 @@ void ApCliCertEDCAAdjust(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, PEDCA_PARM pE
 	UCHAR       Cwmin[WMM_NUM_OF_AC] = {3, 3, 3, 3};
 	UCHAR       Cwmax[WMM_NUM_OF_AC] = {4, 4, 4, 4};
 
-	if ((memcmp(pEdcaParm->Cwmin, Cwmin, 4) == 0) &&
-		(memcmp(pEdcaParm->Cwmax, Cwmax, 4) == 0)) {
-		/* ignore 5.2.32*/
-		return;
-	}
-	/*
-	 *	fix 5.2.29 step 7 fail
-	 */
-	if ((pAd->bApCliCertTest == TRUE) &&
-			(wdev->wdev_type == WDEV_TYPE_APCLI)) {
+	if (pAd->bApCliCertTest && (wdev->wdev_type == WDEV_TYPE_APCLI)) {
+		PAPCLI_STRUCT pApCliEntry = NULL;
+		/* SSID for TGn TC 5.2.7 */
+		UCHAR Ssid1[] = "GLKDAJ98~@";
+		/* SSID for TGn TC 5.2.13 */
+		UCHAR Ssid2[] = "WPA2";
+		UCHAR Ssid1Equal = 0;
+		UCHAR Ssid2Equal = 0;
+
+		pApCliEntry = (PAPCLI_STRUCT)wdev->func_dev;
+		if (pApCliEntry) {
+			Ssid1Equal = SSID_EQUAL(pApCliEntry->CfgSsid, pApCliEntry->CfgSsidLen,
+						Ssid1, strlen(Ssid1));
+			Ssid2Equal = SSID_EQUAL(pApCliEntry->CfgSsid, pApCliEntry->CfgSsidLen,
+						Ssid2, strlen(Ssid2));
+		}
+		/* To tame down the BE aggresiveness increasing the Cwmin */
+		if (Ssid1Equal || Ssid2Equal) {
+			if (pEdcaParm->Cwmin[0] == 4)
+				pEdcaParm->Cwmin[0]++;
+			return;
+		}
+
+		/* fix 5.2.29 step 7 fail */
 		if ((pEdcaParm->Cwmin[2] == 3) &&
 				(pEdcaParm->Cwmax[2] == 4)) {
 			pEdcaParm->Cwmin[2]++;
@@ -451,8 +465,71 @@ void ApCliCertEDCAAdjust(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, PEDCA_PARM pE
 				pEdcaParm->Txop[2] = pEdcaParm->Txop[2] - 9;
 		}
 	}
+
+	if ((memcmp(pEdcaParm->Cwmin, Cwmin, 4) == 0) &&
+		(memcmp(pEdcaParm->Cwmax, Cwmax, 4) == 0)) {
+		/* ignore 5.2.32*/
+		return;
+	}
 }
 #endif
+
+
+#ifdef CONVERTER_MODE_SWITCH_SUPPORT
+void V10ConverterModeStartStop(RTMP_ADAPTER *pAd, BOOLEAN BeaconStart)
+{
+
+	UCHAR idx = 0;
+	UCHAR adIdx = 0;
+	RTMP_ADAPTER *pAdapter = pAd;
+
+#ifdef MULTI_INF_SUPPORT
+	for (adIdx = 0; adIdx < MAX_NUM_OF_INF; adIdx++)
+#endif /* MULTI_INF_SUPPORT */
+	{
+#ifdef MULTI_INF_SUPPORT
+		pAdapter = (RTMP_ADAPTER *)adapt_list[adIdx];
+#endif /* MULTI_INF_SUPPORT */
+			if (pAdapter) {
+				if (BeaconStart) {
+#ifdef MULTI_INF_SUPPORT
+					MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE,
+					("%s() : Resume Beaconing, Interface = %u\n", __func__, multi_inf_get_idx(pAdapter)));
+#else
+					MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE, ("%s() : Resume Beaconing\n", __func__));
+#endif /* MULTI_INF_SUPPORT */
+					for (idx = 0; idx < pAdapter->ApCfg.BssidNum; idx++) {
+						BSS_STRUCT *pMbss = &pAdapter->ApCfg.MBSSID[idx];
+						pMbss->APStartPseduState = AP_STATE_ALWAYS_START_AP_DEFAULT;
+						if (WDEV_WITH_BCN_ABILITY(&pMbss->wdev)) {
+							pMbss->wdev.bAllowBeaconing = TRUE;
+							if (wdev_do_linkup(&pMbss->wdev, NULL) != TRUE)
+								MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+									 ("%s: link up fail!!\n", __func__));
+						}
+					}
+				} else {
+#ifdef MULTI_INF_SUPPORT
+						MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE,
+						("%s() : Pause Beaconing, Interface = %u\n", __func__, multi_inf_get_idx(pAdapter)));
+#else
+						MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE, ("%s() : Pause Beaconing\n", __func__));
+#endif /* MULTI_INF_SUPPORT */
+						for (idx = 0; idx < pAdapter->ApCfg.BssidNum; idx++) {
+							BSS_STRUCT *pMbss = &pAdapter->ApCfg.MBSSID[idx];
+							if (WDEV_WITH_BCN_ABILITY(&pMbss->wdev)) {
+								pMbss->wdev.bAllowBeaconing = FALSE;
+								if (wdev_do_linkdown(&pMbss->wdev) != TRUE)
+									MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+									 ("%s: link down fail!!\n", __func__));
+							}
+							pMbss->APStartPseduState = AP_STATE_START_AFTER_APCLI_CONNECTION;
+						}
+				}
+			}
+	}
+}
+#endif /*CONVERTER_MODE_SWITCH_SUPPORT*/
 
 
 
@@ -592,44 +669,15 @@ BOOLEAN ApCliLinkUp(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 		}
 
 		wdev = &pApCliEntry->wdev;
-
 #ifdef CONVERTER_MODE_SWITCH_SUPPORT
-
 		if (pApCliEntry->ApCliMode == APCLI_MODE_START_AP_AFTER_APCLI_CONNECTION) {
-			UCHAR idx = 0;
-			UCHAR adIdx = 0;
-			RTMP_ADAPTER *pAdapter = pAd;
-
-#ifdef MULTI_INF_SUPPORT
-			for (adIdx = 0; adIdx < MAX_NUM_OF_INF; adIdx++)
-#endif /* MULTI_INF_SUPPORT */
-			{
-#ifdef MULTI_INF_SUPPORT
-				pAdapter = (RTMP_ADAPTER *)adapt_list[adIdx];
-#endif /* MULTI_INF_SUPPORT */
-
-#ifdef MULTI_INF_SUPPORT
-				MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE,
-					 ("%s() : Resume Beaconing, Interface = %u\n", __func__, multi_inf_get_idx(pAdapter)));
+#ifdef WAPP_SUPPORT
+		MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE, ("%s() :APCLI Linkup Event send to wapp\n", __func__));
+		wapp_send_apcli_association_change_vendor10(WAPP_APCLI_ASSOCIATED, pAd, pApCliEntry);
 #else
-				MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE, ("%s() : Resume Beaconing\n", __func__));
-#endif /* MULTI_INF_SUPPORT */
-
-				if (pAdapter) {
-					for (idx = 0; idx < pAdapter->ApCfg.BssidNum; idx++) {
-						BSS_STRUCT *pMbss = &pAdapter->ApCfg.MBSSID[idx];
-
-						pMbss->APStartPseduState = AP_STATE_ALWAYS_START_AP_DEFAULT;
-						if (WDEV_WITH_BCN_ABILITY(&pMbss->wdev)) {
-							pMbss->wdev.bAllowBeaconing = TRUE;
-							if (wdev_do_linkup(&pMbss->wdev, NULL) != TRUE)
-								MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
-									 ("%s: link up fail!!\n", __func__));
-						}
-					}
-				}
-			}
-		}
+		V10ConverterModeStartStop(pAd, TRUE);
+#endif
+	}
 #endif /* CONVERTER_MODE_SWITCH_SUPPORT */
 
 #if defined(CONFIG_WIFI_PKT_FWD) || defined(CONFIG_WIFI_PKT_FWD_MODULE)
@@ -1260,6 +1308,13 @@ during 3x3 throughput check,so we limit the AMSDU len to 3839*
 	}
 #endif /*WAPP_SUPPORT*/
 
+#ifdef MTFWD
+#ifdef MAC_REPEATER_SUPPORT
+	if (CliIdx == 0xFF)
+#endif /* MAC_REPEATER_SUPPORT */
+	RTMP_OS_NETDEV_CARRIER_ON(wdev->if_dev);
+#endif
+
 	return result;
 }
 
@@ -1347,43 +1402,14 @@ VOID ApCliLinkDown(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 
 	pApCliEntry = &pAd->ApCfg.ApCliTab[ifIndex];
 	wdev = &pApCliEntry->wdev;
-
 #ifdef CONVERTER_MODE_SWITCH_SUPPORT
-
 	if (pApCliEntry->ApCliMode == APCLI_MODE_START_AP_AFTER_APCLI_CONNECTION) {
-		UCHAR idx = 0;
-		UCHAR adIdx = 0;
-		RTMP_ADAPTER *pAdapter = pAd;
-
-#ifdef MULTI_INF_SUPPORT
-		for (adIdx = 0; adIdx < MAX_NUM_OF_INF; adIdx++)
-#endif /* MULTI_INF_SUPPORT */
-		{
-#ifdef MULTI_INF_SUPPORT
-			pAdapter = (RTMP_ADAPTER *)adapt_list[adIdx];
-#endif /* MULTI_INF_SUPPORT */
-
-#ifdef MULTI_INF_SUPPORT
-			MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE,
-				 ("%s() : Pause Beaconing, Interface = %u\n", __func__, multi_inf_get_idx(pAdapter)));
+#ifdef WAPP_SUPPORT
+			MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE, ("%s() :APCLI LinkDown Event send to wapp\n", __func__));
+			wapp_send_apcli_association_change_vendor10(WAPP_APCLI_DISASSOCIATED, pAd, pApCliEntry);
 #else
-			MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE, ("%s() : Pause Beaconing\n", __func__));
-#endif /* MULTI_INF_SUPPORT */
-
-			if (pAdapter) {
-				for (idx = 0; idx < pAdapter->ApCfg.BssidNum; idx++) {
-					BSS_STRUCT *pMbss = &pAdapter->ApCfg.MBSSID[idx];
-
-					if (WDEV_WITH_BCN_ABILITY(&pMbss->wdev)) {
-						pMbss->wdev.bAllowBeaconing = FALSE;
-						if (wdev_do_linkdown(&pMbss->wdev) != TRUE)
-							MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
-									 ("%s: link down fail!!\n", __func__));
-					}
-					pMbss->APStartPseduState = AP_STATE_START_AFTER_APCLI_CONNECTION;
-				}
-			}
-		}
+			V10ConverterModeStartStop(pAd, FALSE);
+#endif
 	}
 #endif /* CONVERTER_MODE_SWITCH_SUPPORT */
 
@@ -1393,6 +1419,13 @@ VOID ApCliLinkDown(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 #endif /* MAC_REPEATER_SUPPORT */
 	   )
 		return;
+
+#ifdef MTFWD
+#ifdef MAC_REPEATER_SUPPORT
+	if (CliIdx == 0xFF)
+#endif /* MAC_REPEATER_SUPPORT */
+	RTMP_OS_NETDEV_CARRIER_OFF(wdev->if_dev);
+#endif
 
 #if defined(CONFIG_WIFI_PKT_FWD) || defined(CONFIG_WIFI_PKT_FWD_MODULE)
 #ifdef MAC_REPEATER_SUPPORT
@@ -1514,10 +1547,6 @@ VOID ApCliLinkDown(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 #ifdef DOT11_VHT_AC
 		wlan_operate_set_vht_bw(&pApCliEntry->wdev, wlan_config_get_vht_bw(&pApCliEntry->wdev));
 #endif
-#if defined(CONFIG_MAP_SUPPORT) && defined(WAPP_SUPPORT)
-		wapp_send_apcli_association_change(WAPP_APCLI_DISASSOCIATED, pAd, pApCliEntry);
-#endif /*WAPP_SUPPORT*/
-
 		ApCliLinkDownComplete(pApCliEntry);
 	}
 }
@@ -1768,9 +1797,22 @@ VOID ApCliIfMonitor(RTMP_ADAPTER *pAd)
 #ifdef RACTRL_FW_OFFLOAD_SUPPORT
 
 					if ((cap->fgRateAdaptFWOffload == TRUE) &&
-						(pMacEntry->TxStatRspCnt > 1) && (pMacEntry->TotalTxSuccessCnt))
+						(pMacEntry->TxStatRspCnt > 1) && (pMacEntry->TotalTxSuccessCnt)) {
+#ifdef BEACON_MISS_ON_PRIMARY_CHANNEL
+			/*When Root AP changes the primary channel within the same group of bandwidth, APCLI not disconnects from Root AP.
+			This happens as the NULL packet transmits in the configured bandwidth only, the transmitted NULL packet is succeeding
+			which update TX Success count.
+			Example, BW is configured for 80 MHz, Root AP switches primary channel from 36 to 40,
+			NULL packet transmits will happen in 80 MHz only*/
+						if ((pApCliEntry->wdev.channel > 14) && (pMacEntry->MaxHTPhyMode.field.BW > 0) &&
+							(RTMP_TIME_AFTER(pAd->Mlme.Now32, (pApCliEntry->ApCliRcvBeaconTime_MlmeEnqueueForRecv + (6 * OS_HZ))))) {
+
+								bBeacon_miss = TRUE;
+								bForceBrocken = TRUE;
+						} else
+#endif
 						pApCliEntry->ApCliRcvBeaconTime = pAd->Mlme.Now32;
-					else
+					} else
 #endif /* RACTRL_FW_OFFLOAD_SUPPORT */
 #endif /* MT7615 */
 					{
@@ -2327,6 +2369,43 @@ MAC_TABLE_ENTRY *ApCliTableLookUpByWcid(RTMP_ADAPTER *pAd, UCHAR wcid, UCHAR *pA
 }
 
 
+VOID APCLIerr_Action(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk, UCHAR Idx)
+{
+	HEADER_802_11         DisassocHdr;
+	PUCHAR                pOutBuffer = NULL;
+	ULONG                 FrameLen = 0;
+	NDIS_STATUS           NStatus;
+	USHORT                Reason = REASON_CLS3ERR;
+	MAC_TABLE_ENTRY       *pEntry = NULL;
+
+	if (VALID_UCAST_ENTRY_WCID(pAd, pRxBlk->wcid))
+		pEntry = &(pAd->MacTab.Content[pRxBlk->wcid]);
+
+
+	if (pEntry) {
+		mac_entry_delete(pAd, pEntry);
+	}
+
+	/* 2. send out a DISASSOC request frame */
+	NStatus = MlmeAllocateMemory(pAd, &pOutBuffer);
+
+	if (NStatus != NDIS_STATUS_SUCCESS)
+		return;
+
+	MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+			 ("APCLI ASSOC - Class 3 Error, Send DISASSOC frame to %02x:%02x:%02x:%02x:%02x:%02x\n",
+			  PRINT_MAC(pRxBlk->Addr2)));
+
+	ApCliMgtMacHeaderInit(pAd, &DisassocHdr, SUBTYPE_DISASSOC, 0, pRxBlk->Addr2, pRxBlk->Addr2, Idx);
+
+	MakeOutgoingFrame(pOutBuffer,            &FrameLen,
+					  sizeof(HEADER_802_11), &DisassocHdr,
+					  2,                     &Reason,
+					  END_OF_ARGS);
+	MiniportMMRequest(pAd, 0, pOutBuffer, FrameLen);
+	MlmeFreeMemory(pOutBuffer);
+
+}
 /*
 	==========================================================================
 	Description:
@@ -3378,7 +3457,19 @@ VOID ApCliPeerCsaAction(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, BCN_IE_LIST *i
 		MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_TRACE,
 				 ("[APCLI]  Following root AP to switch channel to ch%u\n",
 				  ie_list->NewChannel));
+#if defined(WAPP_SUPPORT) && defined(CONFIG_MAP_SUPPORT)
+		if (pAd->bMAPQuickChChangeEn)
+		wdev->quick_ch_change = TRUE;
+
+		MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_ERROR,
+		("Channel Change due to csa\n"));
+#endif
 		rtmp_set_channel(pAd, wdev, ie_list->NewChannel);
+#if defined(WAPP_SUPPORT) && defined(CONFIG_MAP_SUPPORT)
+		if (pAd->bMAPQuickChChangeEn)
+		wdev->quick_ch_change = FALSE;
+		wapp_send_csa_event(pAd, RtmpOsGetNetIfIndex(wdev->if_dev), ie_list->NewChannel);
+#endif
 	}
 }
 
@@ -4126,6 +4217,68 @@ INT apcli_inf_open(struct wifi_dev *wdev)
 #ifndef APCLI_CFG80211_SUPPORT
 	ApCliIfUp(pAd);
 #endif /* APCLI_CFG80211_SUPPORT */
+
+	{
+		UCHAR ucBandIdx = 0;
+
+		ucBandIdx = HcGetBandByWdev(&pAd->ApCfg.ApCliTab[wdev->func_idx].wdev);
+
+#ifdef SINGLE_SKU_V2
+#ifdef RF_LOCKDOWN
+
+		/* Check RF lock Status */
+		if (chip_check_rf_lock_down(pAd)) {
+			pAd->CommonCfg.SKUenable[ucBandIdx] = TRUE;
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s: RF lock down!! SKUenable = 1!!\n", __func__));
+		}
+
+#endif /* RF_LOCKDOWN */
+
+#if defined(MT7615) || defined(MT7622)
+		/* enable/disable SKU via profile */
+		TxPowerSKUCtrl(pAd, pAd->CommonCfg.SKUenable[ucBandIdx], ucBandIdx);
+
+		/* enable/disable BF Backoff via profile */
+		TxPowerBfBackoffCtrl(pAd, pAd->CommonCfg.BFBACKOFFenable[ucBandIdx], ucBandIdx);
+#else
+#endif /* defined(MT7615) || defined(MT7622) */
+#endif /* SINGLE_SKU_V2*/
+		/* enable/disable Power Percentage via profile */
+		TxPowerPercentCtrl(pAd, pAd->CommonCfg.PERCENTAGEenable[ucBandIdx], ucBandIdx);
+
+		/* Tx Power Percentage value via profile */
+		TxPowerDropCtrl(pAd, pAd->CommonCfg.ucTxPowerPercentage[ucBandIdx], ucBandIdx);
+
+	/* Config Tx CCK Stream */
+		TxCCKStreamCtrl(pAd, pAd->CommonCfg.CCKTxStream[ucBandIdx], ucBandIdx);
+
+#ifdef RF_LOCKDOWN
+
+		/* Check RF lock Status */
+		if (chip_check_rf_lock_down(pAd)) {
+			pAd->CommonCfg.BFBACKOFFenable[ucBandIdx] = TRUE;
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s: RF lock down!! BFBACKOFFenable = 1!!\n", __func__));
+		}
+
+#endif /* RF_LOCKDOWN */
+#ifdef TX_POWER_CONTROL_SUPPORT
+		/* config Power boost table via profile */
+		TxPwrUpCtrl(pAd, ucBandIdx, POWER_UP_CATE_CCK_OFDM,
+				pAd->CommonCfg.cPowerUpCckOfdm[ucBandIdx]);
+		TxPwrUpCtrl(pAd, ucBandIdx, POWER_UP_CATE_HT20,
+				pAd->CommonCfg.cPowerUpHt20[ucBandIdx]);
+		TxPwrUpCtrl(pAd, ucBandIdx, POWER_UP_CATE_HT40,
+				pAd->CommonCfg.cPowerUpHt40[ucBandIdx]);
+		TxPwrUpCtrl(pAd, ucBandIdx, POWER_UP_CATE_VHT20,
+				pAd->CommonCfg.cPowerUpVht20[ucBandIdx]);
+		TxPwrUpCtrl(pAd, ucBandIdx, POWER_UP_CATE_VHT40,
+				pAd->CommonCfg.cPowerUpVht40[ucBandIdx]);
+		TxPwrUpCtrl(pAd, ucBandIdx, POWER_UP_CATE_VHT80,
+				pAd->CommonCfg.cPowerUpVht80[ucBandIdx]);
+		TxPwrUpCtrl(pAd, ucBandIdx, POWER_UP_CATE_VHT160,
+				pAd->CommonCfg.cPowerUpVht160[ucBandIdx]);
+#endif /* TX_POWER_CONTROL_SUPPORT */
+	}
 
 
 	return TRUE;
@@ -5847,7 +6000,6 @@ VOID apcli_delete_pmkid_cache_all(
 
 
 #ifdef APCLI_OWE_SUPPORT
-
 VOID apcli_reset_owe_parameters(
 		IN	PRTMP_ADAPTER	pAd,
 		IN UCHAR if_index) {

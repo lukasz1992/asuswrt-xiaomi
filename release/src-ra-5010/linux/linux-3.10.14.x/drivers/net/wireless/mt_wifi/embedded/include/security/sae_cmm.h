@@ -264,6 +264,7 @@ struct __SAE_INSTANCE {
 	UCHAR *psk;
 	SAE_INSTANCE *same_mac_ins;
 	SAE_CFG *pParentSaeCfg;
+	UINT16 last_rcv_auth_seq;
 };
 
 

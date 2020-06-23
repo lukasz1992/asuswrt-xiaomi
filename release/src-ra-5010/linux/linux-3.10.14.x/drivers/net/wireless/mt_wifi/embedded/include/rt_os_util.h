@@ -93,7 +93,7 @@ void RTMP_QueryPacketInfo(
 	OUT	UINT *pSrcBufLen);
 
 
-PNDIS_PACKET ClonePacket(PNET_DEV ndev, PNDIS_PACKET pkt, UCHAR *buf, ULONG sz);
+PNDIS_PACKET ClonePacket(BOOLEAN moniflag, PNET_DEV ndev, PNDIS_PACKET pkt, UCHAR *buf, ULONG sz);
 PNDIS_PACKET DuplicatePacket(PNET_DEV pNetDev, PNDIS_PACKET pPacket);
 
 PNDIS_PACKET duplicate_pkt_with_TKIP_MIC(
@@ -141,6 +141,66 @@ void wlan_802_11_to_802_3_packet(
 	IN	PUCHAR					pHeader802_3,
 	IN	UCHAR					*TPID);
 
+#ifdef SNIFFER_SUPPORT
+void send_prism_monitor_packets(
+	PNET_DEV pNetDev,
+	PNDIS_PACKET pRxPacket,
+	VOID *dot11_hdr,
+	UCHAR *pData,
+	USHORT DataSize,
+	UCHAR L2PAD,
+	UCHAR PHYMODE,
+	UCHAR BW,
+	UCHAR ShortGI,
+	UCHAR MCS,
+	UCHAR AMPDU,
+	UCHAR STBC,
+	UCHAR RSSI1,
+	UCHAR BssMonitorFlag11n,
+	UCHAR *pDevName,
+	UCHAR Channel,
+	UCHAR CentralChannel,
+	UINT32 MaxRssi);
+
+#ifdef SNIFFER_MT7615
+void send_radiotap_mt7615_monitor_packets(
+	PNET_DEV pNetDev,
+	UCHAR *rmac_info,
+	UINT32 rxv2_cyc1,
+	PNDIS_PACKET pRxPacket,
+	UCHAR *pData,
+	USHORT DataSize,
+	UCHAR *pDevName,
+	CHAR MaxRssi,
+	UINT32 UP_value);
+#endif
+
+void send_radiotap_monitor_packets(
+	PNET_DEV pNetDev,
+	UINT8 AmsduState,
+	UCHAR *rmac_info,
+	PNDIS_PACKET pRxPacket,
+	VOID *fc_field,
+	UCHAR *pData,
+	USHORT DataSize,
+	UCHAR L2PAD,
+	UCHAR PHYMODE,
+	UCHAR BW,
+	UCHAR ShortGI,
+	UCHAR MCS,
+	UCHAR LDPC,
+	UCHAR LDPC_EX_SYM,
+	UCHAR AMPDU,
+	UCHAR STBC,
+	CHAR RSSI1,
+	UCHAR *pDevName,
+	UCHAR Channel,
+	UCHAR CentralChannel,
+	UCHAR sideband_index,
+	CHAR MaxRssi,
+	UINT32 timestamp,
+	UINT32 UP_value);
+#endif /* SNIFFER_SUPPORT */
 
 UCHAR VLAN_8023_Header_Copy(
 	IN	USHORT					VLAN_VID,
@@ -149,6 +209,10 @@ UCHAR VLAN_8023_Header_Copy(
 	IN	UINT					HdrLen,
 	OUT PUCHAR					pData,
 	IN	UCHAR					*TPID);
+
+#ifdef VLAN_SUPPORT
+VOID *RtmpOsVLANInsertTag(PNDIS_PACKET pPacket, UINT16 tci);
+#endif /*VLAN_SUPPORT*/
 
 VOID RtmpOsPktBodyCopy(
 	IN	PNET_DEV				pNetDev,
@@ -268,8 +332,9 @@ VOID RtmpOsSetNetDevTypeMonitor(VOID *pDev);
 UCHAR get_sniffer_mode(VOID *pDev);
 VOID set_sniffer_mode(VOID *pDev, UCHAR mode);
 
-/* OS Semaphore */
 VOID RtmpOsCmdUp(RTMP_OS_TASK *pCmdQTask);
+BOOLEAN RtmpOsIsCmdThreadRunning(RTMP_OS_TASK *pCmdQTask);
+/* OS Semaphore */
 BOOLEAN RtmpOsSemaInitLocked(RTMP_OS_SEM *pSemOrg, LIST_HEADER *pSemList);
 BOOLEAN RtmpOsSemaInit(RTMP_OS_SEM *pSemOrg, LIST_HEADER *pSemList);
 BOOLEAN RtmpOsSemaDestory(RTMP_OS_SEM *pSemOrg);

@@ -1255,6 +1255,15 @@ BOOLEAN hc_radio_res_request(struct wifi_dev *wdev, struct radio_res *res)
 	struct _RTMP_ADAPTER *ad = (struct _RTMP_ADAPTER *)wdev->sys_handle;
 #endif /*MT_WOW_SUPPORT*/
 
+#ifdef BW_VENDOR10_CUSTOM_FEATURE
+	/* Sync SoftAp BW for Down Case */
+	if (wdev->wdev_type == WDEV_TYPE_AP && wlan_operate_get_state(wdev) == WLAN_OPER_STATE_INVALID) {
+		MTWF_LOG(DBG_CAT_HW, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+			("%s(): AP wdev=%d, Interface Down!\n", __func__, wdev->wdev_idx));
+		return FALSE;
+	}
+#endif
+
 	if (!hdev_obj_state_ready(obj)) {
 		MTWF_LOG(DBG_CAT_HW, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
 			("%s(): wdev=%d, hobj is not ready!\n", __func__, wdev->wdev_idx));

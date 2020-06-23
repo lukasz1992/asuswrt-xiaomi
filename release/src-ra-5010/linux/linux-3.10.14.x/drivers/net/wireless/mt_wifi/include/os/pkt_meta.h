@@ -299,6 +299,10 @@
 
 
 /* [CB_OFF + 27 ~ 31]  */
+#ifdef VLAN_SUPPORT
+#define RTMP_SET_VLAN_PCP(_p, _flg)	(PACKET_CB(_p, 27) = (UINT8)((_flg) & 0x00ff))
+#define RTMP_GET_VLAN_PCP(_p)		(PACKET_CB(_p, 27))
+#endif /* VLAN_SUPPORT */
 
 
 /* [CB_OFF + 32]  */

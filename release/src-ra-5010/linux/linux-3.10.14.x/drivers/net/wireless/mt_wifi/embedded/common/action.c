@@ -730,12 +730,14 @@ struct _RTMP_CHIP_CAP *cap = hc_get_chip_cap(pAd->hdev_ctrl);
 			pIntolerantReport = (BSS_2040_INTOLERANT_CH_REPORT *)((PUCHAR)pCoexistInfo + sizeof(BSS_2040_COEXIST_ELEMENT));
 
 		/*hex_dump("IntolerantReport ", (PUCHAR)pIntolerantReport, sizeof(BSS_2040_INTOLERANT_CH_REPORT));*/
-#ifdef BW_VENDOR10_CUSTOM_FEATURE
+
 		/* Soft AP to follow BW of Root AP */
-		if (IS_APCLI_BW_SYNC_FEATURE_ENBL(pAd) || pAd->CommonCfg.bBssCoexEnable == FALSE || (pAd->CommonCfg.bForty_Mhz_Intolerant == TRUE)) {
-#else
-		if (pAd->CommonCfg.bBssCoexEnable == FALSE || (pAd->CommonCfg.bForty_Mhz_Intolerant == TRUE)) {
+		if (
+#ifdef BW_VENDOR10_CUSTOM_FEATURE
+			IS_APCLI_BW_SYNC_FEATURE_ENBL(pAd) ||
 #endif
+			pAd->CommonCfg.bBssCoexEnable == FALSE || (pAd->CommonCfg.bForty_Mhz_Intolerant == TRUE)) {
+
 			MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("20/40 BSS CoexMgmt=%d, bForty_Mhz_Intolerant=%d, ignore this action!!\n",
 					 pAd->CommonCfg.bBssCoexEnable,
 					 pAd->CommonCfg.bForty_Mhz_Intolerant));
@@ -1212,7 +1214,7 @@ VOID SendRefreshBAR(RTMP_ADAPTER *pAd, MAC_TABLE_ENTRY *pEntry)
 				return;
 			}
 
-			Sequence = pAd->MacTab.tr_entry[pEntry->wcid].TxSeq[TID];
+			Sequence = AsicGetTidSn(pAd, pEntry->wcid, TID);
 #ifdef APCLI_SUPPORT
 #ifdef MAC_REPEATER_SUPPORT
 

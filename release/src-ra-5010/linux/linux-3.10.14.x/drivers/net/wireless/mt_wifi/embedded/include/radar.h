@@ -127,6 +127,9 @@ struct DOT11_H {
 	ULONG InServiceMonitorCount;	/* unit: sec */
 	ULONG CalBufTime;	/* A Timing buffer for befroe calibrations which generates Tx signals */
 	UINT16 wdev_count;
+#ifdef CONFIG_MAP_SUPPORT
+	BOOLEAN cac_not_required;
+#endif
 };
 
 BOOLEAN RadarChannelCheck(
@@ -177,5 +180,19 @@ INT Set_BlockChReset_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 
 /* wdev->pDot11H Initailization */
 VOID UpdateDot11hForWdev(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, BOOLEAN attach);
+
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+INT Set_RadarMinLPN_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+
+INT Set_RadarThresholdParam_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+
+INT Set_RadarPulseThresholdParam_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+
+INT Set_RadarDbgLogConfig_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+
+#ifdef RDM_FALSE_ALARM_DEBUG_SUPPORT
+INT	Set_RadarTestPulsePattern_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#endif /* RDM_FALSE_ALARM_DEBUG_SUPPORT */
 
 #endif /* __RADAR_H__ */

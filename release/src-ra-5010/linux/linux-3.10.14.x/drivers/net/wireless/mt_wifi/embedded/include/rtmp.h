@@ -108,6 +108,8 @@ struct _RTMP_RA_LEGACY_TB;
 
 typedef struct _RTMP_ADAPTER RTMP_ADAPTER;
 typedef struct _RTMP_ADAPTER *PRTMP_ADAPTER;
+typedef struct _AUTO_CH_CTRL AUTO_CH_CTRL;
+typedef struct _AUTO_CH_CTRL *PAUTO_CH_CTRL;
 
 typedef struct wifi_dev RTMP_WDEV;
 typedef struct wifi_dev *PRTMP_WDEV;
@@ -164,6 +166,9 @@ typedef struct _STA_ADMIN_CONFIG *PSTA_ADMIN_CONFIG;
 #include "mbo.h"
 #endif
 
+#ifdef SNIFFER_SUPPORT
+#include "sniffer/sniffer.h"
+#endif
 
 #ifdef CONFIG_MAP_SUPPORT
 #include "map.h"
@@ -276,10 +281,12 @@ enum {
 #endif /*RTMP_UDMA_SUPPORT*/
 
 #if defined(CUSTOMER_RSG_FEATURE) || defined(CUSTOMER_DCC_FEATURE)
-#define MOV_AVG_CONST			8
-#define MOV_AVG_CONST_SHIFT		3
 #define CHANNEL_SWITCHING_MODE	1
 #define NORMAL_MODE				0
+#endif
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
+#define MOV_AVG_CONST			8
+#define MOV_AVG_CONST_SHIFT		3
 #endif
 
 
@@ -393,6 +400,58 @@ extern UINT32 Qidmapping[16];
 #ifdef CSO_TEST_SUPPORT
 extern INT32 CsCtrl;
 #endif
+
+/*VLAN (802.1Q) Related*/
+#define TX_VLAN 0
+#define RX_VLAN 1
+#define MASK_CLEAR_PCP 0xFFFF1FFF
+#define MASK_CLEAR_VID 0xFFFFF000
+#define MASK_CLEAR_TCI_VID 0xF000
+#define MASK_CLEAR_TCI_PCP 0x1FFF
+#define MASK_TCI_VID 0x0FFF
+#define MAX_VID 0x0FFF
+#define MAX_PCP 7
+#define PCP_LEN 3
+#define CFI_LEN 1
+#define VID_LEN 12
+
+#ifdef VLAN_SUPPORT
+/*
+	VLAN TX Checking Policy :
+	If the VLAN ID of the pkt is different from the wdev's VLANID
+	0 : Drop this pkt (Drop)
+	1 : Do nothing (Allow)
+	2 : Replace the VLAN ID by the wdev's VLAN ID.(REPLACE VID )
+	3 : Replace the VLAN tag by the wdev's VLAN tag.(REPLACE ALL)
+*/
+enum VLAN_TX_Policy{
+	VLAN_TX_DROP = 0,
+	VLAN_TX_ALLOW,
+	VLAN_TX_REPLACE_VID,
+	VLAN_TX_REPLACE_ALL,
+	VLAN_TX_POLICY_NUM,
+};
+/*
+	VLAN RX Checking Policy :
+	If the VLAN ID of the pkt is different from the wdev's VLANID
+	0 : Drop this pkt (Drop)
+	1 : Remove VLAN Tag (Untag)
+	2 : Do nothing (Allow)
+	3 : Replace the VID only. (Replace VID)
+	     Insert the VLAN Tag if the ingress pkt is non-vlan
+	4 : Replace the VLAN tag by the wdev's VLAN tag (Replace ALL)
+	     Insert the VLAN Tag if the ingress pkt is non-vlan
+*/
+enum VLAN_RX_Policy{
+	VLAN_RX_DROP = 0,
+	VLAN_RX_UNTAG,
+	VLAN_RX_ALLOW,
+	VLAN_RX_REPLACE_VID,
+	VLAN_RX_REPLACE_ALL,
+	VLAN_RX_POLICY_NUM,
+};
+
+#endif /*VLAN_SUPPORT*/
 
 struct _RX_BLK;
 struct raw_rssi_info;
@@ -683,7 +742,7 @@ typedef struct _MT_MIB_BUCKET_MS {
 
 #define INFRA_ON(_p)				(STA_STATUS_TEST_FLAG(_p, fSTA_STATUS_INFRA_ON))
 #define ADHOC_ON(_p)				(OPSTATUS_TEST_FLAG(_p, fOP_STATUS_ADHOC_ON))
-#define MONITOR_ON(_p)			  (((_p)->monitor_ctrl.bMonitorOn) == TRUE)
+#define MONITOR_ON(_p)			  (((_p)->monitor_ctrl[0].bMonitorOn) == TRUE)
 #define IDLE_ON(_pAd, _pStaCfg)				 (!INFRA_ON(_pStaCfg) && !ADHOC_ON(_pAd))
 
 /* Check LEAP & CCKM flags */
@@ -765,7 +824,7 @@ typedef struct _MT_MIB_BUCKET_MS {
 	We need to enqueue the whole frame because MLME need to pass data type
 	information from 802.11 header
 */
-#ifndef CUSTOMER_DCC_FEATURE
+#if !(defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT))
 #define REPORT_MGMT_FRAME_TO_MLME(_pAd, Wcid, _pFrame, _FrameSize, _Rssi0, _Rssi1, _Rssi2, _Rssi3, \
 	_MinSNR, _channel, _OpMode, _wdev, _RxPhyMode)\
 	do {																					   \
@@ -1786,6 +1845,9 @@ struct wifi_dev {
 	UINT32 wdev_type;
 	UCHAR PhyMode;
 	UCHAR channel;
+#ifdef DFS_VENDOR10_CUSTOM_FEATURE
+	BOOLEAN bV10OldChannelValid; /* Retain Previous Channel during Driver Reload */
+#endif
 	UCHAR if_addr[MAC_ADDR_LEN];
 	UCHAR bssid[MAC_ADDR_LEN];
 	UCHAR hw_bssid_idx;
@@ -1813,6 +1875,7 @@ struct wifi_dev {
 	/* This temporary table is used to have book keeping of all the entries received from CR4 in multiple events */
 	P_IGMP_MULTICAST_TABLE pIgmpMcastTable;
 	UINT32 IgmpTableSize;
+	UINT_32 u4AgeOutTime; /* Time in sec */
 #endif /* IGMP_TVM_SUPPORT */
 	RT_PHY_INFO DesiredHtPhyInfo;
 	DESIRED_TRANSMIT_SETTING DesiredTransmitSetting;	/* Desired transmit setting. this is for reading registry setting only. not useful. */
@@ -1836,6 +1899,7 @@ struct wifi_dev {
 	BOOLEAN bVLAN_Tag;
 	USHORT VLAN_VID;
 	USHORT VLAN_Priority;
+	USHORT VLAN_Policy[2]; /*[0] for Tx , [1] for Rx*/
 
 	UCHAR restore_channel;
 	struct wifi_dev_ops *wdev_ops;
@@ -1916,6 +1980,8 @@ struct wifi_dev {
 #endif /* BAND_STEERING */
 #ifdef CONFIG_MAP_SUPPORT
 	MAP_CONFIG MAPCfg;
+	BOOLEAN cac_not_required;
+	BOOLEAN quick_ch_change;
 #endif
 	UINT8 auto_channel_cen_ch_2;
 	BOOLEAN is_marvell_ap;
@@ -1987,7 +2053,39 @@ typedef struct _PWR_MGMT_STRUCT_ {
 #ifdef MT_MAC
 #define MAX_TIME_RECORD 5
 #endif
+#ifdef TXRX_STAT_SUPPORT
 
+typedef struct _TXRX_STAT_BSS {
+	LARGE_INTEGER TxDataPacketCount;
+	LARGE_INTEGER TxDataPacketByte;
+	LARGE_INTEGER TxDataPayloadByte;
+	LARGE_INTEGER RxDataPacketCount;
+	LARGE_INTEGER RxDataPacketByte;
+	LARGE_INTEGER RxDataPayloadByte;
+	LARGE_INTEGER TxDataPacketCountPerAC[4];	/*per access category*/
+	LARGE_INTEGER RxDataPacketCountPerAC[4];	/*per access category*/
+	LARGE_INTEGER TxUnicastDataPacket;
+	LARGE_INTEGER TxMulticastDataPacket;
+	LARGE_INTEGER TxBroadcastDataPacket;
+	LARGE_INTEGER RxUnicastDataPacket;
+	LARGE_INTEGER TxPacketDroppedCount;
+	LARGE_INTEGER RxPacketDroppedCount;
+	LARGE_INTEGER TxRetriedPacketCount;
+	LARGE_INTEGER RxMICErrorCount;
+	LARGE_INTEGER RxDecryptionErrorCount;
+	LARGE_INTEGER TxMgmtPacketCount;
+	LARGE_INTEGER TxMgmtOffChPktCount;
+	LARGE_INTEGER RxMgmtPacketCount;
+	LARGE_INTEGER LastSecTxBytes;
+	LARGE_INTEGER LastSecRxBytes;
+	HTTRANSMIT_SETTING LastMulticastTxRate;
+	UINT32 LastPktStaWcid;
+	UINT32 Last1SecPER;
+	UINT32 Last1TxFailCnt;
+	UINT32 Last1TxCnt;
+} TXRX_STAT_BSS, *PTXRX_STAT_BSS;
+
+#endif
 typedef struct _BSS_STRUCT {
 	struct wifi_dev wdev;
 
@@ -2241,6 +2339,9 @@ typedef struct _BSS_STRUCT {
 	INT8 dscp_pri_map[64];  /*priority mapping for dscp values */
 #endif
 
+#ifdef TXRX_STAT_SUPPORT
+	TXRX_STAT_BSS stat_bss;
+#endif
 } BSS_STRUCT;
 
 #endif /* CONFIG_AP_SUPPORT */
@@ -2354,6 +2455,8 @@ typedef struct _COMMON_CONFIG {
 	UCHAR PERCENTAGEenable[DBDC_BAND_NUM];
 	UCHAR BFBACKOFFenable[DBDC_BAND_NUM];
 	UINT8 CCKTxStream[DBDC_BAND_NUM];
+
+
 
 
 
@@ -3363,6 +3466,40 @@ typedef struct _MAC_TABLE_ENTRY {
 #ifdef CONFIG_AP_SUPPORT
 	LARGE_INTEGER TxPackets;
 	LARGE_INTEGER RxPackets;
+#ifdef TXRX_STAT_SUPPORT
+	LARGE_INTEGER TxDataPacketCount;
+	LARGE_INTEGER TxDataPacketByte;
+	LARGE_INTEGER TxUnicastPktCount;
+	LARGE_INTEGER TxDataPacketCount1SecValue;
+	LARGE_INTEGER TxDataPacketByte1SecValue;
+	LARGE_INTEGER LastTxDataPacketCountValue;
+	LARGE_INTEGER LastTxDataPacketByteValue;
+	LARGE_INTEGER TxDataPacketCountPerAC[4];	/*per access category*/
+	LARGE_INTEGER TxMgmtPacketCount;
+	LARGE_INTEGER RxDataPacketCount;
+	LARGE_INTEGER RxDataPacketByte;
+	LARGE_INTEGER RxUnicastPktCount;
+	LARGE_INTEGER RxUnicastByteCount;
+	LARGE_INTEGER RxDataPacketCount1SecValue;
+	LARGE_INTEGER RxDataPacketByte1SecValue;
+	LARGE_INTEGER LastRxDataPacketCountValue;
+	LARGE_INTEGER LastRxDataPacketByteValue;
+	LARGE_INTEGER RxDataPacketCountPerAC[4];/*per access category*/
+	LARGE_INTEGER RxMgmtPacketCount;
+	LARGE_INTEGER RxDecryptionErrorCount;
+	LARGE_INTEGER RxMICErrorCount;
+	ULONG RxLastMgmtPktRate;
+	CHAR LastDataPktRssi[4];
+	CHAR LastMgmtPktRssi[4];
+	UINT32 LastOneSecTxTotalCountByWtbl;
+	UINT32 LastOneSecTxFailCountByWtbl;
+	UINT32 LastOneSecPER;
+	UINT32 TxSuccessByWtbl;/*data/unicast same variable, updated per sec*/
+#endif
+#ifdef VENDOR_FEATURE11_SUPPORT
+	LARGE_INTEGER mpdu_attempts;
+	LARGE_INTEGER mpdu_retries;
+#endif /* VENDOR_FEATURE11_SUPPORT */
 	ULONG TxBytes;
 	ULONG RxBytes;
 #ifdef CUSTOMER_DCC_FEATURE
@@ -3590,10 +3727,19 @@ typedef struct _MAC_TABLE {
 } MAC_TABLE, *PMAC_TABLE;
 
 
+#ifdef SNIFFER_SUPPORT
+#define MONITOR_MODE_OFF  0
+#define MONITOR_MODE_REGULAR_RX  1
+#define MONITOR_MODE_FULL 2
+#endif /*SNIFFER_SUPPORT*/
 
 typedef struct _MONITOR_STRUCT {
 	struct wifi_dev wdev;
 	INT CurrentMonitorMode;
+	UINT FilterSize;
+	UINT FrameType;
+	UCHAR MacFilterAddr[MAC_ADDR_LEN];
+	BOOLEAN	MacFilterOn;
 	BOOLEAN	bMonitorInitiated;
 	BOOLEAN bMonitorOn;
 } MONITOR_STRUCT;
@@ -4268,6 +4414,7 @@ typedef struct _AP_ADMIN_CONFIG {
 #ifdef CUSTOMER_VENDOR_IE_SUPPORT
 	struct customer_oui_filter ap_customer_oui;
 #endif /* CUSTOMER_VENDOR_IE_SUPPORT */
+	USHORT ObssGBandChanBitMap;
 } AP_ADMIN_CONFIG;
 
 #if defined(MT7615) || defined(MT7622) || defined(P18) || defined(MT7663)
@@ -4316,6 +4463,9 @@ typedef enum _MULTICAST_FILTER_ENTRY_TYPE {
 typedef struct _MEMBER_ENTRY {
 	struct _MEMBER_ENTRY *pNext;
 	UCHAR Addr[MAC_ADDR_LEN];
+#ifdef IGMP_TVM_SUPPORT
+	UINT8 TVMode;
+#endif /* IGMP_TVM_SUPPORT */
 #ifdef A4_CONN
 	BOOLEAN onMWDSLink; /*indicates whether this member is on MWDS link*/
 #endif
@@ -4326,6 +4476,7 @@ typedef struct _MULTICAST_FILTER_TABLE_ENTRY {
 	BOOLEAN Valid;
 	MulticastFilterEntryType type;	/* 0: static, 1: dynamic. */
 	ULONG lastTime;
+	UINT32 AgeOutTime;
 	PNET_DEV net_dev;
 	UCHAR Addr[MAC_ADDR_LEN];
 	LIST_HEADER MemberList;
@@ -5208,6 +5359,33 @@ typedef struct _RADIO_CTRL {
 	UINT32 TotalChannelChangeCount;
 	UINT8  ACSTriggerFlag;
 #endif
+#ifdef TXRX_STAT_SUPPORT
+	LARGE_INTEGER TxDataPacketCount;
+	LARGE_INTEGER TxDataPacketByte;
+	LARGE_INTEGER RxDataPacketCount;
+	LARGE_INTEGER RxDataPacketByte;
+	LARGE_INTEGER TxUnicastDataPacket;
+	LARGE_INTEGER TxMulticastDataPacket;
+	LARGE_INTEGER TxBroadcastDataPacket;
+	LARGE_INTEGER TxMgmtPacketCount;
+	LARGE_INTEGER RxMgmtPacketCount;
+	LARGE_INTEGER TxBeaconPacketCount;
+	LARGE_INTEGER TxDataPacketCountPerAC[4];	/*per access category*/
+	LARGE_INTEGER RxDataPacketCountPerAC[4];	/*per access category*/
+	CHAR LastDataPktRssi[4];
+	LARGE_INTEGER TxPacketDroppedCount;
+	LARGE_INTEGER RxDecryptionErrorCount;
+	LARGE_INTEGER RxCRCErrorCount;
+	LARGE_INTEGER RxMICErrorCount;
+	LARGE_INTEGER LastSecTxByte;
+	LARGE_INTEGER LastSecRxByte;
+	UINT32 TotalPER;
+	UINT32 TotalTxFailCnt;
+	UINT32 TotalTxCnt;
+	UINT32 Last1SecPER;
+	UINT32 Last1TxFailCnt;
+	UINT32 Last1TxCnt;
+#endif
 } RADIO_CTRL;
 
 
@@ -5271,13 +5449,13 @@ typedef struct _QLOAD_CTRL {
 #endif /* AP_QLOAD_SUPPORT */
 
 
-typedef struct  _AUTO_CH_CTRL {
+struct  _AUTO_CH_CTRL {
 	PCHANNELINFO pChannelInfo;
 	PBSSINFO pBssInfoTab;
 #ifdef CONFIG_AP_SUPPORT
 	AUTOCH_SEL_CTRL AutoChSelCtrl;
 #endif
-} AUTO_CH_CTRL;
+};
 
 #endif /*CONFIG_AP_SUPPORT*/
 
@@ -5424,7 +5602,7 @@ struct scan_req {
 	INT32 last_bss_cnt;
 	INT32 if_index;
 };
-#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT)
+#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT) || defined(TXRX_STAT_SUPPORT)
 typedef struct _CHANNEL_STATS {
 		UINT32		MibUpdateOBSSAirtime[2];
 		UINT32		MibUpdateMyTxAirtime[2];
@@ -5449,6 +5627,9 @@ typedef struct _CHANNEL_STATS {
 		UINT32		MibUpdateEDCCAtime[2];
 		UINT32		MibUpdatePdCount[2];
 		UINT32		MibUpdateMdrdyCount[2];
+#endif
+#ifdef TXRX_STAT_SUPPORT
+		UINT32 		Radio100msecCounts;
 #endif
 } CHANNEL_STATS, *PCHANNEL_STATS;
 #endif
@@ -5500,7 +5681,7 @@ struct _RTMP_ADAPTER {
 #endif /* RF_LOCKDOWN */
 	INT32 Avg_NF[DBDC_BAND_NUM];
 	INT32 Avg_NFx16[DBDC_BAND_NUM];
-#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT)
+#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT) || defined(TXRX_STAT_SUPPORT)
 	CHANNEL_BUSY_TIME Ch_Stats[DBDC_BAND_NUM];
 	UINT32 Ch_BusyTime[DBDC_BAND_NUM];
 	CHANNEL_STATS	ChannelStats;
@@ -5510,14 +5691,12 @@ struct _RTMP_ADAPTER {
 	UINT8 last_selected_channel;
 	BOOLEAN radar_hit;
 #endif
-
-#ifdef DFS_VENDOR10_CUSTOM_FEATURE
-	BOOLEAN bV10OldChannelValid; /* Retain Previous Channel during Driver Reload */
-#endif
-
-#ifdef TR181_SUPPORT
+#if defined(TR181_SUPPORT) || defined(TXRX_STAT_SUPPORT)
 	UINT32 Ch_BusyTime_11k[DBDC_BAND_NUM];
 #endif
+
+	UINT8 MuHwSwPatch;
+
 
 #ifdef	ETSI_RX_BLOCKER_SUPPORT
 	/* Set fix WBRSSI/IBRSSI pattern */
@@ -5899,6 +6078,8 @@ struct _RTMP_ADAPTER {
 	CHANNEL_TX_POWER TxPower[MAX_NUM_OF_CHANNELS];	/* Store Tx power value for all channels. */
 	CHANNEL_TX_POWER ChannelList[MAX_NUM_OF_CHANNELS];	/* list all supported channels for site survey */
 
+	UCHAR MaxTxPwr;/*announced in beacon*/
+
 	UCHAR ChannelListNum;	/* number of channel in ChannelList[] */
 	BOOLEAN BbpForCCK;
 	ULONG Tx20MPwrCfgABand[MAX_TXPOWER_ARRAY_SIZE];
@@ -5978,7 +6159,8 @@ struct _RTMP_ADAPTER {
 	BOOLEAN bAPSDFlagSPSuspend;	/* 1: SP is suspended; 0: SP is not */
 #endif /* UAPSD_SUPPORT */
 
-	MONITOR_STRUCT monitor_ctrl;
+	MONITOR_STRUCT monitor_ctrl[MONITOR_MAX_DEV_NUM];
+
 #ifdef CHANNEL_SWITCH_MONITOR_CONFIG
 	struct ch_switch_cfg ch_sw_cfg;
 #endif
@@ -6126,6 +6308,10 @@ struct _RTMP_ADAPTER {
 	UCHAR ErrRecoveryCheck;
 #endif
 #endif
+#ifdef TXRX_STAT_SUPPORT
+	BOOLEAN TXRX_EnableReadRssi;
+	BOOLEAN EnableTxRxStats;
+#endif
 #ifdef CUSTOMER_RSG_FEATURE
 	BOOLEAN 	EnableChannelStatsCheck;
 	RADIO_STATS_COUNTER RadioStatsCounter;
@@ -6133,11 +6319,13 @@ struct _RTMP_ADAPTER {
 #endif
 #ifdef CUSTOMER_DCC_FEATURE
 	BOOLEAN EnableRssiReadDataPacket;
-	BSS_TABLE AvailableBSS; /* stores the information of the BSS on the channel on which AP  is operating */
-	BOOLEAN 	ApEnableBeaconTable;
 	BOOLEAN ApDisableSTAConnectFlag;
 	ALLOWED_STA_LIST AllowedStaList;
 	STREAMING_TYPE_STATUS StreamingTypeStatus;
+#endif
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
+	BSS_TABLE AvailableBSS; /* stores the information of the BSS on the channel on which AP  is operating */
+	BOOLEAN ApEnableBeaconTable;
 #endif
 
 	EXT_CAP_INFO_ELEMENT ExtCapInfo;
@@ -6423,6 +6611,9 @@ struct _RTMP_ADAPTER {
 	RtmpDiagStruct DiagStruct;
 #endif /* DBG_DIAGNOSE */
 
+#ifdef SNIFFER_SUPPORT
+	struct sniffer_control sniffer_ctl;
+#endif
 
 
 #ifdef TXBF_SUPPORT
@@ -6700,6 +6891,7 @@ struct _RTMP_ADAPTER {
 #endif /*MULTI_PROFILE*/
 #ifdef A4_CONN
 	UINT32 a4_interface_count;
+	UINT32 a4_need_refresh;
 #endif
 
 #if defined(A4_CONN) && defined(IGMP_SNOOP_SUPPORT)
@@ -6720,6 +6912,7 @@ struct _RTMP_ADAPTER {
 	struct wifi_dev *bh_bss_wdev[DBDC_BAND_NUM];
 	UCHAR bMAPTurnKeyEnable;
 	UCHAR bMAPEnable;
+	UCHAR bMAPQuickChChangeEn;
 #endif /* CONFIG_MAP_SUPPORT */
 #ifdef WAPP_SUPPORT
 	struct BSS_LOAD_INFO bss_load_info;
@@ -6746,6 +6939,11 @@ struct _RTMP_ADAPTER {
 #endif/*RATE_PRIOR_SUPPORT*/
 
 	struct wifi_feature_support_list_query wifi_cap_list;
+
+#ifdef WIFI_DIAG
+	void *pDiagCtrl;
+#endif
+
 };
 
 
@@ -7887,6 +8085,8 @@ struct wifi_dev *wdev_search_by_idx(RTMP_ADAPTER *pAd, UINT32 idx);
 struct wifi_dev *wdev_search_by_netdev(RTMP_ADAPTER *pAd, VOID *pDev);
 VOID BssInfoArgumentLinker(RTMP_ADAPTER *pAd, struct wifi_dev *wdev);
 INT32 GetBssInfoIdx(RTMP_ADAPTER *pAd);
+INT32 wdev_idx_reg(RTMP_ADAPTER *pAd, struct wifi_dev *wdev);
+INT32 wdev_idx_unreg(RTMP_ADAPTER *pAd, struct wifi_dev *wdev);
 VOID ReleaseBssIdx(RTMP_ADAPTER *pAd, UINT32 BssIdx);
 VOID BssInfoArgumentUnLink(RTMP_ADAPTER *pAd, struct wifi_dev *wdev);
 VOID BssInfoArgumentLink(struct _RTMP_ADAPTER *ad, struct wifi_dev *wdev, struct _BSS_INFO_ARGUMENT_T *bssinfo);
@@ -8098,13 +8298,16 @@ VOID set_wf_fwd_cb(
 
 BOOLEAN is_udp_packet(RTMP_ADAPTER *pAd, PNDIS_PACKET pkt);
 
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(TXRX_STAT_SUPPORT)
 BOOLEAN RTMPGetUserPriority(
 	IN RTMP_ADAPTER *pAd,
 	IN PNDIS_PACKET	pPacket,
 	IN struct wifi_dev *wdev,
 	OUT UCHAR *pUserPriority,
 	OUT UCHAR *pQueIdx);
+
+#endif
+#ifdef CUSTOMER_DCC_FEATURE
 
 VOID APGetStreamingStatus(
 	IN PRTMP_ADAPTER 	pAd,
@@ -8296,7 +8499,7 @@ ULONG BssTableSetEntry(
 	IN CHAR Rssi,
 	IN USHORT LengthVIE,
 	IN PNDIS_802_11_VARIABLE_IEs pVIE
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	,
 	IN UCHAR	*Snr0,
 	IN CHAR 	*rssi
@@ -9045,6 +9248,11 @@ UCHAR ChannelSanity(
 	IN RTMP_ADAPTER *pAd,
 	IN UCHAR channel);
 
+UCHAR ChannelSanityDBDC(
+	IN PRTMP_ADAPTER pAd,
+	IN struct wifi_dev *wdev,
+	IN UCHAR channel);
+
 NDIS_802_11_NETWORK_TYPE NetworkTypeInUseSanity(
 	IN BSS_ENTRY * pBss);
 
@@ -9208,7 +9416,7 @@ CHAR RTMPMaxRssi(
 	IN CHAR				Rssi0,
 	IN CHAR				Rssi1,
 	IN CHAR				Rssi2
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	,
 	IN CHAR 			Rssi3
 #endif
@@ -10499,6 +10707,9 @@ INT Set_DisableCfg2040Scan_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_MBSS_WirelessMode_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_Probe_Rsp_Times_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_Channel_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#ifdef CONVERTER_MODE_SWITCH_SUPPORT
+INT Set_V10ConverterMode_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#endif /*CONVERTER_MODE_SWITCH_SUPPORT*/
 INT rtmp_set_channel(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, UCHAR Channel);
 #ifdef CUSTOMER_DCC_FEATURE
 INT	Set_ApChannelSwitch_Proc(
@@ -10507,6 +10718,7 @@ INT	Set_ApChannelSwitch_Proc(
 #endif
 INT	Set_ShortSlot_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT	Set_TxPower_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Set_MaxTxPwr_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_BGProtection_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_TxPreamble_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_RTSThreshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
@@ -10707,10 +10919,10 @@ INT Show_ChannelSet_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 #ifdef DFS_VENDOR10_CUSTOM_FEATURE
 INT show_client_idle_time(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 
-#define IS_V10_OLD_CHNL_VALID(_pAd) \
-	(_pAd->bV10OldChannelValid == TRUE)
-#define SET_V10_OLD_CHNL_VALID(_pAd, valid) \
-	(_pAd->bV10OldChannelValid = valid)
+#define IS_V10_OLD_CHNL_VALID(_wdev) \
+	(_wdev->bV10OldChannelValid == TRUE)
+#define SET_V10_OLD_CHNL_VALID(_wdev, valid) \
+	(_wdev->bV10OldChannelValid = valid)
 #endif
 
 #ifdef BW_VENDOR10_CUSTOM_FEATURE
@@ -11240,7 +11452,7 @@ typedef struct _DefaultKeyIdxValue {
 } DefaultKeyIdxValue, *PDefaultKeyIdxValue;
 #endif
 
-void STA_MonPktSend(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk);
+void STA_MonPktSend(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk, UCHAR DevIdx);
 
 
 INT	Set_FixedTxMode_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
@@ -11458,6 +11670,13 @@ INT RTMP_COM_IoctlHandle(
 #ifdef CONFIG_AP_SUPPORT
 INT RTMP_AP_IoctlPrepare(RTMP_ADAPTER *pAd, VOID *pCB);
 #endif /* CONFIG_AP_SUPPORT */
+#ifdef SNIFFER_SUPPORT
+INT Set_MonitorMode_Proc(RTMP_ADAPTER	*pAd, RTMP_STRING *arg);
+INT Set_MonitorFilterSize_Proc(RTMP_ADAPTER	*pAd, RTMP_STRING *arg);
+INT Set_MonitorFrameType_Proc(RTMP_ADAPTER	*pAd, RTMP_STRING *arg);
+INT Set_MonitorMacFilter_Proc(RTMP_ADAPTER	*pAd, RTMP_STRING *arg);
+INT Set_MonitorMacFilterOff_Proc(RTMP_ADAPTER	*pAd, RTMP_STRING *arg);
+#endif /* SNIFFER_SUPPORT */
 
 INT Set_VcoPeriod_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT	Set_RateAlg_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
@@ -11643,6 +11862,12 @@ UCHAR wmode_2_rfic(UCHAR PhyMode);
 struct wifi_dev *get_wdev_by_ioctl_idx_and_iftype(RTMP_ADAPTER *pAd, INT idx, INT if_type);
 struct wifi_dev *get_wdev_by_idx(RTMP_ADAPTER *pAd, INT idx);
 
+#ifdef SNIFFER_SUPPORT
+VOID Monitor_Init(RTMP_ADAPTER *pAd, RTMP_OS_NETDEV_OP_HOOK *pNetDevOps);
+VOID Monitor_Remove(RTMP_ADAPTER *pAd);
+BOOLEAN Monitor_Open(RTMP_ADAPTER *pAd, PNET_DEV dev_p);
+BOOLEAN Monitor_Close(RTMP_ADAPTER *pAd, PNET_DEV dev_p);
+#endif /* SNIFFER_SUPPORT */
 
 #ifdef CONFIG_FWOWN_SUPPORT
 VOID FwOwn(RTMP_ADAPTER *pAd);
@@ -11921,6 +12146,10 @@ INT32 ShowBcnProc(struct _RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT32 ShowTxPowerBoostInfo(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 #endif /* TX_POWER_CONTROL_SUPPORT */
 
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+INT Show_Radar_Threshold_Param_Proc(PRTMP_ADAPTER pAd, RTMP_STRING *arg);
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+
 #ifdef MT_FDB
 void fdb_enable(struct _RTMP_ADAPTER *pAd);
 INT show_fdb_n9_log(struct _RTMP_ADAPTER *pAd, RTMP_STRING *arg);
@@ -11968,7 +12197,7 @@ INT Set_ApScan_Proc(
 
 INT Channel_Info_MsgHandle(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq, POS_COOKIE pObj);
 #endif
-#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT)
+#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT) || defined(TXRX_STAT_SUPPORT)
 VOID ReadChannelStats(IN PRTMP_ADAPTER   pAd);
 #endif
 

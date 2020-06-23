@@ -142,9 +142,11 @@ VOID APMlmePeriodicExec(
 #ifdef CUSTOMER_DCC_FEATURE
 	if (pAd->AllowedStaList.StaCount > 0)
 		RemoveOldStaList(pAd);
+	APResetStreamingStatus(pAd);
+#endif
+#ifdef CUSTOMER_DCC_FEATURE
 	if (pAd->ApEnableBeaconTable == TRUE)
 		RemoveOldBssEntry(pAd);
-	APResetStreamingStatus(pAd);
 #endif
 
 	/*
@@ -218,6 +220,7 @@ VOID APMlmePeriodicExec(
 #ifdef A4_CONN
 		for (mbss_idx = 0; mbss_idx < pAd->ApCfg.BssidNum; mbss_idx++)
 			a4_proxy_maintain(pAd, mbss_idx);
+		pAd->a4_need_refresh = FALSE;
 #endif /* A4_CONN */
 
 #ifdef WIFI_DIAG
@@ -234,12 +237,18 @@ VOID APMlmePeriodicExec(
 	if (pAd->Mlme.OneSecPeriodicRound % 2 == 0)
 		ApCliIfMonitor(pAd);
 
-	if (pAd->Mlme.OneSecPeriodicRound % 2 == 1
+	if ((pAd->Mlme.OneSecPeriodicRound % 2 == 1
 #ifdef APCLI_AUTO_CONNECT_SUPPORT
 		&& (pAd->ApCfg.ApCliAutoConnectChannelSwitching == FALSE)
 #endif /* APCLI_AUTO_CONNECT_SUPPORT */
-	   )
+	   ) ||
+		(pAd->Mlme.OneSecPeriodicRound % 2 == 1
+#ifdef CONFIG_MAP_SUPPORT
+		&& (IS_MAP_TURNKEY_ENABLE(pAd))
+#endif /* APCLI_AUTO_CONNECT_SUPPORT */
+	   )) {
 		ApCliIfUp(pAd);
+	}
 
 	{
 		INT loop;

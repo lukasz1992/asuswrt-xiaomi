@@ -218,7 +218,7 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 	ULONG *pCurrState;
 	BCN_IE_LIST *ie_list = NULL;
 
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	UCHAR Snr[4] = {0};
 	CHAR  rssi[4] = {0};
 	Snr[0] = ConvertToSnr(pAd, Elem->rssi_info.raw_Snr[0]);
@@ -290,7 +290,7 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 		{
 			/* discover new AP of this network, create BSS entry */
 			Bssidx = BssTableSetEntry(pAd, &pAd->ScanTab, ie_list, -Rssi, LenVIE, pVIE
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 						, Snr, rssi
 #endif
 						);
@@ -480,6 +480,12 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 					pApCliEntry->MlmeAux.VarIELen = 0;
 					MTWF_LOG(DBG_CAT_CLIENT, CATCLIENT_APCLI, DBG_LVL_ERROR,
 							 ("ERROR: The RSN IE of this received Probe-resp is dis-match !!!!!!!!!!\n"));
+#ifdef CONFIG_MAP_SUPPORT
+					if (IS_MAP_TURNKEY_ENABLE(pAd)) {
+						pApCliEntry->Enable = 0;
+						wapp_send_apcli_association_change(WAPP_APCLI_DISASSOCIATED, pAd, pApCliEntry);
+					}
+#endif
 					goto LabelErr;
 				}
 			} else {
@@ -575,7 +581,7 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 				CHAR Rssi0 = ConvertToRssi(pAd, &Elem->rssi_info, RSSI_IDX_0);
 				CHAR Rssi1 = ConvertToRssi(pAd, &Elem->rssi_info, RSSI_IDX_1);
 				CHAR Rssi2 = ConvertToRssi(pAd, &Elem->rssi_info, RSSI_IDX_2);
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 				CHAR Rssi3 = ConvertToRssi(pAd, &Elem->rssi_info, RSSI_IDX_3);
 				LONG RealRssi = (LONG)(RTMPMaxRssi(pAd, Rssi0, Rssi1, Rssi2, Rssi3));
 #else
@@ -716,7 +722,8 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 						set_extcha_for_wdev(pAd, wdev, 1);
 					else
 						set_extcha_for_wdev(pAd, wdev, 0);
-
+					*pCurrState = APCLI_SYNC_IDLE;
+					pAd->ApCfg.ApCliTab[ifIndex].CtrlCurrState = APCLI_CTRL_DISCONNECTED;
 					goto LabelErr;
 				}
 			}

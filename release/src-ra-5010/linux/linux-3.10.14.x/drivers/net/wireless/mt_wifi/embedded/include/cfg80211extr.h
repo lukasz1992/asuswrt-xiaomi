@@ -195,7 +195,11 @@ INT CFG80211_StaPortSecured(
 	UINT						flag);
 
 /* AP Related*/
-INT CFG80211_ApStaDel(VOID *pAdCB, UCHAR *pMac);
+#ifdef HOSTAPD_MAP_SUPPORT /* This could be a generic fix*/
+INT CFG80211_ApStaDel(VOID *pAdCB, VOID *pData, UINT reason);
+#else
+INT CFG80211_ApStaDel(VOID *pAdCB, UCHAR *pMac, UINT reason);
+#endif /* HOSTAPD_MAP_SUPPORT */
 
 VOID CFG80211_UpdateBeacon(
 	VOID                           *pAdOrg,

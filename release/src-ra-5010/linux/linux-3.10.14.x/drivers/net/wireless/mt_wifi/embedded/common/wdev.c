@@ -62,7 +62,7 @@ struct wifi_dev *get_default_wdev(struct _RTMP_ADAPTER *ad)
 }
 
 /*define local function*/
-static INT wdev_idx_unreg(RTMP_ADAPTER *pAd, struct wifi_dev *wdev)
+INT wdev_idx_unreg(RTMP_ADAPTER *pAd, struct wifi_dev *wdev)
 {
 	INT idx;
 
@@ -97,7 +97,7 @@ static INT wdev_idx_unreg(RTMP_ADAPTER *pAd, struct wifi_dev *wdev)
 }
 
 
-static INT32 wdev_idx_reg(RTMP_ADAPTER *pAd, struct wifi_dev *wdev)
+INT32 wdev_idx_reg(RTMP_ADAPTER *pAd, struct wifi_dev *wdev)
 {
 	INT32 idx;
 
@@ -722,18 +722,28 @@ void wdev_sync_prim_ch(struct _RTMP_ADAPTER *ad, struct wifi_dev *wdev)
 	UCHAR i = 0;
 	struct wifi_dev *tdev;
 	UCHAR band_idx = HcGetBandByWdev(wdev);
+
 	for (i = 0; i < WDEV_NUM_MAX; i++) {
 
 		tdev = ad->wdev_list[i];
-		if (tdev && HcIsRadioAcq(tdev) && (band_idx == HcGetBandByWdev(tdev)))
+		if (tdev && HcIsRadioAcq(tdev) && (band_idx == HcGetBandByWdev(tdev))) {
 			tdev->channel = wdev->channel;
+#ifdef CONFIG_MAP_SUPPORT
+			if (tdev->wdev_type == WDEV_TYPE_AP)
+				tdev->quick_ch_change = wdev->quick_ch_change;
+#endif
+		}
 		else if ((wdev->wdev_type == WDEV_TYPE_APCLI) &&
 				(tdev != NULL) &&
 				(tdev->wdev_type == WDEV_TYPE_AP) &&
 				(tdev->if_up_down_state == 0) &&
 				(((tdev->channel > 14) && (wdev->channel > 14)) ||
-				 ((tdev->channel <= 14) && (wdev->channel <= 14))))
+				 ((tdev->channel <= 14) && (wdev->channel <= 14)))) {
 			tdev->channel = wdev->channel;
+#ifdef CONFIG_MAP_SUPPORT
+			tdev->quick_ch_change = wdev->quick_ch_change;
+#endif
+		}
 	}
 }
 

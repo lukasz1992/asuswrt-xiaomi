@@ -702,6 +702,15 @@ UCHAR sae_handle_auth(
 	/* Upon receipt of a Com event, the t0 (retransmission) timer shall be cancelled in Committed/Confirmed state */
 	/* Upon receipt of a Con event, the t0 (retransmission) timer shall be cancelled in Committed/Confirmed state */
 	if (pSaeIns) {
+		if (Fr->Hdr.FC.Retry == 0)
+			pSaeIns->last_rcv_auth_seq = Fr->Hdr.Sequence;
+		else {
+			if (pSaeIns->last_rcv_auth_seq == Fr->Hdr.Sequence) {
+				goto unfinished;
+			}
+		}
+	}
+	if (pSaeIns) {
 		sae_clear_retransmit_timer(pSaeIns); /* ellis */
 		MTWF_LOG(DBG_CAT_SEC, CATSEC_SAE, DBG_LVL_TRACE,
 				 ("%s(): state = %d\n",
@@ -835,9 +844,10 @@ UCHAR sae_handle_auth(
 
 			if (!pSaeIns)
 				res = MLME_UNSPECIFY_FAIL;
-
-			pSaeIns->same_mac_ins = pPreSaeIns;
-
+			if (pSaeIns) {
+				pSaeIns->last_rcv_auth_seq = Fr->Hdr.Sequence;
+				pSaeIns->same_mac_ins = pPreSaeIns;
+			}
 			if (pPreSaeIns)
 				pPreSaeIns->same_mac_ins = pSaeIns;
 		}
@@ -938,8 +948,8 @@ UCHAR sae_handle_auth(
 		if (res != MLME_SUCCESS) {
 			if (pSaeIns->state == SAE_ACCEPTED) {
 				/* 12.4.8.6.6(ACCEPTED) Upon receipt of a Con event, the Sync counter shall be checked */
-				/* the value of send-confirm shall be checked. If the value is not greater than Rc or is equal to 2^16 ¡V 1, 
-				  * the received frame shall be silently discarded. Otherwise, the Confirm portion of the frame shall be checked according to 12.4.5.6. 
+				/* the value of send-confirm shall be checked. If the value is not greater than Rc or is equal to 2^16 Â¡V 1,
+				  * the received frame shall be silently discarded. Otherwise, the Confirm portion of the frame shall be checked according to 12.4.5.6.
 				  * If the verification fails, the received frame shall be silently discarded
 				  */
 				sae_check_big_sync(pSaeIns);
@@ -1079,7 +1089,7 @@ USHORT sae_sm_step(
 
 	case F(SAE_CONFIRMED, SAE_CONFIRM_SEQ):
 		/* 12.4.8.6.5 If processing is successful and the Confirm Message has been verified,
-		  * the Rc variable shall be set to the send-confirm portion of the frame, Sc shall be set to the value 2^16 ¡V 1, the
+		  * the Rc variable shall be set to the send-confirm portion of the frame, Sc shall be set to the value 2^16 Â¡V 1, the
 		  * t1 (key expiry) timer shall be set, and the protocol instance shall transition to Accepted state
 		  */
 		pSaeIns->last_peer_sc = pSaeIns->peer_send_confirm;
@@ -1105,7 +1115,7 @@ USHORT sae_sm_step(
 
 		/* 12.4.8.6.6 If the verification succeeds, the Rc variable
 		  * shall be set to the send-confirm portion of the frame, the Sync shall be incremented and a new Confirm
-		  * Message shall be constructed (with Sc set to 216 ¡V 1) and sent to the peer
+		  * Message shall be constructed (with Sc set to 216 Â¡V 1) and sent to the peer
 		  */
 		pSaeIns->sync++;
 		pSaeIns->last_peer_sc = pSaeIns->peer_send_confirm;
@@ -1200,15 +1210,15 @@ static VOID sae_renew_token_key(
 UCHAR sae_build_token_req(
 	IN RTMP_ADAPTER * pAd,
 	IN SAE_INSTANCE * pSaeIns,
-	OUT UCHAR *token,
-	OUT UINT32 *token_len)
+	OUT UCHAR *token_req,
+	OUT UINT32 * token_req_len)
 {
 	SAE_CFG *sae_cfg = pSaeIns->pParentSaeCfg;
 
-	NdisMoveMemory(token, &pSaeIns->group, 2);
+	NdisMoveMemory(token_req, &pSaeIns->group, 2);
 	sae_renew_token_key(sae_cfg);
-	RT_HMAC_SHA256(sae_cfg->token_key, SAE_TOKEN_KEY_LEN, pSaeIns->peer_mac, MAC_ADDR_LEN, token, SHA256_DIGEST_SIZE);
-	*token_len = SHA256_DIGEST_SIZE + 2;
+	RT_HMAC_SHA256(sae_cfg->token_key, SAE_TOKEN_KEY_LEN, pSaeIns->peer_mac, MAC_ADDR_LEN, token_req + 2, SHA256_DIGEST_SIZE);
+	*token_req_len = SHA256_DIGEST_SIZE + 2;
 
 	return TRUE;
 }
@@ -1318,7 +1328,7 @@ USHORT sae_parse_commit(
 		return res;
 
 	/* 12.4.8.6.4 the protocol instance checks the peer-commit-scalar and PEER-COMMIT-ELEMENT
-	  * from the message. If they match those sent as part of the protocol instance¡¦s own Commit Message,
+	  * from the message. If they match those sent as part of the protocol instanceÂ¡Â¦s own Commit Message,
 	  * the frame shall be silently discarded (because it is evidence of a reflection attack)
 	  */
 	if (pSaeIns->group_op)
@@ -1747,7 +1757,7 @@ USHORT sae_parse_confirm(
 	pos = pos + 2;
 
 	/*  12.4.8.6.6 Upon receipt of a Con event, the value of send-confirm shall be checked.
-	  * If the value is not greater than Rc or is equal to 2^16 ¡V 1, the received frame shall be silently discarded
+	  * If the value is not greater than Rc or is equal to 2^16 Â¡V 1, the received frame shall be silently discarded
 	  */
 	if (pSaeIns->state == SAE_ACCEPTED
 		&& (peer_send_confirm <= pSaeIns->last_peer_sc
@@ -2169,7 +2179,7 @@ VOID sae_cn_confirm_cmm(
 		return;
 
 	/*
-	  * CN(key, X, Y, Z, ¡K) = HMAC-SHA256(key, D2OS(X) || D2OS(Y) || D2OS(Z) || ¡K)
+	  * CN(key, X, Y, Z, Â¡K) = HMAC-SHA256(key, D2OS(X) || D2OS(Y) || D2OS(Z) || Â¡K)
 	  * where D2OS() represents the data to octet string conversion functions in 12.4.7.2.
 	  * confirm = CN(KCK, send-confirm, commit-scalar, COMMIT-ELEMENT,
 	  *              peer-commit-scalar, PEER-COMMIT-ELEMENT)
@@ -2231,8 +2241,8 @@ USHORT sae_parse_commit_element_ecc(
 	/*
 	  * For ECC groups, both the x- and ycoordinates
 	  * of the element shall be non-negative integers less than the prime number p, and the two
-	  * coordinates shall produce a valid point on the curve satisfying the group¡¦s curve definition, not being equal
-	  * to the ¡§point at the infinity.¡¨ If either of those conditions does not hold, element validation fails; otherwise,
+	  * coordinates shall produce a valid point on the curve satisfying the groupÂ¡Â¦s curve definition, not being equal
+	  * to the Â¡Â§point at the infinity.Â¡Â¨ If either of those conditions does not hold, element validation fails; otherwise,
 	  * element validation succeeds.
 	  */
 	ecc_point_init(&peer_element);
@@ -2451,7 +2461,7 @@ USHORT sae_derive_pwe_ecc(
 
 		hex_dump_with_lvl("pwd_seed:", (char *)pwd_seed, sizeof(pwd_seed), SAE_DEBUG_LEVEL);
 		/*  z = len(p)
-		     pwd-value = KDF-z(pwd-seed, ¡§SAE Hunting and Pecking¡¨, p) */
+		     pwd-value = KDF-z(pwd-seed, Â¡Â§SAE Hunting and PeckingÂ¡Â¨, p) */
 		KDF(pwd_seed, sizeof(pwd_seed), (UINT8 *)"SAE Hunting and Pecking", 23,
 			(UINT8 *)ec_group->prime, ec_group->prime_len,
 			pwd_value, pSaeIns->prime_len);
@@ -2583,7 +2593,7 @@ USHORT sae_derive_pwe_ffc(
 		hex_dump_with_lvl("pwd_seed:", (char *)pwd_seed, SHA256_DIGEST_SIZE, SAE_DEBUG_LEVEL);
 		hex_dump_with_lvl("prime:", (char *)dh_group->prime, dh_group->prime_len, SAE_DEBUG_LEVEL);
 		/*  z = len(p)
-		     pwd-value = KDF-z(pwd-seed, ¡§SAE Hunting and Pecking¡¨, p) */
+		     pwd-value = KDF-z(pwd-seed, Â¡Â§SAE Hunting and PeckingÂ¡Â¨, p) */
 		KDF(pwd_seed, sizeof(pwd_seed), (UINT8 *)"SAE Hunting and Pecking", 23,
 			(UINT8 *)dh_group->prime, dh_group->prime_len,
 			pwd_value, pSaeIns->prime_len);

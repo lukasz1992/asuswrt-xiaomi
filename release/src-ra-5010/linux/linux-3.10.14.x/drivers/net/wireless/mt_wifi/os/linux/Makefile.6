@@ -602,6 +602,13 @@ CFLAGS_trace.o = -I$(RT28xx_DIR)/include/os
 endif
 #endif
 
+#ifdef CONFIG_SNIFFER_SUPPORT
+ifeq ($(HAS_SNIFFER_SUPPORT),y)
+$(MOD_NAME)-objs += \
+	$(RT28xx_EMBED_RPATH)/common/sniffer_prism.o	\
+	$(RT28xx_EMBED_RPATH)/common/sniffer_radiotap.o
+endif
+#endif // CONFIG_SNIFFER_SUPPORT //
 
 else
 $(MOD_NAME)-objs += \

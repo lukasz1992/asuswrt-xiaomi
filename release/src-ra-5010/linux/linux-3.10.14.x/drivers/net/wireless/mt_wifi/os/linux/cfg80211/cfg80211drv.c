@@ -282,7 +282,7 @@ INT CFG80211DRV_IoctlHandle(
 		break;
 
 	case CMD_RTPRIV_IOCTL_80211_AP_STA_DEL:
-		CFG80211_ApStaDel(pAd, pData);
+		CFG80211_ApStaDel(pAd, pData, Data);
 		break;
 #endif /* CONFIG_AP_SUPPORT */
 

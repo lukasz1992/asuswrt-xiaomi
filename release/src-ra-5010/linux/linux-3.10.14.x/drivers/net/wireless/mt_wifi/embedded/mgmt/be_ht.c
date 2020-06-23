@@ -44,6 +44,11 @@ VOID ht_oper_init(struct wifi_dev *wdev, struct ht_op *obj)
 	obj->frag_thld = wlan_config_get_frag_thld(wdev);
 	obj->len_thld = wlan_config_get_rts_len_thld(wdev);
 	obj->pkt_thld = wlan_config_get_rts_pkt_thld(wdev);
+	/* frag threshold */
+	wlan_operate_set_frag_thld(wdev, obj->frag_thld);
+	/* rts threshold */
+	wlan_operate_set_rts_len_thld(wdev, obj->len_thld);
+	wlan_operate_set_rts_pkt_thld(wdev, obj->pkt_thld);
 }
 
 VOID ht_oper_exit(struct ht_op *obj)

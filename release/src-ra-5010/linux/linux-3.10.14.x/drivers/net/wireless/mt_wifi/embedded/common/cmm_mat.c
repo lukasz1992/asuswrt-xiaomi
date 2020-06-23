@@ -270,11 +270,17 @@ PUCHAR MATEngineRxHandle(
 
 	/* Get the upper layer protocol type of this 802.3 pkt and dispatch to specific handler */
 	protoType = OS_NTOHS(get_unaligned((PUINT16)(pPktHdr + 12)));
+	pLayerHdr = (pPktHdr + MAT_ETHER_HDR_LEN);
+
+	if (protoType == ETH_P_VLAN) {
+		protoType = OS_NTOHS(get_unaligned((PUINT16)(pPktHdr + 12 + LENGTH_802_1Q))); /* Shift VLAN Tag Length (4 byte) */
+		pLayerHdr = (pPktHdr + MAT_VLAN_ETH_HDR_LEN);
+	}
+
 
 	for (i = 0; i < MAX_MAT_SUPPORT_PROTO_NUM; i++) {
 		if (protoType == MATProtoTb[i].protocol) {
 			pHandle = MATProtoTb[i].pHandle;	/* the pHandle must not be null! */
-			pLayerHdr = (pPktHdr + MAT_ETHER_HDR_LEN);
 
 			/*			RTMP_SEM_LOCK(&MATDBLock); */
 			if (pHandle->rx != NULL)

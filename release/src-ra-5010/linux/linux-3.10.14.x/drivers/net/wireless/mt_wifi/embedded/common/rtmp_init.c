@@ -1245,6 +1245,10 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 			mbss->PMKCachePeriod = (10 * 60 * OS_HZ); /* unit : tick(default: 10 minute)*/
 #endif /* !R1KH_HARD_RETRY */
 
+#ifdef DFS_VENDOR10_CUSTOM_FEATURE
+			SET_V10_OLD_CHNL_VALID((&mbss->wdev), FALSE);
+#endif /* DFS_VENDOR10_CUSTOM_FEATURE*/
+
 			/* dot1x related per BSS */
 			mbss->wdev.SecConfig.radius_srv_num = 0;
 			mbss->wdev.SecConfig.NasIdLen = 0;
@@ -1479,6 +1483,7 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 			pAd->bMLDperiodicQuery = TRUE;
 			pAd->MldQuerySendTick = QUERY_SEND_PERIOD;
 #endif
+	pAd->ApCfg.ObssGBandChanBitMap = 0;
 	}
 #endif /* CONFIG_AP_SUPPORT */
 	/*
@@ -1517,6 +1522,8 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 	pAd->RxAnt.Pair1SecondaryRxAnt = 1;
 	pAd->RxAnt.EvaluatePeriod = 0;
 	pAd->RxAnt.RcvPktNumWhenEvaluate = 0;
+	pAd->MaxTxPwr = 27;
+
 #ifdef CONFIG_AP_SUPPORT
 	pAd->RxAnt.Pair1AvgRssiGroup1[0] = pAd->RxAnt.Pair1AvgRssiGroup1[1] = 0;
 	pAd->RxAnt.Pair1AvgRssiGroup2[0] = pAd->RxAnt.Pair1AvgRssiGroup2[1] = 0;
@@ -1656,6 +1663,13 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 	pAd->Mlme.channel_1st_bw = 0;
 	pAd->Mlme.channel_2nd_bw = 0;
 #endif /* CONFIG_MULTI_CHANNEL */
+#ifdef SNIFFER_SUPPORT
+	for (i = 0; i < MONITOR_MAX_DEV_NUM; i++) {
+		pAd->monitor_ctrl[i].CurrentMonitorMode = 0;
+		pAd->monitor_ctrl[i].FrameType = FC_TYPE_RSVED;
+		pAd->monitor_ctrl[i].FilterSize = RX_BUFFER_AGGRESIZE + sizeof(struct mtk_radiotap_header);
+	}
+#endif /* SNIFFER_SUPPORT */
 	pAd->bPS_Retrieve = 1;
 	pAd->CommonCfg.bTXRX_RXV_ON = 0;
 	pAd->parse_rxv_stat_enable = 0;

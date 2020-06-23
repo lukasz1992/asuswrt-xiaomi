@@ -931,7 +931,7 @@ INT build_vht_ies(RTMP_ADAPTER *pAd, struct _build_ie_info *info)
 			   and avoid the BW info not sync.
 			 */
 			if ((vht_bw == VHT_BW_2040) &&
-				(ht_bw == HT_BW_40))
+				((ht_bw == HT_BW_40) || (ht_bw == HT_BW_20)))
 				len += build_vht_op_mode_ie(pAd, info->wdev, (UCHAR *)(info->frame_buf + len));
 		}
 	}

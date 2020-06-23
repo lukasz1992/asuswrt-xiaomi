@@ -2299,6 +2299,30 @@ BOOLEAN AsicMcastEntryDelete(RTMP_ADAPTER *pAd, PUCHAR GrpAddr, UINT8 BssIdx, PU
 
 	return Ret;
 }
+
+#ifdef IGMP_TVM_SUPPORT
+BOOLEAN AsicMcastConfigAgeOut(RTMP_ADAPTER *pAd, UINT8 AgeOutTime, UINT8 omac_idx)
+{
+	INT32 Ret = 0;
+
+	if (pAd->archOps.archMcastConfigAgeout)
+		Ret = pAd->archOps.archMcastConfigAgeout(pAd, AgeOutTime, omac_idx);
+
+	return Ret;
+}
+
+BOOLEAN AsicMcastGetMcastTable(RTMP_ADAPTER *pAd, UINT8 ucOwnMacIdx, struct wifi_dev *wdev)
+{
+	INT32 Ret = 0;
+
+	if (pAd->archOps.archMcastGetMcastTable)
+		Ret = pAd->archOps.archMcastGetMcastTable(pAd, ucOwnMacIdx, wdev);
+
+	return Ret;
+}
+
+#endif /* IGMP_TVM_SUPPORT*/
+
 #endif
 
 #ifdef DOT11_VHT_AC

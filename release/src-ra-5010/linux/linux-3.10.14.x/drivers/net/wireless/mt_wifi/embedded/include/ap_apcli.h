@@ -154,6 +154,10 @@ void ApCliCertEDCAAdjust(
 	IN PEDCA_PARM pEdcaParm);
 #endif
 
+#ifdef CONVERTER_MODE_SWITCH_SUPPORT
+void V10ConverterModeStartStop(RTMP_ADAPTER *pAd, BOOLEAN BeaconStart);
+#endif /*CONVERTER_MODE_SWITCH_SUPPORT*/
+
 BOOLEAN ApCliLinkUp(
 	IN PRTMP_ADAPTER pAd,
 	IN UCHAR ifIndex);
@@ -170,6 +174,11 @@ VOID ApCliIfDown(
 
 VOID ApCliIfMonitor(
 	IN PRTMP_ADAPTER pAd);
+
+VOID APCLIerr_Action(
+	IN RTMP_ADAPTER *pAd,
+	IN	RX_BLK *pRxBlk,
+	IN UCHAR Idx);
 
 BOOLEAN ApCliMsgTypeSubst(
 	IN PRTMP_ADAPTER  pAd,

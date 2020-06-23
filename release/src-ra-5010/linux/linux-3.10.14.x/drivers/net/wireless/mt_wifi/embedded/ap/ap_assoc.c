@@ -1273,7 +1273,7 @@ VOID ap_cmm_peer_assoc_req_action(
 	BOOLEAN bACLReject = FALSE;
 #ifdef DOT11R_FT_SUPPORT
 	PFT_CFG pFtCfg = NULL;
-	FT_INFO FtInfoBuf;
+	FT_INFO FtInfoBuf = {0};
 #endif /* DOT11R_FT_SUPPORT */
 #ifdef WSC_AP_SUPPORT
 	WSC_CTRL *wsc_ctrl;
@@ -1457,13 +1457,13 @@ VOID ap_cmm_peer_assoc_req_action(
 				("%s():IS_MAP_ENABLE(pEntry->wdev)=%d\n", __func__, IS_MAP_ENABLE(pAd)));
 		if (IS_MAP_ENABLE(pAd)) {
 			MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO,
-					("%s():Elem->MsgLen=%ld, ASSOC_REQ_LEN = %d\n",
-						__func__, Elem->MsgLen, ASSOC_REQ_LEN));
-			if (Elem->MsgLen > ASSOC_REQ_LEN)
+					("%s():Assoc Req len=%ld, ASSOC_REQ_LEN = %d\n",
+						__func__, (Elem->MsgLen - LENGTH_802_11), ASSOC_REQ_LEN));
+			if ((Elem->MsgLen - LENGTH_802_11) > ASSOC_REQ_LEN)
 				pEntry->assoc_req_len = ASSOC_REQ_LEN;
 			else
-				pEntry->assoc_req_len = Elem->MsgLen;
-			NdisMoveMemory(pEntry->assoc_req_frame, Elem->Msg, pEntry->assoc_req_len);
+				pEntry->assoc_req_len = (Elem->MsgLen - LENGTH_802_11);
+			NdisMoveMemory(pEntry->assoc_req_frame, (Elem->Msg + LENGTH_802_11), pEntry->assoc_req_len);
 		}
 #endif
 
@@ -1737,7 +1737,7 @@ SendAssocResponse:
 					   ConvertToRssi(pAd, &Elem->rssi_info, RSSI_IDX_0),
 					   ConvertToRssi(pAd, &Elem->rssi_info, RSSI_IDX_1),
 					   ConvertToRssi(pAd, &Elem->rssi_info, RSSI_IDX_2)
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 					   , ConvertToRssi(pAd, &Elem->rssi_info, RSSI_IDX_3)
 #endif
 					   );
@@ -2139,11 +2139,13 @@ SendAssocResponse:
 		/* Insert MDIE. */
 		mdie_ptr = pOutBuffer + FrameLen;
 		mdie_len = 5;
-		FT_InsertMdIE(pAd, pOutBuffer + FrameLen,
-					  &FrameLen,
-					  FtInfoBuf.MdIeInfo.MdId,
-					  FtInfoBuf.MdIeInfo.FtCapPlc);
-
+		/* Insert MdId only if the Peer has sent one */
+		if (FtInfoBuf.MdIeInfo.Len != 0) {
+			FT_InsertMdIE(pAd, pOutBuffer + FrameLen,
+						  &FrameLen,
+						  FtInfoBuf.MdIeInfo.MdId,
+						  FtInfoBuf.MdIeInfo.FtCapPlc);
+		}
 		/* Insert FTIE. */
 		if (FtInfoBuf.FtIeInfo.Len != 0) {
 			ftie_ptr = pOutBuffer + FrameLen;

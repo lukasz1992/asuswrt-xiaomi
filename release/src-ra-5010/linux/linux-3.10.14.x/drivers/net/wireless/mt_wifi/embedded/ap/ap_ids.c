@@ -215,14 +215,14 @@ BOOLEAN RTMPSpoofedMgmtDetection(
 			rssi_info.raw_rssi[0] = rxblk->rx_signal.raw_rssi[0];
 			rssi_info.raw_rssi[1] = rxblk->rx_signal.raw_rssi[1];
 			rssi_info.raw_rssi[2] = rxblk->rx_signal.raw_rssi[2];
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 			rssi_info.raw_rssi[3] = rxblk->rx_signal.raw_rssi[3];
 #endif
 			RcvdRssi = RTMPMaxRssi(pAd,
 								   ConvertToRssi(pAd, &rssi_info, RSSI_IDX_0),
 								   ConvertToRssi(pAd, &rssi_info, RSSI_IDX_1),
 								   ConvertToRssi(pAd, &rssi_info, RSSI_IDX_2)
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 									, ConvertToRssi(pAd, &rssi_info, RSSI_IDX_3)
 #endif
 
@@ -285,9 +285,8 @@ VOID RTMPConflictSsidDetection(
 	IN CHAR				Rssi0,
 	IN CHAR				Rssi1,
 	IN CHAR				Rssi2
-#ifdef CUSTOMER_DCC_FEATURE
-	,
-	IN CHAR 			Rssi3
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
+	, IN CHAR				Rssi3
 #endif
 )
 {
@@ -302,14 +301,14 @@ VOID RTMPConflictSsidDetection(
 			rssi_info.raw_rssi[0] = Rssi0;
 			rssi_info.raw_rssi[1] = Rssi1;
 			rssi_info.raw_rssi[2] = Rssi2;
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 			rssi_info.raw_rssi[3] = Rssi3;
 #endif
 
 			RcvdRssi = RTMPMaxRssi(pAd, ConvertToRssi(pAd, &rssi_info, RSSI_IDX_0),
 								   ConvertToRssi(pAd, &rssi_info, RSSI_IDX_1),
 								   ConvertToRssi(pAd, &rssi_info, RSSI_IDX_2)
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 									, ConvertToRssi(pAd, &rssi_info, RSSI_IDX_3)
 #endif
 								   );
@@ -337,13 +336,13 @@ BOOLEAN RTMPReplayAttackDetection(
 			rssi_info.raw_rssi[0] = rxblk->rx_signal.raw_rssi[0];
 			rssi_info.raw_rssi[1] = rxblk->rx_signal.raw_rssi[1];
 			rssi_info.raw_rssi[2] = rxblk->rx_signal.raw_rssi[2];
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 			rssi_info.raw_rssi[3] = rxblk->rx_signal.raw_rssi[3];
 #endif
 			RcvdRssi = RTMPMaxRssi(pAd, ConvertToRssi(pAd, &rssi_info, RSSI_IDX_0),
 								   ConvertToRssi(pAd, &rssi_info, RSSI_IDX_1),
 								   ConvertToRssi(pAd, &rssi_info, RSSI_IDX_2)
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 								   , ConvertToRssi(pAd, &rssi_info, RSSI_IDX_3)
 #endif
 

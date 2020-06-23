@@ -1514,7 +1514,7 @@ typedef struct _WSC_CREDENTIAL {
 	UCHAR Rsvd[2];		/* Make alignment */
 #else
 	UCHAR bss_role;		/*0-Fronthaul, 1-Backhaul*/
-	UCHAR Rsvd;		/* Make alignment */
+	UCHAR DevPeerRole;	/* Device role for the peer device sending M8 */
 #endif
 } WSC_CREDENTIAL, *PWSC_CREDENTIAL;
 
@@ -2196,6 +2196,19 @@ struct GNU_PACKED btm_rsp_data {
 	UCHAR btm_rsp[0];
 };
 
+struct GNU_PACKED reduced_neighbor_list_data {
+    u32 ifindex;
+    u32 reduced_neighbor_list_len;
+    char reduced_neighbor_list_req[0];
+};
+
+struct GNU_PACKED neighbor_list_data {
+    u32 ifindex;
+    u32 neighbor_list_len;
+    char neighbor_list_req[0];
+};
+
+
 /**
 *	@sta_mac: mandatory; mac of sta sending the frame;
 *	@dialogtoken: optional; dialog token;
@@ -2338,6 +2351,15 @@ struct GNU_PACKED owe_trans_channel_change_info {
 
 #define OID_QUERY_FEATURE_SUP_LIST 0x09A2
 
+#define OID_GET_WSC_PROFILES 0x0994
+#define OID_GET_MISC_CAP								0x0995
+#define OID_GET_HT_CAP									0x0996
+#define OID_GET_VHT_CAP									0x0997
+#define OID_GET_CHAN_LIST								0x0998
+#define OID_GET_OP_CLASS								0x0999
+#define OID_GET_BSS_INFO								0x099A
+#define OID_GET_AP_METRICS								0x099B
+#define OID_GET_NOP_CHANNEL_LIST						0x099C
 
 #ifdef ACS_CTCC_SUPPORT
 #define OID_802_11_GET_ACS_CHANNEL_SCORE                0x2014

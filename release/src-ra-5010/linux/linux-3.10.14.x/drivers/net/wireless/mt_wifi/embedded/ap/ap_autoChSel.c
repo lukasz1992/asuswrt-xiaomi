@@ -166,9 +166,11 @@ VOID UpdateChannelInfo(
 #endif /* AP_QLOAD_SUPPORT */
 #ifdef OFFCHANNEL_SCAN_FEATURE
 		pAd->ChannelInfo.chanbusytime[ch_index] = BusyTime;
-		printk("[%s] channel busy time[%d] = %d\n", __func__, ch_index, BusyTime);
+		MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+		("[%s] channel busy time[%d] = %d\n", __func__, ch_index, BusyTime));
 		if ((pAd->ScanCtrl.ScanTime[pAd->ScanCtrl.CurrentGivenChan_Index]) != 0) {
-			printk("[%s] calling Calculate_NF with bandidx = %d\n", __func__, pAd->ChannelInfo.bandidx);
+			MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+			("[%s] calling Calculate_NF with bandidx = %d\n", __func__, pAd->ChannelInfo.bandidx));
 			Calculate_NF(pAd, pAd->ChannelInfo.bandidx);
 		}
 #endif
@@ -1134,39 +1136,45 @@ VOID build_acs_scan_ch_list(
 				ch_list_num++;
 			}
 #ifdef DOT11_N_SUPPORT
-			else if (((cfg_ht_bw == BW_40)
+			else if ((cfg_ht_bw == BW_40)
 #ifdef DOT11_VHT_AC
 				&& (wlan_config_get_vht_bw(wdev) == VHT_BW_2040)
 #endif /* DOT11_VHT_AC */
-				)
-				&& N_ChannelGroupCheck(pAd, ch, wdev)) {
+				) {
 				auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].channel =
 					ch_ctrl->ChList[channel_idx].Channel;
-				if (GetABandChOffset(ch) == 1)
+
+				if (N_ChannelGroupCheck(pAd, ch, wdev)) {
+					if (GetABandChOffset(ch) == 1)
+						auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].cen_channel =
+						ch_ctrl->ChList[channel_idx].Channel + 2;
+					else
+						auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].cen_channel =
+						ch_ctrl->ChList[channel_idx].Channel - 2;
+				} else
 					auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].cen_channel =
-					ch_ctrl->ChList[channel_idx].Channel + 2;
-				else
-					auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].cen_channel =
-					ch_ctrl->ChList[channel_idx].Channel - 2;
+						ch_ctrl->ChList[channel_idx].Channel;
 				auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].dfs_req =
 					ch_ctrl->ChList[channel_idx].DfsReq;
-		if (auto_ch_ctrl->pChannelInfo->SkipList[channel_idx] == TRUE)
-			auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].skip_channel = TRUE;
+				if (auto_ch_ctrl->pChannelInfo->SkipList[channel_idx] == TRUE)
+					auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].skip_channel = TRUE;
 				ch_list_num++;
 			}
 #ifdef DOT11_VHT_AC
 			else if (wlan_config_get_vht_bw(wdev) == VHT_BW_80) {
-				if (vht80_channel_group(pAd, ch)) {
-					auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].channel =
-						ch_ctrl->ChList[channel_idx].Channel;
+				auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].channel =
+					ch_ctrl->ChList[channel_idx].Channel;
+				if (vht80_channel_group(pAd, ch))
 					auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].cen_channel =
-						vht_cent_ch_freq(ch, VHT_BW_80);
-					auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].dfs_req =
-						ch_ctrl->ChList[channel_idx].DfsReq;
-			if (auto_ch_ctrl->pChannelInfo->SkipList[channel_idx] == TRUE)
-				auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].skip_channel = TRUE;
-					ch_list_num++;
-				}
+					vht_cent_ch_freq(ch, VHT_BW_80);
+				else
+					auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].cen_channel =
+					ch_ctrl->ChList[channel_idx].Channel;
+				auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].dfs_req =
+					ch_ctrl->ChList[channel_idx].DfsReq;
+				if (auto_ch_ctrl->pChannelInfo->SkipList[channel_idx] == TRUE)
+					auto_ch_ctrl->pChannelInfo->supp_ch_list[ch_list_num].skip_channel = TRUE;
+				ch_list_num++;
 			}
 #endif /* DOT11_VHT_AC */
 #endif /* DOT11_N_SUPPORT */
@@ -1379,7 +1387,7 @@ UCHAR find_best_channel_of_all_grp(
 				}
 			}
 
-			if (acs_grp_ch_list->bw80_grp_ch_member[0].channel == 0)
+			if (vht80_channel_group(pAd, auto_ch_ctrl->pChannelInfo->group_ch_list[i].cen_channel) == FALSE)
 				acs_grp_ch_list->bw80_not_allowed = TRUE;
 		} else if ((cfg_ht_bw == BW_40) && (cfg_vht_bw == VHT_BW_2040)) {
 			if (acs_grp_ch_list->bw40_grp_ch_member[0].busy_time >
@@ -1394,7 +1402,7 @@ UCHAR find_best_channel_of_all_grp(
 				acs_grp_ch_list->bw40_grp_ch_member[0].channel = tmp.channel;
 			}
 
-			if (acs_grp_ch_list->bw40_grp_ch_member[0].channel == 0)
+			if (vht40_channel_group(pAd, auto_ch_ctrl->pChannelInfo->group_ch_list[i].cen_channel) == FALSE)
 				acs_grp_ch_list->bw40_not_allowed = TRUE;
 		} else {
 		}
@@ -2191,6 +2199,10 @@ UCHAR MTAPAutoSelectChannel(
 
 	UCHAR BandIdx = HcGetBandByWdev(pwdev);
 	AUTO_CH_CTRL *pAutoChCtrl = HcGetAutoChCtrlbyBandIdx(pAd, BandIdx);
+	if (!BandIdx && WMODE_CAP_5G(pwdev->PhyMode) && pAd->CommonCfg.dbdc_mode)
+		printk("[%s] Incorrect Bandidx for 5G Phy mode\n", __func__);
+	if (BandIdx && WMODE_CAP_2G(pwdev->PhyMode) && pAd->CommonCfg.dbdc_mode)
+		printk("[%s] Incorrect Bandidx for 2G Phy mode\n", __func__);
 	if (pAutoChCtrl->AutoChSelCtrl.ACSChStat == ACS_CH_STATE_SELECTED) {
 		ch = pAutoChCtrl->AutoChSelCtrl.SelCh;
 		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("[MTAPAutoSelectChannel] ACS channel is selected, selected ch = %d\n", ch));
@@ -2212,13 +2224,22 @@ UCHAR MTAPAutoSelectChannel(
 	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
 			("%s: IsABand = %d, ChannelListNum = %d\n", __func__, IsABand, pAutoChCtrl->AutoChSelCtrl.ChListNum));
 
-	for (i = 0; i < pAutoChCtrl->AutoChSelCtrl.ChListNum; i++) {
+#ifdef ACS_CTCC_SUPPORT
+	for (i = 0; i < pAutoChCtrl->pChannelInfo->channel_list_num; i++)
+#else
+	for (i = 0; i < pAutoChCtrl->AutoChSelCtrl.ChListNum; i++)
+#endif
+	{
 #ifdef DFS_VENDOR10_CUSTOM_FEATURE
 		ULONG wait_time = GET_V10_OFF_CHNL_TIME(pAd);
 #else
 		ULONG wait_time = 200; /* Wait for 200 ms at each channel. */
 #endif
+#ifdef ACS_CTCC_SUPPORT
+		wlan_operate_scan(pwdev, pAutoChCtrl->pChannelInfo->supp_ch_list[i].channel);
+#else
 		wlan_operate_scan(pwdev, pAutoChCtrl->AutoChSelCtrl.AutoChSelChList[i].Channel);
+#endif
 		pAd->ApCfg.current_channel_index = i;
 		pAd->ApCfg.AutoChannel_Channel = pAutoChCtrl->AutoChSelCtrl.AutoChSelChList[i].Channel;
 		/* Read-Clear reset Channel busy time counter */
@@ -2698,7 +2719,11 @@ CHAR AutoChSelFindScanChIdx(
 	else {
 		ScanChIdx = LastScanChIdx + 1;
 
+#ifdef ACS_CTCC_SUPPORT
+		if (ScanChIdx >= pAutoChCtrl->pChannelInfo->channel_list_num)
+#else
 		if (ScanChIdx >= pAutoChCtrl->AutoChSelCtrl.ChListNum)
+#endif
 			ScanChIdx = -1;
 	}
 
@@ -2944,9 +2969,11 @@ VOID AutoChSelScanNextChannel(
     } else {
 		/* Update current state from idle state to listen. */
 		pAutoChCtrl->AutoChSelCtrl.AutoChScanStatMachine.CurrState = AUTO_CH_SEL_SCAN_LISTEN;
-
+#ifdef ACS_CTCC_SUPPORT
+		wlan_operate_scan(pwdev, pAutoChCtrl->pChannelInfo->supp_ch_list[Idx].channel);
+#else
 		wlan_operate_scan(pwdev, pAutoChCtrl->AutoChSelCtrl.AutoChSelChList[Idx].Channel);
-
+#endif
 		/* Read-Clear reset Channel busy time counter */
 		BusyTime = AsicGetChBusyCnt(pAd, BandIdx);
 

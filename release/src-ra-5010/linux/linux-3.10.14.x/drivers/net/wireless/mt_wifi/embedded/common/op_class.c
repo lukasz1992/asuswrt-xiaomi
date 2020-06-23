@@ -717,50 +717,101 @@ UCHAR map_set_op_class_info(
 	struct wifi_dev *wdev,
 	wdev_op_class_info *op_class)
 {
-	UCHAR i = 0, j = 0, idx = 0;
+	UCHAR i = 0, j = 0, k = 0, op_index = 0, seen = 0;
 	UCHAR chnNum = 0;
-	UCHAR reg_table_idx_5g[] = {1, 2, 3, 4, 5, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33};
-	UCHAR reg_table_idx_2g[] = {12, 29, 30};
-	UCHAR *reg_table;
-	UCHAR table_size;
-	UCHAR tbl_idx;
 	UCHAR PhyMode = wdev->PhyMode;
+	PREG_CLASS reg_class = NULL;
+	PREG_CLASS_VHT reg_class_vht = NULL;
 
-	if (WMODE_CAP_5G(PhyMode)) {
-		table_size = sizeof(reg_table_idx_5g);
-		reg_table = &reg_table_idx_5g[0];
-	} else if (WMODE_CAP_2G(PhyMode)) {
-		table_size = sizeof(reg_table_idx_2g);
-		reg_table = &reg_table_idx_2g[0];
+	if (WMODE_CAP_AC(PhyMode)) {
+		reg_class_vht = (PREG_CLASS_VHT)get_reg_table_by_country(pAd->CommonCfg.CountryCode, PhyMode);
+	} else if (WMODE_CAP_2G(PhyMode) || WMODE_CAP_5G(PhyMode)) {
+		reg_class = (PREG_CLASS)get_reg_table_by_country(pAd->CommonCfg.CountryCode, PhyMode);
 	} else
 		return 0;
 
-	for (i = 0; i < table_size && idx < MAX_OP_CLASS; i++) {
-		tbl_idx = reg_table[i];
-		for (j = 0; j < idx; j++)
-			if (reg_class_fcc[tbl_idx].global_class == op_class->opClassInfo[j].op_class)
-				break;
-		if (j < idx)
-			continue;
-		op_class->opClassInfo[idx].op_class = reg_class_fcc[tbl_idx].global_class;
+	for (i = 1;; i++) {
 		chnNum = 0;
-		for (j = 0; j <= 11; j++) {
-			if (reg_class_fcc[tbl_idx].channel_set[j] != 0) {
-				if (ChannelPreferredSanity(pAd, wdev, reg_class_fcc[tbl_idx].channel_set[j])) {
-					op_class->opClassInfo[idx].ch_list[chnNum] =
-						reg_class_fcc[tbl_idx].channel_set[j];
-					chnNum++;
-				}
-			} else {
+		seen = 0;
+		if (WMODE_CAP_AC(PhyMode)) {
+			if (reg_class_vht[i].reg_class == 0) {
+				/*End of Op Class Table Reached*/
 				break;
 			}
+			for (k = 0; k < op_index; k++) {
+				if (reg_class_vht[i].global_class == op_class->opClassInfo[k].op_class) {
+					/*This is a duplicate entry in opclass list*/
+					seen = 1;
+					break;
+				}
+			}
+			if (seen) {
+				continue;
+			}
+			if ((reg_class_vht[i].global_class >= 81 &&
+				reg_class_vht[i].global_class <= 84) ||
+				(reg_class_vht[i].global_class >= 115 &&
+				reg_class_vht[i].global_class <= 130)){
+				op_class->opClassInfo[op_index].op_class = reg_class_vht[i].global_class;
+				for (j = 0; j <= 14; j++) {
+					/*Check for 20Mhz and 40Mhz classes only, otherwise channel sanity will fail*/
+					if (op_class->opClassInfo[op_index].op_class <= 127) {
+						if (reg_class_vht[i].channel_set[j] != 0) {
+							if (ChannelPreferredSanity(pAd, wdev,
+								reg_class_vht[i].channel_set[j])) {
+								op_class->opClassInfo[op_index].ch_list[chnNum] =
+									reg_class_vht[i].channel_set[j];
+								chnNum++;
+							}
+						}
+					} else {
+						/*80Mhz centre frequencies*/
+						if (reg_class_vht[i].center_freq[j] != 0) {
+								op_class->opClassInfo[op_index].ch_list[chnNum] =
+									reg_class_vht[i].center_freq[j];
+								chnNum++;
+						}
+					}
+				}
+			}
+		} else if ((WMODE_CAP_2G(PhyMode) ||
+			WMODE_CAP_5G(PhyMode))) {
+			if (reg_class[i].reg_class == 0) {
+				break;
+			}
+			for (k = 0; k < op_index; k++) {
+				if (reg_class[i].global_class == op_class->opClassInfo[k].op_class) {
+					seen = 1;
+					break;
+				}
+			}
+			if (seen) {
+				continue;
+			}
+			if ((reg_class[i].global_class >= 115 &&
+				reg_class[i].global_class <= 130) ||
+				(reg_class[i].global_class >= 81 &&
+				reg_class[i].global_class <= 84)){
+				op_class->opClassInfo[op_index].op_class = reg_class[i].global_class;
+				for (j = 0; j <= 14; j++) {
+					if (reg_class[i].channel_set[j] != 0) {
+						if (ChannelPreferredSanity(pAd, wdev,
+							reg_class[i].channel_set[j])) {
+							op_class->opClassInfo[op_index].ch_list[chnNum] =
+								reg_class[i].channel_set[j];
+							chnNum++;
+						}
+					}
+				}
+			}
 		}
-		op_class->opClassInfo[idx].num_of_ch = chnNum;
-		idx++;
+		if (chnNum) {
+			op_class->opClassInfo[op_index].num_of_ch = chnNum;
+			op_index++;
+		}
 	}
-	return idx;
+	return op_index;
 }
-
 #endif
 
 #endif /* DOT11_N_SUPPORT */

@@ -32,6 +32,10 @@
 
 #include "rtmp_dot11.h"
 
+#ifdef CONFIG_RCSA_SUPPORT
+#include "spectrum_def.h"
+#endif
+
 #ifdef DOT11R_FT_SUPPORT
 #include "common/link_list.h"
 #include "ft_cmm.h"
@@ -864,6 +868,15 @@ typedef struct GNU_PACKED _HT_EXT_CHANNEL_SWITCH_ANNOUNCEMENT_IE {
 	UCHAR		ChannelSwitchCount;
 } HT_EXT_CHANNEL_SWITCH_ANNOUNCEMENT_IE, *PHT_EXT_CHANNEL_SWITCH_ANNOUNCEMENT_IE;
 
+#ifdef CONFIG_RCSA_SUPPORT
+typedef struct _CSA_IE_INFO {
+	UCHAR wcid;
+	CH_SW_ANN_INFO ChSwAnnIE;
+	SEC_CHA_OFFSET_IE SChOffIE;
+	EXT_CH_SW_ANN_INFO	ExtChSwAnnIE;
+	WIDE_BW_CH_SWITCH_ELEMENT wb_info;
+} CSA_IE_INFO, *PCSA_IE_INFO;
+#endif
 
 /* */
 /* _Limit must be the 2**n - 1 */
@@ -1141,7 +1154,7 @@ typedef struct _BSS_ENTRY {
 	UINT8 CondensedPhyType;
 	UINT8 RSNI;
 #endif /* DOT11K_RRM_SUPPORT */
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	ULONG LastBeaconRxTimeT;
 	UCHAR  Snr[4];
 	CHAR   rssi[4];
@@ -1165,6 +1178,9 @@ typedef struct _BSS_ENTRY {
 #ifdef CONFIG_MAP_SUPPORT
 	BOOLEAN		map_vendor_ie_found;
 	struct map_vendor_ie map_info;
+	INT32	rssi_sum;
+	INT32 avg_rssi;
+	INT32 rx_cnt;
 #endif
 } BSS_ENTRY;
 
@@ -1177,7 +1193,7 @@ typedef struct {
 
 struct raw_rssi_info {
 	CHAR raw_rssi[4];
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	UCHAR raw_Snr[4];
 #endif
 	UCHAR raw_snr;
@@ -1641,9 +1657,12 @@ typedef struct _bcn_ie_list {
 	BOOLEAN  FromBcnReport;
 	BOOLEAN is_marvell_ap;
 	BOOLEAN is_atheros_ap;
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	UCHAR	VendorID0[3];
 	UCHAR	VendorID1[3];
+#endif
+#ifdef CONFIG_RCSA_SUPPORT
+	CSA_IE_INFO CsaInfo;
 #endif
 } BCN_IE_LIST;
 

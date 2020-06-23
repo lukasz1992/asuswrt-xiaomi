@@ -143,8 +143,8 @@ UCHAR sae_get_pmk_cache(
 UCHAR sae_build_token_req(
 	IN RTMP_ADAPTER * pAd,
 	IN SAE_INSTANCE * pSaeIns,
-	OUT UCHAR *token,
-	OUT UINT32 * token_len);
+	OUT UCHAR *token_req,
+	OUT UINT32 * token_req_len);
 
 UCHAR sae_check_token(
 	IN SAE_INSTANCE * pSaeIns,

@@ -276,6 +276,10 @@ VOID ApSiteSurvey_by_wdev(
 	IN	BOOLEAN				ChannelSel,
 	IN  struct wifi_dev	*wdev);
 
+#ifdef TXRX_STAT_SUPPORT
+VOID Update_LastSec_TXRX_Stats(
+	IN PRTMP_ADAPTER   pAd);
+#endif
 #if defined(CUSTOMER_RSG_FEATURE) || defined (CUSTOMER_DCC_FEATURE)
 VOID Update_Wtbl_Counters(
 	IN PRTMP_ADAPTER   pAd);
@@ -301,11 +305,12 @@ VOID RemoveOldStaList(
 
 VOID APResetStreamingStatus(
 	IN PRTMP_ADAPTER  	pAd);
+#endif
 
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 VOID RemoveOldBssEntry(
 	IN PRTMP_ADAPTER 	pAd);
 #endif
-
 
 #ifdef APCLI_CFG80211_SUPPORT
 VOID ApCliSiteSurvey(
@@ -469,6 +474,8 @@ VOID rtmp_ap_exit(RTMP_ADAPTER *pAd);
 #if defined(VOW_SUPPORT) && defined(VOW_DVT)
 UINT32 vow_clone_legacy_frame(RTMP_ADAPTER *pAd, TX_BLK *pTxBlk);
 #endif
+VOID ap_over_lapping_scan(RTMP_ADAPTER *pAd, BSS_STRUCT *pMbss);
+
 
 #endif  /* __AP_H__ */
 

@@ -33,7 +33,7 @@
 #include "rt_config.h"
 #include "mlme.h"
 #include "rtmp_type.h"
-
+#include "map.h"
 #ifdef WAPP_SUPPORT
 #define MAX_BSSLOAD_THRD			100
 #endif /* WAPP_SUPPORT */
@@ -143,6 +143,11 @@ typedef enum {
 	WAPP_WSC_SCAN_COMP_NOTIF,
 	WAPP_MAP_WSC_CONFIG,
 	WAPP_WSC_EAPOL_START_NOTIF,
+	WAPP_WSC_EAPOL_COMPLETE_NOTIF,
+	WAPP_SCAN_COMPLETE_NOTIF,
+	WAPP_A4_ENTRY_MISSING_NOTIF,
+	WAPP_RADAR_DETECT_NOTIF,
+	WAPP_APCLI_ASSOC_STATE_CHANGE_VENDOR10,
 } WAPP_EVENT_ID;
 
 typedef enum {
@@ -202,6 +207,7 @@ typedef struct GNU_PACKED _wapp_dev_info {
 	u8	radio_id;
 	u8	wireless_mode;
 	uintptr_t	adpt_id;
+	u8 dev_active;
 } wapp_dev_info;
 
 typedef struct GNU_PACKED _wdev_ht_cap {
@@ -329,7 +335,7 @@ typedef struct GNU_PACKED _wsc_apcli_config {
 typedef struct GNU_PACKED _wsc_apcli_config_msg {
 	unsigned int profile_count;
 	wsc_apcli_config apcli_config[0];
-} wsc_apcli_config_msg;
+} wsc_apcli_config_msg, *p_wsc_apcli_config_msg;
 
 typedef struct GNU_PACKED _wdev_ap_metric {
 	u8		bssid[MAC_ADDR_LEN];
@@ -470,6 +476,12 @@ struct GNU_PACKED wapp_wsc_scan_info {
 	UCHAR	Uuid[16];
 };
 
+struct GNU_PACKED radar_notif_s
+{
+	unsigned int channel;
+	unsigned int status;
+};
+
 typedef union GNU_PACKED _wapp_event_data {
 	wapp_dev_info dev_info;
 	wdev_ht_cap ht_cap;
@@ -498,6 +510,8 @@ typedef union GNU_PACKED _wapp_event_data {
 	u8 ch_util;
 	struct wapp_scan_info scan_info;
 	struct wapp_wsc_scan_info wsc_scan_info;
+	UINT32 a4_missing_entry_ip;
+	struct radar_notif_s radar_notif;
 } wapp_event_data;
 
 typedef struct GNU_PACKED _wapp_req_data {
@@ -508,7 +522,9 @@ typedef struct GNU_PACKED _wapp_req_data {
 	wdev_steer_policy str_policy;
 	wdev_ap_config ap_conf;
 	WSC_CREDENTIAL bh_wsc_profile;
-	struct scan_SSID scan_BH_ssids[4];
+#ifdef CONFIG_MAP_SUPPORT
+	struct scan_BH_ssids scan_bh_ssids;
+#endif
 } wapp_req_data;
 
 struct wapp_req {

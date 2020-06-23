@@ -218,11 +218,5 @@ struct mt_dev_priv {
 	unsigned long priv_flags;
 	UCHAR sniffer_mode;
 };
-
-struct scan_SSID
-{
-	char ssid[32 + 1];
-	unsigned char SsidLen;
-};
 #endif /* __RTMP_TYPE_H__ */
 

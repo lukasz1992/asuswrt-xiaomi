@@ -81,6 +81,10 @@ enum PACKET_TYPE;
 #define TX_SPECIFIC_ACR_STATE             1
 #define TX_UNDEFINED_RXFILTER_STATE       0xFF
 
+#define TX_DEFAULT_TXSTREAM_STATE           0
+#define TX_SWITCHING_TXSTREAM_STATE         1
+#define TX_UNDEFINED_TXSTREAM_STATE         0xFF
+
 #define RX_DEFAULT_RCPI_STATE             0
 #define RX_SPECIFIC_RCPI_STATE            1
 #define RX_UNDEFINED_RCPI_STATE           0xFF
@@ -106,7 +110,6 @@ enum PACKET_TYPE;
 #define CMW_POWER_UP_CATEGORY_NUM         4
 
 #define LINK_TEST_AUTO_RSSI_THRESHOLD     0xFF
-
 
 VOID AsicNotSupportFunc(struct _RTMP_ADAPTER *pAd, const RTMP_STRING *caller);
 
@@ -374,6 +377,10 @@ VOID AsicNotSupportFunc(struct _RTMP_ADAPTER *pAd, const RTMP_STRING *caller);
 #ifdef IGMP_SNOOP_SUPPORT
 BOOLEAN AsicMcastEntryInsert(struct _RTMP_ADAPTER *pAd, PUCHAR GrpAddr, UINT8 BssIdx, UINT8 Type, PUCHAR MemberAddr, PNET_DEV dev, UINT8 WlanIndex);
 BOOLEAN AsicMcastEntryDelete(struct _RTMP_ADAPTER *pAd, PUCHAR GrpAddr, UINT8 BssIdx, PUCHAR MemberAddr, PNET_DEV dev, UINT8 WlanIndex);
+#ifdef IGMP_TVM_SUPPORT
+BOOLEAN AsicMcastConfigAgeOut(RTMP_ADAPTER *pAd, UINT8 AgeOutTime, UINT8 omac_idx);
+BOOLEAN AsicMcastGetMcastTable(RTMP_ADAPTER *pAd, UINT8 ucOwnMacIdx, struct wifi_dev *wdev);
+#endif /* IGMP_TVM_SUPPORT */
 #endif
 
 VOID RssiUpdate(struct _RTMP_ADAPTER *pAd);
@@ -589,6 +596,10 @@ typedef struct _RTMP_ARCH_OP {
 #ifdef IGMP_SNOOP_SUPPORT
 	BOOLEAN (*archMcastEntryInsert)(RTMP_ADAPTER *pAd, PUCHAR GrpAddr, UINT8 BssIdx, UINT8 Type, PUCHAR MemberAddr, PNET_DEV dev, UINT8 WlanIndex);
 	BOOLEAN (*archMcastEntryDelete)(RTMP_ADAPTER *pAd, PUCHAR GrpAddr, UINT8 BssIdx, PUCHAR MemberAddr, PNET_DEV dev, UINT8 WlanIndex);
+#ifdef IGMP_TVM_SUPPORT
+	BOOLEAN (*archMcastConfigAgeout)(RTMP_ADAPTER *pAd, UINT8 AgeOutTime, UINT8 ucOwnMacIdx);
+	BOOLEAN (*archMcastGetMcastTable)(RTMP_ADAPTER *pAd, UINT8 ucOwnMacIdx, struct wifi_dev *wdev);
+#endif /* IGMP_TVM_SUPPORT */
 #endif
 	INT (*asic_rts_on_off)(
 		struct _RTMP_ADAPTER *ad,
@@ -607,7 +618,6 @@ typedef struct _RTMP_ARCH_OP {
 	VOID (*arch_bss_beacon_start)(struct _RTMP_ADAPTER *pAd);
 	VOID (*arch_bss_beacon_init)(struct _RTMP_ADAPTER *pAd);
 } RTMP_ARCH_OP;
-
 
 
 BOOLEAN asic_bss_beacon_exit(struct _RTMP_ADAPTER *pAd);

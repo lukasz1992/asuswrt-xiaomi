@@ -83,6 +83,9 @@ VOID MulticastFilterTableInit(
 	IN PRTMP_ADAPTER pAd,
 	IN PMULTICAST_FILTER_TABLE * ppMulticastFilterTable)
 {
+#ifdef IGMP_TVM_SUPPORT
+	UCHAR i = 0;
+#endif /* IGMP_TVM_SUPPORT*/
 	if (IS_ASIC_CAP(pAd, fASIC_CAP_MCU_OFFLOAD))
 		return;
 
@@ -100,6 +103,12 @@ VOID MulticastFilterTableInit(
 	NdisAllocateSpinLock(pAd, &((*ppMulticastFilterTable)->FreeMemberPoolTabLock));
 	initList(&((*ppMulticastFilterTable)->freeEntryList));
 	initFreeEntryList(*ppMulticastFilterTable, &((*ppMulticastFilterTable)->freeEntryList));
+
+#ifdef IGMP_TVM_SUPPORT
+	for (i = 0; i < MAX_LEN_OF_MULTICAST_FILTER_TABLE; i++) {
+		(*ppMulticastFilterTable)->Content[i].AgeOutTime = IGMPMAC_TB_ENTRY_AGEOUT_TIME;
+	}
+#endif /* IGMP_TVM_SUPPORT */
 	return;
 }
 
@@ -196,6 +205,10 @@ BOOLEAN MulticastFilterTableInsertEntry(
 	MULTICAST_FILTER_TABLE_ENTRY *pEntry = NULL, *pCurrEntry, *pPrevEntry;
 	PMEMBER_ENTRY pMemberEntry;
 	PMULTICAST_FILTER_TABLE pMulticastFilterTable = pAd->pMulticastFilterTable;
+#ifdef IGMP_TVM_SUPPORT
+	UINT32 AgeOutTime = IGMPMAC_TB_ENTRY_AGEOUT_TIME;
+	MAC_TABLE_ENTRY *pMacEntry = NULL;
+#endif /* IGMP_TVM_SUPPORT */
 
 	if (pMulticastFilterTable == NULL) {
 		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_ERROR, ("%s Multicase filter table is not ready.\n", __func__));
@@ -208,6 +221,13 @@ BOOLEAN MulticastFilterTableInsertEntry(
 				 __func__, MAX_LEN_OF_MULTICAST_FILTER_TABLE));
 		return FALSE;
 	}
+
+#ifdef IGMP_TVM_SUPPORT
+	pMacEntry = &pAd->MacTab.Content[WlanIndex];
+	if (pMacEntry && pMacEntry->wdev) {
+		AgeOutTime = pMacEntry->wdev->u4AgeOutTime;
+	}
+#endif /* IGMP_TVM_SUPPORT */
 
 	/* check the rule is in table already or not. */
 	pEntry = MulticastFilterTableLookup(pMulticastFilterTable, pGrpId, dev);
@@ -235,6 +255,9 @@ BOOLEAN MulticastFilterTableInsertEntry(
 
 		/* the multicast entry already exist but doesn't include the member yet. */
 		if (pEntry != NULL && pMemberAddr != NULL) {
+#ifdef IGMP_TVM_SUPPORT
+			pEntry->AgeOutTime = AgeOutTime;
+#endif /* IGMP_TVM_SUPPORT */
 			InsertIgmpMember(pMulticastFilterTable, &pEntry->MemberList, pMemberAddr, type);
 			break;
 		}
@@ -246,7 +269,13 @@ BOOLEAN MulticastFilterTableInsertEntry(
 			NdisGetSystemUpTime(&Now);
 
 			if ((pEntry->Valid == TRUE) && (pEntry->type == MCAT_FILTER_DYNAMIC)
-				&& RTMP_TIME_AFTER(Now, pEntry->lastTime + IGMPMAC_TB_ENTRY_AGEOUT_TIME)) {
+				&& RTMP_TIME_AFTER(Now, pEntry->lastTime +
+#ifdef IGMP_TVM_SUPPORT
+				pEntry->AgeOutTime
+#else
+				IGMPMAC_TB_ENTRY_AGEOUT_TIME
+#endif /* IGMP_TVM_SUPPORT */
+				)) {
 				PMULTICAST_FILTER_TABLE_ENTRY pHashEntry;
 				HashIdx = MULTICAST_ADDR_HASH_INDEX(pEntry->Addr);
 				pHashEntry = pMulticastFilterTable->Hash[HashIdx];
@@ -282,6 +311,9 @@ BOOLEAN MulticastFilterTableInsertEntry(
 				pEntry->net_dev = dev;
 				NdisGetSystemUpTime(&Now);
 				pEntry->lastTime = Now;
+#ifdef IGMP_TVM_SUPPORT
+				pEntry->AgeOutTime = AgeOutTime;
+#endif /* IGMP_TVM_SUPPORT */
 				pEntry->type = (MulticastFilterEntryType)(((UINT8)type) & GROUP_ENTRY_TYPE_BITMASK); /* remove member detail*/
 				initList(&pEntry->MemberList);
 
@@ -420,7 +452,13 @@ PMULTICAST_FILTER_TABLE_ENTRY MulticastFilterTableLookup(
 			NdisGetSystemUpTime(&Now);
 
 			if ((pEntry->Valid == TRUE) && (pEntry->type == MCAT_FILTER_DYNAMIC)
-				&& RTMP_TIME_AFTER(Now, pEntry->lastTime + IGMPMAC_TB_ENTRY_AGEOUT_TIME)) {
+				&& RTMP_TIME_AFTER(Now, pEntry->lastTime +
+#ifdef IGMP_TVM_SUPPORT
+				pEntry->AgeOutTime
+#else
+				IGMPMAC_TB_ENTRY_AGEOUT_TIME
+#endif /* IGMP_TVM_SUPPORT */
+				)) {
 				/* Remove the aged entry */
 				if (pEntry == pMulticastFilterTable->Hash[HashIdx]) {
 					pMulticastFilterTable->Hash[HashIdx] = pEntry->pNext;
@@ -516,9 +554,12 @@ INT IgmpSnEnableTVMode(IN RTMP_ADAPTER * pAd, struct wifi_dev *wdev, UINT8 IsTVM
 		UpdateBeaconHandler(pAd, wdev, BCN_UPDATE_IE_CHG);
 
 #ifdef APCLI_SUPPORT
+		if ((wdev->func_idx < MAX_APCLI_NUM) &&
+			pAd->ApCfg.ApCliTab[wdev->func_idx].ApCliInit) {
 		ApcliWdev = &pAd->ApCfg.ApCliTab[wdev->func_idx].wdev;
 		if (ApcliWdev)
 			ApcliWdev->IsTVModeEnable = wdev->IsTVModeEnable;
+		}
 #endif /* APCLI_SUPPORT */
 	} while (FALSE);
 
@@ -1141,9 +1182,9 @@ INT Set_IgmpSn_AgeOut_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 	AgeOut = (UINT32) simple_strtol(arg, 0, 10);
 
 	if (wdev) {
+		wdev->u4AgeOutTime = AgeOut;
 		if ((wdev->IgmpSnoopEnable) && (IS_IGMP_TVM_MODE_EN(wdev->IsTVModeEnable))) {
-			if (IS_ASIC_CAP(pAd, fASIC_CAP_MCU_OFFLOAD))
-				CmdSetMcastEntryAgeOut(pAd, AgeOut, wdev->DevInfo.OwnMacIdx);
+			AsicMcastConfigAgeOut(pAd, AgeOut, wdev->DevInfo.OwnMacIdx);
 		} else {
 			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_WARN, ("IgmpSnooping or TV Mode is disabled\n"));
 		}
@@ -1163,13 +1204,11 @@ INT Show_IgmpSn_McastTable_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 #endif
 
 	if (wdev) {
-		if ((wdev->IgmpSnoopEnable) && (IS_IGMP_TVM_MODE_EN(wdev->IsTVModeEnable))) {
-			if (IS_ASIC_CAP(pAd, fASIC_CAP_MCU_OFFLOAD))
-				CmdGetMcastEntryTable(pAd, wdev->DevInfo.OwnMacIdx, wdev);
-		} else {
+		if ((wdev->IgmpSnoopEnable) && (IS_IGMP_TVM_MODE_EN(wdev->IsTVModeEnable)))
+			AsicMcastGetMcastTable(pAd, wdev->DevInfo.OwnMacIdx, wdev);
+		else
 			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_WARN, ("IgmpSnooping or TV Mode is disabled\n"));
 		}
-	}
 
 	return TRUE;
 }
@@ -1333,6 +1372,126 @@ VOID IgmpSnoopingShowMulticastTable(RTMP_ADAPTER *pAd, struct wifi_dev *wdev)
 								"-------------------------------------------------\n"));
 		NdisZeroMemory((UCHAR *)wdev->pIgmpMcastTable, wdev->IgmpTableSize);
 	} while (FALSE);
+}
+
+BOOLEAN MulticastFilterConfigAgeOut(RTMP_ADAPTER *pAd, UINT8 AgeOutTime, UINT8 ucOwnMacIdx)
+{
+	PMULTICAST_FILTER_TABLE pMulticastFilterTable = pAd->pMulticastFilterTable;
+	UINT i = 0;
+
+	if (pMulticastFilterTable == NULL) {
+		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_ERROR, ("%s Multicase filter table is not ready.\n", __func__));
+		return FALSE;
+	}
+
+	RTMP_SEM_LOCK(&pMulticastFilterTable->MulticastFilterTabLock);
+
+	for (i = 0; i < MAX_LEN_OF_MULTICAST_FILTER_TABLE; i++) {
+		pMulticastFilterTable->Content[i].AgeOutTime = (AgeOutTime * OS_HZ);
+	}
+
+	RTMP_SEM_UNLOCK(&pMulticastFilterTable->MulticastFilterTabLock);
+
+	return TRUE;
+}
+
+BOOLEAN MulticastFilterInitMcastTable(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, BOOLEAN bActive)
+{
+	if (bActive == TRUE) {
+		wdev->IgmpTableSize = sizeof(IGMP_MULTICAST_TABLE)
+			+ ((sizeof(IGMP_MULTICAST_TABLE_ENTRY) * MAX_LEN_OF_MULTICAST_FILTER_TABLE)
+			- sizeof(IGMP_MULTICAST_TABLE_ENTRY))
+			+ ((sizeof(IGMP_MULTICAST_TABLE_MEMBER) * FREE_MEMBER_POOL_SIZE)
+			- sizeof(IGMP_MULTICAST_TABLE_MEMBER));
+		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_WARN,
+			("%s: Allocate IGMP Multicast Memory size = %u\n", __func__, wdev->IgmpTableSize));
+
+		wdev->pIgmpMcastTable =
+			(P_IGMP_MULTICAST_TABLE)kmalloc(wdev->IgmpTableSize, 0);
+		if (wdev->pIgmpMcastTable == NULL) {
+			wdev->IgmpTableSize = 0;
+			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_WARN,
+				("%s: Failed to allocate IGMP Multicast Memory\n", __func__));
+		} else {
+			NdisZeroMemory((UCHAR *)wdev->pIgmpMcastTable, wdev->IgmpTableSize);
+		}
+	} else {
+		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_WARN,
+			("%s: Deallocate IGMP Multicast Memory\n", __func__));
+		kfree(wdev->pIgmpMcastTable);
+		wdev->pIgmpMcastTable = NULL;
+		wdev->IgmpTableSize = 0;
+	}
+
+	return TRUE;
+}
+
+BOOLEAN MulticastFilterGetMcastTable(RTMP_ADAPTER *pAd, UINT8 ucOwnMacIdx, struct wifi_dev *wdev)
+{
+	UINT_32 GroupIdx = 0, MemberIdx = 0;
+	MULTICAST_FILTER_TABLE_ENTRY *pEntry = NULL;
+	PMULTICAST_FILTER_TABLE pMulticastFilterTable = pAd->pMulticastFilterTable;
+
+	do {
+		if (wdev == NULL) {
+			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_WARN, ("Invalid wdev\n"));
+			return FALSE;
+		}
+
+		/* if empty, return */
+		if (pMulticastFilterTable->Size == 0) {
+			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_ERROR, ("Table empty.\n"));
+			return FALSE;
+		}
+
+		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_OFF, ("*************************************************"
+								"*************************************************\n"));
+		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_OFF, ("	S.No.		   GROUP ID                "
+								"MEMBER 			   "
+								"TVM				"
+								"AGEOUT(Sec)\n"));
+		/* allocate one MAC entry */
+		RTMP_SEM_LOCK(&pMulticastFilterTable->MulticastFilterTabLock);
+
+		for (GroupIdx = 0; GroupIdx < MAX_LEN_OF_MULTICAST_FILTER_TABLE; GroupIdx++) {
+			/* pick up the valid entry */
+			if (pMulticastFilterTable->Content[GroupIdx].Valid == TRUE) {
+				PMEMBER_ENTRY pMemberEntry = NULL;
+				pEntry = &pMulticastFilterTable->Content[GroupIdx];
+
+				MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_OFF,
+							("	%-2u		  %02X:%02X:%02X:%02X:%02X:%02X 			  "
+									"				 "
+									"				 "
+									"	 %5u\n",
+									(GroupIdx+1), PRINT_MAC(pEntry->Addr),
+														(pEntry->AgeOutTime / OS_HZ)));
+
+				pMemberEntry = (PMEMBER_ENTRY)pEntry->MemberList.pHead;
+
+				MemberIdx = 0;
+
+				while (pMemberEntry) {
+					MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_OFF, ("	%3u.%-2u							"
+						"%02X:%02X:%02X:%02X:%02X:%02X		 "
+						"%s\n",
+						(GroupIdx+1), (MemberIdx+1),
+						PRINT_MAC(pMemberEntry->Addr),
+						((pMemberEntry->TVMode == 0) ? "AUTO":((pMemberEntry->TVMode == 1) ? "ENABLE":"NO TVM IE"))));
+
+					pMemberEntry = pMemberEntry->pNext;
+					MemberIdx += 1;
+				}
+			}
+		}
+		RTMP_SEM_UNLOCK(&pMulticastFilterTable->MulticastFilterTabLock);
+
+		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_OFF, ("-------------------------------------------------"
+								"-------------------------------------------------\n"));
+
+	} while (FALSE);
+
+	return TRUE;
 }
 
 #endif /* IGMP_TVM_SUPPORT */
@@ -1586,6 +1745,14 @@ static VOID InsertIgmpMember(
 	if (pMemberEntry != NULL) {
 		NdisZeroMemory(pMemberEntry, sizeof(MEMBER_ENTRY));
 		COPY_MAC_ADDR(pMemberEntry->Addr, pMemberAddr);
+#ifdef IGMP_TVM_SUPPORT
+		if (type & MCAT_FILTER_TVM_ENABLE)
+			pMemberEntry->TVMode = IGMP_TVM_IE_MODE_ENABLE;
+		else if (type & MCAT_FILTER_TVM_AUTO)
+			pMemberEntry->TVMode = IGMP_TVM_IE_MODE_AUTO;
+		else
+			pMemberEntry->TVMode = IGMP_TVM_IE_MODE_DISABLE;
+#endif /* IGMP_TVM_SUPPORT */
 #ifdef A4_CONN
 			/* Extract detail regarding presence on MWDS link*/
 			if (type & MCAT_FILTER_MWDS_CLI) {
@@ -1732,6 +1899,8 @@ INT Set_IgmpSn_Enable_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 
 	wdev->IgmpSnoopEnable = (BOOLEAN)(Enable == 0 ? FALSE : TRUE);
 
+	pAd->ApCfg.IgmpSnoopEnable[wdev->DevInfo.BandIdx] = wdev->IgmpSnoopEnable;
+
 #ifdef IGMP_TVM_SUPPORT
 
 	if (wdev->IgmpSnoopEnable) {
@@ -1751,6 +1920,8 @@ INT Set_IgmpSn_Enable_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 		Enable = TVMode;
 	}
 
+	pAd->ApCfg.IsTVModeEnable[wdev->DevInfo.BandIdx] = wdev->IsTVModeEnable;
+	pAd->ApCfg.TVModeType[wdev->DevInfo.BandIdx] = wdev->TVModeType;
 
 	MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_TRACE,
 		("%s: IgmpSnoopEnable = %u, IsTVModeEnable = %u, TVModeType = %u\n",
@@ -2035,6 +2206,58 @@ static inline BOOLEAN IsExcludedMldMsg(
 }
 #endif
 
+BOOLEAN ismDNS(
+	IN PUCHAR pDstMacAddr,
+	IN PUCHAR pIpHeader)
+{
+	UINT16 IpProtocol = ntohs(*((UINT16 *) (pIpHeader)));
+	UCHAR IpUDP;
+
+
+	if (IpProtocol == ETH_P_IP) {
+		IpUDP = (UCHAR)*(pIpHeader + 11);
+		if (IpUDP == 0x11) {
+			/* check the ip address : 224.0.0.x  reserved for mDNS & well known Protocol*/
+			if ((((UCHAR)*(pIpHeader + (11+7)) == 0xE0)
+				&& ((UCHAR)*(pIpHeader + (11+8)) == 0x00)
+				&& ((UCHAR)*(pIpHeader + (11+9)) == 0x00))
+#ifdef IGMP_TVM_SUPPORT
+				|| (((UCHAR)*(pIpHeader + (11+7)) == 0xEF)
+				&& ((UCHAR)*(pIpHeader + (11+8)) == 0xFF)
+				&& ((UCHAR)*(pIpHeader + (11+9)) == 0xFF)
+				&& ((UCHAR)*(pIpHeader + (11+10)) == 0xFA))
+#endif /* IGMP_TVM_SUPPORT */
+			)
+			return TRUE;
+		}
+	} else if (IpProtocol == ETH_P_IPV6) {
+		IpUDP = (UCHAR)*(pIpHeader + 8);
+		if (IpUDP == 0x11) {
+				/* check the ipv6 address : ff02::fb  reserved for mDNSv6 */
+				if (((UCHAR)*(pIpHeader + (8+18)) == 0xFF)
+					&& ((UCHAR)*(pIpHeader + (8+19)) == 0x02)
+					&& ((UCHAR)*(pIpHeader + (8+20)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+21)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+22)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+23)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+24)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+25)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+26)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+27)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+28)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+29)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+30)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+31)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+32)) == 0x00)
+					&& ((UCHAR)*(pIpHeader + (8+33)) == 0xFB)
+				)
+				return TRUE;
+
+		}
+	}
+	return FALSE;
+}
+
 /*
  * If Packet is IGMP or MLD type multicast packet, send packet OUT
  * Else check whether multicast destination address matches any group-id
@@ -2079,12 +2302,28 @@ NDIS_STATUS IgmpPktInfoQuery(
 
 		*ppGroupEntry = MulticastFilterTableLookup(pAd->pMulticastFilterTable, pSrcBufVA,
 									wdev->if_dev);
+
+		if (ismDNS(pSrcBufVA, pIpHeader)) {
+			*pInIgmpGroup = IGMP_NONE;
+			return NDIS_STATUS_SUCCESS;
+		}
+
 		if (IgmpMldPkt) {
 			*ppGroupEntry = NULL;
 			*pInIgmpGroup = IGMP_PKT;
 		} else if (*ppGroupEntry == NULL) {
+#ifdef IGMP_TVM_SUPPORT
+			/* This code is for following case: */
+			/* CASE: [When the group has been formed first, and then the IgmpSnooping is enabled] */
+			/* Earlier it was seen, that for the above case, after Group formation but IgmpSnooping OFF */
+			/* Packet used to go as Mcast packet, but after enabling IgmpSnooping, */
+			/* we used to drop all the Mcast packet beloning to this group */
+			*pInIgmpGroup = IGMP_NONE;
+			return NDIS_STATUS_SUCCESS;
+#else
 			RELEASE_NDIS_PACKET(pAd, pPacket, NDIS_STATUS_FAILURE);
 			return NDIS_STATUS_FAILURE;
+#endif /* IGMP_TVM_SUPPORT */
 		} else
 			*pInIgmpGroup = IGMP_IN_GROUP;
 	} else if (IS_BROADCAST_MAC_ADDR(pSrcBufVA)) {
@@ -2112,6 +2351,9 @@ NDIS_STATUS IgmpPktClone(
 	UINT8 UserPriority,
 	PNET_DEV pNetDev)
 {
+#ifdef IGMP_TVM_SUPPORT
+	NDIS_STATUS nStatus = NDIS_STATUS_SUCCESS;
+#endif /* IGMP_TVM_SUPPORT*/
 	struct qm_ops *qm_ops = pAd->qm_ops;
 	PNDIS_PACKET pSkbClone = NULL;
 	PMEMBER_ENTRY pMemberEntry = NULL;
@@ -2141,6 +2383,26 @@ NDIS_STATUS IgmpPktClone(
 
 	/* check all members of the IGMP group. */
 	while (bContinue == TRUE) {
+
+#ifdef IGMP_TVM_SUPPORT
+		/* If TV Mode is enabled in AP, then we need to send unicast packet to all connected STA's */
+		if (wdev->IsTVModeEnable &&
+			((wdev->TVModeType == IGMP_TVM_MODE_DISABLE) ||
+			((wdev->TVModeType == IGMP_TVM_MODE_AUTO) &&
+			(pMemberEntry->TVMode == IGMP_TVM_IE_MODE_DISABLE)))) {
+
+			nStatus = NDIS_STATUS_MORE_PROCESSING_REQUIRED;
+
+			pMemberEntry = pMemberEntry->pNext;
+
+			if (pMemberEntry != NULL) {
+				pMemberAddr = pMemberEntry->Addr;
+				pMacEntry = APSsPsInquiry(pAd, pMemberAddr, &Sst, &Aid, &PsMode, &Rate);
+				continue;
+			} else
+				break;
+		}
+#endif /* IGMP_TVM_SUPPORT */
 
 		if (pMacEntry && (Sst == SST_ASSOC) &&
 			(pAd->MacTab.tr_entry[pMacEntry->wcid].PortSecured == WPA_802_1X_PORT_SECURED)) {
@@ -2194,7 +2456,11 @@ NDIS_STATUS IgmpPktClone(
 			bContinue = FALSE;
 	}
 
+#ifdef IGMP_TVM_SUPPORT
+	return nStatus;
+#else
 	return NDIS_STATUS_SUCCESS;
+#endif /* IGMP_TVM_SUPPORT */
 }
 
 static inline BOOLEAN isMldMacAddr(

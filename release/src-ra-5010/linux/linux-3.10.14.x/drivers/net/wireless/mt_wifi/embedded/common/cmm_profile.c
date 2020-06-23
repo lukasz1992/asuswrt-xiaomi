@@ -396,8 +396,6 @@ static VOID RTMPOldChannelCfg(RTMP_ADAPTER *pAd, RTMP_STRING *Buffer)
 	if ((Buffer == NULL) || (IS_SUPPORT_V10_DFS(pAd) == FALSE))
 		return;
 
-	SET_V10_OLD_CHNL_VALID(pAd, FALSE);
-
 	for (i = 0, macptr = rstrtok(Buffer, ";"); macptr; macptr = rstrtok(NULL, ";"), i++) {
 #ifdef CONFIG_AP_SUPPORT
 		/* V10 -- AP Mode Only */
@@ -421,7 +419,8 @@ static VOID RTMPOldChannelCfg(RTMP_ADAPTER *pAd, RTMP_STRING *Buffer)
 			}
 
 			/* Valid Old Channel Processing */
-			SET_V10_OLD_CHNL_VALID(pAd, TRUE);
+			if (BackupChannel && (!IS_V10_OLD_CHNL_VALID(wdev)))
+				SET_V10_OLD_CHNL_VALID(wdev, TRUE);
 
 			/* Update Channel */
 			wdev->channel = BackupChannel;
@@ -1069,6 +1068,9 @@ static void rtmp_read_ap_client_from_file(
 	UCHAR		macAddress[MAC_ADDR_LEN];
 	PAPCLI_STRUCT   pApCliEntry = NULL;
 	struct wifi_dev *wdev;
+#ifdef CONVERTER_MODE_SWITCH_SUPPORT
+	UINT_8 idx = 0;
+#endif /* CONVERTER_MODE_SWITCH_SUPPORT */
 #ifdef DOT11W_PMF_SUPPORT
 
 	for (i = 0; i < MAX_APCLI_NUM; i++) {
@@ -1080,7 +1082,6 @@ static void rtmp_read_ap_client_from_file(
 #endif /* DOT11W_PMF_SUPPORT */
 
 #ifdef CONVERTER_MODE_SWITCH_SUPPORT
-	UINT_8 idx = 0;
 
 		MTWF_LOG(DBG_CAT_CLIENT, DBG_SUBCAT_ALL, DBG_LVL_OFF,
 			("Initially Start any BSS or AP with Default settings\n"));
@@ -1537,6 +1538,7 @@ static void rtmp_read_acl_parms_from_file(RTMP_ADAPTER *pAd, RTMP_STRING *tmpbuf
 	RTMP_STRING tok_str[32], *macptr;
 	INT			i = 0, j = 0, idx;
 	UCHAR		macAddress[MAC_ADDR_LEN];
+	BOOLEAN		isDuplicate = FALSE;
 	memset(macAddress, 0, MAC_ADDR_LEN);
 
 	for (idx = 0; idx < MAX_MBSSID_NUM(pAd); idx++) {
@@ -1587,9 +1589,23 @@ static void rtmp_read_acl_parms_from_file(RTMP_ADAPTER *pAd, RTMP_STRING *tmpbuf
 					break;
 				}
 
-				pAd->ApCfg.MBSSID[idx].AccessControlList.Num++;
-				NdisMoveMemory(pAd->ApCfg.MBSSID[idx].AccessControlList.Entry[(pAd->ApCfg.MBSSID[idx].AccessControlList.Num - 1)].Addr,
-							   macAddress, MAC_ADDR_LEN);
+				isDuplicate = FALSE;
+				for (j = 0; j < pAd->ApCfg.MBSSID[idx].AccessControlList.Num; j++) {
+					if (memcmp(pAd->ApCfg.MBSSID[idx].AccessControlList.Entry[j].Addr, &macAddress, 6) == 0) {
+						isDuplicate = TRUE;
+						MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+							("You have added an entry before :\n"));
+						MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+							("The duplicate entry is %02x:%02x:%02x:%02x:%02x:%02x\n",
+							macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]));
+					}
+				}
+
+				if (!isDuplicate) {
+					pAd->ApCfg.MBSSID[idx].AccessControlList.Num++;
+					NdisMoveMemory(pAd->ApCfg.MBSSID[idx].AccessControlList.Entry[(pAd->ApCfg.MBSSID[idx].AccessControlList.Num - 1)].Addr,
+								   macAddress, MAC_ADDR_LEN);
+				}
 			}
 
 			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("%s=Get %ld Mac Address\n", tok_str,
@@ -2237,22 +2253,136 @@ static VOID read_rts_len_thld_from_file(struct _RTMP_ADAPTER *pAd, RTMP_STRING *
 	RTMP_STRING *macptr = NULL;
 	struct wifi_dev *wdev = NULL;
 
-	if (RTMPGetKeyParameter("RTSThreshold", tmpbuf, 128, buf, FALSE)) {
-		for (i = 0, macptr = rstrtok(tmpbuf, ";"); macptr; macptr = rstrtok(NULL, ";"), i++) {
-			rts_thld = (UINT32)os_str_tol(macptr, 0, 10);
 
+	if (RTMPGetKeyParameter("RTSThreshold", tmpbuf, 128, buf, FALSE)) {
+		if (pAd->CommonCfg.dbdc_mode) {
+			for (i = 0, macptr = rstrtok(tmpbuf, ";"); macptr; macptr = rstrtok(NULL, ";"), i++) {
+				rts_thld = (UINT32)os_str_tol(macptr, 0, 10);
+				if ((rts_thld > MAX_RTS_THRESHOLD) || (rts_thld < 1))
+					rts_thld = MAX_RTS_THRESHOLD;
+				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					 ("profile: RTSThreshold[%d]=%d\n", i, rts_thld));
+				wdev = get_curr_wdev(pAd, i);
+				if (wdev)
+					wlan_config_set_rts_len_thld(wdev, rts_thld);
+			}
+		} else {
+#ifdef CONFIG_AP_SUPPORT
+			UCHAR mbss_idx = 0;
+#endif
+			rts_thld = (UINT32)os_str_tol(tmpbuf, 0, 10);
 			if ((rts_thld > MAX_RTS_THRESHOLD) || (rts_thld < 1))
 				rts_thld = MAX_RTS_THRESHOLD;
-
-			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
-					 ("profile: RTSThreshold[%d]=%d\n", i, rts_thld));
-			wdev = get_curr_wdev(pAd, i);
-			if (wdev)
-				wlan_config_set_rts_len_thld(wdev, rts_thld);
-
+#ifdef CONFIG_AP_SUPPORT
+			for (mbss_idx = 0; mbss_idx < pAd->ApCfg.BssidNum; mbss_idx++) {
+				struct wifi_dev *mbss_wdev = &pAd->ApCfg.MBSSID[mbss_idx].wdev;
+				wlan_config_set_rts_len_thld(mbss_wdev, rts_thld);
+				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+						("mbss[idx=%d], RTSThreshold[%d]=%d\n", mbss_idx, mbss_idx,
+						 rts_thld));
+			}
+#endif
 		}
 	}
 }
+
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+static void rtmp_read_rdd_threshold_parms_from_file(
+	struct _RTMP_ADAPTER *pAd,
+	RTMP_STRING *tmpbuf,
+	RTMP_STRING *buffer)
+{
+	RTMP_STRING	tok_str[32];
+	UINT8 ucRegionIdx = 0, ucRTIdx = 0, ucMaxNoOfRegion = 0;
+	INT32 i4Recv = 0;
+	PDFS_RADAR_THRESHOLD_PARAM prRadarThresholdParam = NULL;
+	PDFS_PULSE_THRESHOLD_PARAM prPulseThresholdParam = NULL;
+	PSW_RADAR_TYPE_T prRadarType = NULL;
+	DFS_PULSE_THRESHOLD_PARAM rPulseThresholdParam = {0};
+	SW_RADAR_TYPE_T rRadarType = {0};
+	RTMP_STRING *pRDRegionStr[] = {
+					"CE",
+					"FCC",
+					"JAP",
+					"ALL"
+					};
+
+	ucMaxNoOfRegion = sizeof(pRDRegionStr)/sizeof(RTMP_STRING *);
+
+	for (ucRegionIdx = 0; ucRegionIdx < ucMaxNoOfRegion; ucRegionIdx++) {
+		for (ucRTIdx = 0; ucRTIdx < RT_NUM; ucRTIdx++) {
+			snprintf(tok_str, sizeof(tok_str), "RTParam%s%d", pRDRegionStr[ucRegionIdx], ucRTIdx);
+			if (RTMPGetKeyParameter(tok_str, tmpbuf, 128, buffer, TRUE)) {
+				RTMPZeroMemory((VOID *)&rRadarType, sizeof(SW_RADAR_TYPE_T));
+				prRadarThresholdParam = &g_arRadarThresholdParam[ucRegionIdx];
+				i4Recv = sscanf(tmpbuf, "%hhu-%hhu-%hhu-%hhu-%hhu-%hhu-%hhu-%u-%u-%hhu-%hhu-%hhu-%hhu-%hhu",
+									&(rRadarType.ucRT_ENB), &(rRadarType.ucRT_STGR),
+									&(rRadarType.ucRT_CRPN_MIN), &(rRadarType.ucRT_CRPN_MAX),
+									&(rRadarType.ucRT_CRPR_MIN), &(rRadarType.ucRT_PW_MIN),
+									&(rRadarType.ucRT_PW_MAX), &(rRadarType.u4RT_PRI_MIN),
+									&(rRadarType.u4RT_PRI_MAX), &(rRadarType.ucRT_CRBN_MIN),
+									&(rRadarType.ucRT_CRBN_MAX), &(rRadarType.ucRT_STGPN_MIN),
+									&(rRadarType.ucRT_STGPN_MAX), &(rRadarType.ucRT_STGPR_MIN));
+
+				if (i4Recv != 14) {
+					MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():%s Format Error! Please enter in the following format\n"
+						"RT_ENB-RT_STGR-RT_CRPN_MIN-RT_CRPN_MAX-RT_CRPR_MIN-RT_PW_MIN-RT_PW_MAX-"
+						"RT_PRI_MIN-RT_PRI_MAX-RT_CRBN_MIN-RT_CRBN_MAX-RT_STGPN_MIN-RT_STGPN_MAX-RT_STGPR_MIN\n",
+						__func__, tok_str));
+					continue;
+				}
+				prRadarThresholdParam->afgSupportedRT[ucRTIdx] = 1;
+				prRadarType = &prRadarThresholdParam->arRadarType[ucRTIdx];
+				NdisCopyMemory(prRadarType, &rRadarType, sizeof(SW_RADAR_TYPE_T));
+				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+							("%s():ucRTIdx = %d\n RT_ENB = %d\n RT_STGR = %d\n "
+							"RT_CRPN_MIN = %d\n RT_CRPN_MAX = %d\n RT_CRPR_MIN = %d\n "
+							"RT_PW_MIN = %d\n RT_PW_MAX =%d\n RT_PRI_MIN = %d\n "
+							"RT_PRI_MAX = %d\n RT_CRBN_MIN = %d\n RT_CRBN_MAX = %d\n"
+							"RT_STGPN_MIN = %d\n RT_STGPN_MAX = %d\n RT_STGPR_MIN = %d\n ",
+							__func__, ucRTIdx, prRadarType->ucRT_ENB, prRadarType->ucRT_STGR,
+							prRadarType->ucRT_CRPN_MIN, prRadarType->ucRT_CRPN_MAX,
+							prRadarType->ucRT_CRPR_MIN, prRadarType->ucRT_PW_MIN,
+							prRadarType->ucRT_PW_MAX, prRadarType->u4RT_PRI_MIN,
+							prRadarType->u4RT_PRI_MAX, prRadarType->ucRT_CRBN_MIN,
+							prRadarType->ucRT_CRBN_MAX, prRadarType->ucRT_STGPN_MIN,
+							prRadarType->ucRT_STGPN_MAX, prRadarType->ucRT_STGPR_MIN));
+			}
+		}
+	}
+
+	if (RTMPGetKeyParameter("RadarPulseThresholdParam", tmpbuf, 128, buffer, TRUE)) {
+		i4Recv = sscanf(tmpbuf, "%u-%u-%u-%u-%u-%u-%u",
+					&(rPulseThresholdParam.u4PulseWidthMax), &(rPulseThresholdParam.i4PulsePwrMax),
+					&(rPulseThresholdParam.i4PulsePwrMin), &(rPulseThresholdParam.u4PRI_MIN_STGR),
+					&(rPulseThresholdParam.u4PRI_MAX_STGR), &(rPulseThresholdParam.u4PRI_MIN_CR),
+					&(rPulseThresholdParam.u4PRI_MAX_CR));
+		if (i4Recv != 7) {
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				("%s():RadarPulseThresholdParam Format Error! Please enter in the following format\n"
+					"MaxPulseWidth-MaxPulsePower-MinPulsePower-"
+					"MinPRISTGR-MaxPRISTGR-MinPRICR-MaxPRICR\n", __func__));
+			return;
+		}
+		for (ucRegionIdx = 0; ucRegionIdx < ucMaxNoOfRegion; ucRegionIdx++) {
+			prPulseThresholdParam = &g_arRadarThresholdParam[ucRegionIdx].rPulseThresholdParam;
+			NdisCopyMemory(prPulseThresholdParam, &rPulseThresholdParam, sizeof(DFS_PULSE_THRESHOLD_PARAM));
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+				("%s():RegionIdx = %d\nMaxPulseWidth = %d\nMaxPulsePower = %d\nMinPulsePower = %d\n"
+				"MinPRISTGR = %d\nMaxPRISTGR = %d\nMinPRICR = %d\nMaxPRICR = %d\n",
+				__func__, ucRegionIdx,
+				prPulseThresholdParam->u4PulseWidthMax,
+				prPulseThresholdParam->i4PulsePwrMax,
+				prPulseThresholdParam->i4PulsePwrMin,
+				prPulseThresholdParam->u4PRI_MIN_STGR,
+				prPulseThresholdParam->u4PRI_MAX_STGR,
+				prPulseThresholdParam->u4PRI_MIN_CR,
+				prPulseThresholdParam->u4PRI_MAX_CR));
+		}
+	}
+}
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
 
 
 #ifdef DOT11_VHT_AC
@@ -2350,21 +2480,60 @@ static VOID read_vht_param_from_file(struct _RTMP_ADAPTER *pAd,
 
 	/* Channel Width */
 	if (RTMPGetKeyParameter("VHT_BW", tmpbuf, 25, buf, TRUE)) {
-		for (i = 0, macptr = rstrtok(tmpbuf, ";"); macptr; macptr = rstrtok(NULL, ";"), i++) {
-			Value = os_str_tol(macptr, 0, 10);
+		if (pAd->CommonCfg.dbdc_mode) {
+			for (i = 0, macptr = rstrtok(tmpbuf, ";"); macptr; macptr = rstrtok(NULL, ";"), i++) {
+				Value = os_str_tol(macptr, 0, 10);
 
+				if (Value <= VHT_BW_8080)
+					vht_bw = Value;
+				else
+					vht_bw = VHT_BW_2040;
+
+				if (vht_bw > VHT_BW_80)
+					vht_bw = VHT_BW_80;
+
+				wdev = get_curr_wdev(pAd, i);
+				if (wdev)
+					wlan_config_set_vht_bw(wdev, vht_bw);
+
+#ifdef DFS_VENDOR10_CUSTOM_FEATURE
+				if (IS_SUPPORT_V10_DFS(pAd) && vht_bw == VHT_BW_2040) {
+					/* Boot Time HT BW Update when VHT BW if VHT2040 */
+					wlan_config_set_ht_bw(wdev, HT_BW_20);
+#ifdef MCAST_RATE_SPECIFIC
+					pAd->CommonCfg.MCastPhyMode.field.BW = HT_BW_20;
+					pAd->CommonCfg.MCastPhyMode_5G.field.BW = HT_BW_20;
+#ifdef MCAST_BCAST_RATE_SET_SUPPORT
+					pAd->CommonCfg.BCastPhyMode.field.BW = pAd->CommonCfg.MCastPhyMode.field.BW;
+					pAd->CommonCfg.BCastPhyMode_5G.field.BW = pAd->CommonCfg.MCastPhyMode_5G.field.BW;
+#endif /* MCAST_BCAST_RATE_SET_SUPPORT */
+#endif /* MCAST_RATE_SPECIFIC */
+				}
+#endif
+				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+								("wdev[%d] VHT: Channel Width = %s MHz\n", i,
+								 VhtBw2Str(vht_bw)));
+			}
+		} else {
+#ifdef CONFIG_AP_SUPPORT
+			UCHAR mbss_idx = 0;
+#endif
+			Value = os_str_tol(tmpbuf, 0, 10);
 			if (Value <= VHT_BW_8080)
 				vht_bw = Value;
 			else
 				vht_bw = VHT_BW_2040;
+#ifdef CONFIG_AP_SUPPORT
+			/* Set for all MBSS */
+			for (mbss_idx = 0; mbss_idx < pAd->ApCfg.BssidNum; mbss_idx++) {
+				struct wifi_dev *mbss_wdev = &pAd->ApCfg.MBSSID[mbss_idx].wdev;
 
-			if (pAd->CommonCfg.dbdc_mode && (vht_bw > VHT_BW_80))
-				vht_bw = VHT_BW_80;
-
-			wdev = get_curr_wdev(pAd, i);
-			if (wdev)
-				wlan_config_set_vht_bw(wdev, vht_bw);
-
+				wlan_config_set_vht_bw(mbss_wdev, vht_bw);
+				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+						("mbss[%d] VHT: Channel Width = %s MHz\n", mbss_idx,
+						 VhtBw2Str(vht_bw)));
+			}
+#endif
 #ifdef DFS_VENDOR10_CUSTOM_FEATURE
 			if (IS_SUPPORT_V10_DFS(pAd) && vht_bw == VHT_BW_2040) {
 				/* Boot Time HT BW Update when VHT BW if VHT2040 */
@@ -2379,10 +2548,6 @@ static VOID read_vht_param_from_file(struct _RTMP_ADAPTER *pAd,
 #endif /* MCAST_RATE_SPECIFIC */
 			}
 #endif
-
-			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
-				 ("wdev[%d] VHT: Channel Width = %s MHz\n", i,
-				  VhtBw2Str(vht_bw)));
 		}
 	}
 
@@ -2732,6 +2897,53 @@ static VOID read_ht_bw(struct _RTMP_ADAPTER *pAd, RTMP_STRING *tmpbuf, RTMP_STRI
 #endif /*CONFIG_AP_SUPPORT*/
 	}
 }
+
+#ifdef DFS_VENDOR10_CUSTOM_FEATURE
+static VOID RTMPOldBWCfg(RTMP_ADAPTER *pAd, RTMP_STRING *Buffer, BOOLEAN isVHT)
+{
+	UCHAR bw = 0;
+	RTMP_STRING *Bufptr = NULL;
+	struct wifi_dev *wdev = NULL;
+	INT i = 0;
+
+	if ((Buffer == NULL) || (IS_SUPPORT_V10_DFS(pAd) == FALSE))
+		return;
+
+#ifdef CONFIG_AP_SUPPORT
+	/* V10 -- AP Mode Only */
+	IF_DEV_CONFIG_OPMODE_ON_AP(pAd) {
+		bw = os_str_tol(Buffer, 0, 10);
+
+		/* Disallow Invalid Values */
+		if ((!isVHT && bw > BW_40) || (isVHT && bw > BW_80)) {
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("[%s] Incorrect BW=%d\n",
+				__func__, bw));
+			return;
+		}
+
+		for (i = 0, Bufptr = rstrtok(Buffer, ";"); (Bufptr && (i < MAX_MBSSID_NUM(pAd)));
+			Bufptr = rstrtok(NULL, ";"), i++) {
+			bw = os_str_tol(Bufptr, 0, 10);
+
+			wdev = get_curr_wdev(pAd, i);
+			if (!wdev || !IS_V10_OLD_CHNL_VALID(wdev))
+				continue;
+
+			if (isVHT) {
+				wlan_config_set_vht_bw(wdev, bw);
+				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("[%s] wdev[%d] VHT: Channel Width = %s MHz\n", __func__, i, VhtBw2Str(bw)));
+			} else {
+				wlan_config_set_ht_bw(wdev, bw);
+				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("HT: Channel Width = %s\n",
+					(bw == HT_BW_40) ? "40 MHz" : "20 MHz"));
+			}
+		}
+	}
+#endif /* CONFIG_AP_SUPPORT */
+}
+#endif
+
 
 static VOID read_ht_param_from_file(struct _RTMP_ADAPTER *pAd, RTMP_STRING *tmpbuf, RTMP_STRING *buf)
 {
@@ -3181,6 +3393,10 @@ static VOID read_dscp_pri_param(struct _RTMP_ADAPTER *pAd, RTMP_STRING *tmpbuf, 
 					 ("%s Invalid Priority value Valid value between 0 to 7\n", __func__));
 					break;
 				}
+
+				if (pri == 0)
+					pri = 3;
+
 				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
 				 ("%s Setting Pri %d for Dscp=%d\n", __func__, pri, dscpValue));
 				pAd->ApCfg.MBSSID[bss_idx].dscp_pri_map[dscpValue] = pri;
@@ -3244,6 +3460,11 @@ NDIS_STATUS	RTMPSetProfileParameters(
 	UCHAR BssidCountSupposed = 0;
 	BOOLEAN bSSIDxIsUsed = FALSE;
 #endif
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+	PDFS_RADAR_THRESHOLD_PARAM prRadarThresholdParam = NULL;
+	UCHAR ucRDDurRegion;
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+
 	struct _RTMP_CHIP_CAP *cap;
 
 	os_alloc_mem(NULL, (UCHAR **)&tmpbuf, MAX_PARAM_BUFFER_SIZE);
@@ -3486,6 +3707,24 @@ NDIS_STATUS	RTMPSetProfileParameters(
 			pAd->CommonCfg.DfsParameter.bDfsEnable = DfsEnable;
 		}
 
+#ifdef CONFIG_RCSA_SUPPORT
+		if (RTMPGetKeyParameter("DfsUseCsaCfg", tmpbuf, 25, pBuffer, TRUE)) {
+			UINT_8 UseCsaCfg = os_str_tol(tmpbuf, 0, 10);
+
+			if (UseCsaCfg > 0)
+				pAd->CommonCfg.DfsParameter.fUseCsaCfg = TRUE;
+			else
+				pAd->CommonCfg.DfsParameter.fUseCsaCfg = FALSE;
+		}
+		if (RTMPGetKeyParameter("DfsRCSAEn", tmpbuf, 25, pBuffer, TRUE)) {
+			UINT_8 RCSAEn = os_str_tol(tmpbuf, 0, 10);
+
+			if (RCSAEn > 0)
+				pAd->CommonCfg.DfsParameter.bRCSAEn = TRUE;
+			else
+				pAd->CommonCfg.DfsParameter.bRCSAEn = FALSE;
+		}
+#endif
 #endif
 
 		/*WirelessMode*/
@@ -3517,8 +3756,14 @@ NDIS_STATUS	RTMPSetProfileParameters(
 			MTSetChGrp(pAd, tmpbuf);
 
 		/*Channel*/
-		if (RTMPGetKeyParameter("Channel", tmpbuf, 100, pBuffer, TRUE))
+		/*Note: AutoChannelSelect must be put before Channel in dat file*/
+		if (RTMPGetKeyParameter("Channel", tmpbuf, 100, pBuffer, TRUE)
+#ifdef CONFIG_AP_SUPPORT
+			&& !pAd->ApCfg.bAutoChannelAtBootup
+#endif
+			) {
 			RTMPChannelCfg(pAd, tmpbuf);
+		}
 
 		/* EtherTrafficBand */
 		if (RTMPGetKeyParameter("EtherTrafficBand", tmpbuf, 10, pBuffer, TRUE)) {
@@ -3688,6 +3933,14 @@ NDIS_STATUS	RTMPSetProfileParameters(
 			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("[TxPower] BAND0: %d \n",
 					 pAd->CommonCfg.ucTxPowerPercentage[BAND0]));
 #endif /* DBDC_MODE */
+#if defined(CONFIG_STA_SUPPORT) || defined(CONFIG_AP_SUPPORT)
+			if ((pAd->OpMode == OPMODE_STA) || (pAd->OpMode == OPMODE_AP)) {
+				pAd->CommonCfg.ucTxPowerDefault[BAND0] = pAd->CommonCfg.ucTxPowerPercentage[BAND0];
+#ifdef DBDC_MODE
+				pAd->CommonCfg.ucTxPowerDefault[BAND1] = pAd->CommonCfg.ucTxPowerPercentage[BAND1];
+#endif /* DBDC_MODE */
+			}
+#endif /* CONFIG_STA_SUPPORT */
 		}
 
 
@@ -4770,7 +5023,7 @@ NDIS_STATUS	RTMPSetProfileParameters(
 			}
 		}
 #endif
-#ifdef STATIC_VLAN_SUPPORT
+#ifdef VLAN_SUPPORT
 		/*Vlan Tag */
 #ifdef CONFIG_AP_SUPPORT
 		if (RTMPGetKeyParameter("VLANTag", tmpbuf, 32, pBuffer, TRUE)) {
@@ -4805,7 +5058,7 @@ NDIS_STATUS	RTMPSetProfileParameters(
 		}
 #endif /* APCLI_SUPPORT */
 #endif /* CONFIG_AP_SUPPORT */
-#endif /* STATIC_VLAN_SUPPORT */
+#endif /* VLAN_SUPPORT */
 
 		/*TxBurst*/
 		if (RTMPGetKeyParameter("TxBurst", tmpbuf, 10, pBuffer, TRUE)) {
@@ -5144,15 +5397,6 @@ NDIS_STATUS	RTMPSetProfileParameters(
 
 #endif /* BACKGROUND_SCAN_SUPPORT */
 
-#ifdef DFS_VENDOR10_CUSTOM_FEATURE
-			if (RTMPGetKeyParameter("OldChannel_Dev1", tmpbuf, 10, pBuffer, TRUE))
-				RTMPOldChannelCfg(pAd, tmpbuf);
-
-
-			if (RTMPGetKeyParameter("OldChannel_Dev2", tmpbuf, 10, pBuffer, TRUE))
-				RTMPOldChannelCfg(pAd, tmpbuf);
-#endif
-
 			if (RTMPGetKeyParameter("EDCCAEnable", tmpbuf, 10, pBuffer, FALSE)) {
 				for (i = 0, macptr = rstrtok(tmpbuf, ";"); macptr; macptr = rstrtok(NULL, ";"), i++) {
 					if (i < DBDC_BAND_NUM) {
@@ -5299,6 +5543,15 @@ NDIS_STATUS	RTMPSetProfileParameters(
 					MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("MUTxRxEnable = %ld\n", pAd->CommonCfg.MUTxRxEnable));
 				}
 
+#ifdef CFG_SUPPORT_MU_MIMO_RA
+				if (RTMPGetKeyParameter("MuEnable7615HwPatch", tmpbuf, 10, pBuffer, TRUE)) {
+					UINT8 IsEnable = FALSE;
+
+					IsEnable = simple_strtol(tmpbuf, 0, 10);
+					pAd->MuHwSwPatch = IsEnable;
+				}
+#endif
+
 			}
 
 			/* ETxBfTimeout*/
@@ -5380,9 +5633,11 @@ NDIS_STATUS	RTMPSetProfileParameters(
 			}
 		}
 
-
 		/*RDRegion*/
 		if (RTMPGetKeyParameter("RDRegion", tmpbuf, 128, pBuffer, TRUE)) {
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+			pAd->CommonCfg.DfsParameter.fgRDRegionConfigured = TRUE;
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
 			if ((strncmp(tmpbuf, "JAP_W53", 7) == 0) || (strncmp(tmpbuf, "jap_w53", 7) == 0)) {
 				pAd->CommonCfg.RDDurRegion = JAP_W53;
 				/*pRadarDetect->DfsSessionTime = 15;*/
@@ -5400,14 +5655,44 @@ NDIS_STATUS	RTMPSetProfileParameters(
 				/*pRadarDetect->DfsSessionTime = 13;*/
 			} else {
 				pAd->CommonCfg.RDDurRegion = CE;
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+				pAd->CommonCfg.DfsParameter.fgRDRegionConfigured = FALSE;
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
 				/*pRadarDetect->DfsSessionTime = 13;*/
 			}
 
 			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("RDRegion=%d\n", pAd->CommonCfg.RDDurRegion));
 		} else {
 			pAd->CommonCfg.RDDurRegion = CE;
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+			pAd->CommonCfg.DfsParameter.fgRDRegionConfigured = FALSE;
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
 			/*pRadarDetect->DfsSessionTime = 13;*/
 		}
+
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+		rtmp_read_rdd_threshold_parms_from_file(pAd, tmpbuf, pBuffer);
+
+		/* RTDetect */
+		if (RTMPGetKeyParameter("RTDetect", tmpbuf, 128, pBuffer, TRUE)) {
+			ucRDDurRegion = pAd->CommonCfg.RDDurRegion;
+			if (pAd->CommonCfg.DfsParameter.fgRDRegionConfigured == TRUE) {
+				if ((ucRDDurRegion == JAP_W53) || (ucRDDurRegion == JAP_W56))
+					ucRDDurRegion = JAP;
+				prRadarThresholdParam = &g_arRadarThresholdParam[ucRDDurRegion];
+			} else {
+				prRadarThresholdParam = &g_arRadarThresholdParam[3];/* All Area */
+			}
+			for (i = 0, macptr = rstrtok(tmpbuf, "-"); macptr && (i < RT_NUM); macptr = rstrtok(NULL, "-"), i++) {
+				if (prRadarThresholdParam->afgSupportedRT[i] == TRUE)
+					prRadarThresholdParam->arRadarType[i].ucRT_ENB = simple_strtol(macptr, 0, 10);
+				else
+					MTWF_LOG(DBG_CAT_CFG, DBG_CAT_AP, DBG_LVL_TRACE, ("%s: Unsupported RT-%d\n", __func__, i));
+				MTWF_LOG(DBG_CAT_CFG, DBG_CAT_AP, DBG_LVL_TRACE,
+					("%s: RT-%d: RT_ENB = %d\n", __func__, i, prRadarThresholdParam->arRadarType[i].ucRT_ENB));
+			}
+		}
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
 
 #ifdef SYSTEM_LOG_SUPPORT
 
@@ -5517,6 +5802,24 @@ NDIS_STATUS	RTMPSetProfileParameters(
 		read_vht_param_from_file(pAd, tmpbuf, pBuffer);
 #endif /* DOT11_VHT_AC */
 #endif /* DOT11_N_SUPPORT */
+
+#ifdef DFS_VENDOR10_CUSTOM_FEATURE
+		if (RTMPGetKeyParameter("OldChannel_Dev1", tmpbuf, 25, pBuffer, TRUE))
+			RTMPOldChannelCfg(pAd, tmpbuf);
+		if (RTMPGetKeyParameter("OldChannel_Dev2", tmpbuf, 25, pBuffer, TRUE))
+			RTMPOldChannelCfg(pAd, tmpbuf);
+
+		if (RTMPGetKeyParameter("OldHTBW_Dev1", tmpbuf, 25, pBuffer, TRUE))
+			RTMPOldBWCfg(pAd, tmpbuf, FALSE);
+		if (RTMPGetKeyParameter("OldHTBW_Dev2", tmpbuf, 25, pBuffer, TRUE))
+			RTMPOldBWCfg(pAd, tmpbuf, FALSE);
+
+		if (RTMPGetKeyParameter("OldVHTBW_Dev1", tmpbuf, 25, pBuffer, TRUE))
+			RTMPOldBWCfg(pAd, tmpbuf, TRUE);
+		if (RTMPGetKeyParameter("OldVHTBW_Dev2", tmpbuf, 25, pBuffer, TRUE))
+			RTMPOldBWCfg(pAd, tmpbuf, TRUE);
+#endif
+
 #ifdef CONFIG_AP_SUPPORT
 		IF_DEV_CONFIG_OPMODE_ON_AP(pAd) {
 #ifdef WSC_AP_SUPPORT

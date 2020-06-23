@@ -109,6 +109,22 @@ BOOLEAN RtmpTimerQRemove(
 void RtmpTimerQExit(struct _RTMP_ADAPTER *pAd);
 void RtmpTimerQInit(struct _RTMP_ADAPTER *pAd);
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+#define BUILD_TIMER_FUNCTION(_func)										\
+	void rtmp_timer_##_func(struct timer_list *_timer)										\
+	{																			\
+		PRALINK_TIMER_STRUCT	_pTimer = from_timer(_pTimer,_timer,_timer);				\
+		RTMP_TIMER_TASK_ENTRY	*_pQNode;										\
+		RTMP_ADAPTER			*_pAd;											\
+		\
+		_pTimer->handle = _func;													\
+		_pAd = (RTMP_ADAPTER *)_pTimer->pAd;										\
+		_pQNode = RtmpTimerQInsert(_pAd, _pTimer);								\
+		if ((_pQNode == NULL) && (_pAd->TimerQ.status & RTMP_TASK_CAN_DO_INSERT))	\
+			RTMP_OS_Add_Timer(&_pTimer->TimerObj, OS_HZ);							\
+	}
+
+#else
 #define BUILD_TIMER_FUNCTION(_func)										\
 	void rtmp_timer_##_func(unsigned long data)										\
 	{																			\
@@ -122,6 +138,7 @@ void RtmpTimerQInit(struct _RTMP_ADAPTER *pAd);
 		if ((_pQNode == NULL) && (_pAd->TimerQ.status & RTMP_TASK_CAN_DO_INSERT))	\
 			RTMP_OS_Add_Timer(&_pTimer->TimerObj, OS_HZ);							\
 	}
+#endif
 #else /* !RTMP_TIMER_TASK_SUPPORT */
 #define BUILD_TIMER_FUNCTION(_func)										\
 	void rtmp_timer_##_func(unsigned long data)										\

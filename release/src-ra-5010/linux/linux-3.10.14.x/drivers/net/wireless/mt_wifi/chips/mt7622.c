@@ -2255,6 +2255,10 @@ INT Mt7622AsicArchOpsInit(RTMP_ADAPTER *pAd)
 #ifdef IGMP_SNOOP_SUPPORT
 	arch_ops->archMcastEntryInsert = MulticastFilterTableInsertEntry;
 	arch_ops->archMcastEntryDelete = MulticastFilterTableDeleteEntry;
+#ifdef IGMP_TVM_SUPPORT
+	arch_ops->archMcastConfigAgeout = MulticastFilterConfigAgeOut;
+	arch_ops->archMcastGetMcastTable = MulticastFilterGetMcastTable;
+#endif /* IGMP_TVM_SUPPORT */
 #endif
 	arch_ops->write_txp_info = mtd_write_txp_info_by_host;
 	arch_ops->write_tmac_info_fixed_rate = mtd_write_tmac_info_fixed_rate;

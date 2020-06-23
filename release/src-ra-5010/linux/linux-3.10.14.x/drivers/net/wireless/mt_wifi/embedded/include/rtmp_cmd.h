@@ -5,7 +5,7 @@
 
 /* OS_RTCMDUp is only used in UTIL/NETIF module */
 #define OS_RTCMDUp						RtmpOsCmdUp
-
+#define OS_RTCMDRunning						RtmpOsIsCmdThreadRunning
 
 /* RALINK command status code */
 #define RTMP_IO_EINVAL							30000
@@ -132,6 +132,7 @@ typedef enum _CMD_RTPRIV_IOCTL_AP {
 	CMD_RTPRIV_IOCTL_AP_SIOCGIWRATEQ,
 	CMD_RTPRIV_IOCTL_AP_SIOCSIWGENIE,
 
+	CMD_RTPRIV_IOCTL_GET_DRIVER_INFO,
 #ifdef WIFI_DIAG
 	CMD_RTPRIV_IOCTL_GET_PROCESS_INFO,
 #endif
@@ -537,6 +538,12 @@ typedef struct __CMD_RTPRIV_IOCTL_80211_SURVEY {
 	UINT64 ChannelTimeExtBusy;
 } CMD_RTPRIV_IOCTL_80211_SURVEY;
 
+#ifdef HOSTAPD_MAP_SUPPORT /* This could be a generic fix */
+typedef struct __CMD_RTPRIV_IOCTL_AP_STA_DEL {
+	IN UINT8		*pSta_MAC;
+	IN struct wifi_dev	*pWdev;
+} CMD_RTPRIV_IOCTL_AP_STA_DEL;
+#endif /* HOSTAPD_MAP_SUPPORT */
 #endif /* RT_CFG80211_SUPPORT */
 
 /* station commands */

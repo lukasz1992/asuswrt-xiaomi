@@ -296,24 +296,45 @@ VOID a4_proxy_delete(
 	RoutingTabSetOneFree(adapter, if_index, mac_addr, ROUTING_ENTRY_A4);
 }
 
+BOOLEAN a4_get_dst_ip(void *pkt, unsigned char *ip)
+{
+	UCHAR *pSrcBuf;
+	UINT16 TypeLen;
+	UINT32 type_len_idx = 12;
+	UCHAR *ip_header = NULL;
 
+	pSrcBuf = pkt;
+	TypeLen = (pSrcBuf[type_len_idx] << 8) | pSrcBuf[type_len_idx + 1];
+	while (TypeLen == ETH_TYPE_VLAN) {
+		type_len_idx += 2;
+		TypeLen = (pSrcBuf[type_len_idx] << 8) | pSrcBuf[type_len_idx + 1];
+	}
+	if (TypeLen == ETH_TYPE_IPv4) {
+		ip_header = &pSrcBuf[type_len_idx + 2];
+		NdisCopyMemory(ip, ip_header + 16, 4);
+		return TRUE;
+	}
+	return FALSE;
+}
 BOOLEAN a4_proxy_lookup(
 	IN PRTMP_ADAPTER adapter,
 	IN UCHAR if_index,
 	IN PUCHAR mac_addr,
 	IN BOOLEAN update_alive_time,
+	IN BOOLEAN is_rx,
 	OUT UCHAR *wcid
 )
 {
+
 	*wcid = 0;
-
-	if (a4_get_entry_count(adapter, if_index) == 0)
+	if (a4_get_entry_count(adapter, if_index) == 0) {
 		return FALSE;
-
+	}
 	if (RoutingTabLookup(adapter, if_index, mac_addr, update_alive_time, wcid) != NULL)
 		return TRUE;
-	else
+	else {
 		return FALSE;
+	}
 }
 
 
@@ -744,6 +765,15 @@ INT Set_APProxy_Status_Show_Proc(
 			}
 		}
 	}
+	return TRUE;
+}
+
+
+INT Set_APProxy_Refresh_Proc(
+	IN	PRTMP_ADAPTER adapter,
+	IN	RTMP_STRING * arg)
+{
+	adapter->a4_need_refresh = TRUE;
 	return TRUE;
 }
 

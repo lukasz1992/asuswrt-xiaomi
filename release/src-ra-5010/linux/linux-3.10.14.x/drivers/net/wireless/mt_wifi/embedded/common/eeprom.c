@@ -266,6 +266,9 @@ INT NICReadEEPROMParameters(RTMP_ADAPTER *pAd, RTMP_STRING *mac_addr)
 	EEPROM_ANTENNA_STRUC Antenna;
 	EEPROM_NIC_CONFIG2_STRUC NicConfig2;
 	USHORT  Addr01, Addr23, Addr45;
+#ifdef PRE_CAL_TRX_SET2_SUPPORT
+	UINT16 PreCalSize;
+#endif /* PRE_CAL_TRX_SET2_SUPPORT */
 #if defined(PRE_CAL_TRX_SET2_SUPPORT) || defined(PRE_CAL_MT7622_SUPPORT)
 	UINT16 DoPreCal = 0;
 #endif /* PRE_CAL_TRX_SET2_SUPPORT */
@@ -319,6 +322,16 @@ INT NICReadEEPROMParameters(RTMP_ADAPTER *pAd, RTMP_STRING *mac_addr)
 #endif /*PRE_CAL_MT7622_SUPPORT*/
 
 #ifdef PRE_CAL_TRX_SET2_SUPPORT
+
+	PreCalSize = PRE_CAL_SIZE_ONE_CARD;
+#ifdef CONFIG_RALINK_MT7621
+	/* Litmit PreCalSize to 12k for MT7622 + MT7615 + MT7615 */
+#ifdef MULTI_INF_SUPPORT
+	if (multi_inf_get_count() >= 2)
+		PreCalSize = PRE_CAL_SIZE_DUAL_CARD;
+#endif /*MULTI_INF_SUPPORT*/
+#endif /*CONFIG_RALINK_MT7621*/
+
 	/* Check DoPreCal bits */
 	RT28xx_EEPROM_READ16(pAd, 0x52, DoPreCal);
 
@@ -331,7 +344,7 @@ INT NICReadEEPROMParameters(RTMP_ADAPTER *pAd, RTMP_STRING *mac_addr)
 		if (!rlmCalCacheDone(pAd->rlmCalCache) && (DoPreCal & (1 << 2))) {
 			INT32 ret = 0;
 			INT32 ret_cal_data = NDIS_STATUS_SUCCESS;
-			ret = os_alloc_mem(pAd, &pAd->PreCalReStoreBuffer, PRE_CAL_SIZE);/* Allocate 16K buffer*/
+			ret = os_alloc_mem(pAd, &pAd->PreCalReStoreBuffer, PreCalSize);/* Allocate 16K buffer*/
 
 			if (ret != NDIS_STATUS_SUCCESS) {
 				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
@@ -341,11 +354,11 @@ INT NICReadEEPROMParameters(RTMP_ADAPTER *pAd, RTMP_STRING *mac_addr)
 #ifdef RTMP_FLASH_SUPPORT
 				if (pAd->E2pAccessMode == E2P_FLASH_MODE)
 					RtmpFlashRead(pAd->hdev_ctrl, pAd->PreCalReStoreBuffer,
-									get_dev_eeprom_offset(pAd) + PRECALPART_OFFSET, PRE_CAL_SIZE);
+							get_dev_eeprom_offset(pAd) + PRECALPART_OFFSET, PreCalSize);
 #endif /* RTMP_FLASH_SUPPORT */
 				if (pAd->E2pAccessMode == E2P_BIN_MODE) {
 					ret_cal_data = rtmp_cal_load_from_bin(pAd, pAd->PreCalReStoreBuffer, PRECALPART_OFFSET,
-										 PRE_CAL_SIZE);
+										 PreCalSize);
 
 					if (ret_cal_data != NDIS_STATUS_SUCCESS) {
 						/* Erase DoPreCal bit */

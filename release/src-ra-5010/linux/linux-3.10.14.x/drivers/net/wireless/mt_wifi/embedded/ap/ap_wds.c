@@ -617,7 +617,7 @@ MAC_TABLE_ENTRY *FindWdsEntry(
 					  pRxBlk->rx_signal.raw_rssi[1],
 					  pRxBlk->rx_signal.raw_rssi[2],
 					  pRxBlk->rx_signal.raw_rssi[3],
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 					  pRxBlk->rx_signal.raw_snr[0],
 					  pRxBlk->rx_signal.raw_snr[1],
 					  pRxBlk->rx_signal.raw_snr[2],

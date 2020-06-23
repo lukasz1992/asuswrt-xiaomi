@@ -153,6 +153,9 @@ VOID AndesFreeCmdMsg(struct cmd_msg *msg)
 	if (IS_CMD_MSG_NEED_SYNC_WITH_FW_FLAG_SET(msg))
 		RTMP_OS_EXIT_COMPLETION(&msg->ack_done);
 
+	if (msg->retry_pkt)
+		RTMPFreeNdisPacket(ad, msg->retry_pkt);
+
 	OS_SPIN_LOCK_IRQSAVE(&ctl->msg_lock, &flags);
 	ctl->free_cmd_msg++;
 	OS_SPIN_UNLOCK_IRQRESTORE(&ctl->msg_lock, &flags);
@@ -718,6 +721,10 @@ static INT32 AndesDequeueAndKickOutCmdMsgs(RTMP_ADAPTER *ad)
 				chip_ops->andes_fill_cmd_header(msg, net_pkt);
 		}
 
+		if (msg->retry_times > 1) {
+			OS_PKT_CLONE(ad, net_pkt, msg->retry_pkt, MEM_ALLOC_FLAG);
+		}
+
 #if defined(RTMP_PCI_SUPPORT) || defined(RTMP_RBUS_SUPPORT)
 
 		if (chip_ops->pci_kick_out_cmd_msg != NULL)
@@ -742,9 +749,9 @@ static INT32 AndesDequeueAndKickOutCmdMsgs(RTMP_ADAPTER *ad)
 
 
 
-static INT32 AndesWaitForCompleteTimeout(struct cmd_msg *msg, ULONG timeout)
+static ULONG AndesWaitForCompleteTimeout(struct cmd_msg *msg, ULONG timeout)
 {
-	int ret = 0;
+	ULONG ret = 0;
 	ULONG expire = timeout ?
 				   RTMPMsecsToJiffies(timeout) : RTMPMsecsToJiffies(CMD_MSG_TIMEOUT);
 	ret = RTMP_OS_WAIT_FOR_COMPLETION_TIMEOUT(&msg->ack_done, expire);
@@ -898,6 +905,8 @@ retransmit:
 		if (is_cmd_need_wait && (msg->retry_times > 0)) {
 			RTMP_OS_EXIT_COMPLETION(&msg->ack_done);
 			RTMP_OS_INIT_COMPLETION(&msg->ack_done);
+			msg->net_pkt = msg->retry_pkt;
+			msg->retry_pkt = NULL;
 			state = tx_retransmit;
 			AndesQueueHeadCmdMsg(&ctl->txq, msg, state);
 			goto retransmit;

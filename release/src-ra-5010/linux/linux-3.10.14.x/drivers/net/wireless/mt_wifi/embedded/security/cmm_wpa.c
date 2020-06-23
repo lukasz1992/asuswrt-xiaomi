@@ -1252,7 +1252,9 @@ VOID MlmeDeAuthAction(
 			MiniportMMRequest(pAd, 0, pOutBuffer, FrameLen);
 
 		MlmeFreeMemory(pOutBuffer);
-
+		/*Sta entry is deleted before sending EAP-Failure & Deauth frame
+		  Using OS_WAIT to rescheduling the frame TX before entry delete*/
+		OS_WAIT(1);
 #ifdef WIFI_DIAG
 		if (pEntry && IS_ENTRY_CLIENT(pEntry))
 			DiagConnError(pAd, pEntry->func_tb_idx, pEntry->Addr, DIAG_CONN_DEAUTH_COM, Reason);
@@ -4868,6 +4870,12 @@ VOID PeerPairMsg2Action(
 	/* check Entry in valid State*/
 	if (pHandshake4Way->WpaState < AS_PTKSTART)
 		return;
+	/* Prevent the Replayed Msg2 Attack */
+	if (pHandshake4Way->WpaState == AS_PTKINITDONE) {
+		MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+			("%s: reject the Replayed Msg2\n", __func__));
+		return;
+	}
 
 	/* pointer to 802.11 header*/
 	pHeader = (PHEADER_802_11)Elem->Msg;
@@ -5127,6 +5135,13 @@ VOID PeerPairMsg4Action(
 
 	if (pHandshake4Way->WpaState < AS_PTKINIT_NEGOTIATING)
 		return;
+
+	/* Prevent the Replayed Msg4 Attack */
+	if (pHandshake4Way->WpaState == AS_PTKINITDONE) {
+		MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+		("%s: reject the Replayed Msg4\n", __func__));
+		return;
+	}
 
 	/* pointer to 802.11 header*/
 	pHeader = (PHEADER_802_11)Elem->Msg;
@@ -5402,15 +5417,20 @@ VOID PeerGroupMsg1Action(
 	PEAPOL_PACKET pReceiveEapol;
 	UINT EapolLen;
 	PHANDSHAKE_PROFILE pHandshake4Way  = NULL;
+	unsigned char hdr_len = LENGTH_802_11;
 	UCHAR idx = 0;
 
 	MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("===> %s\n", __func__));
 	pHandshake4Way = &pSecConfig->Handshake;
 	/* pointer to 802.11 header*/
 	pHeader = (PHEADER_802_11)Elem->Msg;
+#ifdef A4_CONN
+	if (pHeader->FC.FrDs == 1 && pHeader->FC.ToDs == 1)
+		hdr_len = LENGTH_802_11_WITH_ADDR4;
+#endif
 	/* skip 802.11_header(24-byte) and LLC_header(8) */
-	pReceiveEapol = (PEAPOL_PACKET) &Elem->Msg[LENGTH_802_11 + LENGTH_802_1_H];
-	EapolLen = Elem->MsgLen - LENGTH_802_11 - LENGTH_802_1_H;
+	pReceiveEapol = (PEAPOL_PACKET) &Elem->Msg[hdr_len + LENGTH_802_1_H];
+	EapolLen = Elem->MsgLen - hdr_len - LENGTH_802_1_H;
 
 	/* Sanity Check peer group message 1 - Replay Counter, MIC, RSNIE*/
 	if (WpaMessageSanity(pAd, pReceiveEapol, EapolLen, EAPOL_GROUP_MSG_1, pSecConfig, pEntry) == FALSE) {
@@ -5460,14 +5480,19 @@ VOID PeerGroupMsg2Action(
 	PEAPOL_PACKET pReceiveEapolM2;
 	UINT EapolLen;
 	PHANDSHAKE_PROFILE pHandshake4Way  = NULL;
+	unsigned char hdr_len = LENGTH_802_11;
 	BOOLEAN Cancelled;
 
 	MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("===> %s\n", __func__));
 	/* pointer to 802.11 header*/
 	pHeader = (PHEADER_802_11)Elem->Msg;
+#ifdef A4_CONN
+		if (pHeader->FC.FrDs == 1 && pHeader->FC.ToDs == 1)
+			hdr_len = LENGTH_802_11_WITH_ADDR4;
+#endif
 	/* skip 802.11_header(24-byte) and LLC_header(8) */
-	pReceiveEapolM2 = (PEAPOL_PACKET) &Elem->Msg[LENGTH_802_11 + LENGTH_802_1_H];
-	EapolLen = Elem->MsgLen - LENGTH_802_11 - LENGTH_802_1_H;
+	pReceiveEapolM2 = (PEAPOL_PACKET) &Elem->Msg[hdr_len + LENGTH_802_1_H];
+	EapolLen = Elem->MsgLen - hdr_len - LENGTH_802_1_H;
 	pHandshake4Way = &pSecConfig->Handshake;
 
 	if (pHandshake4Way->WpaState != AS_PTKINITDONE)

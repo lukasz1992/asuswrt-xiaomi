@@ -765,7 +765,7 @@ INT PMF_RobustFrameClassify(
 	case SUBTYPE_ACTION: {
 		if  ((IsRx == FALSE)
 			 || (IsRx && (pHdr->FC.Wep == 0))) {
-			UCHAR Category = (UCHAR) (pHdr->Octet[0]);
+			UCHAR Category = *pFrame;
 
 			switch (Category) {
 			/* Refer to IEEE 802.11w Table7-24 */

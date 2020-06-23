@@ -288,15 +288,25 @@ static INT CFG80211DRV_UpdateApSettingFromBeacon(PRTMP_ADAPTER pAd, UINT mbss_id
 			pAd->ApCfg.MBSSID[mbss_idx].WscIEProbeResp.ValueLen = 0;
 		}
 		if (wsc_ie != NULL) {
-			EID_STRUCT *eid;
+#ifdef HOSTAPD_MAP_SUPPORT
+			if (IS_MAP_ENABLE(pAd) && wdev &&
+				(wdev->MAPCfg.DevOwnRole & BIT(MAP_ROLE_BACKHAUL_BSS)) &&
+				(!(wdev->MAPCfg.DevOwnRole & BIT(MAP_ROLE_FRONTHAUL_BSS)))) {
+					MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("Strictly BH BSS: %s, donot BC WPS cap\n", pMbss->Ssid));
+			} else
+#endif
+			{
+				EID_STRUCT *eid;
 
-			eid = (EID_STRUCT *)wsc_ie;
+				eid = (EID_STRUCT *)wsc_ie;
 
-			if (eid->Len + 2 <= 500) {
-				NdisCopyMemory(pMbss->WscIEBeacon.Value, wsc_ie, eid->Len+2);
-				pMbss->WscIEBeacon.ValueLen = eid->Len + 2;
+				if (eid->Len + 2 <= 500) {
+					NdisCopyMemory(pMbss->WscIEBeacon.Value, wsc_ie, eid->Len+2);
+					pMbss->WscIEBeacon.ValueLen = eid->Len + 2;
+				}
 			}
 		}
+
 #ifdef HOSTAPD_11R_SUPPORT
 		if (md_ie != NULL) {
 			PFT_CFG pFtCfg = &pAd->ApCfg.MBSSID[mbss_idx].wdev.FtCfg;
@@ -1505,24 +1515,36 @@ INT CFG80211_StaPortSecured(
 }
 
 
+#ifdef HOSTAPD_MAP_SUPPORT
 INT CFG80211_ApStaDel(
 	IN VOID                                         *pAdCB,
-	IN UCHAR                                        *pMac)
+	IN VOID                                         *pData,
+	IN UINT						reason)
 {
 	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdCB;
 	MAC_TABLE_ENTRY *pEntry;
+	CMD_RTPRIV_IOCTL_AP_STA_DEL *pApStaDelInfo = NULL;
+	PUCHAR pMac = NULL;
+
+	pApStaDelInfo = (CMD_RTPRIV_IOCTL_AP_STA_DEL *)pData;
+
+	if (pApStaDelInfo->pSta_MAC != NULL)
+		pMac = (PUCHAR)pApStaDelInfo->pSta_MAC;
 
 	if (pMac == NULL) {
 		{
-			MacTableReset(pAd);
+			if (pApStaDelInfo->pWdev != NULL)
+				MacTableResetWdev(pAd, pApStaDelInfo->pWdev);
+			else
+				MacTableReset(pAd);
 			NdisZeroMemory(pAd->radius_tbl, MAX_LEN_OF_MAC_TABLE * sizeof(RADIUS_ACCOUNT_ENTRY));
 		}
-
 	} else {
 		int i;
 
 		pEntry = MacTableLookup(pAd, pMac);
 		if (pEntry) {
+			USHORT reason_code = REASON_NO_LONGER_VALID;
 #ifdef HOSTAPD_OWE_SUPPORT
 			if (pEntry->wdev && (pEntry->Sst == SST_AUTH)
 				&& IS_AKM_OWE(pEntry->wdev->SecConfig.AKMMap))
@@ -1532,11 +1554,14 @@ INT CFG80211_ApStaDel(
 
 #endif
 {
+			if (reason)
+				reason_code = reason;
 			MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL,
-				DBG_LVL_ERROR,
-				("%s, Deauth : 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n", __func__,
-				 pMac[0], pMac[1], pMac[2], pMac[3], pMac[4], pMac[5]));
-			MlmeDeAuthAction(pAd, pEntry, REASON_NO_LONGER_VALID, FALSE);
+				DBG_LVL_OFF,
+				("%s, Deauth : 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x reason code %d\n", __func__,
+				 pMac[0], pMac[1], pMac[2], pMac[3], pMac[4], pMac[5], reason_code));
+
+				MlmeDeAuthAction(pAd, pEntry, reason_code, FALSE);
 }
 		} else
 			MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
@@ -1553,6 +1578,62 @@ INT CFG80211_ApStaDel(
 	}
 	return 0;
 }
+
+#else
+INT CFG80211_ApStaDel(
+	IN VOID                                         *pAdCB,
+	IN UCHAR                                        *pMac,
+	IN UINT						reason)
+{
+	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER)pAdCB;
+	MAC_TABLE_ENTRY *pEntry;
+
+	if (pMac == NULL) {
+		{
+			MacTableReset(pAd);
+			NdisZeroMemory(pAd->radius_tbl, MAX_LEN_OF_MAC_TABLE * sizeof(RADIUS_ACCOUNT_ENTRY));
+		}
+
+	} else {
+		int i;
+
+		pEntry = MacTableLookup(pAd, pMac);
+		if (pEntry) {
+			USHORT reason_code = REASON_NO_LONGER_VALID;
+#ifdef HOSTAPD_OWE_SUPPORT
+			if (pEntry->wdev && (pEntry->Sst == SST_AUTH)
+				&& IS_AKM_OWE(pEntry->wdev->SecConfig.AKMMap))
+				MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("\n OWE mode Ignore Deauth from Hostapd"));
+			else
+
+#endif
+{
+			if (reason)
+				reason_code = reason;
+			MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL,
+				DBG_LVL_ERROR,
+				("%s, Deauth : 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x reason code %d\n", __func__,
+				 pMac[0], pMac[1], pMac[2], pMac[3], pMac[4], pMac[5], reason_code));
+
+				MlmeDeAuthAction(pAd, pEntry, reason_code, FALSE);
+}
+		} else
+			MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				("Can't find pEntry in ApStaDel\n"));
+
+		/* Find entry in radius tbl and delete it if found */
+
+		for (i = 0; i < MAX_LEN_OF_MAC_TABLE; i++) {
+			RADIUS_ACCOUNT_ENTRY *pRadiusEntry = &pAd->radius_tbl[i];
+
+			if (MAC_ADDR_EQUAL(pRadiusEntry->Addr, pMac))
+				NdisZeroMemory(pRadiusEntry, sizeof(RADIUS_ACCOUNT_ENTRY));
+		}
+	}
+	return 0;
+}
+#endif
 
 
 INT CFG80211_setApDefaultKey(

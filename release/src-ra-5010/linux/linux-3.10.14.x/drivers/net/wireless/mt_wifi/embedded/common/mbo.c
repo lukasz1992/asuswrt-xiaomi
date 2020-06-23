@@ -254,24 +254,25 @@ static VOID WextMboSendNeighborReportToDaemonEvent(
 	P_DAEMON_EVENT_NR_LIST NeighborRepList,
 	UINT16 report_buf_len)
 {
-	P_DAEMON_NR_MSG pNRMsg;
+	struct neighbor_list_data *neighbor_list_data;
 	UINT16 buflen = 0;
 	char *buf;
-
-	buflen = sizeof(DAEMON_NR_MSG);
+	/* 8 = sizeof(neighbor_list_data->ifindex) + sizeof(neighbor_list_data->neighbor_list_len) */
+	buflen = 8 + report_buf_len;
 	os_alloc_mem(NULL, (UCHAR **)&buf, buflen);
 	NdisZeroMemory(buf, buflen);
 
-	pNRMsg = (P_DAEMON_NR_MSG)buf;
 
-	NdisCopyMemory(&pNRMsg->evt_nr_list, NeighborRepList, report_buf_len);
-	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
-				("%s - sizeof %u report_buf_len %u buflen %u\n",
-				__func__, (UINT32)sizeof(DAEMON_EVENT_NR_LIST), report_buf_len, buflen));
+	neighbor_list_data = (struct neighbor_list_data *)buf;
+	neighbor_list_data->ifindex = RtmpOsGetNetIfIndex(net_dev);
+	neighbor_list_data->neighbor_list_len   = report_buf_len;
+	NdisCopyMemory(neighbor_list_data->neighbor_list_req, NeighborRepList, report_buf_len);
+
 	RtmpOSWrielessEventSend(net_dev, RT_WLAN_EVENT_CUSTOM,
 					OID_NEIGHBOR_REPORT, NULL, (PUCHAR)buf, buflen);
 
 	os_free_mem(buf);
+
 }
 
 static VOID MboUpdateNRElement(

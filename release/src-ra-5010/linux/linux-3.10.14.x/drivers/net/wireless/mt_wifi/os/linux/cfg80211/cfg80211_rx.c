@@ -475,8 +475,8 @@ VOID CFG80211_AssocReqHandler(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk)
 		}
 #ifdef CONFIG_MAP_SUPPORT
 	MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO,
-			("%s():IS_MAP_ENABLE(pEntry->wdev)=%d\n", __func__, IS_MAP_ENABLE(pEntry->wdev)));
-	if (IS_MAP_ENABLE(pEntry->wdev)) {
+				("%s():IS_MAP_ENABLE=%d\n", __func__, IS_MAP_ENABLE(pAd)));
+		if (IS_MAP_ENABLE(pAd)) {
 		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO,
 				("%s():Elem->MsgLen=%d, ASSOC_REQ_LEN = %d\n",
 					__func__, pRxBlk->DataSize, (INT)ASSOC_REQ_LEN));

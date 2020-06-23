@@ -32,7 +32,7 @@ UCHAR ESPI_AC_VI_DEFAULT[3] = {0xFB, 0xFF, 0x00};
 
 #define CLI_REQ_MIN_INTERVAL	5 /* sec */
 
-static UINT8 get_channel_utilization(PRTMP_ADAPTER pAd, u32 ifindex)
+UINT8 get_channel_utilization(PRTMP_ADAPTER pAd, u32 ifindex)
 {
 	UCHAR	i, Channel;
 	UINT16 	l;
@@ -114,6 +114,7 @@ INT wapp_send_wdev_query_rsp(
 				dev_info->radio_id = HcGetBandByWdev(wdev);
 				dev_info->adpt_id = (uintptr_t) pAd;
 				dev_info->wireless_mode = wdev->PhyMode;
+				dev_info->dev_active = HcIsRadioAcq(wdev);
 				wext_send_wapp_qry_rsp(pAd->net_dev, &event);
 			}
 		}
@@ -565,16 +566,20 @@ VOID wapp_send_bcn_report(
 	IN ULONG report_len)
 {
 	struct wifi_dev *wdev;
-	struct wapp_event event;
+	struct wapp_event *event = NULL;
 	UCHAR count = 0, i = 0;
 	if (pEntry && IS_ENTRY_CLIENT(pEntry)) {
+		os_alloc_mem(pAd, (UCHAR **)&event, sizeof(*event));
+		if (!event)
+			return;
+		NdisZeroMemory(event, sizeof(*event));
 		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("(%s) Sta Addr = %02x:%02x:%02x:%02x:%02x:%02x\n",
 				__func__, PRINT_MAC(pEntry->Addr)));
 		wdev = pEntry->wdev;
-		event.event_id = WAPP_RCEV_BCN_REPORT;
-		event.ifindex = RtmpOsGetNetIfIndex(wdev->if_dev);
+		event->event_id = WAPP_RCEV_BCN_REPORT;
+		event->ifindex = RtmpOsGetNetIfIndex(wdev->if_dev);
 
-		COPY_MAC_ADDR(event.data.bcn_rpt_info.sta_addr, pEntry->Addr);
+		COPY_MAC_ADDR(event->data.bcn_rpt_info.sta_addr, pEntry->Addr);
 
 		if (report_len % BCN_RPT_LEN)
 			count = report_len/BCN_RPT_LEN + 1;
@@ -583,17 +588,18 @@ VOID wapp_send_bcn_report(
 
 		for (i = 0 ; i < count ; i++) {
 			if (i == (count - 1)) {
-				event.data.bcn_rpt_info.bcn_rpt_len = report_len;
-				event.data.bcn_rpt_info.last_fragment = 1;
-				NdisCopyMemory(event.data.bcn_rpt_info.bcn_rpt, &report[i*BCN_RPT_LEN], report_len);
+				event->data.bcn_rpt_info.bcn_rpt_len = report_len;
+				event->data.bcn_rpt_info.last_fragment = 1;
+				NdisCopyMemory(event->data.bcn_rpt_info.bcn_rpt, &report[i*BCN_RPT_LEN], report_len);
 			} else {
-				event.data.bcn_rpt_info.bcn_rpt_len = BCN_RPT_LEN;
-				event.data.bcn_rpt_info.last_fragment = 0;
-				NdisCopyMemory(event.data.bcn_rpt_info.bcn_rpt, &report[i*BCN_RPT_LEN], BCN_RPT_LEN);
+				event->data.bcn_rpt_info.bcn_rpt_len = BCN_RPT_LEN;
+				event->data.bcn_rpt_info.last_fragment = 0;
+				NdisCopyMemory(event->data.bcn_rpt_info.bcn_rpt, &report[i*BCN_RPT_LEN], BCN_RPT_LEN);
 				report_len -= BCN_RPT_LEN;
 			}
-			wext_send_wapp_qry_rsp(pAd->net_dev, &event);
+			wext_send_wapp_qry_rsp(pAd->net_dev, event);
 		}
+		os_free_mem(event);
 	}
 }
 
@@ -634,7 +640,7 @@ VOID wapp_send_air_mnt_rssi(
 									pMntEntry->RssiSample.AvgRssi[0],
 									pMntEntry->RssiSample.AvgRssi[1],
 									pMntEntry->RssiSample.AvgRssi[2]
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 									, pMntEntry->RssiSample.AvgRssi[3]
 #endif
 									);
@@ -654,6 +660,7 @@ VOID wapp_send_csa_event(
 	event.event_id = WAPP_CSA_EVENT;
 	event.ifindex = ifindex;
 	csa_info = &event.data.csa_info;
+	csa_info->new_channel = new_channel;
 	wext_send_wapp_qry_rsp(pAd->net_dev, &event);
 }
 
@@ -755,6 +762,7 @@ INT wapp_send_op_class_query_rsp(
 	struct wapp_event event;
 	wdev_op_class_info *op_class;
 
+	NdisZeroMemory((void *)&event, sizeof(struct wapp_event));
 	event.event_id = WAPP_OP_CLASS_RSP;
 	event.ifindex = req->data.ifindex;
 	op_class = &event.data.op_class;
@@ -959,6 +967,25 @@ INT wapp_send_apcli_association_change(
 	return 0;
 }
 
+#ifdef CONVERTER_MODE_SWITCH_SUPPORT
+
+INT wapp_send_apcli_association_change_vendor10(
+	UINT8 apcli_assoc_state,
+	struct _RTMP_ADAPTER *ad,
+	struct _APCLI_STRUCT *ApCliEntry)
+{
+	struct wapp_event event;
+
+	event.event_id = WAPP_APCLI_ASSOC_STATE_CHANGE_VENDOR10;
+	event.ifindex = ApCliEntry->wdev.if_dev->ifindex;
+	event.data.apcli_association_info.interface_index = event.ifindex;
+	event.data.apcli_association_info.apcli_assoc_state = apcli_assoc_state;
+	wext_send_wapp_qry_rsp(ad->net_dev, &event);
+	return 0;
+}
+#endif /* CONVERTER_MODE_SWITCH_SUPPORT */
+
+
 INT wapp_send_bssload_crossing(
 	struct _RTMP_ADAPTER *ad,
 	struct wifi_dev *wdev,
@@ -1003,14 +1030,24 @@ INT wapp_bss_start(
 	PRTMP_ADAPTER pAd,
 	struct wapp_req *req)
 {
-	INT i;
-	struct wifi_dev *wdev;
+	INT i, j;
+	struct wifi_dev *wdev, *wdev_active;
 
 	for (i = 0; i < WDEV_NUM_MAX; i++) {
 		if (pAd->wdev_list[i] != NULL) {
 			wdev = pAd->wdev_list[i];
-			if (RtmpOsGetNetIfIndex(wdev->if_dev) == req->data.ifindex)
+			if (RtmpOsGetNetIfIndex(wdev->if_dev) == req->data.ifindex) {
+				for (j = 0; j < WDEV_NUM_MAX; j++) {
+					wdev_active = pAd->wdev_list[j];
+					if (wdev_active && HcIsRadioAcq(wdev_active) &&
+						(HcGetBandByWdev(wdev) == HcGetBandByWdev(wdev_active))) {
+						wdev->channel = wdev_active->channel;
+						break;
+					}
+				}
 				APStartUpByBss(pAd, &pAd->ApCfg.MBSSID[wdev->func_idx]);
+				break;
+			}
 		}
 	}
 	return 0;
@@ -1022,6 +1059,7 @@ INT wapp_bss_stop(
 {
 	INT i;
 	struct wifi_dev *wdev;
+	BSS_STRUCT *pMbss;
 
 	for (i = 0; i < WDEV_NUM_MAX; i++) {
 		if (pAd->wdev_list[i] != NULL) {
@@ -1029,7 +1067,9 @@ INT wapp_bss_stop(
 			if (RtmpOsGetNetIfIndex(wdev->if_dev) == req->data.ifindex) {
 				MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO,
 						("%s():req->data.ifindex = %d\n", __func__, req->data.ifindex));
-				APStopByBss(pAd, &pAd->ApCfg.MBSSID[wdev->func_idx]);
+				pMbss = &pAd->ApCfg.MBSSID[wdev->func_idx];
+				APStop(pAd, pMbss, AP_BSS_OPER_SINGLE);
+				RTMP_SET_FLAG(pAd, fRTMP_ADAPTER_SYSEM_READY);
 			}
 		}
 	}
@@ -1243,7 +1283,7 @@ INT wapp_send_apcli_rssi_query_rsp(
 									mac_entry->RssiSample.AvgRssi[0],
 									mac_entry->RssiSample.AvgRssi[1],
 									mac_entry->RssiSample.AvgRssi[2]
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 									, mac_entry->RssiSample.AvgRssi[3]
 #endif
 									);
@@ -1274,7 +1314,7 @@ INT wapp_send_sta_rssi_query_rsp(
 									mac_entry->RssiSample.AvgRssi[0],
 									mac_entry->RssiSample.AvgRssi[1],
 									mac_entry->RssiSample.AvgRssi[2]
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 									, mac_entry->RssiSample.AvgRssi[3]
 #endif
 									);
@@ -1320,6 +1360,70 @@ INT wapp_send_wsc_eapol_start_notification(
 	return 0;
 }
 
+INT wapp_send_wsc_eapol_complete_notif(
+	PRTMP_ADAPTER pAd,
+	struct wifi_dev *wdev)
+{
+	struct wapp_event event;
+
+	event.len = 0;
+	event.event_id = WAPP_WSC_EAPOL_COMPLETE_NOTIF;
+	event.ifindex = RtmpOsGetNetIfIndex(wdev->if_dev);
+	wext_send_wapp_qry_rsp(pAd->net_dev, &event);
+	return 0;
+}
+#ifdef CONFIG_MAP_SUPPORT
+INT wapp_send_scan_complete_notification(
+	PRTMP_ADAPTER pAd,
+	struct wifi_dev *wdev)
+{
+	struct wapp_event event;
+
+	event.len = 0;
+	event.event_id = WAPP_SCAN_COMPLETE_NOTIF;
+	event.ifindex = RtmpOsGetNetIfIndex(wdev->if_dev);
+	wext_send_wapp_qry_rsp(pAd->net_dev, &event);
+	return 0;
+}
+#endif
+#ifdef A4_CONN
+/* client disaccos */
+INT wapp_send_a4_entry_missing(
+	PRTMP_ADAPTER pAd,
+	UINT32 ifindex,
+	UCHAR *ip)
+{
+	struct wapp_event event;
+	UCHAR *a4_missing_entry_ip;
+
+	event.event_id = WAPP_A4_ENTRY_MISSING_NOTIF;
+	event.ifindex = ifindex;
+	a4_missing_entry_ip = (UCHAR *)&event.data.a4_missing_entry_ip;
+
+	NdisCopyMemory(a4_missing_entry_ip, ip, 4);
+	wext_send_wapp_qry_rsp(pAd->net_dev, &event);
+
+	return 0;
+}
+#endif
+/* client disaccos */
+INT wapp_send_radar_detect_notif(
+	PRTMP_ADAPTER pAd,
+	struct wifi_dev *wdev,
+	unsigned char channel,
+	unsigned char ch_status
+	)
+{
+	struct wapp_event event;
+
+	event.event_id = WAPP_RADAR_DETECT_NOTIF;
+	event.ifindex = RtmpOsGetNetIfIndex(wdev->if_dev);
+	event.data.radar_notif.channel = channel;
+	event.data.radar_notif.status = ch_status;
+	wext_send_wapp_qry_rsp(pAd->net_dev, &event);
+	return 0;
+}
+
 VOID RTMPIoctlGetScanResults(
 	IN	PRTMP_ADAPTER	pAdapter, struct wapp_req *req)
 {
@@ -1338,7 +1442,7 @@ VOID RTMPIoctlGetScanResults(
 #endif
 	INT custom_event_length = IWEVCUSTOM_PAYLOD_MAX_LEN;
 	UINT32 TotalLen = custom_event_length;
-	INT count = 0, max_bss;
+	INT count = 0, max_bss = 0;
 
 
 	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO, ("RTMPIoctlGetSiteSurvey - enter\n"));
@@ -1357,7 +1461,7 @@ VOID RTMPIoctlGetScanResults(
 	if (pAdapter->ScanTab.BssNr == 0) {
 		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
 				("%s: no bss present in scan tab\n", __func__));
-		return;
+		/*return;*/
 	}
 	max_bss = custom_event_length / sizeof(struct scan_bss_info);
 
@@ -1405,6 +1509,18 @@ VOID RTMPIoctlGetScanResults(
 			break;
 		pBss->Channel = bss->Channel;
 		pBss->CentralChannel = bss->CentralChannel;
+#ifdef CONFIG_MAP_SUPPORT
+		if (pAdapter->ApEnableBeaconTable == TRUE) {
+			ULONG	Idx;
+
+			RemoveOldBssEntry(pAdapter);
+			Idx = BssTableSearch(&pAdapter->AvailableBSS, bss->Bssid, bss->Channel);
+			if (Idx != BSS_NOT_FOUND && (pAdapter->AvailableBSS.BssEntry[Idx].Channel == bss->Channel))
+				pBss->Rssi = pAdapter->AvailableBSS.BssEntry[Idx].Rssi;
+			else
+				pBss->Rssi = bss->Rssi;
+		} else
+#endif
 		pBss->Rssi = bss->Rssi;
 		ht_cap->tx_stream = 0; /* TODO */
 		ht_cap->rx_stream = 0; /* TODO */
@@ -1501,6 +1617,20 @@ VOID RTMPIoctlSendNullDataFrame(
 	}
 }
 
+void wapp_prepare_nop_channel_list(PRTMP_ADAPTER pAd,
+	struct nop_channel_list_s *nop_list)
+{
+	UINT_8 i;
+	PDFS_PARAM pDfsParam = &pAd->CommonCfg.DfsParameter;
+
+	for (i = 0; i < pDfsParam->ChannelListNum; i++) {
+		if (pDfsParam->DfsChannelList[i].NonOccupancy > 0 &&
+			(nop_list->channel_count < MAX_NUM_OF_CHANNELS)) {
+			nop_list->channel_list[nop_list->channel_count] = pDfsParam->DfsChannelList[i].Channel;
+			nop_list->channel_count++;
+		}
+	}
+}
 INT	wapp_event_handle(
 	PRTMP_ADAPTER pAd,
 	struct wapp_req *req)
@@ -1581,7 +1711,7 @@ INT	wapp_event_handle(
 			UCHAR ifIndex = pObj->ioctl_if;
 			PWSC_CTRL pWscControl = NULL;
 
-			if (ifIndex >= pAd->ApCfg.BssidNum) {
+			if (ifIndex >= MAX_APCLI_NUM) {
 				MTWF_LOG(DBG_CAT_PROTO, CATPROTO_RRM, DBG_LVL_OFF,
 					("Unknown If index (%d)", ifIndex));
 				return NDIS_STATUS_FAILURE;
@@ -1620,7 +1750,6 @@ INT	wapp_event_handle(
 	case WAPP_SET_SCAN_BH_SSIDS:
 		{
 			struct wifi_dev *wdev;
-			int index = 0;
 			POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
 			UCHAR ifIndex = pObj->ioctl_if;
 
@@ -1629,12 +1758,10 @@ INT	wapp_event_handle(
 				break;
 			}
 			wdev = &pAd->ApCfg.ApCliTab[ifIndex].wdev;
-			while (index < 4) {
-				memset(&wdev->MAPCfg.scan_BH_ssids[index], 0, sizeof(struct scan_SSID));
-				memcpy(&wdev->MAPCfg.scan_BH_ssids[index], &req->data.scan_BH_ssids[index],
-											 sizeof(struct scan_SSID));
-				index++;
-			}
+			NdisZeroMemory(&wdev->MAPCfg.scan_bh_ssids,
+				sizeof(wdev->MAPCfg.scan_bh_ssids));
+			NdisCopyMemory(&wdev->MAPCfg.scan_bh_ssids,
+				&req->data.scan_bh_ssids, sizeof(wdev->MAPCfg.scan_bh_ssids));
 			break;
 		}
 #endif
@@ -1736,6 +1863,11 @@ static INT set_wapp_cmm_ie(
 
 	switch (EID) {
 	case IE_INTERWORKING:
+		if (pGasCtrl->InterWorkingIE != NULL) {
+			os_free_mem(pGasCtrl->InterWorkingIE);
+			pGasCtrl->InterWorkingIE = NULL;
+			pGasCtrl->InterWorkingIELen = 0;
+		}
 		os_alloc_mem(NULL, &pGasCtrl->InterWorkingIE, IELen);
 		NdisMoveMemory(pGasCtrl->InterWorkingIE, IE, IELen);
 		pGasCtrl->InterWorkingIELen = IELen;
@@ -1752,16 +1884,26 @@ static INT set_wapp_cmm_ie(
 #endif /* CONFIG_HOTSPOT_R2 */
 		break;
 	case IE_ADVERTISEMENT_PROTO:
-			os_alloc_mem(NULL, &pGasCtrl->AdvertisementProtoIE, IELen);
-			NdisMoveMemory(pGasCtrl->AdvertisementProtoIE, IE, IELen);
-			pGasCtrl->AdvertisementProtoIELen = IELen;
-			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Set Advertisement Protocol IE\n"));
+		if (pGasCtrl->AdvertisementProtoIE != NULL) {
+			os_free_mem(pGasCtrl->AdvertisementProtoIE);
+			pGasCtrl->AdvertisementProtoIE = NULL;
+			pGasCtrl->AdvertisementProtoIELen = 0;
+		}
+		os_alloc_mem(NULL, &pGasCtrl->AdvertisementProtoIE, IELen);
+		NdisMoveMemory(pGasCtrl->AdvertisementProtoIE, IE, IELen);
+		pGasCtrl->AdvertisementProtoIELen = IELen;
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Set Advertisement Protocol IE\n"));
 			break;
 
 		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Set Interworking IE\n"));
 		break;
 
 	case IE_TIME_ADVERTISEMENT:
+		if (pWNMCtrl->TimeadvertisementIE != NULL) {
+			os_free_mem(pWNMCtrl->TimeadvertisementIE);
+			pWNMCtrl->TimeadvertisementIE = NULL;
+			pWNMCtrl->TimeadvertisementIELen = 0;
+		}
 		os_alloc_mem(NULL, &pWNMCtrl->TimeadvertisementIE, IELen);
 		NdisMoveMemory(pWNMCtrl->TimeadvertisementIE, IE, IELen);
 		pWNMCtrl->TimeadvertisementIELen = IELen;
@@ -1769,6 +1911,11 @@ static INT set_wapp_cmm_ie(
 		break;
 
 	case IE_TIME_ZONE:
+		if (pWNMCtrl->TimezoneIE != NULL) {
+			os_free_mem(pWNMCtrl->TimezoneIE);
+			pWNMCtrl->TimezoneIE = NULL;
+			pWNMCtrl->TimezoneIELen = 0;
+		}
 		os_alloc_mem(NULL, &pWNMCtrl->TimezoneIE, IELen);
 		NdisMoveMemory(pWNMCtrl->TimezoneIE, IE, IELen);
 		pWNMCtrl->TimezoneIELen = IELen;
@@ -1778,7 +1925,11 @@ static INT set_wapp_cmm_ie(
 	case IE_QOS_MAP_SET: {
 		int tmp = 0;
 		char *pos = (char *)(IE + 2);
-
+		if (pHSCtrl->QosMapSetIE != NULL) {
+			os_free_mem(pHSCtrl->QosMapSetIE);
+			pHSCtrl->QosMapSetIE = NULL;
+			pHSCtrl->QosMapSetIELen = 0;
+		}
 		os_alloc_mem(NULL, &pHSCtrl->QosMapSetIE, IELen);
 		NdisMoveMemory(pHSCtrl->QosMapSetIE, IE, IELen);
 		pHSCtrl->QosMapSetIELen = IELen;
@@ -1803,6 +1954,11 @@ static INT set_wapp_cmm_ie(
 	}
 
 	case IE_ROAMING_CONSORTIUM:
+		if (pHSCtrl->RoamingConsortiumIE != NULL) {
+			os_free_mem(pHSCtrl->RoamingConsortiumIE);
+			pHSCtrl->RoamingConsortiumIE = NULL;
+			pHSCtrl->RoamingConsortiumIELen = 0;
+		}
 		os_alloc_mem(NULL, &pHSCtrl->RoamingConsortiumIE, IELen);
 		NdisMoveMemory(pHSCtrl->RoamingConsortiumIE, IE, IELen);
 		pHSCtrl->RoamingConsortiumIELen = IELen;
@@ -1822,11 +1978,10 @@ static void Set_MTK_VENDOR_SPECIFIC_IE(
 	IN PRTMP_ADAPTER pAd,
 	IN UINT8 OUIType,
 	IN RTMP_STRING * IE,
-	IN UINT32 IELen)
+	IN UINT32 IELen,
+	IN UCHAR apidx)
 {
 #ifdef CONFIG_MAP_SUPPORT
-	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
-	UCHAR apidx = pObj->ioctl_if;
 	struct wifi_dev *wdev = &pAd->ApCfg.MBSSID[apidx].wdev;
 
 	if (!IS_MAP_TURNKEY_ENABLE(pAd)) {
@@ -1885,7 +2040,8 @@ static INT Set_AP_VENDOR_SPECIFIC_IE(
 INT wapp_set_ap_ie(
 	IN PRTMP_ADAPTER pAd,
 	IN RTMP_STRING *IE,
-	IN UINT32 IELen)
+	IN UINT32 IELen,
+	IN UCHAR ApIdx)
 {
 	UINT8 EID;
 	UINT8 OUIType;
@@ -1905,7 +2061,7 @@ INT wapp_set_ap_ie(
 	case IE_VENDOR_SPECIFIC:
 		OUIType = *(IE + 5);
 		if (NdisEqualMemory(&IE[2], &MTK_OUI[0], 3))
-			Set_MTK_VENDOR_SPECIFIC_IE(pAd, OUIType, IE, IELen);
+			Set_MTK_VENDOR_SPECIFIC_IE(pAd, OUIType, IE, IELen, ApIdx);
 		else
 			Set_AP_VENDOR_SPECIFIC_IE(pAd, OUIType, IE, IELen);
 		break;

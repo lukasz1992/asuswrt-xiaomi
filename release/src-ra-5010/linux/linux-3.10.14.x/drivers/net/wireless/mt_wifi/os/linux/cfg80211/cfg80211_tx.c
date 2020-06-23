@@ -167,7 +167,7 @@ VOID ProbeResponseHandler(
 					if (((((ProbeReqParam->SsidLen == 0) && (!mbss->bHideSsid)) ||
 			   ((ProbeReqParam->SsidLen == mbss->SsidLen) && NdisEqualMemory(ProbeReqParam->Ssid, mbss->Ssid, (ULONG) ProbeReqParam->SsidLen)))
 #ifdef CONFIG_HOTSPOT
-			   && ProbeReqforHSAP(pAd, apidx, &ProbeReqParam)
+			   && ProbeReqforHSAP(pAd, apidx, ProbeReqParam)
 #endif
 			 )
 		) {
@@ -286,15 +286,15 @@ VOID ProbeResponseHandler(
 			ULONG TmpLen;
 			/* Interworking element */
 			MakeOutgoingFrame(pOutBuffer + FrameLen, &TmpLen,
-							  pAd->ApCfg.MBSSID[apidx].HotSpotCtrl.InterWorkingIELen,
-							  pAd->ApCfg.MBSSID[apidx].HotSpotCtrl.InterWorkingIE, END_OF_ARGS);
+							  pAd->ApCfg.MBSSID[apidx].GASCtrl.InterWorkingIELen,
+							  pAd->ApCfg.MBSSID[apidx].GASCtrl.InterWorkingIE, END_OF_ARGS);
 
 			FrameLen += TmpLen;
 
 			/* Advertisement Protocol element */
 			MakeOutgoingFrame(pOutBuffer + FrameLen, &TmpLen,
-							  pAd->ApCfg.MBSSID[apidx].HotSpotCtrl.AdvertisementProtoIELen,
-							  pAd->ApCfg.MBSSID[apidx].HotSpotCtrl.AdvertisementProtoIE, END_OF_ARGS);
+							  pAd->ApCfg.MBSSID[apidx].GASCtrl.AdvertisementProtoIELen,
+							  pAd->ApCfg.MBSSID[apidx].GASCtrl.AdvertisementProtoIE, END_OF_ARGS);
 
 			FrameLen += TmpLen;
 		}
@@ -1233,6 +1233,9 @@ VOID CFG80211_AssocRespHandler(RTMP_ADAPTER *pAd, VOID *pData, ULONG Data)
 
 	/* 2. qualify this STA's auth_asoc status in the MAC table, decide StatusCode */
 	StatusCode = APBuildAssociation(pAd, pEntry, pEntry->ie_list, pEntry->MaxSupportedRate, &Aid, isReassoc);
+	if (mgmt->u.reassoc_resp.status_code != MLME_SUCCESS)
+		StatusCode = mgmt->u.reassoc_resp.status_code;
+
 #ifdef WAPP_SUPPORT
 	if (StatusCode != MLME_SUCCESS)
 		wapp_assoc_fail = MLME_UNABLE_HANDLE_STA;
@@ -1439,7 +1442,7 @@ VOID CFG80211_AssocRespHandler(RTMP_ADAPTER *pAd, VOID *pData, ULONG Data)
 	}
 
 #ifdef CONFIG_MAP_SUPPORT
-	if (IS_MAP_ENABLE(wdev)) {
+	if (IS_MAP_ENABLE(pAd)) {
 		pEntry->DevPeerRole = ie_list->MAP_AttriValue;
 		MAP_InsertMapCapIE(pAd, wdev, pOutBuffer+FrameLen, &FrameLen);
 	}
@@ -2364,6 +2367,8 @@ VOID CFG80211_ParseBeaconIE(RTMP_ADAPTER *pAd, BSS_STRUCT *pMbss, struct wifi_de
 	CLEAR_PAIRWISE_CIPHER(&wdev->SecConfig);
 	CLEAR_GROUP_CIPHER(&wdev->SecConfig);
 #ifdef DOT11W_PMF_SUPPORT
+	wdev->SecConfig.PmfCfg.MFPC = 0;
+	wdev->SecConfig.PmfCfg.MFPR = 0;
 	wdev->SecConfig.PmfCfg.igtk_cipher = 0;
 #endif
 

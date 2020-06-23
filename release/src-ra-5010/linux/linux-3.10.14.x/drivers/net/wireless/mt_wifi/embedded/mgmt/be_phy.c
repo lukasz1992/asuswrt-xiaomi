@@ -182,15 +182,29 @@ static BOOLEAN phy_freq_adjust(struct wifi_dev *wdev, struct freq_cfg *cfg, stru
 static VOID phy_freq_update(struct wifi_dev *wdev, struct freq_oper *oper)
 {
 	struct wlan_operate *op = (struct wlan_operate *)wdev->wpf_op;
-
+#ifdef RT_CFG80211_SUPPORT
+	struct _RTMP_ADAPTER *ad = NULL;
+	ADD_HT_INFO_IE *addht;
+	addht = wlan_operate_get_addht(wdev);
+	ad = (struct _RTMP_ADAPTER *)wdev->sys_handle;
+#endif
 	op->phy_oper.prim_ch = oper->prim_ch;
 	operate_loader_prim_ch(op);
 	op->phy_oper.cen_ch_1 = oper->cen_ch_1;
 	op->phy_oper.cen_ch_2 = oper->cen_ch_2;
 	op->phy_oper.wdev_bw = oper->bw;
 	op->ht_oper.ht_bw = oper->ht_bw;
+#ifdef RT_CFG80211_SUPPORT
+	if ((ad->CommonCfg.LastBSSCoexist2040.field.BSS20WidthReq == 1) && (ad->MacTab.fAnyStaFortyIntolerant != TRUE) && ((ad->CommonCfg.BssCoexApCnt > 0))) {
+		} else
+#endif
 	operate_loader_ht_bw(op);
+
 	op->ht_oper.ext_cha = oper->ext_cha;
+#ifdef RT_CFG80211_SUPPORT
+    if ((ad->CommonCfg.LastBSSCoexist2040.field.BSS20WidthReq == 1) && (ad->MacTab.fAnyStaFortyIntolerant != TRUE) && ((ad->CommonCfg.BssCoexApCnt > 0))) {
+		} else
+#endif
 	operate_loader_ext_cha(op);
 #ifdef DOT11_VHT_AC
 	op->vht_oper.vht_bw = oper->vht_bw;
@@ -343,9 +357,9 @@ VOID operate_loader_phy(struct wifi_dev *wdev, struct freq_cfg *cfg)
 
 #ifdef CONFIG_AP_SUPPORT
 #ifdef MT_DFS_SUPPORT
+	DfsCacNormalStart(ad, wdev, RD_NORMAL_MODE);
 	/*Perform CAC & Radar Detect only for DFS Channel*/
 	if (RadarChannelCheck(ad, oper_radio.prim_ch)) {
-		DfsCacNormalStart(ad, wdev, RD_NORMAL_MODE);
 		WrapDfsRadarDetectStart(ad, wdev);
 	}
 #endif

@@ -41,6 +41,11 @@
 #define RDD_PULSEDBG 8
 #define RDD_READPULSE 9
 #define RDD_RESUME_BF 10
+#ifdef	CONFIG_RCSA_SUPPORT
+#define RDD_DETECT_INFO	11
+#define RDD_ALTX_CTRL	12
+#endif
+
 #else
 typedef enum {
 	RDD_STOP = 0,
@@ -62,6 +67,7 @@ typedef enum {
 
 #define HW_RDD0      0
 #define HW_RDD1      1
+#define HW_RDD_NUM   2
 
 #define RESTRICTION_BAND_LOW	116
 #define RESTRICTION_BAND_HIGH	128
@@ -353,6 +359,24 @@ union dfs_zero_wait_msg {
 	} target_ch_show;
 };
 
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+typedef struct _DFS_PULSE_THRESHOLD_PARAM {
+	UINT32 u4PulseWidthMax;			/* unit us */
+	INT32 i4PulsePwrMax;			/* unit dbm */
+	INT32 i4PulsePwrMin;			/* unit dbm */
+	UINT32 u4PRI_MIN_STGR;			/* unit us */
+	UINT32 u4PRI_MAX_STGR;			/* unit us */
+	UINT32 u4PRI_MIN_CR;			/* unit us */
+	UINT32 u4PRI_MAX_CR;			/* unit us */
+} DFS_PULSE_THRESHOLD_PARAM, *PDFS_PULSE_THRESHOLD_PARAM;
+
+typedef struct _DFS_RADAR_THRESHOLD_PARAM {
+	DFS_PULSE_THRESHOLD_PARAM rPulseThresholdParam;
+	BOOLEAN afgSupportedRT[RT_NUM];
+	SW_RADAR_TYPE_T arRadarType[RT_NUM];
+} DFS_RADAR_THRESHOLD_PARAM, *PDFS_RADAR_THRESHOLD_PARAM;
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+
 typedef struct _DFS_PARAM {
 	UCHAR Band0Ch;/* smaller channel number */
 	UCHAR Band1Ch;/* larger channel number */
@@ -411,6 +435,7 @@ typedef struct _DFS_PARAM {
 	BOOLEAN bV10W56SwitchVHT80;
 	BOOLEAN bV10W56APDownEnbl;
 	BOOLEAN bV10APBcnUpdateEnbl;
+	BOOLEAN bV10APInterfaceDownEnbl;
 	UCHAR   GroupCount; /* Max Group Count from ACS */
 	V10_CHANNEL_LIST DfsV10SortedACSList[V10_TOTAL_CHANNEL_COUNT];
 #endif
@@ -429,14 +454,44 @@ typedef struct _DFS_PARAM {
 	/* MBSS DFS zero wait */
 	BOOLEAN bInitMbssZeroWait;
 
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+	/*Threshold params*/
+	BOOLEAN fgHwRDDLogEnable;
+	BOOLEAN fgSwRDDLogEnable;
+	BOOLEAN fgSwRDDLogCond;
+	UINT16 u2FCC_LPN_MIN;
+	BOOLEAN fgRDRegionConfigured;
+	DFS_RADAR_THRESHOLD_PARAM rRadarThresholdParam;
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+
+#ifdef RDM_FALSE_ALARM_DEBUG_SUPPORT
+	BOOLEAN fgRadarEmulate;
+#endif /*RDM_FALSE_ALARM_DEBUG_SUPPORT */
+
+#ifdef CONFIG_RCSA_SUPPORT
+	BOOLEAN	bRCSAEn;
+	BOOLEAN fSendRCSA;
+	BOOLEAN fUseCsaCfg;
+	BOOLEAN	fCheckRcsaTxDone;
+	UCHAR	ChSwMode;
+#endif
+
 	STATE_MACHINE_FUNC		DfsStateFunc[DFS_FUNC_SIZE];
 	STATE_MACHINE			DfsStatMachine;
 } DFS_PARAM, *PDFS_PARAM;
+
+#ifdef MT_DFS_SUPPORT
+typedef int (*_k_ARC_ZeroWait_DFS_CAC_Time_Meet_report_callback_fun_type)(UCHAR SyncNum, UCHAR Bw, UCHAR monitored_Ch);
+#endif /* MT_DFS_SUPPORT */
 
 /*******************************************************************************
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
+
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+extern DFS_RADAR_THRESHOLD_PARAM g_arRadarThresholdParam[4];
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
 
 
 /*******************************************************************************
@@ -482,6 +537,14 @@ VOID DfsGetSysParameters(
 
 VOID DfsParamInit(/* finish */
 	IN PRTMP_ADAPTER	pAd);
+
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+VOID DfsThresholdParamInit(
+	IN PRTMP_ADAPTER	pAd);
+
+INT Set_DfsDefaultRDDThresholdParam(
+	IN PRTMP_ADAPTER pAd);
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
 
 VOID DfsStateMachineInit(
 	IN RTMP_ADAPTER * pAd,
@@ -549,6 +612,9 @@ VOID DfsSetNewChInit(
 VOID DfsCacEndUpdate(
 	RTMP_ADAPTER *pAd,
 	MLME_QUEUE_ELEM *Elem);
+
+VOID DfsCacEndLoadDCOCData(
+	IN PRTMP_ADAPTER pAd);
 
 #ifdef ONDEMAND_DFS
 VOID DfsOutBandCacPass(
@@ -629,6 +695,19 @@ BOOLEAN DfsV10CheckGrpChnlLeft(
 	IN UCHAR		 chGrp,
 	IN UCHAR		 grpWidth);
 
+UINT_8 DfsV10W56FindMaxNopDuration(
+	IN PRTMP_ADAPTER pAd);
+
+UINT_8 DfsV10FindNonNopChannel(
+	IN PRTMP_ADAPTER pAd,
+	IN UCHAR		 chGrp,
+	IN UCHAR		 grpWidth);
+
+BOOLEAN DfsV10W56APDownStart(
+	IN PRTMP_ADAPTER pAd,
+	IN PAUTO_CH_CTRL pAutoChCtrl,
+	IN ULONG	     V10W56TrgrApDownTime);
+
 VOID DfsV10W56APDownTimeCountDown(/*RemainingTimeForUse --*/
 	IN PRTMP_ADAPTER pAd);
 
@@ -649,7 +728,7 @@ VOID WrapDfsRddReportHandle(/*handle the event of EXT_EVENT_ID_RDD_REPORT*/
 	IN PRTMP_ADAPTER pAd, UCHAR ucRddIdx);
 
 BOOLEAN DfsRddReportHandle(/*handle the event of EXT_EVENT_ID_RDD_REPORT*/
-	IN PDFS_PARAM pDfsParam, UCHAR ucRddIdx);
+	IN PRTMP_ADAPTER pAd, PDFS_PARAM pDfsParam, UCHAR ucRddIdx, UCHAR bandIdx);
 
 VOID WrapDfsSetNonOccupancy(/*Set Channel non-occupancy time, finish */
 	IN PRTMP_ADAPTER pAd, UCHAR bandIdx);
@@ -794,5 +873,22 @@ VOID ZeroWait_DFS_collision_report(
 	IN PRTMP_ADAPTER pAd, IN UCHAR SynNum, IN UCHAR Channel, UCHAR Bw);
 
 VOID DfsZeroHandOffRecovery(IN struct _RTMP_ADAPTER *pAd, struct wifi_dev *wdev);
+
+#ifdef RDM_FALSE_ALARM_DEBUG_SUPPORT
+VOID UpdateRadarInfo(
+	P_EXT_EVENT_RDD_REPORT_T prRadarReport);
+
+VOID DumpRadarHwPulsesInfo(
+	IN PRTMP_ADAPTER pAd,
+	IN P_EXT_EVENT_RDD_REPORT_T prRadarReport);
+
+VOID DumpRadarSwPulsesInfo(
+	IN PRTMP_ADAPTER pAd,
+	IN P_EXT_EVENT_RDD_REPORT_T prRadarReport);
+
+INT Show_DFS_Debug_Proc(
+	PRTMP_ADAPTER pAd,
+	RTMP_STRING *arg);
+#endif /* RDM_FALSE_ALARM_DEBUG_SUPPORT */
 #endif /*MT_DFS_SUPPORT*/
 #endif /*_MT_RDM_H_ */

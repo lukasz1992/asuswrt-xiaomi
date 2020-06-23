@@ -166,7 +166,7 @@ typedef struct usb_ctrlrequest devctrlrequest;
 #endif
 
 
-#define AP_DRIVER_VERSION			"5.0.2.0"
+#define AP_DRIVER_VERSION			"5.0.4.0"
 #ifdef MULTIPLE_CARD_SUPPORT
 #define CARD_INFO_PATH			"/etc/Wireless/RT2860AP/RT2860APCard.dat"
 #endif /* MULTIPLE_CARD_SUPPORT */
@@ -320,6 +320,8 @@ struct iw_statistics *rt28xx_get_wireless_stats(
 #define NDIS_STATUS_INVALID_DATA		0x02
 #define NDIS_STATUS_RESOURCES                   0x03
 #define NDIS_STATUS_PKT_REQUEUE			0x04
+#define NDIS_STATUS_MORE_PROCESSING_REQUIRED             0x05
+
 
 #define NDIS_SET_PACKET_STATUS(_p, _status)			do {} while (0)
 #define NdisWriteErrorLogEntry(_a, _b, _c, _d)		do {} while (0)
@@ -507,6 +509,7 @@ typedef spinlock_t			OS_NDIS_SPIN_LOCK;
 #define OS_SEM_EVENT_UP(_pSema)			up(_pSema)
 
 #define RTCMDUp					OS_RTCMDUp
+#define RTCMDRunning				OS_RTCMDRunning
 
 #ifdef KTHREAD_SUPPORT
 #define RTMP_WAIT_EVENT_INTERRUPTIBLE(_Status, _pTask) \
@@ -576,13 +579,21 @@ typedef spinlock_t			OS_NDIS_SPIN_LOCK;
 /* TODO: Use this IOCTL carefully when linux kernel version larger than 2.6.27, because the PID only correct when the user space task do this ioctl itself. */
 /*#define RTMP_GET_OS_PID(_x, _y)    _x = get_task_pid(current, PIDTYPE_PID); */
 #ifdef OS_ABL_FUNC_SUPPORT
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+#define RT_GET_OS_PID(_x, _y)		do {rcu_read_lock(); _x = (ULONG)current->thread_pid; rcu_read_unlock(); } while (0)
+#else
 #define RT_GET_OS_PID(_x, _y)		do {rcu_read_lock(); _x = (ULONG)current->pids[PIDTYPE_PID].pid; rcu_read_unlock(); } while (0)
+#endif
 #define RTMP_GET_OS_PID(_a, _b)			RtmpOsGetPid(&_a, _b)
 #else
 #ifdef CONFIG_PREEMPT_RCU
 #define RT_GET_OS_PID(_x, _y)
 #else /* else CONFIG_PREEMPT_RCU */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+#define RT_GET_OS_PID(_x, _y)		do {rcu_read_lock(); _x = current->thread_pid; rcu_read_unlock(); } while (0)
+#else
 #define RT_GET_OS_PID(_x, _y)		do {rcu_read_lock(); _x = current->pids[PIDTYPE_PID].pid; rcu_read_unlock(); } while (0)
+#endif
 #endif /* CONFIG_PREEMPT_RCU */
 #define RTMP_GET_OS_PID(_a, _b)			RT_GET_OS_PID(_a, _b)
 #endif /* OS_ABL_FUNC_SUPPORT */
@@ -619,9 +630,11 @@ typedef struct tasklet_struct  *POS_NET_TASK_STRUCT;
 
 typedef struct timer_list	OS_NDIS_MINIPORT_TIMER;
 typedef struct timer_list	OS_TIMER;
-
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0))
+typedef void (*TIMER_FUNCTION)(struct timer_list *);
+#else
 typedef void (*TIMER_FUNCTION)(unsigned long);
-
+#endif
 
 #define OS_WAIT(_time) \
 	{	\
@@ -841,8 +854,6 @@ void linux_pci_unmap_single(void *handle, ra_dma_addr_t dma_addr, size_t size, i
 #define CONFIG_DBG_QDISC
 #endif
 
-/*only for debug usage, need to strip on MP release*/
-#define CONFIG_DBG_OOM
 
 #define SKB_BUF_HEADROOM_RSV	(NET_SKB_PAD)
 #define SKB_BUF_TAILROOM_RSV	(sizeof(struct skb_shared_info))
@@ -1169,6 +1180,7 @@ do{ 																\
 #define RTMP_OS_NETDEV_STOP_QUEUE(_pNetDev)	netif_stop_queue((_pNetDev))
 #define RTMP_OS_NETDEV_WAKE_QUEUE(_pNetDev)	netif_wake_queue((_pNetDev))
 #define RTMP_OS_NETDEV_CARRIER_OFF(_pNetDev)	netif_carrier_off((_pNetDev))
+#define RTMP_OS_NETDEV_CARRIER_ON(_pNetDev)	netif_carrier_on((_pNetDev))
 
 #define QUEUE_ENTRY_TO_PACKET(pEntry) \
 	(PNDIS_PACKET)(pEntry)
@@ -1799,7 +1811,11 @@ VOID __exit wbsys_module_exit(void);
 #endif /* RTMP_RBUS_SUPPORT */
 
 int multi_inf_adapt_reg(VOID *pAd);
+
 int multi_inf_adapt_unreg(VOID *pAd);
+
+int multi_inf_get_count(void);
+
 int multi_inf_get_idx(VOID *pAd);
 #ifdef INTELP6_SUPPORT
 struct pci_dev* rtmp_get_pci_dev(void *pAd);

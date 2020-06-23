@@ -36,7 +36,7 @@
 #include "phy/rlm_cal_cache.h"
 #endif /* RLM_CAL_CACHE_SUPPORT */
 
-#ifdef TR181_SUPPORT
+#if defined(TR181_SUPPORT) || defined(TXRX_STAT_SUPPORT)
 #include "hdev/hdev_basic.h"
 #endif
 
@@ -419,10 +419,13 @@ INT Set_AP_WmmCapable_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 
 INT Set_HideSSID_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 
+#ifdef VLAN_SUPPORT
 INT Set_VLANID_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
-
 INT Set_VLANPriority_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_VLAN_TAG_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Set_VLAN_Policy_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Show_VLAN_Info_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#endif /*VLAN_SUPPORT*/
 
 INT Set_AccessPolicy_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 
@@ -443,9 +446,22 @@ INT Set_PartialScanTriggerPeriod_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 
 #ifdef AP_SCAN_SUPPORT
 INT Set_AutoChannelSelCheckTime_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Set_ClearSiteSurvey_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 #endif /* AP_SCAN_SUPPORT */
 
 INT Set_BADecline_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#ifdef TXRX_STAT_SUPPORT
+
+INT Show_Sta_Stat_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Show_Bss_Stat_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Show_Radio_Stat_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Set_Enable_Last_Sec_TXRX_Stats(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Set_Enable_RSSI_Stats(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#endif
+
+#ifdef VENDOR_FEATURE11_SUPPORT
+INT Show_Wifi_Stats_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#endif /* VENDOR_FEATURE11_SUPPORT */
 
 INT Show_StaCount_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Show_Sat_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
@@ -885,6 +901,7 @@ static struct {
 #endif
 #ifdef A4_CONN
 	{"APProxyStatus",			Set_APProxy_Status_Show_Proc},
+	{"APProxyRefresh",			Set_APProxy_Refresh_Proc},
 #endif /* A4_CONN */
 	{"SSID",						Set_AP_SSID_Proc},
 	{"WirelessMode",				Set_WirelessMode_Proc},
@@ -892,6 +909,9 @@ static struct {
 	{"ShortSlot",					Set_ShortSlot_Proc},
 	{"ProbeRspTimes",			Set_Probe_Rsp_Times_Proc},
 	{"Channel",					Set_Channel_Proc},
+#ifdef CONVERTER_MODE_SWITCH_SUPPORT
+	{"V10Converter",				Set_V10ConverterMode_Proc},
+#endif /*CONVERTER_MODE_SWITCH_SUPPORT*/
 #ifdef REDUCE_TCP_ACK_SUPPORT
 	{"ReduceAckEnable",             Set_ReduceAckEnable_Proc},
 	{"ReduceAckProb",               Set_ReduceAckProb_Proc},
@@ -899,6 +919,7 @@ static struct {
 	{"BeaconPeriod",				Set_BeaconPeriod_Proc},
 	{"DtimPeriod",					Set_DtimPeriod_Proc},
 	{"TxPower",					Set_TxPower_Proc},
+	{"MaxTxPwr",				Set_MaxTxPwr_Proc},
 	{"BGProtection",				Set_BGProtection_Proc},
 	{"DisableOLBC",				Set_OLBCDetection_Proc},
 	{"TxPreamble",				Set_TxPreamble_Proc},
@@ -974,9 +995,12 @@ static struct {
 	{"NoForwardingMBCast",			Set_NoForwardingMBCast_Proc},
 	{"HideSSID",					Set_HideSSID_Proc},
 	{"IEEE80211H",				Set_IEEE80211H_Proc},
+#ifdef VLAN_SUPPORT
 	{"VLANID",					Set_VLANID_Proc},
 	{"VLANPriority",				Set_VLANPriority_Proc},
 	{"VLANTag",					Set_VLAN_TAG_Proc},
+	{"VLANPolicy",				Set_VLAN_Policy_Proc},
+#endif /*VLAN_SUPPORT*/
 	{"AuthMode",					Set_SecAuthMode_Proc},
 	{"EncrypType",					Set_SecEncrypType_Proc},
 	{"WpaMixPairCipher",			Set_AP_WpaMixPairCipher_Proc},
@@ -1007,12 +1031,17 @@ static struct {
 	{"PeriodicPartialScan",				Set_PeriodicPartialScan_Proc},
 	{"PartialScanTriggerPeriod",			Set_PartialScanTriggerPeriod_Proc},
 	{"ACSCheckTime",				Set_AutoChannelSelCheckTime_Proc},
+	{"ClearSiteSurvey",					Set_ClearSiteSurvey_Proc},
 #endif /* AP_SCAN_SUPPORT */
+#ifdef TXRX_STAT_SUPPORT
+	{"enable_rssi",			Set_Enable_RSSI_Stats},
+	{"enable_txrx_stat",	Set_Enable_Last_Sec_TXRX_Stats},
+#endif
 #ifdef CUSTOMER_RSG_FEATURE
 	{"ApEnableRadioChStats",		Set_ApEnableRadioChStats_Proc},
 #endif
 #ifdef CUSTOMER_DCC_FEATURE
-	{"ApEnableBeaconTable", 		Set_ApEnableBeaconTable_Proc},
+	{"ApEnableBeaconTable",		Set_ApEnableBeaconTable_Proc},
 	{"ApChannelSwitch", 			Set_ApChannelSwitch_Proc},
 	{"ApDisableSTAConnect", 		Set_ApDisableSTAConnect_Proc},
 #endif
@@ -1090,6 +1119,16 @@ static struct {
 	{"DfsForceNOP", 		Set_DfsZeroWaitNOP_Proc},
 	{"DfsTargetCh",			Set_DfsTargetCh_Proc},
 #endif
+
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+	{"RadarMinLPN", 		    	Set_RadarMinLPN_Proc},
+	{"RadarThresholdParam", 		Set_RadarThresholdParam_Proc},
+	{"RadarPulseThresholdParam",		Set_RadarPulseThresholdParam_Proc},
+	{"RadarDbgLogConfig",			Set_RadarDbgLogConfig_Proc},
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+#ifdef RDM_FALSE_ALARM_DEBUG_SUPPORT
+	{"RadarPulsePattern",			Set_RadarTestPulsePattern_Proc},
+#endif /* RDM_FALSE_ALARM_DEBUG_SUPPORT */
 
 #if defined(DFS_SUPPORT) || defined(CARRIER_DETECTION_SUPPORT)
 	{"RadarShow",					Set_RadarShow_Proc},
@@ -1278,6 +1317,10 @@ static struct {
 #ifdef CONFIG_MAP_SUPPORT
 	{"bhbss",						Set_Bh_Bss_Proc},
 	{"fhbss",						Set_Fh_Bss_Proc},
+	{"mapEnable",						Set_Map_Proc},
+	{"mapTurnKey",						Set_Map_Turnkey_Proc},
+	{"MapChannel",					Set_Map_Channel_Proc},
+	{"MapChannelEn",				Set_Map_Channel_En_Proc},
 #endif /* CONFIG_MAP_SUPPORT */
 #ifdef DYNAMIC_VLAN_SUPPORT
 	{"dvlan",						Set_Dvlan_Proc},
@@ -1625,6 +1668,13 @@ static struct {
 
 
 	{"VcoPeriod",					Set_VcoPeriod_Proc},
+#ifdef SNIFFER_SUPPORT
+	{"MonitorMode",				Set_MonitorMode_Proc},
+	{"MonitorFilterSize",			Set_MonitorFilterSize_Proc},
+	{"MonitorFrameType",			Set_MonitorFrameType_Proc},
+	{"MonitorMacFilter",			Set_MonitorMacFilter_Proc},
+	{"MonitorMacFilterOff",			Set_MonitorMacFilterOff_Proc},
+#endif /* SNIFFER_SUPPORT */
 
 
 #ifdef DOT11W_PMF_SUPPORT
@@ -2101,6 +2151,14 @@ static struct {
 	{"sta_tr",				Show_sta_tr_proc},
 	{"peerinfo",			show_stainfo_proc},
 	{"stacountinfo",			Show_StaCount_Proc},
+#ifdef TXRX_STAT_SUPPORT
+	{"sta_stat",			Show_Sta_Stat_Proc},
+	{"mbss_stat",           Show_Bss_Stat_Proc},
+	{"radio_stat",			Show_Radio_Stat_Proc},
+#endif
+#ifdef VENDOR_FEATURE11_SUPPORT
+	{"wifi_stats",			Show_Wifi_Stats_Proc},
+#endif /* VENDOR_FEATURE11_SUPPORT */
 	{"secinfo",			Show_APSecurityInfo_Proc},
 	{"descinfo",			Show_DescInfo_Proc},
 	{"driverinfo",			show_driverinfo_proc},
@@ -2189,6 +2247,9 @@ static struct {
 	{"WscPeerList",		WscApShowPeerList},
 	{"WscPin",			WscApShowPin},
 #endif /* WSC_AP_SUPPORT */
+#ifdef VLAN_SUPPORT
+	{"vlaninfo", Show_VLAN_Info_Proc},
+#endif /*VLAN_SUPPORT*/
 	{"rfinfo", ShowRFInfo},
 	{"bbpinfo", ShowBBPInfo},
 	{"wfintcnt", ShowWifiInterruptCntProc},
@@ -2311,6 +2372,12 @@ static struct {
 	{"RATblInfo",           show_ratbl_info},
 #endif
 	{"show_wifi_cap_list",	show_wifi_cap_list},
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+	{"RadarThresholdParam",			Show_Radar_Threshold_Param_Proc},
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+#ifdef RDM_FALSE_ALARM_DEBUG_SUPPORT
+	{"DfsDebug",				Show_DFS_Debug_Proc},
+#endif /* RDM_FALSE_ALARM_DEBUG_SUPPORT */
 #ifdef DSCP_PRI_SUPPORT
 	{"DscpPri",	Show_Dscp_Pri_Proc},
 #endif
@@ -4368,7 +4435,7 @@ INT RTMPAPSetInformation(
 
 		os_alloc_mem(NULL, (UCHAR **)&IE, wrq->u.data.length);
 		Status = copy_from_user(IE, wrq->u.data.pointer, wrq->u.data.length);
-		wapp_set_ap_ie(pAd, IE, wrq->u.data.length);
+		wapp_set_ap_ie(pAd, IE, wrq->u.data.length, (UCHAR)pObj->ioctl_if);
 		os_free_mem(IE);
 	}
 	break;
@@ -5155,10 +5222,7 @@ INT Channel_Info_MsgHandle(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq, POS_
 	UINT8 Channel =  0;
 #endif
 
-	if (pObj->ioctl_if == INT_MBSSID)
-		wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
-	else
-		wdev = &pAd->ApCfg.MBSSID[0].wdev;
+	wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
 	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_INFO, ("[%d][%s] : Ioctl : %d !! \n",
 			__LINE__, __func__, ifIndex));
 	if (wrq->u.data.length != sizeof(OFFCHANNEL_SCAN_MSG)) {
@@ -5167,25 +5231,31 @@ INT Channel_Info_MsgHandle(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq, POS_
 	} else {
 		Status = copy_from_user(&msg, wrq->u.data.pointer, wrq->u.data.length);
 		memcpy(pAd->ScanCtrl.if_name, wrq->ifr_ifrn.ifrn_name, IFNAMSIZ);
-		printk("[%s] interface name = %s\n", __func__, pAd->ScanCtrl.if_name);
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+			("[%s] interface name = %s\n", __func__, pAd->ScanCtrl.if_name));
 		switch (msg.Action) {
 		case GET_OFFCHANNEL_INFO:
 		{
 			if (pAd->ScanCtrl.state != OFFCHANNEL_SCAN_INVALID) {
-				printk("%s:failed because offchannel scan is still ongoing\n", __func__);
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("%s:failed because offchannel scan is still ongoing\n",
+					__func__));
 				Status = CHANNEL_MONITOR_STRG_FAILURE;
 			} else {
-				printk("[%s][%d] : num of away channel to scan = %d\n",
-					__func__, __LINE__, msg.data.offchannel_param.Num_of_Away_Channel);
-				pAd->ScanCtrl.Num_Of_Channels = msg.data.offchannel_param.Num_of_Away_Channel;
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("[%s][%d] : num of away channel to scan = %d\n",
+					__func__, __LINE__,
+					msg.data.offchannel_param.Num_of_Away_Channel));
+				pAd->ScanCtrl.Num_Of_Channels =
+					msg.data.offchannel_param.Num_of_Away_Channel;
 				/* Fillup the paramters received for all channels */
 				for (i = 0; i < msg.data.offchannel_param.Num_of_Away_Channel; i++) {
 					pAd->ScanCtrl.ScanGivenChannel[i] = msg.data.offchannel_param.channel[i];
 					pAd->ScanCtrl.Offchan_Scan_Type[i] = msg.data.offchannel_param.scan_type[i];
 					pAd->ScanCtrl.ScanTime[i] = msg.data.offchannel_param.scan_time[i];
-					printk("[%s] channel = %d:scan type = %d:scan time = %d\n",
+					MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("[%s] channel = %d:scan type = %d:scan time = %d\n",
 						__func__, pAd->ScanCtrl.ScanGivenChannel[i],
-						pAd->ScanCtrl.Offchan_Scan_Type[i], pAd->ScanCtrl.ScanTime[i]);
+						pAd->ScanCtrl.Offchan_Scan_Type[i], pAd->ScanCtrl.ScanTime[i]));
 				}
 				Status = ApSiteSurveyNew_by_wdev(pAd, msg.data.offchannel_param.channel[0],
 							msg.data.offchannel_param.scan_time[0],
@@ -5254,6 +5324,57 @@ INT Channel_Info_MsgHandle(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq, POS_
 		}
 	}
 	return Status;
+}
+#endif
+
+#ifdef CONFIG_MAP_SUPPORT
+int Fill_OID_WSC_PROFILE(IN RTMP_ADAPTER *pAd, UCHAR ifIndex, p_wsc_apcli_config_msg *wsc_config)
+{
+	PWSC_CTRL pWscControl = NULL;
+	PWSC_CREDENTIAL pCredential = NULL;
+	WSC_PROFILE *pWscProfile = NULL;
+	struct wifi_dev *wdev;
+	int  i = 0, TotalLen = 0;
+	wsc_apcli_config_msg *temp_wsc_config = NULL;
+
+	pWscControl = &pAd->ApCfg.ApCliTab[ifIndex].wdev.WscControl;
+	pWscProfile = &pWscControl->WscProfile;
+	wdev = &pAd->ApCfg.ApCliTab[ifIndex].wdev;
+	TotalLen =	sizeof(wsc_apcli_config_msg) +
+		sizeof(wsc_apcli_config) * pWscProfile->ProfileCnt;
+	if (TotalLen > 512) {
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				("Total Length is >512 return\n"));
+		return FALSE;
+	}
+	os_alloc_mem(NULL, (PUCHAR *)&temp_wsc_config, TotalLen);
+	if (temp_wsc_config == NULL) {
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				("%s:failed to allocated memory\n", __func__));
+		return FALSE;
+	}
+	NdisZeroMemory(temp_wsc_config, TotalLen);
+	*wsc_config = (wsc_apcli_config_msg *)temp_wsc_config;
+	temp_wsc_config->profile_count = pWscProfile->ProfileCnt;
+	for (i = 0; i < pWscProfile->ProfileCnt; i++) {
+		pCredential = &pWscProfile->Profile[i];
+		NdisZeroMemory(temp_wsc_config->apcli_config[i].ssid,
+			sizeof(temp_wsc_config->apcli_config[i].ssid));
+		NdisCopyMemory(temp_wsc_config->apcli_config[i].ssid, pCredential->SSID.Ssid,
+										pCredential->SSID.SsidLength);
+		NdisCopyMemory(temp_wsc_config->apcli_config[i].Key,
+			pCredential->Key, pCredential->KeyLength);
+		NdisCopyMemory(temp_wsc_config->apcli_config[i].bssid,
+			pCredential->MacAddr, MAC_ADDR_LEN);
+		temp_wsc_config->apcli_config[i].SsidLen = pCredential->SSID.SsidLength;
+		temp_wsc_config->apcli_config[i].AuthType = pCredential->AuthType;
+		temp_wsc_config->apcli_config[i].EncrType = pCredential->EncrType;
+		temp_wsc_config->apcli_config[i].KeyLength = pCredential->KeyLength;
+		temp_wsc_config->apcli_config[i].KeyIndex = pCredential->KeyIndex;
+		temp_wsc_config->apcli_config[i].peer_map_role = pCredential->DevPeerRole;
+		temp_wsc_config->apcli_config[i].own_map_role = wdev->MAPCfg.DevOwnRole;
+	}
+	return TotalLen;
 }
 #endif
 
@@ -6868,8 +6989,251 @@ INT RTMPAPQueryInformation(
 	case OID_QUERY_FEATURE_SUP_LIST:
 		Status = copy_to_user(wrq->u.data.pointer, &pAd->wifi_cap_list, wrq->u.data.length);
 		break;
+#ifdef CONFIG_MAP_SUPPORT
+	case OID_GET_WSC_PROFILES:
+		{
+			int TotalLen = 0;
+			wsc_apcli_config_msg *wsc_config = NULL;
 
+			ifIndex = pObj->ioctl_if;
+			TotalLen = Fill_OID_WSC_PROFILE(pAd, ifIndex, &wsc_config);
+			if (!wsc_config) {
+				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+					("wsc_config is NULL return FALSE\n"));
+				return FALSE;
+			}
+			wrq->u.data.length = TotalLen;
+			Status = copy_to_user(wrq->u.data.pointer, wsc_config, wrq->u.data.length);
+			if (wsc_config)
+				os_free_mem((PUCHAR)wsc_config);
+			break;
+		}
+		case OID_GET_MISC_CAP:
+			{
+				wdev_misc_cap misc_cap;
 
+				NdisZeroMemory(&misc_cap, sizeof(wdev_misc_cap));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+					misc_cap.max_num_of_cli = 64;
+					misc_cap.max_num_of_bss = HW_BEACON_MAX_NUM;
+					misc_cap.num_of_bss = pAd->ApCfg.BssidNum;
+					misc_cap.max_num_of_block_cli = BLOCK_LIST_NUM;
+					wrq->u.data.length = sizeof(wdev_misc_cap);
+					Status = copy_to_user(wrq->u.data.pointer, &misc_cap, wrq->u.data.length);
+					break;
+			}
+		case OID_GET_HT_CAP:
+			{
+				wdev_ht_cap ht_cap;
+
+				NdisZeroMemory(&ht_cap, sizeof(wdev_ht_cap));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+					ht_cap.tx_stream = wlan_config_get_tx_stream(wdev);
+					ht_cap.rx_stream = wlan_config_get_rx_stream(wdev);
+					ht_cap.sgi_20 = (wlan_config_get_ht_gi(wdev) == GI_400) ? 1:0;
+					ht_cap.sgi_40 = (wlan_config_get_ht_gi(wdev) == GI_400) ?  1:0;
+
+					ht_cap.ht_40 = (wlan_operate_get_ht_bw(wdev) == BW_40) ? 1:0;
+
+					wrq->u.data.length = sizeof(wdev_ht_cap);
+					Status = copy_to_user(wrq->u.data.pointer, &ht_cap, wrq->u.data.length);
+					break;
+			}
+		case OID_GET_VHT_CAP:
+			{
+				wdev_vht_cap vht_cap;
+				VHT_CAP_INFO drv_vht_cap;
+				VHT_OP_IE drv_vht_op;
+				struct _RTMP_CHIP_CAP *cap = hc_get_chip_cap(pAd->hdev_ctrl);
+
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+				NdisZeroMemory(&vht_cap, sizeof(wdev_vht_cap));
+				NdisZeroMemory(&drv_vht_cap, sizeof(VHT_CAP_INFO));
+				NdisZeroMemory(&drv_vht_op, sizeof(VHT_OP_IE));
+				NdisCopyMemory(&drv_vht_cap, &pAd->CommonCfg.vht_cap_ie.vht_cap, sizeof(VHT_CAP_INFO));
+				if (wdev->wdev_type != WDEV_TYPE_AP) {
+					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():wdev is not an AP\n", __func__));
+					break;
+				}
+
+				mt_WrapSetVHTETxBFCap(pAd, wdev, &drv_vht_cap);
+				/* Haipin Debug Print (Y)*/
+				/* printk("\033[1;33m wdev_list[%d] type = %u\033[0m\n", i, wdev->wdev_type);*/
+
+				drv_vht_op.basic_mcs_set.mcs_ss1 = VHT_MCS_CAP_NA;
+				drv_vht_op.basic_mcs_set.mcs_ss2 = VHT_MCS_CAP_NA;
+				drv_vht_op.basic_mcs_set.mcs_ss3 = VHT_MCS_CAP_NA;
+				drv_vht_op.basic_mcs_set.mcs_ss4 = VHT_MCS_CAP_NA;
+				drv_vht_op.basic_mcs_set.mcs_ss5 = VHT_MCS_CAP_NA;
+				drv_vht_op.basic_mcs_set.mcs_ss6 = VHT_MCS_CAP_NA;
+				drv_vht_op.basic_mcs_set.mcs_ss7 = VHT_MCS_CAP_NA;
+				drv_vht_op.basic_mcs_set.mcs_ss8 = VHT_MCS_CAP_NA;
+
+				switch	(wlan_operate_get_rx_stream(wdev)) {
+				case 4:
+					drv_vht_op.basic_mcs_set.mcs_ss4 = cap->max_vht_mcs;
+				case 3:
+					drv_vht_op.basic_mcs_set.mcs_ss3 = cap->max_vht_mcs;
+				case 2:
+					drv_vht_op.basic_mcs_set.mcs_ss2 = cap->max_vht_mcs;
+				case 1:
+					drv_vht_op.basic_mcs_set.mcs_ss1 = cap->max_vht_mcs;
+					break;
+				}
+
+				NdisMoveMemory(vht_cap.sup_tx_mcs,
+								&drv_vht_op.basic_mcs_set,
+								sizeof(vht_cap.sup_tx_mcs));
+				NdisMoveMemory(vht_cap.sup_rx_mcs,
+								&drv_vht_op.basic_mcs_set,
+								sizeof(vht_cap.sup_rx_mcs));
+				vht_cap.tx_stream = wlan_config_get_tx_stream(wdev);
+				vht_cap.rx_stream = wlan_config_get_tx_stream(wdev);
+				vht_cap.sgi_80 = (wlan_config_get_ht_gi(wdev) == GI_400) ? 1:0;
+
+				vht_cap.sgi_160 = (wlan_config_get_ht_gi(wdev) == GI_400) ? 1:0;
+				vht_cap.vht_160 = (wlan_operate_get_vht_bw(wdev) == BW_160) ? 1:0;
+				vht_cap.vht_8080 = (wlan_operate_get_vht_bw(wdev) == BW_8080) ? 1:0;
+
+				vht_cap.su_bf = (drv_vht_cap.bfer_cap_su) ? 1:0;
+
+				vht_cap.mu_bf = (drv_vht_cap.bfer_cap_mu) ? 1:0;
+
+				wrq->u.data.length = sizeof(wdev_vht_cap);
+				Status = copy_to_user(wrq->u.data.pointer, &vht_cap, wrq->u.data.length);
+				break;
+			}
+		case OID_GET_CHAN_LIST:
+			{
+				wdev_chn_info chn_list;
+
+				NdisZeroMemory(&chn_list, sizeof(wdev_chn_info));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+				if (wdev->wdev_type != WDEV_TYPE_AP) {
+					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():wdev is not an AP\n", __func__));
+					break;
+				}
+
+				chn_list.band = wdev->PhyMode;
+				chn_list.op_ch = wlan_operate_get_prim_ch(wdev);
+				chn_list.op_class = get_regulatory_class(pAd, wdev->channel, wdev->PhyMode, wdev);
+				chn_list.ch_list_num = pAd->ChannelListNum;
+				chn_list.dl_mcs = wdev->HTPhyMode.field.MCS;
+				setChannelList(pAd, wdev, &chn_list);
+#ifdef CONFIG_MAP_SUPPORT /* TODO: move to MAP */
+				chn_list.non_op_chn_num = getNonOpChnNum(pAd, wdev, chn_list.op_class);
+				setNonOpChnList(pAd,
+								wdev,
+								chn_list.non_op_ch_list,
+								chn_list.non_op_chn_num,
+								chn_list.op_class);
+#endif /* CONFIG_MAP_SUPPORT */
+				wrq->u.data.length = sizeof(wdev_chn_info);
+				Status = copy_to_user(wrq->u.data.pointer, &chn_list, wrq->u.data.length);
+
+				break;
+			}
+		case OID_GET_OP_CLASS:
+			{
+				wdev_op_class_info op_class;
+
+				NdisZeroMemory(&op_class, sizeof(wdev_op_class_info));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+				if (wdev->wdev_type != WDEV_TYPE_AP) {
+					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():wdev is not an AP\n", __func__));
+					break;
+				}
+
+#ifdef CONFIG_MAP_SUPPORT
+				op_class.num_of_op_class = map_set_op_class_info(pAd, wdev, &op_class);
+#endif /* CONFIG_MAP_SUPPORT */
+				wrq->u.data.length = sizeof(wdev_op_class_info);
+				Status = copy_to_user(wrq->u.data.pointer, &op_class, wrq->u.data.length);
+				break;
+			}
+		case OID_GET_BSS_INFO:
+			{
+				wdev_bss_info bss_info;
+
+				NdisZeroMemory(&bss_info, sizeof(wdev_bss_info));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+				if (wdev->wdev_type != WDEV_TYPE_AP) {
+					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():wdev is not an AP\n", __func__));
+					break;
+				}
+				bss_info.SsidLen = pAd->ApCfg.MBSSID[pObj->ioctl_if].SsidLen;
+				NdisMoveMemory(bss_info.ssid,
+						pAd->ApCfg.MBSSID[pObj->ioctl_if].Ssid,
+						(MAX_LEN_OF_SSID+1));
+				NdisMoveMemory(bss_info.bssid, wdev->bssid, MAC_ADDR_LEN);
+				NdisMoveMemory(bss_info.if_addr, wdev->if_addr, MAC_ADDR_LEN);
+#ifdef CONFIG_MAP_SUPPORT
+				bss_info.map_role = wdev->MAPCfg.DevOwnRole;
+				bss_info.auth_mode = pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev.SecConfig.AKMMap;
+				bss_info.enc_type = pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev.SecConfig.PairwiseCipher;
+#ifdef WSC_AP_SUPPORT
+				bss_info.key_len = strlen(pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev.WscControl.WpaPsk);
+				NdisMoveMemory(bss_info.key,
+					pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev.WscControl.WpaPsk, bss_info.key_len);
+#else
+				bss_info.key_len = strlen(pAd->ApCfg.MBSSID[pObj->ioctl_if].PSK);
+				NdisMoveMemory(bss_info->key, pAd->ApCfg.MBSSID[pObj->ioctl_if].PSK, bss_info.key_len);
+#endif
+				bss_info.hidden_ssid = pAd->ApCfg.MBSSID[pObj->ioctl_if].bHideSsid;
+#endif
+				wrq->u.data.length = sizeof(wdev_bss_info);
+				Status = copy_to_user(wrq->u.data.pointer, &bss_info, wrq->u.data.length);
+
+				break;
+			}
+		case OID_GET_AP_METRICS:
+			{
+				wdev_ap_metric ap_metric;
+				BSS_STRUCT *mbss;
+
+				NdisZeroMemory(&ap_metric, sizeof(wdev_ap_metric));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+				ifIndex = pObj->ioctl_if;
+
+				if (wdev->wdev_type != WDEV_TYPE_AP) {
+					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():wdev is not an AP\n", __func__));
+					break;
+				}
+
+				mbss = &pAd->ApCfg.MBSSID[wdev->func_idx];
+				NdisMoveMemory(ap_metric.bssid, wdev->bssid, MAC_ADDR_LEN);
+
+				ap_metric.cu = get_channel_utilization(pAd, ifIndex);
+				NdisCopyMemory(ap_metric.ESPI_AC_BE, mbss->ESPI_AC_BE, sizeof(mbss->ESPI_AC_BE));
+				NdisCopyMemory(ap_metric.ESPI_AC_BK, mbss->ESPI_AC_BK, sizeof(mbss->ESPI_AC_BK));
+				NdisCopyMemory(ap_metric.ESPI_AC_VO, mbss->ESPI_AC_VO, sizeof(mbss->ESPI_AC_VO));
+				NdisCopyMemory(ap_metric.ESPI_AC_VI, mbss->ESPI_AC_VI, sizeof(mbss->ESPI_AC_VI));
+				wrq->u.data.length = sizeof(wdev_ap_metric);
+				Status = copy_to_user(wrq->u.data.pointer, &ap_metric, wrq->u.data.length);
+
+					break;
+			}
+		case OID_GET_NOP_CHANNEL_LIST:
+		{
+			struct nop_channel_list_s nop_channels;
+
+			NdisZeroMemory(&nop_channels, sizeof(nop_channels));
+			wapp_prepare_nop_channel_list(pAd, &nop_channels);
+			Status = copy_to_user(wrq->u.data.pointer, &nop_channels, wrq->u.data.length);
+			break;
+		}
+
+#endif
 	default:
 		Status = -EOPNOTSUPP;
 
@@ -7497,6 +7861,8 @@ INT	Set_HideSSID_Proc(
 	return TRUE;
 }
 
+
+#ifdef VLAN_SUPPORT
 /*
     ==========================================================================
     Description:
@@ -7511,11 +7877,38 @@ INT	Set_VLANID_Proc(
 {
 	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
 	struct wifi_dev *wdev;
+	INT ifIndex, if_type;
+	UINT16 vid;
+	UINT32 addr, vlantag;
 
-	wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
-	wdev->VLAN_VID = os_str_tol(arg, 0, 10);
-	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("IF(ra%d) Set_VLANID_Proc::(VLAN_VID=%d)\n",
-			 pObj->ioctl_if, wdev->VLAN_VID));
+	vid = os_str_tol(arg, 0, 10);
+	if (vid > MAX_VID) {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("Invalid VID value\n"));
+		return FALSE;
+	}
+
+	ifIndex = pObj->ioctl_if;
+	if_type = pObj->ioctl_if_type;
+
+	if (if_type == INT_MAIN || if_type == INT_MBSSID)
+		wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
+	else if (if_type == INT_APCLI)
+		wdev = &pAd->ApCfg.ApCliTab[ifIndex].wdev;
+	else {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Unexpected if_type\n"));
+		return FALSE;
+	}
+
+	if (!wdev)
+		return FALSE;
+
+	wdev->VLAN_VID = vid;
+
+	addr = DMA_VTR_GET_ADDR(wdev->OmacIdx);
+	MAC_IO_READ32(pAd, addr, &vlantag);
+	vlantag = DMA_VTR_SET_VID(wdev->OmacIdx, vlantag, vid);
+	MAC_IO_WRITE32(pAd, addr, vlantag);
+
 	return TRUE;
 }
 
@@ -7531,11 +7924,39 @@ INT	Set_VLANID_Proc(
 INT	Set_VLANPriority_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 {
 	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
-	struct wifi_dev *wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+	struct wifi_dev *wdev;
+	INT ifIndex, if_type;
+	USHORT priority;
+	UINT32 addr, vlantag;
 
-	wdev->VLAN_Priority = os_str_tol(arg, 0, 10);
-	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("IF(ra%d) Set_VLANPriority_Proc::(VLAN_Priority=%d)\n",
-			 pObj->ioctl_if, wdev->VLAN_Priority));
+	priority = os_str_tol(arg, 0, 10);
+	if (priority > MAX_PCP) {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("Invalid PCP value\n"));
+		return FALSE;
+	}
+
+	ifIndex = pObj->ioctl_if;
+	if_type = pObj->ioctl_if_type;
+
+	if (if_type == INT_MAIN || if_type == INT_MBSSID)
+		wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
+	else if (if_type == INT_APCLI)
+		wdev = &pAd->ApCfg.ApCliTab[ifIndex].wdev;
+	else {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Unexpected if_type\n"));
+		return FALSE;
+	}
+
+	if (!wdev)
+		return FALSE;
+
+	wdev->VLAN_Priority = priority;
+
+	addr = DMA_VTR_GET_ADDR(wdev->OmacIdx);
+	MAC_IO_READ32(pAd, addr, &vlantag);
+	vlantag = DMA_VTR_SET_PCP(wdev->OmacIdx, vlantag, priority);
+	MAC_IO_WRITE32(pAd, addr, vlantag);
+
 	return TRUE;
 }
 
@@ -7550,25 +7971,201 @@ INT	Set_VLANPriority_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 */
 INT	Set_VLAN_TAG_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 {
-	BOOLEAN	bVLAN_Tag;
 	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
 	struct wifi_dev *wdev;
+	INT ifIndex, if_type;
+	BOOLEAN bVLAN_Tag;
+	CHAR BssIdx, WlanIdx;
+	PMAC_TABLE_ENTRY pEntry;
+	STA_REC_CFG_T StaCfg;
+	PAPCLI_STRUCT pApCliEntry;
 
-	bVLAN_Tag = os_str_tol(arg, 0, 10);
+	bVLAN_Tag = (os_str_tol(arg, 0, 10)) ? TRUE : FALSE;
 
-	if (bVLAN_Tag == 1)
-		bVLAN_Tag = TRUE;
-	else if (bVLAN_Tag == 0)
-		bVLAN_Tag = FALSE;
-	else
-		return FALSE;  /* Invalid argument */
+	ifIndex = pObj->ioctl_if;
+	if_type = pObj->ioctl_if_type;
 
-	wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+	if (if_type == INT_MAIN || if_type == INT_MBSSID)
+		wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
+	else if (if_type == INT_APCLI)
+		wdev = &pAd->ApCfg.ApCliTab[ifIndex].wdev;
+	else {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Unexpected if_type\n"));
+		return FALSE;
+	}
+
+	if (!wdev)
+		return FALSE;
+
 	wdev->bVLAN_Tag = bVLAN_Tag;
-	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("IF(ra%d) Set_VLAN_TAG_Proc::(VLAN_Tag=%d)\n",
-			 pObj->ioctl_if, wdev->bVLAN_Tag));
+
+	if (if_type == INT_MAIN || if_type == INT_MBSSID) {
+		/* Update BC's StaRec of CR4 */
+		os_zero_mem(&StaCfg, sizeof(STA_REC_CFG_T));
+		pEntry = &pAd->MacTab.Content[wdev->tr_tb_idx];
+		StaCfg.MuarIdx = 0xe;
+		StaCfg.ConnectionState = STATE_PORT_SECURE;
+		StaCfg.ConnectionType = CONNECTION_INFRA_BC;
+		StaCfg.u4EnableFeature = (1 << STA_REC_TX_PROC);
+		StaCfg.ucBssIndex = wdev->bss_info_argument.ucBssIndex;
+		StaCfg.ucWlanIdx = wdev->tr_tb_idx;
+		StaCfg.pEntry = pEntry;
+
+		if (CmdExtStaRecUpdate(pAd, StaCfg) != STATUS_TRUE) {
+			return FALSE;
+		}
+
+	} else if (if_type == INT_APCLI) {
+		pApCliEntry = &pAd->ApCfg.ApCliTab[ifIndex];
+		WlanIdx = pApCliEntry->MacTabWCID;
+		BssIdx = wdev->BssIdx;
+		pEntry = &pAd->MacTab.Content[WlanIdx];
+
+		os_zero_mem(&StaCfg, sizeof(STA_REC_CFG_T));
+		StaCfg.MuarIdx = wdev->OmacIdx;
+		StaCfg.ConnectionState = pAd->ApCfg.ApCliTab[ifIndex].Valid;
+		StaCfg.ConnectionType = pEntry->ConnectionType;
+		StaCfg.u4EnableFeature = (1 << STA_REC_TX_PROC);
+		StaCfg.ucBssIndex = BssIdx;
+		StaCfg.ucWlanIdx = WlanIdx;
+		StaCfg.pEntry = pEntry;
+
+		if (CmdExtStaRecUpdate(pAd, StaCfg) != STATUS_TRUE)
+			 return FALSE;
+	}
+
 	return TRUE;
 }
+
+
+/*
+    ==========================================================================
+    Description:
+	Set the VLAN Checking Policy
+	For the detail, please refer to VLAN_TX_Policy &VLAN_RX_Policy
+    Return:
+	TRUE if all parameters are OK, FALSE otherwise
+    ==========================================================================
+*/
+INT Set_VLAN_Policy_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
+	struct wifi_dev *wdev;
+	INT ifIndex, if_type, if_idx;
+	char *direction, *policy;
+	USHORT vlan_policy;
+	BOOLEAN dir;
+
+	ifIndex = pObj->ioctl_if;
+	if_type = pObj->ioctl_if_type;
+
+	if (if_type == INT_MAIN || if_type == INT_MBSSID)
+		wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
+	else if (if_type == INT_APCLI)
+		wdev = &pAd->ApCfg.ApCliTab[ifIndex].wdev;
+	else {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Unexpected if_type\n"));
+		return FALSE;
+	}
+
+	direction = strsep(&arg, ":");
+	policy = strsep(&arg, ":");
+
+	if (!wdev || !direction || !policy)
+		return FALSE;
+
+	dir = (os_str_tol(direction, 0, 10) == TX_VLAN) ? TX_VLAN : RX_VLAN;
+	vlan_policy = os_str_tol(policy, 0, 10);
+
+	if ((dir > RX_VLAN)
+		 || (dir == TX_VLAN && vlan_policy >= VLAN_TX_POLICY_NUM)
+		 || (dir == RX_VLAN && vlan_policy >= VLAN_RX_POLICY_NUM)) {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("Invalid argument\n"));
+		return FALSE;
+	}
+
+	wdev->VLAN_Policy[dir] = vlan_policy;
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("Set the VLAN checking policy : %d\n",
+			 wdev->VLAN_Policy[dir]));
+
+	/*Update RX policy to DCR0 (DMA)*/
+	if (dir == RX_VLAN) {
+		switch (vlan_policy) {
+		case VLAN_RX_UNTAG:
+			/*InSVlan = 0, RmVlan = 1, SwPcP = 0*/
+			AsicRxHeaderTransCtl(pAd, TRUE, FALSE, FALSE, TRUE, FALSE);
+			break;
+		case VLAN_RX_REPLACE_ALL:
+			/*InSVlan = 1, RmVlan = 0, SwPcP = 1*/
+			AsicRxHeaderTransCtl(pAd, TRUE, FALSE, TRUE, FALSE, TRUE);
+			break;
+		case VLAN_RX_REPLACE_VID:
+			/*InSVlan = 1, RmVlan = 0, SwPcP = 0*/
+			AsicRxHeaderTransCtl(pAd, TRUE, FALSE, TRUE, FALSE, FALSE);
+			break;
+		case VLAN_RX_DROP:
+		case VLAN_RX_ALLOW:
+		default:
+			AsicRxHeaderTransCtl(pAd, TRUE, FALSE, FALSE, FALSE, FALSE);
+			break;
+		}
+
+		/* For now, VLAN Rx Policy is HW-supported, so we have to sync the setting to all of the wdev on the pAd */
+		for (if_idx = 0; if_idx < HW_BEACON_MAX_NUM; if_idx++) {
+			pAd->ApCfg.MBSSID[if_idx].wdev.VLAN_Policy[RX_VLAN] = vlan_policy;
+		}
+
+		for (if_idx = 0; if_idx < MAX_APCLI_NUM; if_idx++) {
+			pAd->ApCfg.ApCliTab[if_idx].wdev.VLAN_Policy[RX_VLAN] = vlan_policy;
+		}
+	}
+	return TRUE;
+}
+
+
+/*
+    ==========================================================================
+    Description:
+	Show VLAN-related field
+    Return:
+	TRUE if all parameters are OK, FALSE otherwise
+    ==========================================================================
+*/
+INT Show_VLAN_Info_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
+	struct wifi_dev *wdev;
+	INT ifIndex, if_type;
+
+	ifIndex = pObj->ioctl_if;
+	if_type = pObj->ioctl_if_type;
+
+	if (if_type == INT_MAIN || if_type == INT_MBSSID)
+		wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
+	else if (if_type == INT_APCLI)
+		wdev = &pAd->ApCfg.ApCliTab[ifIndex].wdev;
+	else {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("Unexpected if_type\n"));
+		return FALSE;
+	}
+
+	if (!wdev)
+		return FALSE;
+
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+		 ("bVLAN_Tag=%d\n", wdev->bVLAN_Tag));
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+		 ("VLANID=%d\n", wdev->VLAN_VID));
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+		 ("VLANPriority=%d\n", wdev->VLAN_Priority));
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+		 ("VLANPolicy(Tx)=%d\n", wdev->VLAN_Policy[TX_VLAN]));
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+		 ("VLANPolicy(Rx)=%d\n", wdev->VLAN_Policy[RX_VLAN]));
+
+	return TRUE;
+}
+#endif /*VLAN_SUPPORT*/
 
 
 INT	Set_AP_WpaMixPairCipher_Proc(
@@ -8881,7 +9478,387 @@ static INT show_apcfg_info(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 
 	return TRUE;
 }
+#ifdef TXRX_STAT_SUPPORT
+INT Show_Radio_Stat_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	UINT8 i;
+	struct hdev_ctrl *ctrl = (struct hdev_ctrl *)pAd->hdev_ctrl;
+	for (i = 0 ; i < DBDC_BAND_NUM ; i++) {
+	  if (ctrl->rdev[i].pRadioCtrl->Last1TxCnt && ctrl->rdev[i].pRadioCtrl->Last1TxFailCnt)
+		ctrl->rdev[i].pRadioCtrl->Last1SecPER = ((100 * (ctrl->rdev[i].pRadioCtrl->Last1TxFailCnt))/
+									ctrl->rdev[i].pRadioCtrl->Last1TxCnt);
+	}
+	printk("------------------BAND:0-----------------------\n");
+	printk("TxDataPacketCnt     = %lld\n", ctrl->rdev[0].pRadioCtrl->TxDataPacketCount.QuadPart);
+	printk("TxDataPacketByte    = %lld\n", ctrl->rdev[0].pRadioCtrl->TxDataPacketByte.QuadPart);
+	printk("RxDataPacketCnt     = %lld\n", ctrl->rdev[0].pRadioCtrl->RxDataPacketCount.QuadPart);
+	printk("RxDataPacketByte    = %lld\n", ctrl->rdev[0].pRadioCtrl->RxDataPacketByte.QuadPart);
+	printk("TxMgmtPacketCnt     = %lld\n", ctrl->rdev[0].pRadioCtrl->TxMgmtPacketCount.QuadPart);
+	printk("RxMgmtPacketCnt     = %lld\n", ctrl->rdev[0].pRadioCtrl->RxMgmtPacketCount.QuadPart);
+	printk("TxBcnPacketCnt      = %lld\n", ctrl->rdev[0].pRadioCtrl->TxBeaconPacketCount.QuadPart);
+	printk("ucPktsTx            = %lld\n", ctrl->rdev[0].pRadioCtrl->TxUnicastDataPacket.QuadPart);
+	printk("mcPktsTx            = %lld\n", ctrl->rdev[0].pRadioCtrl->TxMulticastDataPacket.QuadPart);
+	printk("bcPktsTx            = %lld\n", ctrl->rdev[0].pRadioCtrl->TxBroadcastDataPacket.QuadPart);
+	printk("TxDroppedPacketCnt  = %lld\n", ctrl->rdev[0].pRadioCtrl->TxPacketDroppedCount.QuadPart);
+	printk("ChannelUtilization  = %u\n", pAd->Ch_BusyTime_11k[DBDC_BAND0]);
+	printk("RxCRCErrorCount     = %lld\n", ctrl->rdev[0].pRadioCtrl->RxCRCErrorCount.QuadPart);
+	printk("RxMICErrorCount     = %lld\n", ctrl->rdev[0].pRadioCtrl->RxMICErrorCount.QuadPart);
+	printk("RxDecyptionErrorCnt = %lld\n", ctrl->rdev[0].pRadioCtrl->RxDecryptionErrorCount.QuadPart);
+	printk("RxTotalErrorCnt     = %lld\n", (ctrl->rdev[0].pRadioCtrl->RxDecryptionErrorCount.QuadPart + ctrl->rdev[0].pRadioCtrl->RxMICErrorCount.QuadPart
+		+ ctrl->rdev[0].pRadioCtrl->RxMICErrorCount.QuadPart + ctrl->rdev[0].pRadioCtrl->RxCRCErrorCount.QuadPart));
+	printk("ThroughPut(TX Kbps)	= %lld\n", (ctrl->rdev[0].pRadioCtrl->LastSecTxByte.QuadPart >> 7));
+	printk("ThroughPut(RX Kbps)	= %lld\n", (ctrl->rdev[0].pRadioCtrl->LastSecRxByte.QuadPart >> 7));
+	printk("PER(pct from start)	= %u\n", ctrl->rdev[0].pRadioCtrl->TotalPER);
+	printk("Total PER(Last Sec)	= %u\n", ctrl->rdev[0].pRadioCtrl->Last1SecPER);
+	printk("Data				BK		BE		VI		VO\n");
+	printk("Packets Sent	:	%10lld	%10lld	%10lld	%10lld\n",
+			ctrl->rdev[0].pRadioCtrl->TxDataPacketCountPerAC[QID_AC_BK].QuadPart,
+			ctrl->rdev[0].pRadioCtrl->TxDataPacketCountPerAC[QID_AC_BE].QuadPart,
+			ctrl->rdev[0].pRadioCtrl->TxDataPacketCountPerAC[QID_AC_VI].QuadPart,
+			ctrl->rdev[0].pRadioCtrl->TxDataPacketCountPerAC[QID_AC_VO].QuadPart);
+	printk("Packets Rcvd	:	%10lld	%10lld	%10lld	%10lld\n",
+			ctrl->rdev[0].pRadioCtrl->RxDataPacketCountPerAC[QID_AC_BK].QuadPart,
+			ctrl->rdev[0].pRadioCtrl->RxDataPacketCountPerAC[QID_AC_BE].QuadPart,
+			ctrl->rdev[0].pRadioCtrl->RxDataPacketCountPerAC[QID_AC_VI].QuadPart,
+			ctrl->rdev[0].pRadioCtrl->RxDataPacketCountPerAC[QID_AC_VO].QuadPart);
+	printk("RSSI				0		1		2		3\n");
+	printk("Data Rx		:		%d		%d		%d		%d\n",
+			ctrl->rdev[0].pRadioCtrl->LastDataPktRssi[0],
+			ctrl->rdev[0].pRadioCtrl->LastDataPktRssi[1],
+			ctrl->rdev[0].pRadioCtrl->LastDataPktRssi[2],
+			ctrl->rdev[0].pRadioCtrl->LastDataPktRssi[3]);
+	printk("----------------------------------------------\n");
+	if (pAd->CommonCfg.dbdc_mode) {
+		printk("------------------BAND:1-----------------------\n");
+		printk("TxDataPacketCnt     = %lld\n", ctrl->rdev[1].pRadioCtrl->TxDataPacketCount.QuadPart);
+		printk("TxDataPacketByte    = %lld\n", ctrl->rdev[1].pRadioCtrl->TxDataPacketByte.QuadPart);
+		printk("RxDataPacketCnt     = %lld\n", ctrl->rdev[1].pRadioCtrl->RxDataPacketCount.QuadPart);
+		printk("RxDataPacketByte    = %lld\n", ctrl->rdev[1].pRadioCtrl->RxDataPacketByte.QuadPart);
+		printk("TxMgmtPacketCnt     = %lld\n", ctrl->rdev[1].pRadioCtrl->TxMgmtPacketCount.QuadPart);
+		printk("RxMgmtPacketCnt     = %lld\n", ctrl->rdev[1].pRadioCtrl->RxMgmtPacketCount.QuadPart);
+		printk("TxBcnPacketCnt      = %lld\n", ctrl->rdev[1].pRadioCtrl->TxBeaconPacketCount.QuadPart);
+		printk("ucPktsTx            = %lld\n", ctrl->rdev[1].pRadioCtrl->TxUnicastDataPacket.QuadPart);
+		printk("mcPktsTx            = %lld\n", ctrl->rdev[1].pRadioCtrl->TxMulticastDataPacket.QuadPart);
+		printk("bcPktsTx            = %lld\n", ctrl->rdev[1].pRadioCtrl->TxBroadcastDataPacket.QuadPart);
+		printk("TxDroppedPacketCnt  = %lld\n", ctrl->rdev[1].pRadioCtrl->TxPacketDroppedCount.QuadPart);
+		printk("ChannelUtilization  = %u\n", pAd->Ch_BusyTime_11k[DBDC_BAND1]);
+		printk("RxCRCErrorCount     = %lld\n", ctrl->rdev[1].pRadioCtrl->RxCRCErrorCount.QuadPart);
+		printk("RxMICErrorCount     = %lld\n", ctrl->rdev[1].pRadioCtrl->RxMICErrorCount.QuadPart);
+		printk("RxDecyptionErrorCnt = %lld\n", ctrl->rdev[1].pRadioCtrl->RxDecryptionErrorCount.QuadPart);
+		printk("RxTotalErrorCnt     = %lld\n", (ctrl->rdev[1].pRadioCtrl->RxDecryptionErrorCount.QuadPart + ctrl->rdev[1].pRadioCtrl->RxMICErrorCount.QuadPart
+			+ ctrl->rdev[1].pRadioCtrl->RxMICErrorCount.QuadPart + ctrl->rdev[1].pRadioCtrl->RxCRCErrorCount.QuadPart));
+		printk("ThroughPut(TX Kbps)	= %lld\n", (ctrl->rdev[1].pRadioCtrl->LastSecTxByte.QuadPart >> 7));
+		printk("ThroughPut(RX Kbps)	= %lld\n", (ctrl->rdev[1].pRadioCtrl->LastSecRxByte.QuadPart >> 7));
+		printk("PER(pct from start)	= %u\n", ctrl->rdev[1].pRadioCtrl->TotalPER);
+		printk("Total PER(Last Sec)	= %u\n", ctrl->rdev[1].pRadioCtrl->Last1SecPER);
+		printk("Data				BK		BE		VI		VO\n");
+		printk("Packets Sent	:	%10lld	%10lld	%10lld	%10lld\n",
+				ctrl->rdev[1].pRadioCtrl->TxDataPacketCountPerAC[QID_AC_BK].QuadPart,
+				ctrl->rdev[1].pRadioCtrl->TxDataPacketCountPerAC[QID_AC_BE].QuadPart,
+				ctrl->rdev[1].pRadioCtrl->TxDataPacketCountPerAC[QID_AC_VI].QuadPart,
+				ctrl->rdev[1].pRadioCtrl->TxDataPacketCountPerAC[QID_AC_VO].QuadPart);
+		printk("Packets Rcvd	:	%10lld	%10lld	%10lld	%10lld\n",
+				ctrl->rdev[1].pRadioCtrl->RxDataPacketCountPerAC[QID_AC_BK].QuadPart,
+				ctrl->rdev[1].pRadioCtrl->RxDataPacketCountPerAC[QID_AC_BE].QuadPart,
+				ctrl->rdev[1].pRadioCtrl->RxDataPacketCountPerAC[QID_AC_VI].QuadPart,
+				ctrl->rdev[1].pRadioCtrl->RxDataPacketCountPerAC[QID_AC_VO].QuadPart);
+		printk("RSSI				0		1		2		3\n");
+		printk("Data Rx		:		%d		%d		%d		%d\n",
+					ctrl->rdev[1].pRadioCtrl->LastDataPktRssi[0],
+					ctrl->rdev[1].pRadioCtrl->LastDataPktRssi[1],
+					ctrl->rdev[1].pRadioCtrl->LastDataPktRssi[2],
+					ctrl->rdev[1].pRadioCtrl->LastDataPktRssi[3]);
+		printk("----------------------------------------------\n");
+	}
+	return TRUE;
+}
 
+INT Show_Bss_Stat_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	UINT8 Bss_Idx, i;
+	BSS_STRUCT *pMbss = NULL;
+	EXT_EVENT_TX_STATISTIC_RESULT_T rTxStatResult;
+	HTTRANSMIT_SETTING LastMbssTxPktRate;
+	ULONG DataRate_Tx;
+	ULONG Multicast_Tx_Rate;
+	USHORT Multicast_Tx_MCS, Multicast_Tx_Mode;
+	for (i = 0 ; i < pAd->ApCfg.BssidNum; i++) {
+		pMbss = &pAd->ApCfg.MBSSID[i];
+		if (pMbss->stat_bss.Last1TxCnt && pMbss->stat_bss.Last1TxFailCnt)
+				pMbss->stat_bss.Last1SecPER = ((100 * (pMbss->stat_bss.Last1TxFailCnt))/
+													pMbss->stat_bss.Last1TxCnt);
+	}
+	for (Bss_Idx = 0 ; Bss_Idx < pAd->ApCfg.BssidNum ; Bss_Idx++) {
+		pMbss = &pAd->ApCfg.MBSSID[Bss_Idx];
+		printk("------------------BSS:%d-----------------------\n", Bss_Idx);
+		printk("TxDataPacketCnt     = %lld\n", pMbss->stat_bss.TxDataPacketCount.QuadPart);
+		printk("TxDataPacketByte    = %lld\n", pMbss->stat_bss.TxDataPacketByte.QuadPart);
+		printk("TxDataPayloadByte   = %lld\n", pMbss->stat_bss.TxDataPayloadByte.QuadPart);
+		printk("RxDataPacketCnt     = %lld\n", pMbss->stat_bss.RxDataPacketCount.QuadPart);
+		printk("RxDataPacketByte    = %lld\n", pMbss->stat_bss.RxDataPacketByte.QuadPart);
+		printk("RxDataPayloadByte   = %lld\n", pMbss->stat_bss.RxDataPayloadByte.QuadPart);
+		printk("TxMgmtPacketCnt     = %lld\n", pMbss->stat_bss.TxMgmtPacketCount.QuadPart);
+		printk("TxMgffChlPktCnt     = %lld\n", pMbss->stat_bss.TxMgmtOffChPktCount.QuadPart);
+		printk("RxMgmtPacketCnt     = %lld\n", pMbss->stat_bss.RxMgmtPacketCount.QuadPart);
+		printk("ucPktsTx            = %lld\n", pMbss->stat_bss.TxUnicastDataPacket.QuadPart);
+		printk("ucPktsRx            = %lld\n", pMbss->stat_bss.RxUnicastDataPacket.QuadPart);
+		printk("mcPktsTx            = %lld\n", pMbss->stat_bss.TxMulticastDataPacket.QuadPart);
+		printk("bcPktsTx            = %lld\n", pMbss->stat_bss.TxBroadcastDataPacket.QuadPart);
+		printk("TxDroppedPacketCnt  = %lld\n", pMbss->stat_bss.TxPacketDroppedCount.QuadPart);
+		printk("RxDroppedPacketCnt  = %lld\n", pMbss->stat_bss.RxPacketDroppedCount.QuadPart);
+		printk("AverageTXRate(Kbps) = %lld\n", (pMbss->stat_bss.LastSecTxBytes.QuadPart >> 7));
+		printk("AverageRXRate(Kbps) = %lld\n", (pMbss->stat_bss.LastSecRxBytes.QuadPart >> 7));
+		printk("PER (pcnt)          = %d\n", pMbss->stat_bss.Last1SecPER);
+		printk("TxRetriedPktCnt     = %lld\n", pMbss->stat_bss.TxRetriedPacketCount.QuadPart);
+		printk("RxMICErrorCount     = %lld\n", pMbss->stat_bss.RxMICErrorCount.QuadPart);
+		printk("RxDecryptionErrorCnt= %lld\n", pMbss->stat_bss.RxDecryptionErrorCount.QuadPart);
+		if (VALID_UCAST_ENTRY_WCID(pAd, pMbss->stat_bss.LastPktStaWcid)) {
+			PMAC_TABLE_ENTRY pEntry = &pAd->MacTab.Content[pMbss->stat_bss.LastPktStaWcid];
+			if (pEntry && IS_ENTRY_CLIENT(pEntry) && (pEntry->Sst == SST_ASSOC) && (pEntry->pMbss == pMbss)) {
+				MtCmdGetTxStatistic(pAd, GET_TX_STAT_ENTRY_TX_RATE, 0/*Don't Care*/, pMbss->stat_bss.LastPktStaWcid, &rTxStatResult);
+				LastMbssTxPktRate.field.MODE = rTxStatResult.rEntryTxRate.MODE;
+				LastMbssTxPktRate.field.BW = rTxStatResult.rEntryTxRate.BW;
+				LastMbssTxPktRate.field.ldpc = rTxStatResult.rEntryTxRate.ldpc ? 1 : 0;
+				LastMbssTxPktRate.field.ShortGI = rTxStatResult.rEntryTxRate.ShortGI ? 1 : 0;
+				LastMbssTxPktRate.field.STBC = rTxStatResult.rEntryTxRate.STBC;
+				if (LastMbssTxPktRate.field.MODE == MODE_VHT)
+					LastMbssTxPktRate.field.MCS = (((rTxStatResult.rEntryTxRate.VhtNss - 1) & 0x3) << 4) + rTxStatResult.rEntryTxRate.MCS;
+				else if (LastMbssTxPktRate.field.MODE == MODE_OFDM)
+					LastMbssTxPktRate.field.MCS = getLegacyOFDMMCSIndex(rTxStatResult.rEntryTxRate.MCS) & 0x0000003F;
+				else
+					LastMbssTxPktRate.field.MCS = rTxStatResult.rEntryTxRate.MCS;
+				getRate(LastMbssTxPktRate, &DataRate_Tx);
+				printk("MbssLastTxPktRate   = %lu\n", DataRate_Tx);
+				printk("MbssLastTxPktMCS    = %d\n", LastMbssTxPktRate.field.MCS);
+			}
+		}
+		Multicast_Tx_MCS = pMbss->stat_bss.LastMulticastTxRate.field.MCS;
+		Multicast_Tx_Mode = pMbss->stat_bss.LastMulticastTxRate.field.MODE;
+		getRate(pMbss->stat_bss.LastMulticastTxRate, &Multicast_Tx_Rate);
+		if (i >= 1) {
+			BSS_STRUCT *FirstMbss = &pAd->ApCfg.MBSSID[0];
+			Multicast_Tx_MCS =  FirstMbss->stat_bss.LastMulticastTxRate.field.MCS;
+			getRate(FirstMbss->stat_bss.LastMulticastTxRate, &Multicast_Tx_Rate);
+		}
+		printk("MulitcastLastTxRate  = %lu\n", Multicast_Tx_Rate);
+		printk("MulitcastLastTxMCS   = %d\n", Multicast_Tx_MCS);
+		printk("Data				BK		BE		VI		VO\n");
+		printk("Packets Sent	:	%10lld	%10lld	%10lld	%10lld\n",
+				pMbss->stat_bss.TxDataPacketCountPerAC[QID_AC_BK].QuadPart,
+				pMbss->stat_bss.TxDataPacketCountPerAC[QID_AC_BE].QuadPart,
+				pMbss->stat_bss.TxDataPacketCountPerAC[QID_AC_VI].QuadPart,
+				pMbss->stat_bss.TxDataPacketCountPerAC[QID_AC_VO].QuadPart);
+		printk("Packets Rcvd	:	%10lld	%10lld	%10lld	%10lld\n",
+				pMbss->stat_bss.RxDataPacketCountPerAC[QID_AC_BK].QuadPart,
+				pMbss->stat_bss.RxDataPacketCountPerAC[QID_AC_BE].QuadPart,
+				pMbss->stat_bss.RxDataPacketCountPerAC[QID_AC_VI].QuadPart,
+				pMbss->stat_bss.RxDataPacketCountPerAC[QID_AC_VO].QuadPart);
+		printk("----------------------------------------------\n");
+	}
+	return TRUE;
+}
+INT Show_Sta_Stat_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	INT i;
+
+	for (i = 0; VALID_UCAST_ENTRY_WCID(pAd, i); i++) {
+		PMAC_TABLE_ENTRY pEntry = &pAd->MacTab.Content[i];
+		if (pEntry && IS_ENTRY_CLIENT(pEntry) && (pEntry->Sst == SST_ASSOC)) {
+			ULONG DataRate_Tx;
+			ULONG DataRate_Rx;
+			EXT_EVENT_TX_STATISTIC_RESULT_T rTxStatResult;
+			HTTRANSMIT_SETTING LastTxRate;
+			HTTRANSMIT_SETTING LastRxRate;
+			UINT32 RawData, RawData_r;
+			UCHAR bw, stbc;
+			UCHAR phy_mode_r, rate_r, bw_r, stbc_r;
+			UINT32 lastTxRate, lastRxRate;
+			lastRxRate = pEntry->LastRxRate;
+			RawData_r = lastRxRate;
+			phy_mode_r = (RawData_r >> 13) & 0x7;
+			rate_r = RawData_r & 0x3F;
+			bw_r = (RawData_r >> 7) & 0x3;
+			stbc_r = ((RawData_r >> 10) & 0x1);
+			MtCmdGetTxStatistic(pAd, GET_TX_STAT_ENTRY_TX_RATE, 0/*Don't Care*/, pEntry->wcid, &rTxStatResult);
+			LastTxRate.field.MODE = rTxStatResult.rEntryTxRate.MODE;
+			LastTxRate.field.BW = rTxStatResult.rEntryTxRate.BW;
+			LastTxRate.field.ldpc = rTxStatResult.rEntryTxRate.ldpc ? 1 : 0;
+			LastTxRate.field.ShortGI = rTxStatResult.rEntryTxRate.ShortGI ? 1 : 0;
+			LastTxRate.field.STBC = rTxStatResult.rEntryTxRate.STBC;
+			if (LastTxRate.field.MODE == MODE_VHT)
+				LastTxRate.field.MCS = (((rTxStatResult.rEntryTxRate.VhtNss - 1) & 0x3) << 4) + rTxStatResult.rEntryTxRate.MCS;
+			else if (LastTxRate.field.MODE == MODE_OFDM)
+				LastTxRate.field.MCS = getLegacyOFDMMCSIndex(rTxStatResult.rEntryTxRate.MCS) & 0x0000003F;
+			else
+				LastTxRate.field.MCS = rTxStatResult.rEntryTxRate.MCS;
+			lastTxRate = (UINT32)(LastTxRate.word);
+			LastRxRate.word = (USHORT)(pEntry->LastRxRate);
+			RawData = lastTxRate;
+			bw = (RawData >> 7) & 0x3;
+			stbc = ((RawData >> 10) & 0x1);
+			if (phy_mode_r == MODE_OFDM) {
+							if (rate_r == TMI_TX_RATE_OFDM_6M)
+								LastRxRate.field.MCS = 0;
+							else if (rate_r == TMI_TX_RATE_OFDM_9M)
+								LastRxRate.field.MCS = 1;
+							else if (rate_r == TMI_TX_RATE_OFDM_12M)
+								LastRxRate.field.MCS = 2;
+							else if (rate_r == TMI_TX_RATE_OFDM_18M)
+								LastRxRate.field.MCS = 3;
+							else if (rate_r == TMI_TX_RATE_OFDM_24M)
+								LastRxRate.field.MCS = 4;
+							else if (rate_r == TMI_TX_RATE_OFDM_36M)
+								LastRxRate.field.MCS = 5;
+							else if (rate_r == TMI_TX_RATE_OFDM_48M)
+								LastRxRate.field.MCS = 6;
+							else if (rate_r == TMI_TX_RATE_OFDM_54M)
+								LastRxRate.field.MCS = 7;
+							else
+								LastRxRate.field.MCS = 0;
+
+			} else if (phy_mode_r == MODE_CCK) {
+							if (rate_r == TMI_TX_RATE_CCK_1M_LP)
+								LastRxRate.field.MCS = 0;
+							else if (rate_r == TMI_TX_RATE_CCK_2M_LP)
+								LastRxRate.field.MCS = 1;
+							else if (rate_r == TMI_TX_RATE_CCK_5M_LP)
+								LastRxRate.field.MCS = 2;
+							else if (rate_r == TMI_TX_RATE_CCK_11M_LP)
+								LastRxRate.field.MCS = 3;
+							else if (rate_r == TMI_TX_RATE_CCK_2M_SP)
+								LastRxRate.field.MCS = 1;
+							else if (rate_r == TMI_TX_RATE_CCK_5M_SP)
+								LastRxRate.field.MCS = 2;
+							else if (rate_r == TMI_TX_RATE_CCK_11M_SP)
+								LastRxRate.field.MCS = 3;
+							else
+								LastRxRate.field.MCS = 0;
+			}
+			getRate(LastTxRate, &DataRate_Tx);
+			getRate(LastRxRate, &DataRate_Rx);
+			printk("-----------------WCID:%d-----------------------\n", i);
+			printk("MAC                 = %02X:%02X:%02X:%02X:%02X:%02X\n", pEntry->Addr[0], pEntry->Addr[1], pEntry->Addr[2], pEntry->Addr[3], pEntry->Addr[4], pEntry->Addr[5]);
+			printk("TxDataPacketCnt     = %lld\n", pEntry->TxDataPacketCount.QuadPart);
+			printk("TxDataPacketByte    = %lld\n", pEntry->TxDataPacketByte.QuadPart);
+			printk("TxSuccessCount      = %u\n", pEntry->TxSuccessByWtbl);
+			printk("TxUnicastSuccessCnt = %u\n", pEntry->TxSuccessByWtbl);
+			printk("RxDataPacketCnt     = %lld\n", pEntry->RxDataPacketCount.QuadPart);
+			printk("RxDataPacketByte    = %lld\n", pEntry->RxDataPacketByte.QuadPart);
+			printk("Data				BK		BE		VI		VO\n");
+			printk("Packets Sent	:	%10lld	%10lld	%10lld	%10lld\n",
+				pEntry->TxDataPacketCountPerAC[QID_AC_BK].QuadPart,
+				pEntry->TxDataPacketCountPerAC[QID_AC_BE].QuadPart,
+				pEntry->TxDataPacketCountPerAC[QID_AC_VI].QuadPart,
+				pEntry->TxDataPacketCountPerAC[QID_AC_VO].QuadPart);
+			printk("Packets Rcvd	:	%10lld	%10lld	%10lld	%10lld\n",
+				pEntry->RxDataPacketCountPerAC[QID_AC_BK].QuadPart,
+				pEntry->RxDataPacketCountPerAC[QID_AC_BE].QuadPart,
+				pEntry->RxDataPacketCountPerAC[QID_AC_VI].QuadPart,
+				pEntry->RxDataPacketCountPerAC[QID_AC_VO].QuadPart);
+			printk("TxMgmtPacketCnt     = %lld\n", pEntry->TxMgmtPacketCount.QuadPart);
+			printk("RxMgmtPacketCnt     = %lld\n", pEntry->RxMgmtPacketCount.QuadPart);
+			printk("LastSecTxPackets    = %lld\n", pEntry->TxDataPacketCount1SecValue.QuadPart);
+			printk("LastSecRxPackets    = %lld\n", pEntry->RxDataPacketCount1SecValue.QuadPart);
+			printk("LastSecTxBytes      = %lld\n", pEntry->TxDataPacketByte1SecValue.QuadPart);
+			printk("LastSecRxBytes      = %lld\n", pEntry->RxDataPacketByte1SecValue.QuadPart);
+			printk("AverageTXRate(Kbps) = %lld\n", (pEntry->TxDataPacketByte1SecValue.QuadPart >> 7));
+			printk("AverageRXRate(Kbps) = %lld\n", (pEntry->RxDataPacketByte1SecValue.QuadPart >> 7));
+			printk("Bandwidth(TX/RX)    = %s / %s\n", get_bw_str(bw), get_bw_str(bw_r));
+			printk("STBC(TX/RX)         = %d / %d\n", stbc, stbc_r);
+			printk("LastTXDataRate(Mbps)= %lu\n", DataRate_Tx);
+			printk("LastRXDataRate(Mbps)= %lu\n", DataRate_Rx);
+			printk("LastRXMgmtRate(Mbps)= %lu\n", pEntry->RxLastMgmtPktRate);
+			printk("LastOneSecPER(prcnt)= %u\n", pEntry->LastOneSecPER);
+			printk("RxMICErrorCount     = %lld\n", pEntry->RxMICErrorCount.QuadPart);
+			printk("RxDecryptionErrorCnt= %lld\n", pEntry->RxDecryptionErrorCount.QuadPart);
+			printk("RSSI					0		1		2		3\n");
+			printk("Data Rx			:		%d		%d		%d		%d\n",
+					pEntry->LastDataPktRssi[0],
+					pEntry->LastDataPktRssi[1],
+					pEntry->LastDataPktRssi[2],
+					pEntry->LastDataPktRssi[3]);
+			printk("Mgmt Rx			:		%d		%d		%d		%d\n",
+					pEntry->LastMgmtPktRssi[0],
+					pEntry->LastMgmtPktRssi[1],
+					pEntry->LastMgmtPktRssi[2],
+					pEntry->LastMgmtPktRssi[3]);
+			printk("ack  Rx			:		%d		%d		%d		%d\n",
+					pEntry->RssiSample.AvgRssi[0],
+					pEntry->RssiSample.AvgRssi[1],
+					pEntry->RssiSample.AvgRssi[2],
+					pEntry->RssiSample.AvgRssi[3]);
+		}
+	}
+	return TRUE;
+}
+INT Set_Enable_RSSI_Stats(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	LONG RssiEnable = os_str_tol(arg, 0, 10);
+	if (RssiEnable == 1) {
+		pAd->TXRX_EnableReadRssi = TRUE;
+		printk("RSSI calculation enabled \n");
+	} else if (RssiEnable == 0) {
+		pAd->TXRX_EnableReadRssi = FALSE;
+		printk("RSSI calculation disabled \n");
+	} else {
+		printk("Invalid Value \n");
+		return FALSE;
+	}
+	return TRUE;
+}
+
+INT Set_Enable_Last_Sec_TXRX_Stats(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	LONG TxRxStats = os_str_tol(arg, 0, 10);
+	if (TxRxStats == 1) {
+		pAd->EnableTxRxStats = TRUE;
+		printk("TxRx calculation enabled \n");
+	} else if (TxRxStats == 0) {
+		pAd->EnableTxRxStats = FALSE;
+		printk("TxRx calculation disabled \n");
+	} else{
+		printk("Invalid Value \n");
+		return FALSE;
+	}
+	return TRUE;
+}
+#ifdef VENDOR_FEATURE11_SUPPORT
+INT Show_Wifi_Stats_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	UCHAR Wcid;
+	MAC_TABLE_ENTRY *pEntry = NULL;
+
+	if (arg == NULL) {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				("Please enter in the format \"iwpriv <inf_name> show wifi_stats=<sta wcid>\"\n"));
+		return TRUE;
+	}
+
+	Wcid = simple_strtol(arg, 0, 10);
+
+    if (!VALID_WCID(Wcid)) {
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("Invalid Wcid!!\n"));
+	return TRUE;
+    } else {
+		pEntry = &pAd->MacTab.Content[Wcid];
+		if (IS_VALID_ENTRY(pEntry) && IS_ENTRY_CLIENT(pEntry) && (pEntry->Sst == SST_ASSOC)) {
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+					("WCID\tMAC Address\t\tmpdu_attempts\tmpdu_retries\n"));
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+					 ("%d\t%02X:%02X:%02X:%02X:%02X:%02X\t",
+					  pEntry->wcid, PRINT_MAC(pEntry->Addr)));
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+				("%10lld\t%10lld\n", pEntry->mpdu_attempts.QuadPart, pEntry->mpdu_retries.QuadPart));
+		} else {
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				("Check pEntry or association state\n"));
+			return TRUE;
+		}
+	}
+	return TRUE;
+}
+#endif /* VENDOR_FEATURE11_SUPPORT */
+#endif
 INT Show_StaCount_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 {
 	INT i;
@@ -10466,20 +11443,33 @@ VOID RTMPIoctlStatistics(RTMP_ADAPTER *pAd, RTMP_IOCTL_INPUT_STRUCT *wrq)
 
 #ifdef CONFIG_QA
 	if (ATE_ON(pAd)) {
-		struct _ATE_RX_STATISTIC rx_stat = pAd->ATECtrl.rx_stat;
+		struct _ATE_CTRL *ATECtrl = &(pAd->ATECtrl);
+		UINT32 Ch_Band_0 =  TESTMODE_GET_PARAM(ATECtrl, TESTMODE_BAND0, Ch_Band);
+		UINT32 Ch_Band_1 = TESTMODE_GET_PARAM(ATECtrl, TESTMODE_BAND0, Ch_Band);
+		UCHAR FAGC_Path_0 = TESTMODE_GET_PARAM(ATECtrl, TESTMODE_BAND0, FAGC_Path);
+		UCHAR FAGC_Path_1 = TESTMODE_GET_PARAM(ATECtrl, TESTMODE_BAND0, FAGC_Path);
+		INT32 RSSI_IB[4] = {0, 0, 0, 0};
+
+		for (i = 0; i < 4; i++) {
+			if (i < 2)
+				RSSI_IB[i] = MtATERSSIOffset(pAd, ATECtrl->rx_stat.FAGC_RSSI_IB[i], FAGC_Path_0, Ch_Band_0);
+			else
+				RSSI_IB[i] = MtATERSSIOffset(pAd, ATECtrl->rx_stat.FAGC_RSSI_IB[i], FAGC_Path_1, Ch_Band_1);
+			MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("RSSI_IB[%d] %d\n", i, RSSI_IB[i]));
+		}
 
 		if (pAd->ATECtrl.RxAntennaSel == 0) {
-			sprintf(msg + strlen(msg), "RSSI-A                          = %ld\n",
-					(LONG)(rx_stat.LastRssi[0] - pAd->BbpRssiToDbmDelta));
-			sprintf(msg + strlen(msg), "RSSI-B (if available)           = %ld\n",
-					(LONG)(rx_stat.LastRssi[1] - pAd->BbpRssiToDbmDelta));
-			sprintf(msg + strlen(msg), "RSSI-C (if available)           = %ld\n",
-					(LONG)(rx_stat.LastRssi[2] - pAd->BbpRssiToDbmDelta));
-			sprintf(msg + strlen(msg), "RSSI-D (if available)           = %ld\n\n",
-					(LONG)(rx_stat.LastRssi[3] - pAd->BbpRssiToDbmDelta));
+			sprintf(msg + strlen(msg), "RSSI-A				= %ld\n",
+				(LONG)(RSSI_IB[0] - pAd->BbpRssiToDbmDelta));
+			sprintf(msg + strlen(msg), "RSSI-B (if available)		= %ld\n",
+				(LONG)(RSSI_IB[1] - pAd->BbpRssiToDbmDelta));
+			sprintf(msg + strlen(msg), "RSSI-C (if available)		= %ld\n",
+				(LONG)(RSSI_IB[2] - pAd->BbpRssiToDbmDelta));
+			sprintf(msg + strlen(msg), "RSSI-D (if available)		= %ld\n\n",
+				(LONG)(RSSI_IB[3] - pAd->BbpRssiToDbmDelta));
 		} else
-			sprintf(msg + strlen(msg), "RSSI                            = %ld\n",
-					(LONG)(rx_stat.LastRssi[0] - pAd->BbpRssiToDbmDelta));
+			sprintf(msg + strlen(msg), "RSSI						= %ld\n",
+				(LONG)(RSSI_IB[0] - pAd->BbpRssiToDbmDelta));
 	} else
 #endif /* CONFIG_QA */
 	{
@@ -12253,7 +13243,7 @@ INT	Set_AP_WscGetConf_Proc(
 			struct wifi_dev *wdev = &pAd->ApCfg.MBSSID[apidx].wdev;
 			PBND_STRG_CLI_TABLE table = Get_BndStrgTable(pAd, wdev->func_idx);
 
-			if (table || table->bEnabled) {
+			if (table && table->bEnabled) {
 				NdisAcquireSpinLock(&table->WpsWhiteListLock);
 				ClearWpsWhiteList(&table->WpsWhiteList);
 				NdisReleaseSpinLock(&table->WpsWhiteListLock);
@@ -14383,9 +15373,18 @@ INT Set_McastMcs(
 
 	switch (pTransmit->field.MODE) {
 	case MODE_CCK:
-		if ((Mcs <= 3) || (Mcs >= 8 && Mcs <= 11))
+		if ((Mcs <= 3) || (Mcs >= 8 && Mcs <= 11)) {
+#ifdef MCAST_BCAST_RATE_SET_SUPPORT
+			if (OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_SHORT_PREAMBLE_INUSED) && (Mcs <= 3)) {
+				if (Mcs == 0) {
+					MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("Invalid MCS value when short preamble is enabled!\n"));
+					return FALSE;
+				}
+				Mcs = Mcs - 1;
+			}
+#endif
 			pTransmit->field.MCS = Mcs;
-		else {
+		} else {
 			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
 					 ("MCS must in range of 0 ~ 3 and 8 ~ 11 for CCK Mode.\n"));
 			status = FALSE;
@@ -15259,6 +16258,10 @@ INT RTMP_AP_IoctlHandle(
 
 	case CMD_RTPRIV_IOCTL_GET_MAC_TABLE_STRUCT:
 		RTMPIoctlGetMacTableStaInfo(pAd, wrq);
+		break;
+
+	case CMD_RTPRIV_IOCTL_GET_DRIVER_INFO:
+		RTMPIoctlGetDriverInfo(pAd, wrq);
 		break;
 
 	case CMD_RTPRIV_IOCTL_AP_SIOCGIFHWADDR:
@@ -16670,6 +17673,11 @@ INT	Set_MonitorRule_Proc(
 	pAd->MntRuleBitMap |= (RULE_DATA & ((UINT32)rx_rule[0] << RULE_DATA_OFFSET))
 					| (RULE_MGT & ((UINT32)rx_rule[1] << RULE_MGT_OFFSET))
 					| (RULE_CTL & ((UINT32)rx_rule[2] << RULE_CTL_OFFSET));
+#ifdef CONFIG_MAP_SUPPORT
+	if (IS_MAP_ENABLE(pAd) && IS_MAP_TURNKEY_ENABLE(pAd)) {
+		pAd->MntRuleBitMap &= ~SMESH_RX_A1;
+	}
+#endif
 
 	band_idx = HcGetBandByWdev(wdev);
 
@@ -16679,8 +17687,13 @@ INT	Set_MonitorRule_Proc(
 		u4SMESH &= ~SMESH_RX_MGT;
 		u4SMESH &= ~SMESH_RX_CTL;
 		u4SMESH |= (SMESH_RX_DATA & ((UINT32)rx_rule[0] << SMESH_RX_DATA_OFFSET))
-				   | (SMESH_RX_MGT & ((UINT32)rx_rule[1] << SMESH_RX_MGT_OFFSET))
-				   | (SMESH_RX_CTL & ((UINT32)rx_rule[2] << SMESH_RX_CTL_OFFSET));
+			| (SMESH_RX_MGT & ((UINT32)rx_rule[1] << SMESH_RX_MGT_OFFSET))
+			| (SMESH_RX_CTL & ((UINT32)rx_rule[2] << SMESH_RX_CTL_OFFSET));
+#ifdef CONFIG_MAP_SUPPORT
+		if (IS_MAP_ENABLE(pAd) && IS_MAP_TURNKEY_ENABLE(pAd)) {
+			u4SMESH &= ~SMESH_RX_A1;
+		}
+#endif
 		HW_IO_WRITE32(pAd, RMAC_SMESH, u4SMESH);
 	} else if (band_idx == DBDC_BAND1) {
 		HW_IO_READ32(pAd, RMAC_SMESH_B1, &u4SMESH);
@@ -16688,8 +17701,13 @@ INT	Set_MonitorRule_Proc(
 		u4SMESH &= ~SMESH_RX_MGT;
 		u4SMESH &= ~SMESH_RX_CTL;
 		u4SMESH |= (SMESH_RX_DATA & ((UINT32)rx_rule[0] << SMESH_RX_DATA_OFFSET))
-				   | (SMESH_RX_MGT & ((UINT32)rx_rule[1] << SMESH_RX_MGT_OFFSET))
-				   | (SMESH_RX_CTL & ((UINT32)rx_rule[2] << SMESH_RX_CTL_OFFSET));
+			| (SMESH_RX_MGT & ((UINT32)rx_rule[1] << SMESH_RX_MGT_OFFSET))
+			| (SMESH_RX_CTL & ((UINT32)rx_rule[2] << SMESH_RX_CTL_OFFSET));
+#ifdef CONFIG_MAP_SUPPORT
+		if (IS_MAP_ENABLE(pAd) && IS_MAP_TURNKEY_ENABLE(pAd)) {
+			u4SMESH &= ~SMESH_RX_A1;
+		}
+#endif
 		HW_IO_WRITE32(pAd, RMAC_SMESH_B1, u4SMESH);
 	} else {
 		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("%s():: wrong band index(%d)\n",
@@ -17435,6 +18453,125 @@ INT Set_Bh_Bss_Proc(
 	return TRUE;
 }
 
+/**
+ * reset_mtk_map_vendor_ie: Function to clear MAP vendor IE in beacons
+ *
+ * This API is used to clear MAP vendor IE in beacon of bss
+ **/
+static void reset_mtk_map_vendor_ie(PRTMP_ADAPTER pAd, struct wifi_dev *wdev)
+{
+	os_zero_mem(wdev->MAPCfg.vendor_ie_buf, VENDOR_SPECIFIC_LEN);
+	wdev->MAPCfg.vendor_ie_len = 0;
+	if (wdev->bAllowBeaconing)
+		UpdateBeaconHandler(pAd, wdev, BCN_UPDATE_IE_CHG);
+}
+
+/**
+ * Set_Map_Proc: Function to enable MAP
+ *
+ * This API is used to enabled/disable MAP in WLAN driver.
+ * Upper layer should take care of killing deamons before disabling
+ * and configuring MAP settings after enabling
+ **/
+INT Set_Map_Proc(
+	PRTMP_ADAPTER pAd,
+	char *arg)
+{
+	UCHAR enable = os_str_tol(arg, 0, 10);
+	UCHAR ifIndex = 0;
+	PAPCLI_STRUCT pApCliEntry = NULL;
+	PULONG pCurrState;
+	PWSC_CTRL pWscControl = NULL;
+
+	if (pAd->bMAPEnable == enable) {
+		/* No need to do anything, current and previos values are same */
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+			("%s MAP is already %s\n", __func__, enable?"enabled":"disabled"));
+		return TRUE;
+	}
+
+	if (enable) {
+		/* In case of enable we don't need to do anything
+		 * since upper layer should configure interface roles */
+		pAd->bMAPEnable = TRUE;
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+			("%s: Enabled MAP", __func__));
+		return TRUE;
+	}
+
+	/* Disable global MAP parameter */
+	pAd->bMAPEnable = FALSE;
+	/* MAP Turnkey should be disabled when MAP is disabled */
+	pAd->bMAPTurnKeyEnable = FALSE;
+
+	/* Reset roles for For AP interfaces */
+	for (ifIndex = 0; (ifIndex < MAX_MBSSID_NUM(pAd)); ifIndex++) {
+		pAd->ApCfg.MBSSID[ifIndex].wdev.MAPCfg.DevOwnRole = BIT(MAP_ROLE_FRONTHAUL_BSS);
+		APMlmeKickOutAllSta(pAd, ifIndex, REASON_DEAUTH_STA_LEAVING);
+		pWscControl = &pAd->ApCfg.MBSSID[ifIndex].wdev.WscControl;
+		reset_mtk_map_vendor_ie(pAd, &pAd->ApCfg.MBSSID[ifIndex].wdev);
+		if (pWscControl->bWscTrigger == TRUE)
+			WscStop(pAd, FALSE, pWscControl);
+	}
+
+	/* Reset Roles for CLI interfaces */
+	for (ifIndex = 0; (ifIndex < MAX_APCLI_NUM); ifIndex++) {
+		pApCliEntry = &pAd->ApCfg.ApCliTab[ifIndex];
+		pCurrState = &pAd->ApCfg.ApCliTab[ifIndex].CtrlCurrState;
+		if (!pApCliEntry->Valid)
+			continue;
+		pWscControl = &pAd->ApCfg.ApCliTab[ifIndex].wdev.WscControl;
+		ApCliLinkDown(pAd, ifIndex);
+
+		/* set the apcli interface be invalid.*/
+		pApCliEntry->Valid = FALSE;
+		/* clear MlmeAux.Ssid and Bssid.*/
+		NdisZeroMemory(pApCliEntry->MlmeAux.Bssid, MAC_ADDR_LEN);
+		pApCliEntry->MlmeAux.SsidLen = 0;
+		NdisZeroMemory(pApCliEntry->MlmeAux.Ssid, MAX_LEN_OF_SSID);
+		pApCliEntry->MlmeAux.Rssi = 0;
+		*pCurrState = APCLI_CTRL_DISCONNECTED;
+		if (pWscControl->bWscTrigger == TRUE)
+			WscStop(pAd, TRUE, pWscControl);
+	}
+	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+			("%s: disabled MAP", __func__));
+
+	return TRUE;
+}
+
+/**
+ * Set_Map_Turnkey_Proc: Function to enable/disable MAP turnkey feature
+ *
+ * This API is used to enabled/disable MAP turnkey feature in WLAN driver.
+ **/
+INT Set_Map_Turnkey_Proc(
+	PRTMP_ADAPTER pAd,
+	char *arg)
+{
+	UCHAR enable = os_str_tol(arg, 0, 10);
+	UCHAR ifIndex = 0;
+
+	if (pAd->bMAPTurnKeyEnable == enable) {
+		/* No need to do anything, current and previos values are same */
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+			("%s MAP turnkey is already %s\n", __func__, enable?"enabled":"disabled"));
+		return TRUE;
+	}
+
+	if (!enable) {
+		pAd->bMAPTurnKeyEnable = FALSE;
+		for (ifIndex = 0; (ifIndex < MAX_MBSSID_NUM(pAd)); ifIndex++)
+			reset_mtk_map_vendor_ie(pAd, &pAd->ApCfg.MBSSID[ifIndex].wdev);
+	} else
+		pAd->bMAPTurnKeyEnable = TRUE;
+
+	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+			("%s: MAP turnkey is %s\n", __func__, pAd->bMAPTurnKeyEnable?"enabled":"disabled"));
+
+	return TRUE;
+}
+
 INT Set_Fh_Bss_Proc(
 	PRTMP_ADAPTER pAd,
 	char *arg)
@@ -17504,6 +18641,9 @@ INT	Set_Dscp_Pri_Proc(
 		 ("%s Invalid Priority value Valid value between 0 to 7\n", __func__));
 		return FALSE;
 	}
+
+	if (pri == 0)
+		pri = 3;
 
 	pAd->ApCfg.MBSSID[inf_idx].dscp_pri_map[dscpValue] = pri;
 

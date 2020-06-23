@@ -276,6 +276,9 @@ BOOLEAN PeerBeaconAndProbeRspSanity(
 	BOOLEAN bWscCheck = TRUE;
 	UCHAR LatchRfChannel = 0;
 	UCHAR *ptr_eid = NULL;
+#ifdef CONFIG_RCSA_SUPPORT
+	CSA_IE_INFO *CsaInfo = &ie_list->CsaInfo;
+#endif
 	/*
 		For some 11a AP which didn't have DS_IE, we use two conditions to decide the channel
 		1. If the AP is 11n enabled, then check the control channel.
@@ -418,8 +421,12 @@ BOOLEAN PeerBeaconAndProbeRspSanity(
 			break;
 
 		case IE_SECONDARY_CH_OFFSET:
-			if (pEid->Len == 1)
+			if (pEid->Len == 1) {
 				ie_list->NewExtChannelOffset = pEid->Octet[0];
+#ifdef CONFIG_RCSA_SUPPORT
+				CsaInfo->SChOffIE.SecondaryChannelOffset = pEid->Octet[0];
+#endif
+			}
 			else
 				MTWF_LOG(DBG_CAT_MLME, DBG_SUBCAT_ALL, DBG_LVL_WARN, ("%s() - wrong IE_SECONDARY_CH_OFFSET.\n", __func__));
 
@@ -473,10 +480,28 @@ BOOLEAN PeerBeaconAndProbeRspSanity(
 			break;
 
 		case IE_CHANNEL_SWITCH_ANNOUNCEMENT:
-			if (pEid->Len == 3)
+			if (pEid->Len == 3) {
 				ie_list->NewChannel = pEid->Octet[1];	/*extract new channel number*/
-
+#ifdef CONFIG_RCSA_SUPPORT
+				NdisMoveMemory(&CsaInfo->ChSwAnnIE, &pEid->Octet[0], pEid->Len);
+#endif
+			}
 			break;
+
+#ifdef CONFIG_RCSA_SUPPORT
+		case IE_EXT_CHANNEL_SWITCH_ANNOUNCEMENT:
+			if (pEid->Len == 4) {
+				if (ie_list->NewChannel == 0)
+					ie_list->NewChannel = pEid->Octet[2];	/*extract new channel number*/
+				NdisMoveMemory(&CsaInfo->ExtChSwAnnIE, &pEid->Octet[0], pEid->Len);
+			}
+			break;
+
+		case IE_WIDE_BW_CH_SWITCH:
+			if (pEid->Len == 3)
+				NdisMoveMemory(&CsaInfo->wb_info, &pEid->Octet[0], pEid->Len);
+			break;
+#endif
 
 		/*
 		New for WPA
@@ -1062,6 +1087,23 @@ UCHAR ChannelSanity(
 {
 	int i;
 	UCHAR BandIdx = HcGetBandByChannel(pAd, channel);
+	CHANNEL_CTRL *pChCtrl = hc_get_channel_ctrl(pAd->hdev_ctrl, BandIdx);
+
+	for (i = 0; i < pChCtrl->ChListNum; i++) {
+		if (channel == pChCtrl->ChList[i].Channel)
+			return 1;
+	}
+
+	return 0;
+}
+
+UCHAR ChannelSanityDBDC(
+	IN PRTMP_ADAPTER pAd,
+	IN struct wifi_dev *wdev,
+	IN UCHAR channel)
+{
+	int i;
+	UCHAR BandIdx = HcGetBandByWdev(wdev);
 	CHANNEL_CTRL *pChCtrl = hc_get_channel_ctrl(pAd->hdev_ctrl, BandIdx);
 
 	for (i = 0; i < pChCtrl->ChListNum; i++) {

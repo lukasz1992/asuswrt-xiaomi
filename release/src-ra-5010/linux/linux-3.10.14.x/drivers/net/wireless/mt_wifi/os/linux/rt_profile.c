@@ -456,6 +456,9 @@ static struct l1profile_attribute_t l1profile_attributes[] = {
 #endif	/* WDS_SUPPORT */
 #endif	/* CONFIG_AP_SUPPORT */
 	{ {"apcli_ifname"},		INT_APCLI,		l1set_ifname},
+#ifdef SNIFFER_SUPPORT
+	{ {"monitor_ifname"},	INT_MONITOR,	l1set_ifname},
+#endif	/* monitor_ifname */
 #ifdef SINGLE_SKU_V2
 	{ {"single_sku_path"},		0,			l1set_single_sku_path},
 	{ {"bf_sku_path"},		0,				l1set_bf_sku_path},
@@ -960,6 +963,7 @@ void announce_802_3_packet(
 	ASSERT(pAd);
 	ASSERT(pPacket);
 	/* MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("=>%s(): OpMode=%d\n", __FUNCTION__, OpMode)); */
+
 	MEM_DBG_PKT_FREE_INC(pPacket);
 #ifdef APCLI_AS_WDS_STA_SUPPORT
 	if (pAd->ApCfg.ApCliTab[0].wdev.wds_enable == 0) {
@@ -1093,15 +1097,6 @@ void announce_802_3_packet(
 	}
 #endif
 
-#ifdef STATIC_VLAN_SUPPORT
-	if (((GET_OS_PKT_DATAPTR(pRxPkt))[12] == 0x81) && ((GET_OS_PKT_DATAPTR(pRxPkt))[13] == 0x00)) {
-		memmove((GET_OS_PKT_DATAPTR(pRxPkt)) + 2, (GET_OS_PKT_DATAPTR(pRxPkt)), 16);
-		skb_pull(pRxPkt, 2);
-		skb_reset_network_header(pRxPkt);
-		skb_reset_transport_header(pRxPkt);
-		skb_reset_mac_len(pRxPkt);
-	}
-#endif /* STATIC_VLAN_SUPPORT */
 #ifdef CONFIG_FAST_NAT_SUPPORT
 		/* bruce+
 		 *	ra_sw_nat_hook_rx return 1 --> continue
@@ -1247,6 +1242,237 @@ void announce_802_3_packet(
 }
 
 
+#ifdef SNIFFER_SUPPORT
+INT Monitor_VirtualIF_Open(PNET_DEV dev_p)
+{
+	VOID *pAd;
+
+	pAd = RTMP_OS_NETDEV_GET_PRIV(dev_p);
+	ASSERT(pAd);
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s: ===> %s\n",
+		__func__, RTMP_OS_NETDEV_GET_DEVNAME(dev_p)));
+
+	if (VIRTUAL_IF_INIT(pAd, dev_p) != 0)
+		return -1;
+
+	if (VIRTUAL_IF_UP(pAd, dev_p) != 0)
+		return -1;
+
+	/* increase MODULE use count */
+	RT_MOD_INC_USE_COUNT();
+	RT_MOD_HNAT_REG(dev_p);
+	RTMP_COM_IoctlHandle(pAd, NULL, CMD_RTPRIV_IOCTL_SNIFF_OPEN, 0, dev_p, 0);
+	/* Monitor_Open(pAd,dev_p); */
+	return 0;
+}
+
+INT Monitor_VirtualIF_Close(PNET_DEV dev_p)
+{
+	VOID *pAd;
+
+	pAd = RTMP_OS_NETDEV_GET_PRIV(dev_p);
+	ASSERT(pAd);
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s: ===> %s\n",
+		__func__, RTMP_OS_NETDEV_GET_DEVNAME(dev_p)));
+
+	RTMP_COM_IoctlHandle(pAd, NULL, CMD_RTPRIV_IOCTL_SNIFF_CLOSE, 0, dev_p, 0);
+	/* Monitor_Close(pAd,dev_p); */
+	VIRTUAL_IF_DOWN(pAd, dev_p);
+
+	VIRTUAL_IF_DEINIT(pAd, dev_p);
+
+	RT_MOD_HNAT_DEREG(dev_p);
+	RT_MOD_DEC_USE_COUNT();
+	return 0;
+}
+
+
+VOID RT28xx_Monitor_Init(VOID *pAd, PNET_DEV main_dev_p)
+{
+	RTMP_OS_NETDEV_OP_HOOK netDevOpHook;
+	/* init operation functions */
+	NdisZeroMemory(&netDevOpHook, sizeof(RTMP_OS_NETDEV_OP_HOOK));
+	netDevOpHook.open = Monitor_VirtualIF_Open;
+	netDevOpHook.stop = Monitor_VirtualIF_Close;
+	netDevOpHook.xmit = rt28xx_send_packets;
+	netDevOpHook.ioctl = rt28xx_ioctl;
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s: %d !!!!####!!!!!!\n", __func__, __LINE__));
+	RTMP_COM_IoctlHandle(pAd, NULL, CMD_RTPRIV_IOCTL_SNIFF_INIT,	0, &netDevOpHook, 0);
+}
+VOID RT28xx_Monitor_Remove(VOID *pAd)
+{
+	RTMP_COM_IoctlHandle(pAd, NULL, CMD_RTPRIV_IOCTL_SNIFF_REMOVE, 0, NULL, 0);
+}
+
+void STA_MonPktSend(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk, UCHAR DevIdx)
+{
+	PNET_DEV pNetDev;
+	PNDIS_PACKET pRxPacket;
+	UCHAR *dot11_fc_field;
+	USHORT DataSize;
+	CHAR MaxRssi, RSSI1;
+	UINT32 timestamp = 0;
+	CHAR RssiForRadiotap = 0;
+	UCHAR L2PAD, PHYMODE, BW, ShortGI, MCS, LDPC, LDPC_EX_SYM, AMPDU, STBC;
+	UCHAR BssMonitorFlag11n, Channel, CentralChannel = 0;
+	UCHAR *pData, *pDevName;
+	UCHAR sniffer_type = pAd->sniffer_ctl.sniffer_type;
+	UCHAR sideband_index = 0;
+	struct wifi_dev *wdev = pAd->wdev_list[DevIdx];
+	UINT32 UP_value = 0;
+#ifdef SNIFFER_MT7615
+	UINT32 value = 0;
+	UCHAR gid = 0;
+#endif
+	ASSERT(pRxBlk->pRxPacket);
+
+	if (pRxBlk->DataSize < 10) {
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				 ("%s : Size is too small! (%d)\n", __func__, pRxBlk->DataSize));
+		goto err_free_sk_buff;
+	}
+
+	if (sniffer_type == RADIOTAP_TYPE) {
+		if (pRxBlk->DataSize + sizeof(struct mtk_radiotap_header) > pAd->monitor_ctrl[DevIdx].FilterSize) {
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+					 ("%s : Size is too large! (%d)\n", __func__,
+					  pRxBlk->DataSize + sizeof(struct mtk_radiotap_header)));
+			goto err_free_sk_buff;
+		}
+	}
+
+	if (sniffer_type == PRISM_TYPE) {
+		if (pRxBlk->DataSize + sizeof(wlan_ng_prism2_header) > RX_BUFFER_AGGRESIZE) {
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+					 ("%s : Size is too large! (%d)\n", __func__,
+					  pRxBlk->DataSize + sizeof(wlan_ng_prism2_header)));
+			goto err_free_sk_buff;
+		}
+	}
+
+	MaxRssi = RTMPMaxRssi(pAd,
+						  ConvertToRssi(pAd, (struct raw_rssi_info *)(&pRxBlk->rx_signal.raw_rssi[0]), RSSI_IDX_0),
+						  ConvertToRssi(pAd, (struct raw_rssi_info *)(&pRxBlk->rx_signal.raw_rssi[0]), RSSI_IDX_1),
+						  ConvertToRssi(pAd, (struct raw_rssi_info *)(&pRxBlk->rx_signal.raw_rssi[0]), RSSI_IDX_2)
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
+						, ConvertToRssi(pAd, (struct raw_rssi_info *)(&pRxBlk->rx_signal.raw_rssi[0]), RSSI_IDX_3)
+#endif
+
+	);
+
+	if (sniffer_type == RADIOTAP_TYPE) {
+		RssiForRadiotap = RTMPMaxRssi(pAd,
+									  ConvertToRssi(pAd, (struct raw_rssi_info *)(&pRxBlk->rx_signal.raw_rssi[0]), RSSI_IDX_0),
+									  ConvertToRssi(pAd, (struct raw_rssi_info *)(&pRxBlk->rx_signal.raw_rssi[0]), RSSI_IDX_1),
+									  ConvertToRssi(pAd, (struct raw_rssi_info *)(&pRxBlk->rx_signal.raw_rssi[0]), RSSI_IDX_2)
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
+									, ConvertToRssi(pAd, (struct raw_rssi_info *)(&pRxBlk->rx_signal.raw_rssi[0]), RSSI_IDX_3)
+#endif
+		);
+	}
+
+#ifdef SNIFFER_MT7615
+	pNetDev = get_netdev_from_bssid(pAd, BSS0);
+#else
+	pNetDev = pAd->monitor_ctrl[DevIdx].wdev.if_dev;  /* send packet to mon0 */
+#endif
+	pRxPacket = pRxBlk->pRxPacket;
+	dot11_fc_field = pRxBlk->FC;
+	pData = pRxBlk->pData;
+	DataSize = pRxBlk->DataSize;
+	L2PAD = pRxBlk->pRxInfo->L2PAD;
+	PHYMODE = pRxBlk->rx_rate.field.MODE;
+	BW = pRxBlk->rx_rate.field.BW;
+	ShortGI = pRxBlk->rx_rate.field.ShortGI;
+	MCS = pRxBlk->rx_rate.field.MCS;
+	LDPC = pRxBlk->rx_rate.field.ldpc;
+
+	if (IS_HIF_TYPE(pAd, HIF_RLT))
+		LDPC_EX_SYM = pRxBlk->ldpc_ex_sym;
+	else
+		LDPC_EX_SYM = 0;
+
+	AMPDU = pRxBlk->pRxInfo->AMPDU;
+	STBC = pRxBlk->rx_rate.field.STBC;
+	RSSI1 = pRxBlk->rx_signal.raw_rssi[1];
+	/* if(pRxBlk->pRxWI->RXWI_N.bbp_rxinfo[12] != 0) */
+#ifdef MT_MAC
+
+	if (IS_HIF_TYPE(pAd, HIF_MT))
+		timestamp = pRxBlk->TimeStamp;
+
+#endif
+	BssMonitorFlag11n = 0;
+#ifdef MONITOR_FLAG_11N_SNIFFER_SUPPORT
+	BssMonitorFlag11n = (pAd->StaCfg[0].BssMonitorFlag & MONITOR_FLAG_11N_SNIFFER);
+#endif /* MONITOR_FLAG_11N_SNIFFER_SUPPORT */
+	pDevName = (UCHAR *)RtmpOsGetNetDevName(pAd->net_dev);
+	Channel = pAd->ApCfg.MBSSID[wdev->wdev_idx].wdev.channel;
+
+	if (BW == BW_20)
+		CentralChannel = Channel;
+	else if (BW == BW_40)
+		CentralChannel = wlan_operate_get_cen_ch_1(wdev);
+
+#ifdef DOT11_VHT_AC
+#ifdef SNIFFER_MT7615
+	else if (BW == BW_80 || BW == BW_160)
+#else
+	else if (BW == BW_80)
+#endif /* SNIFFER_MT7615 */
+		CentralChannel = wlan_operate_get_cen_ch_1(wdev);
+
+#endif /* DOT11_VHT_AC */
+#ifdef DOT11_VHT_AC
+
+	if (BW == BW_80)
+		sideband_index = vht_prim_ch_idx(CentralChannel, Channel, RF_BW_80);
+
+#ifdef SNIFFER_MT7615
+	else if (BW == BW_160)
+		sideband_index = vht_prim_ch_idx(CentralChannel, Channel, RF_BW_160);
+
+#endif /* SNIFFER_MT7615 */
+#endif /* DOT11_VHT_AC */
+
+	if (sniffer_type == RADIOTAP_TYPE) {
+#ifdef SNIFFER_MT7615
+
+		if (IS_MT7615(pAd)) {
+			gid = ((pRxBlk->rmac_info[46] >> 5) & 0x7) | ((pRxBlk->rmac_info[47] & 0x7) << 3);
+
+			if (gid < 16)
+				PHY_IO_READ32(pAd, 0x1025c, &value);
+			else if (gid < 32)
+				PHY_IO_READ32(pAd, 0x10260, &value);
+			else if (gid < 48)
+				PHY_IO_READ32(pAd, 0x10264, &value);
+			else
+				PHY_IO_READ32(pAd, 0x10268, &value);
+
+			UP_value = (value >> (2 * (gid % 16))) & 0x00000003;
+			send_radiotap_mt7615_monitor_packets(pNetDev, pRxBlk->rmac_info, pRxBlk->rxv2_cyc1, pRxPacket, pData,
+												 DataSize, pDevName, RssiForRadiotap, UP_value);
+		} else
+#endif
+			send_radiotap_monitor_packets(pNetDev, pRxBlk->AmsduState, pRxBlk->rmac_info, pRxPacket, (void *)dot11_fc_field, pData, DataSize,
+										  L2PAD, PHYMODE, BW, ShortGI, MCS, LDPC, LDPC_EX_SYM,
+										  AMPDU, STBC, RSSI1, pDevName, Channel, CentralChannel,
+										  sideband_index, RssiForRadiotap, timestamp, UP_value);
+	}
+
+	if (sniffer_type == PRISM_TYPE) {
+		send_prism_monitor_packets(pNetDev, pRxPacket, (void *)dot11_fc_field, pData, DataSize,
+								   L2PAD, PHYMODE, BW, ShortGI, MCS, AMPDU, STBC, RSSI1,
+								   BssMonitorFlag11n, pDevName, Channel, CentralChannel,
+								   MaxRssi);
+	}
+
+	return;
+err_free_sk_buff:
+	RELEASE_NDIS_PACKET(pAd, pRxBlk->pRxPacket, NDIS_STATUS_FAILURE);
+}
+#endif /* SNIFFER_SUPPORT */
 
 
 VOID RTMPFreeGlobalUtility(VOID)

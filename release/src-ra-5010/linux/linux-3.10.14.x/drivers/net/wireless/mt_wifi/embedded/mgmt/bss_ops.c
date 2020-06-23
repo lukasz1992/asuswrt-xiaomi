@@ -707,7 +707,7 @@ VOID BssEntrySet(
 	IN CHAR Rssi,
 	IN USHORT LengthVIE,
 	IN PNDIS_802_11_VARIABLE_IEs pVIE
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	,
 	IN UCHAR	*Snr,
 	IN CHAR 	*rssi
@@ -778,7 +778,7 @@ VOID BssEntrySet(
 	pBss->Channel = ie_list->Channel;
 	pBss->CentralChannel = ie_list->Channel;
 	pBss->Rssi = Rssi;
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	pBss->Snr[0] = Snr[0];
 	pBss->Snr[1] = Snr[1];
 	pBss->Snr[2] = Snr[2];
@@ -799,7 +799,7 @@ VOID BssEntrySet(
 	NdisMoveMemory(pBss->FixIEs.Timestamp, &ie_list->TimeStamp, 8);
 	pBss->FixIEs.BeaconInterval = ie_list->BeaconPeriod;
 	pBss->FixIEs.Capabilities = ie_list->CapabilityInfo;
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	pBss->LastBeaconRxTimeT = jiffies_to_msecs(jiffies);
 #endif
 
@@ -985,7 +985,7 @@ ULONG BssTableSetEntry(
 	IN CHAR Rssi,
 	IN USHORT LengthVIE,
 	IN PNDIS_802_11_VARIABLE_IEs pVIE
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	,
 	IN UCHAR	*Snr,
 	IN CHAR 	*rssi
@@ -1017,6 +1017,12 @@ ULONG BssTableSetEntry(
 					bInsert = TRUE;
 					break;
 				}
+				if (MAC_ADDR_EQUAL(pApCliEntry->CfgApCliBssid, ie_list->Bssid)
+					|| SSID_EQUAL(pApCliEntry->CfgSsid, pApCliEntry->CfgSsidLen, ie_list->Ssid, ie_list->SsidLen)) {
+					bInsert = TRUE;
+					break;
+				}
+
 			}
 
 #endif /* APCLI_SUPPORT */
@@ -1040,7 +1046,7 @@ ULONG BssTableSetEntry(
 					Idx = Tab->BssOverlapNr;
 					NdisZeroMemory(&(Tab->BssEntry[Idx]), sizeof(BSS_ENTRY));
 					BssEntrySet(pAd, &Tab->BssEntry[Idx], ie_list, Rssi, LengthVIE, pVIE
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 					, Snr, rssi
 #endif
 					);
@@ -1059,14 +1065,14 @@ ULONG BssTableSetEntry(
 
 		Idx = Tab->BssNr;
 		BssEntrySet(pAd, &Tab->BssEntry[Idx], ie_list, Rssi, LengthVIE, pVIE
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 		, Snr, rssi
 #endif
 		);
 		Tab->BssNr++;
 	} else if (Idx < MAX_LEN_OF_BSS_TABLE)
 		BssEntrySet(pAd, &Tab->BssEntry[Idx], ie_list, Rssi, LengthVIE, pVIE
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 		, Snr, rssi
 #endif
 		);

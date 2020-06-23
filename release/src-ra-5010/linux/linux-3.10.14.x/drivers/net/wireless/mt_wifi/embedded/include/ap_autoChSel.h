@@ -48,6 +48,12 @@ VOID UpdateChannelInfo(
 #define SET_V10_BOOTACS_INVALID(_pAd, valid) \
 	(_pAd->CommonCfg.DfsParameter.bV10BootACSValid = valid)
 
+#define IS_V10_APINTF_DOWN(_pAd) \
+		 (_pAd->CommonCfg.DfsParameter.bV10APInterfaceDownEnbl == TRUE)
+
+#define SET_V10_APINTF_DOWN(_pAd, valid) \
+		(_pAd->CommonCfg.DfsParameter.bV10APInterfaceDownEnbl = valid)
+
 #define IS_V10_W56_AP_DOWN_ENBLE(_pAd) \
 	 (_pAd->CommonCfg.DfsParameter.bV10W56APDownEnbl == TRUE)
 

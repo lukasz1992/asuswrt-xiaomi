@@ -1892,14 +1892,19 @@ static INT32 StaRecUpdateTxProc(RTMP_ADAPTER *pAd, struct cmd_msg *msg, VOID *ar
 	STA_REC_CFG_T *pStaRecCfg = (STA_REC_CFG_T *)args;
 	MAC_TABLE_ENTRY *pEntry = pStaRecCfg->pEntry;
 #endif /* APCLI_SUPPORT */
+
+#ifdef VLAN_SUPPORT
+	STA_TR_ENTRY *tr_entry = &pAd->MacTab.tr_entry[pStaRecCfg->ucWlanIdx];
+	struct wifi_dev *bss_wdev = tr_entry->wdev;
+#endif
 	os_zero_mem(&CmdStaRecTxProc, sizeof(CMD_STAREC_TX_PROC_T));
 	CmdStaRecTxProc.u2Tag = STA_REC_TX_PROC; /* Tag = 0x08 */
 	CmdStaRecTxProc.u2Length = sizeof(CMD_STAREC_TX_PROC_T);
-#ifdef STATIC_VLAN_SUPPORT
-	if (pEntry && pEntry->wdev && pEntry->wdev->bVLAN_Tag)
+#ifdef VLAN_SUPPORT
+	if ((pEntry && pEntry->wdev && pEntry->wdev->bVLAN_Tag) || (bss_wdev && bss_wdev->bVLAN_Tag))
 		CmdStaRecTxProc.u4TxProcFlag = 0;
 	else
-#endif /*STATIC_VLAN_SUPPORT*/
+#endif /*VLAN_SUPPORT*/
 	CmdStaRecTxProc.u4TxProcFlag = RVLAN;
 #ifdef CONFIG_CSO_SUPPORT
 
@@ -2881,7 +2886,13 @@ static VOID bssUpdateBmcMngRate(
 		CmdBssInfoBmcRate.ucPreambleMode =
 			OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_SHORT_PREAMBLE_INUSED);
 	}
-
+#ifdef TXRX_STAT_SUPPORT
+	{
+		ULONG Multicast_Tx_Rate;
+		pAd->ApCfg.MBSSID[bss_info.ucBssIndex].stat_bss.LastMulticastTxRate.word = bss_info.McTransmit.word;
+		getRate(bss_info.McTransmit, &Multicast_Tx_Rate);
+	}
+#endif
 	CmdBssInfoBmcRate.u2Tag = BSS_INFO_BROADCAST_INFO;
 	CmdBssInfoBmcRate.u2Length = sizeof(CMD_BSSINFO_BMC_RATE_T);
 	MTWF_LOG(DBG_CAT_FW, DBG_SUBCAT_ALL, DBG_LVL_OFF,

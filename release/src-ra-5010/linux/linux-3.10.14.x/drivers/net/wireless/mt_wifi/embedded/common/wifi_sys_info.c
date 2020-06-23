@@ -60,6 +60,7 @@ static VOID update_igmpinfo(struct wifi_dev *wdev, BOOLEAN bActive)
 			Enable = TRUE;
 
 #ifdef IGMP_TVM_SUPPORT
+			wdev->u4AgeOutTime = IGMPMAC_TB_ENTRY_AGEOUT_TIME;
 			if (IgmpSnEnableTVMode(ad,
 									wdev,
 									ad->ApCfg.IsTVModeEnable[devinfo->BandIdx],
@@ -68,33 +69,12 @@ static VOID update_igmpinfo(struct wifi_dev *wdev, BOOLEAN bActive)
 #endif /* IGMP_TVM_SUPPORT */
 		}
 
+		if (IS_ASIC_CAP(ad, fASIC_CAP_MCU_OFFLOAD))
 		CmdMcastCloneEnable(ad, Enable, devinfo->OwnMacIdx);
 
 #ifdef IGMP_TVM_SUPPORT
-		if (bActive == TRUE) {
-			wdev->IgmpTableSize = sizeof(IGMP_MULTICAST_TABLE)
-				+ ((sizeof(IGMP_MULTICAST_TABLE_ENTRY) * MAX_LEN_OF_MULTICAST_FILTER_TABLE)
-				- sizeof(IGMP_MULTICAST_TABLE_ENTRY))
-				+ ((sizeof(IGMP_MULTICAST_TABLE_MEMBER) * FREE_MEMBER_POOL_SIZE)
-				- sizeof(IGMP_MULTICAST_TABLE_MEMBER));
-			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_WARN,
-				("%s: Allocate IGMP Multicast Memory size = %u\n", __func__, wdev->IgmpTableSize));
-
-			wdev->pIgmpMcastTable =
-				(P_IGMP_MULTICAST_TABLE)kmalloc(wdev->IgmpTableSize, 0);
-			if (wdev->pIgmpMcastTable == NULL) {
-				wdev->IgmpTableSize = 0;
-				MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_WARN,
-					("%s: Failed to allocate IGMP Multicast Memory\n", __func__));
-			} else {
-				NdisZeroMemory((UCHAR *)wdev->pIgmpMcastTable, wdev->IgmpTableSize);
-			}
-		} else {
-			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_IGMP, DBG_LVL_WARN,
-				("%s: Deallocate IGMP Multicast Memory\n", __func__));
-			kfree(wdev->pIgmpMcastTable);
-			wdev->pIgmpMcastTable = NULL;
-		}
+		if (IS_ASIC_CAP(ad, fASIC_CAP_MCU_OFFLOAD))
+			MulticastFilterInitMcastTable(ad, wdev, bActive);
 #endif /* IGMP_TVM_SUPPORT */
 
 	}
@@ -359,6 +339,7 @@ static VOID fill_devinfo(
 	os_move_mem(devinfo->OwnMacAddr, wdev->if_addr, MAC_ADDR_LEN);
 	devinfo->EnableFeature = DEVINFO_ACTIVE_FEATURE;
 	devinfo->BandIdx = HcGetBandByWdev(wdev);
+	os_move_mem(&wdev->DevInfo, devinfo, sizeof(DEV_INFO_CTRL_T));
 
 #ifdef CONFIG_AP_SUPPORT
 #ifdef IGMP_SNOOP_SUPPORT
@@ -1153,6 +1134,24 @@ VOID WifiSysUpdatePortSecur(RTMP_ADAPTER *pAd, MAC_TABLE_ENTRY *pEntry, ASIC_SEC
 				HW_SET_ASIC_WCID_4ADDR_HDR_TRANS(pAd, pEntry->wcid, TRUE);
 		}
 #endif
+
+#ifdef HOSTAPD_MAP_SUPPORT
+		if (IS_ENTRY_CLIENT(pEntry)) {
+			BOOLEAN map_a4_peer_en = FALSE;
+#if defined(MWDS) || defined(CONFIG_MAP_SUPPORT) || defined(WAPP_SUPPORT)
+#if defined(CONFIG_MAP_SUPPORT)
+			MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("MAP_ENABLE\n"));
+#if defined(A4_CONN)
+			map_a4_peer_en = map_a4_peer_enable(pAd, pEntry, TRUE);
+#endif /* A4_CONN */
+			map_send_bh_sta_wps_done_event(pAd, pEntry, TRUE);
+#endif /* CONFIG_MAP_SUPPORT */
+#ifdef WAPP_SUPPORT
+			wapp_send_cli_join_event(pAd, pEntry);
+#endif /* WAPP_SUPPORT */
+#endif /* defined(MWDS) || defined(CONFIG_MAP_SUPPORT) || defined(WAPP_SUPPORT) */
+		}
+#endif /* HOSTAPD_MAP_SUPPORT */
 	}
 }
 

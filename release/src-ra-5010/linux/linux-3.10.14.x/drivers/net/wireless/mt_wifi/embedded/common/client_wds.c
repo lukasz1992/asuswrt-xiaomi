@@ -97,6 +97,29 @@ VOID CliWdsEntyFree(
 	return;
 }
 
+VOID CliWdsEnryFreeAid(
+	 IN PRTMP_ADAPTER pAd,
+	 IN SHORT Aid)
+{
+
+	INT idx;
+	PCLIWDS_PROXY_ENTRY pCliWdsEntry;
+
+	for (idx = 0; idx < CLIWDS_HASH_TAB_SIZE; idx++) {
+		pCliWdsEntry =
+			(PCLIWDS_PROXY_ENTRY)pAd->ApCfg.CliWdsProxyTb[idx].pHead;
+		while (pCliWdsEntry) {
+			if (pCliWdsEntry->Aid == Aid) {
+				delEntryList(&pAd->ApCfg.CliWdsProxyTb[idx], (RT_LIST_ENTRY *)pCliWdsEntry);
+				CliWdsEntyFree(pAd, pCliWdsEntry);
+			}
+			pCliWdsEntry = pCliWdsEntry->pNext;
+		}
+
+	}
+	return;
+}
+
 
 UCHAR *CliWds_ProxyLookup(RTMP_ADAPTER *pAd, UCHAR *pMac)
 {
@@ -205,7 +228,7 @@ MAC_TABLE_ENTRY *FindWdsEntry(
 					  pRxBlk->rx_signal.raw_rssi[1],
 					  pRxBlk->rx_signal.raw_rssi[2],
 					  pRxBlk->rx_signal.raw_rssi[3],
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 					  pRxBlk->rx_signal.raw_snr[0],
 					  pRxBlk->rx_signal.raw_snr[1],
 					  pRxBlk->rx_signal.raw_snr[2],

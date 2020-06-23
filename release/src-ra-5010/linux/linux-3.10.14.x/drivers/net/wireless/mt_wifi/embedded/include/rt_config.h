@@ -49,9 +49,7 @@
 #endif /* BAND_STEERING */
 
 #endif /* CONFIG_AP_SUPPORT */
-#ifdef WAPP_SUPPORT
-#include "wapp/wapp_cmm_type.h"
-#endif /* WAPP_SUPPORT */
+
 
 
 #ifdef MT_MAC
@@ -154,6 +152,9 @@
 #ifdef CONFIG_MAP_SUPPORT
 #include "map.h"
 #endif
+#ifdef WAPP_SUPPORT
+#include "wapp/wapp_cmm_type.h"
+#endif /* WAPP_SUPPORT */
 #ifdef CONFIG_ATE
 #include "ate_agent.h"
 #include "ate.h"
@@ -309,6 +310,9 @@
 #include "protocol/tmr.h"
 #endif
 
+#ifdef SNIFFER_SUPPORT
+#include "sniffer/sniffer.h"
+#endif /* SNIFFER_SUPPORT */
 
 #ifdef LINUX
 #ifdef RT_CFG80211_SUPPORT

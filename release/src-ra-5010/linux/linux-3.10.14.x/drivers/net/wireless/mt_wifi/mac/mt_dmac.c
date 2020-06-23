@@ -25,6 +25,9 @@
 */
 
 #include "rt_config.h"
+#ifdef TXRX_STAT_SUPPORT
+#include "hdev/hdev_basic.h"
+#endif
 
 const UCHAR altx_filter_list[] = {
 	SUBTYPE_ASSOC_REQ,
@@ -680,7 +683,7 @@ VOID Update_Mib_Bucket_One_Sec(RTMP_ADAPTER *pAd)
 		}
 	}
 }
-#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT)
+#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT) || defined(TXRX_STAT_SUPPORT)
 VOID Reset_MIB_Update_Counters(RTMP_ADAPTER *pAd, UCHAR Idx)
 {
 
@@ -713,7 +716,7 @@ VOID Update_Mib_Bucket_500Ms(RTMP_ADAPTER *pAd)
 			HW_IO_READ32(pAd, MIB_M0SDR16 + (i * BandOffset), &CrValue);
 			pAd->MsMibBucket.ChannelBusyTime[i][CurrIdx] = CrValue;
 
-#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT)
+#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT) || defined(TXRX_STAT_SUPPORT)
 			if (!(ApScanRunning(pAd, NULL))) {
 				pAd->MsMibBucket.OBSSAirtime[i][CurrIdx] = pAd->ChannelStats.MibUpdateOBSSAirtime[i];
 				pAd->MsMibBucket.MyTxAirtime[i][CurrIdx] = pAd->ChannelStats.MibUpdateMyTxAirtime[i];
@@ -859,6 +862,9 @@ VOID NICUpdateRawCounters(RTMP_ADAPTER *pAd)
 	UINT32 OldValue, i;
 	UINT32 rx_err_cnt, fcs_err_cnt, mdrdy_cnt = 0, fcs_err_cnt_band1 = 0, mdrdy_cnt_band1 = 0;
 	/* UINT32 TxSuccessCount = 0, TxRetryCount = 0; */
+#ifdef TXRX_STAT_SUPPORT
+	struct hdev_ctrl *ctrl = (struct hdev_ctrl *)pAd->hdev_ctrl;
+#endif
 #ifdef COMPOS_WIN
 	COUNTER_MTK *pPrivCounters;
 #else
@@ -885,17 +891,28 @@ VOID NICUpdateRawCounters(RTMP_ADAPTER *pAd)
 	fcs_err_cnt = rx_err_cnt & 0xffff;
 	MAC_IO_READ32(pAd, MIB_M0SDR4, &rx_err_cnt);
 
+	MAC_IO_READ32(pAd, MIB_M1SDR3, &fcs_err_cnt_band1);
+#ifndef TXRX_STAT_SUPPORT
+	if (pAd->parse_rxv_stat_enable) {
+#endif
+#ifdef MT7615
+		if (IS_MT7615(pAd))
+			fcs_err_cnt_band1 = (fcs_err_cnt_band1 & 0xffff); /* [15:0] FCS ERR */
+#endif
+#ifndef TXRX_STAT_SUPPORT
+	}
+#endif
+
+#ifdef TXRX_STAT_SUPPORT
+	ctrl->rdev[DBDC_BAND0].pRadioCtrl->RxCRCErrorCount.QuadPart += fcs_err_cnt;
+	if (pAd->CommonCfg.dbdc_mode)
+		ctrl->rdev[DBDC_BAND1].pRadioCtrl->RxCRCErrorCount.QuadPart += fcs_err_cnt_band1;
+#endif
 	if (pAd->parse_rxv_stat_enable) {
 		MAC_IO_READ32(pAd, MIB_M0SDR10, &mdrdy_cnt);
 #if defined(MT7615)
 		if (IS_MT7615(pAd))
 			mdrdy_cnt = (mdrdy_cnt & 0x3FFFFFF); /* [25:0] Mac Mdrdy*/
-
-#endif
-		MAC_IO_READ32(pAd, MIB_M1SDR3, &fcs_err_cnt_band1);
-#if defined(MT7615)
-		if (IS_MT7615(pAd))
-			fcs_err_cnt_band1 = (fcs_err_cnt_band1 & 0xffff); /* [15:0] FCS ERR */
 
 #endif
 		MAC_IO_READ32(pAd, MIB_M1SDR10, &mdrdy_cnt_band1);
@@ -2250,7 +2267,16 @@ INT32 mtd_write_txp_info_by_cr4(RTMP_ADAPTER *pAd, UCHAR *buf, TX_BLK *pTxBlk)
 	cr4_txp_msdu_info->bss_index = BssInfoIdx;
 	cr4_txp_msdu_info->buf_num = 1; /* os get scatter. */
 	cr4_txp_msdu_info->buf_len[0] = pTxBlk->SrcBufLen;
-	cr4_txp_msdu_info->reserved = 0xFF;
+#ifdef VLAN_SUPPORT
+	if (RTMP_GET_PACKET_VLAN(pTxBlk->pPacket) != 0) {
+		UINT8 VlanPcp;
+		VlanPcp = RTMP_GET_VLAN_PCP(pTxBlk->pPacket);
+
+		if ((VlanPcp >= 0) && (VlanPcp <= 7))
+			cr4_txp_msdu_info->reserved = VlanPcp;
+	}
+#endif /*VLAN_SUPPORT*/
+
 #ifdef DSCP_PRI_SUPPORT
 	if ((pTxBlk->DscpMappedPri >= 0)  && (pTxBlk->DscpMappedPri <= 7))
 		cr4_txp_msdu_info->reserved = pTxBlk->DscpMappedPri;
@@ -2938,11 +2964,11 @@ INT mt_nic_asic_init(RTMP_ADAPTER *pAd)
 	mt_mac_init(pAd);
 	mt_hw_tb_init(pAd, TRUE);
 #ifdef HDR_TRANS_RX_SUPPORT
-#ifdef STATIC_VLAN_SUPPORT
+#ifdef VLAN_SUPPORT
 	AsicRxHeaderTransCtl(pAd, TRUE, FALSE, FALSE, FALSE, FALSE);
 #else
 	AsicRxHeaderTransCtl(pAd, TRUE, FALSE, FALSE, TRUE, FALSE);
-#endif /* STATIC_VLAN_SUPPORT */
+#endif /* VLAN_SUPPORT */
 	AsicRxHeaderTaranBLCtl(pAd, 0, TRUE, ETH_TYPE_EAPOL);
 	AsicRxHeaderTaranBLCtl(pAd, 1, TRUE, ETH_TYPE_WAI);
 	AsicRxHeaderTaranBLCtl(pAd, 2, TRUE, ETH_TYPE_FASTROAMING);

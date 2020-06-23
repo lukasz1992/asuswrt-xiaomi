@@ -3096,6 +3096,10 @@ INT Mt7615AsicArchOpsInit(RTMP_ADAPTER *pAd)
 #ifdef IGMP_SNOOP_SUPPORT
 	arch_ops->archMcastEntryInsert = CmdMcastEntryInsert;
 	arch_ops->archMcastEntryDelete = CmdMcastEntryDelete;
+#ifdef IGMP_TVM_SUPPORT
+	arch_ops->archMcastConfigAgeout = CmdSetMcastEntryAgeOut;
+	arch_ops->archMcastGetMcastTable = CmdGetMcastEntryTable;
+#endif /* IGMP_TVM_SUPPORT */
 #endif
 	arch_ops->write_txp_info = mtd_write_txp_info_by_cr4;
 	arch_ops->write_tmac_info_fixed_rate = mtd_write_tmac_info_fixed_rate;

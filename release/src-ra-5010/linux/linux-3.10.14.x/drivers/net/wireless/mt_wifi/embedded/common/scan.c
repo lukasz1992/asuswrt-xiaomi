@@ -33,6 +33,10 @@ INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 	INT bw, ch;
 	struct wifi_dev *wdev = pwdev;
 #ifdef APCLI_SUPPORT
+#ifdef WSC_AP_SUPPORT
+	INT idx;
+	struct wifi_dev *temp_wdev = NULL;
+#endif /*WSC_AP_SUPPORT*/
 #ifdef APCLI_CERT_SUPPORT
 	UCHAR  ScanType = pAd->ScanCtrl.ScanType;
 #endif /*APCLI_CERT_SUPPORT*/
@@ -87,10 +91,12 @@ INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 #endif /* CONFIG_MULTI_CHANNEL */
 #ifdef OFFCHANNEL_SCAN_FEATURE
 	if (pAd->ScanCtrl.state != OFFCHANNEL_SCAN_INVALID) {
-		printk("%s : restore channel selected from stored channel\n", __func__);
+		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+			("%s : restore channel selected from stored channel\n", __func__));
 		ch = wdev->restore_channel;
 	} else {
-		printk("%s : restore channel done in non-offchannel scan path\n", __func__);
+		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+			("%s : restore channel done in non-offchannel scan path\n", __func__));
 		ch = wlan_operate_get_prim_ch(wdev);
 	}
 #else
@@ -98,8 +104,16 @@ INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 #endif
 	ASSERT((ch != 0));
 	/*restore to original channel*/
+#ifdef CONFIG_MAP_SUPPORT
+	if (IS_MAP_TURNKEY_ENABLE(pAd) && wdev->wdev_type == WDEV_TYPE_APCLI)
+		ch = wdev->channel;
+#endif
 	wlan_operate_set_prim_ch(wdev, ch);
 	ch = wlan_operate_get_cen_ch_1(wdev);
+#ifdef CONFIG_MAP_SUPPORT
+	if (IS_MAP_TURNKEY_ENABLE(pAd) && wdev->wdev_type == WDEV_TYPE_APCLI)
+		ch = wdev->channel;
+#endif
 	bw = wlan_operate_get_bw(wdev);
 	MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("%s,central ch=%d,bw=%d\n\r", __func__, ch, bw));
 	MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("SYNC - End of SCAN, restore to %dMHz channel %d, Total BSS[%02d]\n",
@@ -141,7 +155,8 @@ INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 				/* Enable beacon tx for all BSS */
 				for (BssIdx = 0; BssIdx < MaxNumBss; BssIdx++) {
 					wdev = &pAd->ApCfg.MBSSID[BssIdx].wdev;
-
+					if (wdev->channel != pwdev->channel)
+						continue;
 					if (wdev->bAllowBeaconing)
 						UpdateBeaconHandler(pAd, wdev, BCN_UPDATE_ENABLE_TX);
 				}
@@ -152,25 +167,39 @@ INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 
 			/* Enable beacon tx for all BSS */
 			for (BssIdx = 0; BssIdx < MaxNumBss; BssIdx++) {
-				wdev = &pAd->ApCfg.MBSSID[BssIdx].wdev;
+				UCHAR csa_count;
 
+				wdev = &pAd->ApCfg.MBSSID[BssIdx].wdev;
+				if (wdev->channel != pwdev->channel)
+					continue;
+				csa_count = wdev->csa_count;
+				wdev->csa_count = 0;
 				if (wdev->bAllowBeaconing)
 					UpdateBeaconHandler(pAd, wdev, BCN_UPDATE_ENABLE_TX);
+				wdev->csa_count = csa_count;
 			}
 		}
 
 #ifdef APCLI_SUPPORT
 #ifdef WSC_AP_SUPPORT
+		for (idx = 0; idx < MAX_APCLI_NUM; idx++) {
+			temp_wdev = &pAd->ApCfg.ApCliTab[idx].wdev;
+			if (temp_wdev && pwdev) {
+				MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("%s, temp_wdev->channel = %d, pwdev->channel = %d, idx = %d\n\r", __func__, temp_wdev->channel, pwdev->channel, idx));
+				if (HcGetBandByWdev(temp_wdev) == HcGetBandByWdev(pwdev))
+					break;
+			}
+		}
 		if (pwdev
 #ifdef CON_WPS
 				/* In case of concurrent WPS, the request might have come from a non APCLI interface. */
-				&& ((pwdev->wdev_type == WDEV_TYPE_APCLI) || (pAd->ApCfg.ApCliTab[pwdev->func_idx].wdev.WscControl.conWscStatus != CON_WPS_STATUS_DISABLED))
+				&& ((pwdev->wdev_type == WDEV_TYPE_APCLI) || (pAd->ApCfg.ApCliTab[idx].wdev.WscControl.conWscStatus != CON_WPS_STATUS_DISABLED))
 #else
 				&& (pwdev->wdev_type == WDEV_TYPE_APCLI)
 
 #endif
 				&& (pwdev->func_idx < MAX_APCLI_NUM)) {
-			WSC_CTRL *pWpsCtrlTemp = &pAd->ApCfg.ApCliTab[pwdev->func_idx].wdev.WscControl;
+			WSC_CTRL *pWpsCtrlTemp = &pAd->ApCfg.ApCliTab[idx].wdev.WscControl;
 
 			if ((pWpsCtrlTemp->WscConfMode != WSC_DISABLE) &&
 				(pWpsCtrlTemp->bWscTrigger == TRUE) &&
@@ -184,7 +213,7 @@ INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 #ifdef CON_WPS
 						if (pWpsCtrlTemp->conWscStatus != CON_WPS_STATUS_DISABLED) {
 							MlmeEnqueue(pAd, AP_SYNC_STATE_MACHINE,
-								 APMT2_MLME_SCAN_COMPLETE, 0, NULL, pwdev->func_idx);
+								 APMT2_MLME_SCAN_COMPLETE, 0, NULL, idx);
 							RTMP_MLME_HANDLER(pAd);
 						} else
 #endif /* CON_WPS */
@@ -206,7 +235,7 @@ INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 				else {
 					if (pWpsCtrlTemp->conWscStatus != CON_WPS_STATUS_DISABLED) {
 						MlmeEnqueue(pAd, AP_SYNC_STATE_MACHINE, APMT2_MLME_SCAN_COMPLETE, 0,
-								NULL, pwdev->func_idx);
+								NULL, idx);
 						RTMP_MLME_HANDLER(pAd);
 					}
 				}
@@ -405,7 +434,7 @@ static INT scan_active(RTMP_ADAPTER *pAd, UCHAR OpMode, UCHAR ScanType, struct w
 }
 
 #ifdef APCLI_SUPPORT
-static void FireExtraProbeReq(RTMP_ADAPTER *pAd, UCHAR OpMode, UCHAR ScanType,
+void FireExtraProbeReq(RTMP_ADAPTER *pAd, UCHAR OpMode, UCHAR ScanType,
 							  struct wifi_dev *wdev,  UCHAR *desSsid, UCHAR desSsidLen)
 {
 	UCHAR backSsid[MAX_LEN_OF_SSID];
@@ -502,6 +531,10 @@ VOID ScanNextChannel(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 #ifdef RT_CFG80211_SUPPORT
 		//pAd->cfg80211_ctrl.Cfg80211CurChanIndex--;
 #endif /* RT_CFG80211_SUPPORT */
+#ifdef CONFIG_MAP_SUPPORT
+		wdev->MAPCfg.scan_bh_ssids.scan_channel_count = 0;
+		wapp_send_scan_complete_notification(pAd, wdev);
+#endif
 		scan_ch_restore(pAd, OpMode, wdev);
 
 #ifdef OFFCHANNEL_SCAN_FEATURE
@@ -514,7 +547,8 @@ VOID ScanNextChannel(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 			pAd->ScanCtrl.OffChScan1_Ongoing = FALSE;
 		}
 		if (pAd->ScanCtrl.state == OFFCHANNEL_SCAN_COMPLETE) {
-			printk("[%s] in finish path channel no : %d : obss time :%d channel_idx = %d\n", __func__, pAd->ChannelInfo.ChannelNo, pAd->ChannelInfo.ChStats.Obss_Time, pAd->ApCfg.current_channel_index);
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+				("[%s] in finish path channel no : %d : obss time :%d channel_idx = %d\n", __func__, pAd->ChannelInfo.ChannelNo, pAd->ChannelInfo.ChStats.Obss_Time, pAd->ApCfg.current_channel_index));
 			Rsp.Action = OFFCHANNEL_INFO_RSP;
 			memcpy(Rsp.ifrn_name, pAd->ScanCtrl.if_name, IFNAMSIZ);
 			Rsp.data.channel_data.channel_busy_time = pAd->ChannelInfo.chanbusytime[pAd->ApCfg.current_channel_index];
@@ -549,11 +583,24 @@ VOID ScanNextChannel(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 #ifdef OFFCHANNEL_SCAN_FEATURE
 			/* For OffChannel scan command dont change the BW */
 			if (pAd->ScanCtrl.state == OFFCHANNEL_SCAN_START) {
-				printk("%s : Performing Scan Without changing BW\n", __func__);
+#ifdef CONFIG_MAP_SUPPORT
+				if (IS_MAP_TURNKEY_ENABLE(pAd)) {
+					MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+						("%s Performing Scan in 20 Mhz\n", __func__));
+					wdev->restore_channel = wlan_operate_get_prim_ch(wdev);
+					wlan_operate_scan(wdev, pAd->ScanCtrl.Channel);
+				} else {
+#endif
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("%s : Performing Scan Without changing BW\n", __func__));
 				wdev->restore_channel = wlan_operate_get_prim_ch(wdev);
 				wlan_operate_set_prim_ch(wdev, pAd->ScanCtrl.Channel);
+#ifdef CONFIG_MAP_SUPPORT
+				}
+#endif
 			} else {
-				printk("%s Performing Scan in 20 Mhz\n", __func__);
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("%s Performing Scan in 20 Mhz\n", __func__));
 				wlan_operate_scan(wdev, pAd->ScanCtrl.Channel);
 			}
 #else
@@ -633,9 +680,12 @@ VOID ScanNextChannel(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 #ifdef CONFIG_AP_SUPPORT
 #ifdef OFFCHANNEL_SCAN_FEATURE
 				if (pAd->ScanCtrl.state == OFFCHANNEL_SCAN_START) {
-					printk("offchannel scan setting stay time current state = %d\n", pAd->ScanCtrl.state);
+					MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+						("offchannel scan setting stay time current state = %d\n", pAd->ScanCtrl.state));
 					stay_time = pAd->ScanCtrl.ScanTime[pAd->ScanCtrl.CurrentGivenChan_Index];
-					printk("[%s][%d] stay time configured of channel index = %d time = %d\n", __func__, __LINE__, pAd->ScanCtrl.CurrentGivenChan_Index, stay_time);
+					MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+						("[%s][%d] stay time configured of channel index = %d time = %d\n",
+						__func__, __LINE__, pAd->ScanCtrl.CurrentGivenChan_Index, stay_time));
 				}
 #endif
 #endif
@@ -663,14 +713,15 @@ VOID ScanNextChannel(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 		RTMPSetTimer(sc_timer, stay_time);
 #ifdef APCLI_SUPPORT
 #ifdef CONFIG_MAP_SUPPORT
+			wdev->MAPCfg.FireProbe_on_DFS = FALSE;
 		if ((IS_MAP_TURNKEY_ENABLE(pAd)) &&
 			(!((pAd->CommonCfg.bIEEE80211H == 1) &&
 				RadarChannelCheck(pAd, pAd->ScanCtrl.Channel)))) {
-			while (index_map < 4) {
-				if (wdev->MAPCfg.scan_BH_ssids[index_map].SsidLen > 0) {
+			while (index_map < MAX_BH_PROFILE_CNT) {
+				if (wdev->MAPCfg.scan_bh_ssids.scan_SSID_val[index_map].SsidLen > 0) {
 					FireExtraProbeReq(pAd,	OpMode, SCAN_ACTIVE, wdev,
-						wdev->MAPCfg.scan_BH_ssids[index_map].ssid,
-						 wdev->MAPCfg.scan_BH_ssids[index_map].SsidLen);
+						wdev->MAPCfg.scan_bh_ssids.scan_SSID_val[index_map].ssid,
+						 wdev->MAPCfg.scan_bh_ssids.scan_SSID_val[index_map].SsidLen);
 				}
 				index_map++;
 			}

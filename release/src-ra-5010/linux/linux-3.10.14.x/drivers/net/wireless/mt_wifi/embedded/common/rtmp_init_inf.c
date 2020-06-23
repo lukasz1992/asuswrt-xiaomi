@@ -236,6 +236,11 @@ static INT rtmp_sys_init(RTMP_ADAPTER *pAd, RTMP_STRING *pHostName)
 
 	status = tr_ctl_init(pAd);
 
+#ifdef FQ_SCH_SUPPORT
+	if (pAd->fq_ctrl.enable & FQ_NEED_ON)
+		pAd->fq_ctrl.enable = FQ_ARRAY_SCH|FQ_NO_PKT_STA_KEEP_IN_LIST|FQ_EN;
+#endif
+
 	/* QM init */
 	status = qm_init(pAd);
 
@@ -244,14 +249,6 @@ static INT rtmp_sys_init(RTMP_ADAPTER *pAd, RTMP_STRING *pHostName)
 
 	if (status)
 		goto err2;
-
-#ifdef FQ_SCH_SUPPORT
-	if (pAd->fq_ctrl.enable & FQ_NEED_ON) {
-		if (set_fq_enable(pAd, "4105-2") == FALSE)
-			goto err2;
-	}
-#endif
-
 
 	return TRUE;
 err2:
@@ -917,7 +914,7 @@ PNET_DEV RtmpPhyNetDevMainCreate(VOID *pAdSrc)
 #ifdef HOSTAPD_SUPPORT
 	IoctlIF = pAd->IoctlIF;
 #endif /* HOSTAPD_SUPPORT */
-#ifdef PROBE2LOAD_L1PROFILE
+#if defined(MT_WIFI_MODULE) && defined(PROBE2LOAD_L1PROFILE)
 	if (load_dev_l1profile(pAd) == NDIS_STATUS_SUCCESS)
 		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO, ("load l1profile succeed!\n"));
 	else

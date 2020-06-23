@@ -71,6 +71,7 @@ int multi_inf_adapt_reg(VOID *pAd)
 	return status;
 }
 
+
 int multi_inf_adapt_unreg(VOID *pAd)
 {
 	int status = 0;
@@ -88,6 +89,23 @@ int multi_inf_adapt_unreg(VOID *pAd)
 	}
 
 	return status;
+}
+
+
+int multi_inf_get_count(void)
+{
+	int count = 0; /* use number 0 as default */
+	int idx;
+
+	for (idx = 0; idx < MAX_NUM_OF_INF; idx++) {
+		if (adapt_list[idx] != NULL)
+			count++;
+	}
+
+	if (count == 0)
+		MTWF_LOG(DBG_CAT_INIT, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+			 ("%s(): failed to find nonempty adapt_list!\n", __func__));
+	return count;
 }
 
 

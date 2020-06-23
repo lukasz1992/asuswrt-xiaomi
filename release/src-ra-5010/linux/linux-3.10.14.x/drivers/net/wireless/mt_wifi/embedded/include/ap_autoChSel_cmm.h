@@ -36,7 +36,7 @@
 
 #define AUTO_CH_SEL_SCAN_FUNC_SIZE                  (AUTO_CH_SEL_SCAN_MAX_STATE * AUTO_CH_SEL_SCAN_MAX_MSG)
 
-#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT)
+#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT) || defined(TXRX_STAT_SUPPORT)
 typedef struct _CHANENL_BUSY_TIME {
 	UINT32 Rx_Time;
 	UINT32 Tx_Time;

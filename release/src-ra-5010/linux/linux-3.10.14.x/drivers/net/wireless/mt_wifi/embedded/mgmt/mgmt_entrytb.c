@@ -625,6 +625,21 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
 #ifdef PS_QUEUE_INC_SUPPORT
 				pAd->TotalStaCnt++;
 #endif
+
+#ifdef VOW_SUPPORT
+				if (VOW_IS_ENABLED(pAd)) {
+					UCHAR func_tb_idx = pEntry->func_tb_idx;
+					/* apcli group idx assignments are from (VOW_MAX_GROUP_NUM-1) reversely
+					 * e.g. entry[0] => group idx: VOW_MAX_GROUP_NUM - 1
+					 *      entry[1] => group idx: VOW_MAX_GROUP_NUM - 2
+					 */
+					pEntry->func_tb_idx =
+						VOW_MAX_GROUP_NUM - func_tb_idx - 1;
+					RTMP_SET_STA_DWRR(pAd, pEntry);
+					pEntry->func_tb_idx = func_tb_idx;
+				}
+#endif  /* VOW_SUPPORT */
+
 				MTWF_LOG(DBG_CAT_MLME, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
 						 ("Repeater Security wcid=%d, AKMMap=0x%x, PairwiseCipher=0x%x, GroupCipher=0x%x\n",
 						  pEntry->wcid, pEntry->SecConfig.AKMMap,
@@ -653,12 +668,16 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
 					MTWF_LOG(DBG_CAT_MLME, DBG_SUBCAT_ALL, DBG_LVL_OFF,
 							 ("%s: The station number is over MaxUcastEntryNum = %d\n",
 							  __func__, GET_MAX_UCAST_NUM(pAd)));
+					HcReleaseUcastWcid(pAd, wdev, pEntry->wcid);
+					MacTableResetEntry(pAd, pEntry, CleanAll);
 					NdisReleaseSpinLock(&pAd->MacTabLock);
 					return NULL;
 				}
 
 				if (pEntry->func_tb_idx >= HW_BEACON_MAX_NUM) {
 					MTWF_LOG(DBG_CAT_MLME, DBG_SUBCAT_ALL, DBG_LVL_WARN, ("%s: pEntry->func_tb_idx >= %d \n", __func__, HW_BEACON_MAX_NUM));
+					HcReleaseUcastWcid(pAd, wdev, pEntry->wcid);
+					MacTableResetEntry(pAd, pEntry, CleanAll);
 					NdisReleaseSpinLock(&pAd->MacTabLock);
 					return NULL;
 				}
@@ -670,6 +689,8 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
 					(pAd->ApCfg.MBSSID[pEntry->func_tb_idx].MaxStaNum != 0) &&
 					(pAd->ApCfg.MBSSID[pEntry->func_tb_idx].StaCount >= pAd->ApCfg.MBSSID[pEntry->func_tb_idx].MaxStaNum)) {
 					MTWF_LOG(DBG_CAT_MLME, DBG_SUBCAT_ALL, DBG_LVL_WARN, ("%s: The connection table is full in ra%d.\n", __func__, pEntry->func_tb_idx));
+					HcReleaseUcastWcid(pAd, wdev, pEntry->wcid);
+					MacTableResetEntry(pAd, pEntry, CleanAll);
 					NdisReleaseSpinLock(&pAd->MacTabLock);
 					return NULL;
 				}
@@ -818,6 +839,18 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
 				wf_drv_tbl.wf_fwd_add_entry_inform_hook(pEntry->Addr);
 
 #endif /* CONFIG_WIFI_PKT_FWD */
+#ifdef MTFWD
+			if (IS_ENTRY_CLIENT(pEntry)) {
+				MTWF_LOG(DBG_CAT_MLME, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("New Sta:%pM\n", pEntry->Addr));
+				RtmpOSWrielessEventSend(pEntry->wdev->if_dev,
+							RT_WLAN_EVENT_CUSTOM,
+							FWD_CMD_ADD_TX_SRC,
+							NULL,
+							(PUCHAR)pEntry->Addr,
+							MAC_ADDR_LEN);
+			}
+#endif
+
 		}
 
 #endif /* CONFIG_AP_SUPPORT */
@@ -958,6 +991,14 @@ BOOLEAN MacTableDeleteEntry(RTMP_ADAPTER *pAd, USHORT wcid, UCHAR *pAddr)
 #endif
 		/*get wdev*/
 		wdev = pEntry->wdev;
+#if defined(CONFIG_MAP_SUPPORT) && defined(WAPP_SUPPORT)
+		if (wdev->wdev_type == WDEV_TYPE_APCLI) {
+			if (IS_MAP_TURNKEY_ENABLE(pAd)) {
+				pAd->ApCfg.ApCliTab[wdev->func_idx].Enable = FALSE;
+			}
+			wapp_send_apcli_association_change(WAPP_APCLI_DISASSOCIATED, pAd, wdev->func_dev);
+		}
+#endif /*WAPP_SUPPORT*/
 #ifdef CONFIG_AP_SUPPORT
 		WLAN_MR_TIM_BIT_CLEAR(pAd, pEntry->func_tb_idx, pEntry->Aid);
 #endif /* CONFIG_AP_SUPPORT */
@@ -967,6 +1008,15 @@ BOOLEAN MacTableDeleteEntry(RTMP_ADAPTER *pAd, USHORT wcid, UCHAR *pAddr)
 			wf_drv_tbl.wf_fwd_delete_entry_inform_hook(pEntry->Addr);
 
 #endif /* CONFIG_WIFI_PKT_FWD */
+#ifdef MTFWD
+		MTWF_LOG(DBG_CAT_MLME, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("Del Sta:%pM\n", pEntry->Addr));
+		RtmpOSWrielessEventSend(pEntry->wdev->if_dev,
+					RT_WLAN_EVENT_CUSTOM,
+					FWD_CMD_DEL_TX_SRC,
+					NULL,
+					(PUCHAR)pEntry->Addr,
+					MAC_ADDR_LEN);
+#endif
 
 		if (MAC_ADDR_EQUAL(pEntry->Addr, pAddr)) {
 
@@ -999,8 +1049,12 @@ BOOLEAN MacTableDeleteEntry(RTMP_ADAPTER *pAd, USHORT wcid, UCHAR *pAddr)
 
 #endif /* STREAM_MODE_SUPPORT // */
 #ifdef CONFIG_AP_SUPPORT
+#ifdef CLIENT_WDS
+    if (IS_ENTRY_CLIWDS(pEntry))
+	CliWdsEnryFreeAid(pAd, pEntry->Aid);
+#endif
 
-			if (IS_ENTRY_CLIENT(pEntry)
+    if (IS_ENTRY_CLIENT(pEntry)
 			   ) {
 				INT32 aid = pEntry->wcid;
 

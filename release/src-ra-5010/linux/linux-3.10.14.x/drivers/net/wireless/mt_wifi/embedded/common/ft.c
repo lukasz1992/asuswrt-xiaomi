@@ -1334,7 +1334,7 @@ VOID FT_RrbHandler(
 					  END_OF_ARGS);
 	/* enqueue it into FT action state machine. */
 	if (pEntry) {
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 		REPORT_MGMT_FRAME_TO_MLME(pAd, Wcid, pOutBuffer, FrameLen,
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, OPMODE_AP, wdev, pEntry->HTPhyMode.field.MODE);
 #else
@@ -1343,7 +1343,7 @@ VOID FT_RrbHandler(
 #endif
 	} else {
 		/* Report basic phymode if pEntry = NULL  */
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 		REPORT_MGMT_FRAME_TO_MLME(pAd, Wcid, pOutBuffer, FrameLen,
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, OPMODE_AP, wdev, WMODE_CAP_5G(wdev->PhyMode) ? MODE_OFDM : MODE_CCK);
 #else

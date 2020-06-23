@@ -30,6 +30,7 @@
 #include "rt_os_util.h"
 #include "rt_os_net.h"
 #include <linux/wireless.h>
+#include "rtmp_def.h"
 
 struct iw_priv_args ap_privtab[] = {
 	{
@@ -58,6 +59,11 @@ struct iw_priv_args ap_privtab[] = {
 		RTPRIV_IOCTL_GET_MAC_TABLE,
 		IW_PRIV_TYPE_CHAR | 1024, IW_PRIV_TYPE_CHAR | 1024,
 		"get_mac_table"
+	},
+	{
+		RTPRIV_IOCTL_GET_DRIVER_INFO,
+		IW_PRIV_TYPE_CHAR | 1024, IW_PRIV_TYPE_CHAR | 1024,
+		"get_driverinfo"
 	},
 	{
 		RTPRIV_IOCTL_E2P,
@@ -324,7 +330,10 @@ INT rt28xx_ap_ioctl(struct net_device *net_dev, struct ifreq *rq, int cmd)
 	break;
 
 	case SIOCGIWMODE:  /*get operation mode */
-		wrqin->u.mode = IW_MODE_INFRA;   /*SoftAP always on INFRA mode. */
+		if (RT_DEV_PRIV_FLAGS_GET(net_dev) == INT_APCLI)
+			wrqin->u.mode = IW_MODE_INFRA;		/* ApCli Mode. */
+		else
+			wrqin->u.mode = IW_MODE_MASTER;		/* AP Mode. */
 		break;
 
 	case SIOCSIWAP:  /*set access point MAC addresses */
@@ -430,6 +439,11 @@ INT rt28xx_ap_ioctl(struct net_device *net_dev, struct ifreq *rq, int cmd)
 		RTMP_AP_IoctlHandle(pAd, wrq, CMD_RTPRIV_IOCTL_GET_MAC_TABLE_STRUCT, 0, NULL, 0);
 		break;
 		/* end of modification */
+
+	case RTPRIV_IOCTL_GET_DRIVER_INFO:
+		RTMP_AP_IoctlHandle(pAd, wrq, CMD_RTPRIV_IOCTL_GET_DRIVER_INFO, 0, NULL, 0);
+		break;
+
 #ifdef AP_SCAN_SUPPORT
 
 	case RTPRIV_IOCTL_GSITESURVEY:

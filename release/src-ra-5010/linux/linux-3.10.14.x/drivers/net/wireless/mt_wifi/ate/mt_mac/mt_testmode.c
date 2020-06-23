@@ -1344,6 +1344,10 @@ static INT32 MT_ATESetTxPowerX(RTMP_ADAPTER *pAd, ATE_TXPOWER TxPower)
 	if (TxPower.Power <= 0)
 		return Ret;
 
+	/* Tx Power value upper bound protection */
+	if (TxPower.Power > 50)
+			TxPower.Power = 50;
+
 	switch (TxPower.Ant_idx) {
 	case 0:
 		ATECtrl->TxPower0 = TxPower.Power;
@@ -2432,6 +2436,12 @@ static INT32 MT_ATEStart(RTMP_ADAPTER *pAd)
 	struct _BAND_INFO *Info = &(ATECtrl->band_ext[0]);
 #endif /* DBDC_MODE */
 
+#if defined(DBDC_MODE) && defined(DEFAULT_5G_PROFILE)
+	/* Remap wdev_idx for MP 3.3 Driver */
+	ATECtrl->wdev_idx = 1;
+	Info->wdev_idx = 0;
+#endif /* DBDC_MODE */
+
 	/* Remind FW that Enable ATE mode */
 	MtCmdATEModeCtrl(pAd, 1);
 
@@ -3120,10 +3130,7 @@ INT mt_ate_set_tmac_info(RTMP_ADAPTER *pAd, TMAC_INFO *tmac_info, UINT32 band_id
 
 #ifdef SINGLE_SKU_V2
 	/* Update Power offset according to Band, Phymode, MCS, BW, Nss, SPE */
-	tmac_info->PowerOffset = SKUTxPwrOffsetGet(pAd,
-							band_idx, ATECtrl->PerPktBW, ATECtrl->PhyMode,
-							ATECtrl->Mcs,
-							ATECtrl->Nss, fgSPE);
+	tmac_info->PowerOffset = SKUTxPwrOffsetGet(pAd, band_idx, TESTMODE_GET_PARAM(ATECtrl, band_idx, PerPktBW), TESTMODE_GET_PARAM(ATECtrl, band_idx, PhyMode), TESTMODE_GET_PARAM(ATECtrl, band_idx, Mcs), TESTMODE_GET_PARAM(ATECtrl, band_idx, Nss), fgSPE);
 
 	MTWF_LOG(DBG_CAT_TEST, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("%s: tmac_info->PowerOffset = 0x%x (%d)\n",
 		__func__, tmac_info->PowerOffset, tmac_info->PowerOffset));
@@ -7858,7 +7865,7 @@ INT MtATE_Pre_Cal_Proc(RTMP_ADAPTER *pAd, UINT8 CalId, UINT32 ChGrpId)
 	if (pAd->E2pAccessMode == E2P_FLASH_MODE) {
 		pAd->PreCalStoreBuffer = pAd->EEPROMImage + PRECALPART_OFFSET;
 	} else {
-		ret = os_alloc_mem(pAd, &pAd->PreCalStoreBuffer, PRE_CAL_SIZE);
+		ret = os_alloc_mem(pAd, &pAd->PreCalStoreBuffer, PRE_CAL_SIZE_ONE_CARD);
 
 		if (ret != NDIS_STATUS_SUCCESS) {
 			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,

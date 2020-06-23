@@ -284,9 +284,7 @@ int mt_wifi_open(VOID *dev)
 		/*   So the net_dev->priv will be NULL in 2rd open */
 		return -1;
 	}
-#ifdef WIFI_DIAG
-	DiagProcInit(pAd);
-#endif
+
 	RTMP_DRIVER_MCU_SLEEP_CLEAR(pAd);
 	RTMP_DRIVER_OP_MODE_GET(pAd, &OpMode);
 #if WIRELESS_EXT >= 12
@@ -350,6 +348,9 @@ int mt_wifi_open(VOID *dev)
 	RT28xx_ApCli_Init(pAd, net_dev);
 #endif /* RT_CFG80211_P2P_CONCURRENT_DEVICE || P2P_APCLI_SUPPORT || CFG80211_MULTI_STA */
 #endif /* APCLI_SUPPORT */
+#ifdef SNIFFER_SUPPORT
+	RT28xx_Monitor_Init(pAd, net_dev);
+#endif /* SNIFFER_SUPPORT */
 #ifdef RT_CFG80211_SUPPORT
 #ifdef CFG80211_MULTI_STA
 	RTMP_CFG80211_MutliStaIf_Init(pAd);
@@ -373,6 +374,11 @@ int mt_wifi_open(VOID *dev)
 	MTWF_LOG(DBG_CAT_INIT, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
 		("Udma Registration %s\n", (retval == 0) ? "Success" : "Failed"));
 #endif/*RTMP_UDMA_SUPPORT*/
+
+#ifdef WIFI_DIAG
+	DiagProcInit(pAd);
+#endif
+
 	return retval;
 err:
 	RTMP_DRIVER_IRQ_RELEASE(pAd);
@@ -786,6 +792,9 @@ BOOLEAN RtmpPhyNetDevExit(VOID *pAd, PNET_DEV net_dev)
 	/* remove all WDS virtual interfaces. */
 	RT28xx_WDS_Remove(pAd);
 #endif /* WDS_SUPPORT */
+#ifdef SNIFFER_SUPPORT
+	RT28xx_Monitor_Remove(pAd);
+#endif	/* SNIFFER_SUPPORT */
 #ifdef MBSS_SUPPORT
 #if defined(P2P_APCLI_SUPPORT) || defined(RT_CFG80211_P2P_SUPPORT) || defined(CFG80211_MULTI_STA)
 #else

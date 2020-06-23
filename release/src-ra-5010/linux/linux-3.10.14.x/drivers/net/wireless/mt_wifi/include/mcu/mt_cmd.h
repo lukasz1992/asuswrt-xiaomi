@@ -78,6 +78,13 @@ typedef VOID(*MSG_RSP_HANDLER)(struct cmd_msg *msg, char *payload, UINT16 payloa
 
 #define THERMAL_TABLE_SIZE            15
 
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+#define PPB_SIZE					32
+#define LPB_SIZE					32
+#define PB_SIZE						32
+#define RT_NUM 						16
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+
 enum EEPROM_STORAGE_TYPE {
 	EEPROM_PROM = 0,
 	EEPROM_EFUSE = 1,
@@ -374,6 +381,7 @@ struct cmd_msg {
 
 	VOID                *priv;
 	VOID                *net_pkt;
+	VOID                *retry_pkt;
 	UINT32              wcid;       /* Index of MacTableEntry */
 	UINT32              cmd_tx_len;
 
@@ -674,6 +682,12 @@ enum EXT_CMD_TYPE {
 #ifdef FAST_UP_RATE_SUPPORT
 	EXT_CMD_ID_SET_FAST_UP_RATE = 0x7B,
 #endif /* FAST_UP_RATE_SUPPORT */
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+	EXT_CMD_ID_SET_RDM_RADAR_THRES   = 0x7C,
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+#ifdef RDM_FALSE_ALARM_DEBUG_SUPPORT
+	EXT_CMD_ID_SET_RDM_TEST_PATTERN = 0x7D,
+#endif /* RDM_FALSE_ALARM_DEBUG_SUPPORT */
 
 #ifdef A4_CONN
 	EXT_CMD_ID_MWDS_SUPPORT = 0x80,
@@ -705,10 +719,12 @@ enum EXT_CMD_TYPE {
 #ifdef WIFI_EAP_FEATURE
 	EXT_CMD_ID_EAP_CTRL = 0xA0,
 #endif
-
 #ifdef IGMP_TVM_SUPPORT
 	EXT_CMD_ID_IGMP_MULTICAST_SET_GET = 0xA1,
 #endif /* IGMP_TVM_SUPPORT */
+#ifdef TXRX_STAT_SUPPORT
+	EXT_CMD_ID_GET_STA_TX_STAT = 0xA2,
+#endif
 
 };
 
@@ -722,6 +738,7 @@ typedef enum _LINK_TEST_ACTION_CATEGORY {
 	LINK_TEST_RCPI,
 	LINK_TEST_SEIDX,
 	LINK_TEST_RCPI_MA,
+	LINK_TEST_TX,
 	LINK_TEST_ACTION_NUM
 } LINK_TEST_ACTION_CATEGORY, *P_LINK_TEST_ACTION_CATEGORY;
 
@@ -996,6 +1013,9 @@ enum EXT_EVENT_TYPE {
 
 #ifdef IGMP_TVM_SUPPORT
 	EXT_EVENT_ID_IGMP_MULTICAST_RESP = 0x92,
+#endif
+#ifdef TXRX_STAT_SUPPORT
+	EXT_EVENT_ID_GET_STA_TX_STAT = 0xA2,
 #endif
 
 };
@@ -2773,6 +2793,22 @@ typedef struct _EXT_CMD_GET_WTBL_TX_COUNT_T {
 
 #endif
 
+#ifdef TXRX_STAT_SUPPORT
+typedef struct _EXT_EVENT_STA_TX_STAT_RESULT_T {
+	UINT32	PerStaTxPktCnt[MAX_LEN_OF_MAC_TABLE];
+	UINT32	PerStaTxFailPktCnt[MAX_LEN_OF_MAC_TABLE];
+	UINT8	ucEntryBitmap[16];
+	UINT8	ucEntryCount;
+	UINT8	aucReserved[3];
+} EXT_EVENT_STA_TX_STAT_RESULT_T;
+
+typedef struct _EXT_CMD_GET_STA_TX_STAT_T {
+	UINT8	ucEntryBitmap[16];
+	UINT8	ucEntryCount;
+	UINT8	aucReserved[3];
+} EXT_CMD_GET_STA_TX_STAT_T, *P_EXT_CMD_GET_STA_TX_STAT_T;
+#endif
+
 typedef struct GNU_PACKED _CMD_AP_PS_RETRIEVE_T {
 	UINT32 u4Option; /* 0: AP_PWS enable, 1: redirect disable */
 	UINT32 u4Param1; /* for 0: enable/disable. for 1: wlan idx */
@@ -2858,10 +2894,84 @@ typedef struct GNU_PACKED _EXT_EVENT_BEACON_LOSS_T {
 } EXT_EVENT_BEACON_LOSS_T, *P_EXT_EVENT_BEACON_LOSS_T;
 
 #ifdef MT_DFS_SUPPORT/* Jelly20150123 */
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+typedef struct _PERIODIC_PULSE_BUFFER_T {
+	UINT32 u4PeriodicStartTime;
+	UINT16 u2PeriodicPulseWidth;
+	INT16 i2PeriodicPulsePower;
+} PERIODIC_PULSE_BUFFER_T, *PPERIODIC_PULSE_BUFFER_T;
+
+typedef struct _LONG_PULSE_BUFFER_T {
+	UINT32 u4LongStartTime;
+	UINT16 u2LongPulseWidth;
+	INT16 i2LongPulsePower;
+} LONG_PULSE_BUFFER_T, *PLONG_PULSE_BUFFER_T;
+
+typedef struct _HW_PULSE_CONTENT_T {
+	UINT32 u4HwStartTime;
+	UINT16 u2HwPulseWidth;
+	INT16 i2HwPulsePower;
+	UINT8 ucScPass;
+	UINT8 ucSwReset;
+} HW_PULSE_CONTENT_T, *PHW_PULSE_CONTENT_T;
+
+typedef struct _SW_RADAR_TYPE_T {
+	UINT8 ucRT_DET;
+	UINT8 ucRT_ENB;
+	UINT8 ucRT_STGR;
+	UINT8 ucRT_CRPN_MIN;
+	UINT8 ucRT_CRPN_MAX;
+	UINT8 ucRT_CRPR_MIN;
+	UINT8 ucRT_PW_MIN;
+	UINT8 ucRT_PW_MAX;
+	UINT32 u4RT_PRI_MIN;
+	UINT32 u4RT_PRI_MAX;
+	UINT8 ucRT_CRBN_MIN;
+	UINT8 ucRT_CRBN_MAX;
+	UINT8 ucRT_STGPN_MIN;
+	UINT8 ucRT_STGPN_MAX;
+	UINT8 ucRT_STGPR_MIN;
+} SW_RADAR_TYPE_T, *PSW_RADAR_TYPE_T;
+
+typedef struct _EXT_EVENT_RDD_REPORT_T {
+	UINT8 ucRddIdx;
+	UINT8 ucLongDetected;
+	UINT8 ucConstantPRFDetected;
+	UINT8 ucStaggeredPRFDetected;
+	UINT8 ucRadarTypeIdx;
+	UINT8 ucPeriodicPulseNum;
+	UINT8 ucLongPulseNum;
+	UINT8 ucHwPulseNum;
+	UINT8 ucOutLPN;
+	UINT8 ucOutSPN;
+	UINT8 ucOutCRPN;
+	UINT8 ucOutCRPW;
+	UINT8 ucOutCRBN;
+	UINT8 ucOutSTGPN;
+	UINT8 ucOutSTGPW;
+	UINT16 u2Reserve;
+	UINT32 u4OutPRI_CONST;
+	UINT32 u4OutPRI_STG1;
+	UINT32 u4OutPRI_STG2;
+	UINT32 u4OutPRI_STG3;
+	LONG_PULSE_BUFFER_T arLongPulse[LPB_SIZE];
+	PERIODIC_PULSE_BUFFER_T arPeriodicPulse[PPB_SIZE];
+	HW_PULSE_CONTENT_T arContent[PB_SIZE];
+} EXT_EVENT_RDD_REPORT_T, *P_EXT_EVENT_RDD_REPORT_T;
+#else
 typedef struct GNU_PACKED _EXT_EVENT_RDD_REPORT_T {
 	UINT8       ucRddIdx;
 	UINT8       aucReserve[3];
 } EXT_EVENT_RDD_REPORT_T, *P_EXT_EVENT_RDD_REPORT_T;
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+
+#ifdef RDM_FALSE_ALARM_DEBUG_SUPPORT
+typedef struct _EXT_CMD_RDM_TEST_RADAR_PATTERN_T {
+	UINT8 ucPulseNum;
+	UINT8 aucReserved[3];
+	PERIODIC_PULSE_BUFFER_T arPulseBuffer[PB_SIZE];
+} CMD_RDM_TEST_RADAR_PATTERN_T, *P_CMD_RDM_TEST_RADAR_PATTERN_T;
+#endif /* RDM_FALSE_ALARM_DEBUG_SUPPORT */
 
 typedef struct GNU_PACKED _EXT_EVENT_CAC_END_T {
 	UINT8       ucRddIdx;
@@ -5402,6 +5512,13 @@ typedef struct _CMD_LINK_TEST_TX_CSD_CTRL_T {
 	UINT8	ucReserved;
 } CMD_LINK_TEST_TX_CSD_CTRL_T, *P_CMD_LINK_TEST_TX_CSD_CTRL_T;
 
+typedef struct _CMD_LINK_TEST_TX_CTRL_T {
+	UINT8    ucLinkTestCtrlFormatId;
+	BOOLEAN  fgTxConfigEn;
+	UINT8    ucBandIdx;
+	UINT8    ucReserved;
+} CMD_LINK_TEST_TX_CTRL_T, *P_CMD_LINK_TEST_TX_CTRL_T;
+
 typedef struct _CMD_LINK_TEST_RX_CTRL_T {
 	UINT8	ucLinkTestCtrlFormatId;
 	UINT8	ucRxAntIdx;
@@ -5463,6 +5580,50 @@ typedef struct _INIT_CMD_WIFI_START_WITH_DECOMPRESSION {
 	UINT32 u4RegionNumber;
 	DECOMPRESS_REGION_INFO aucDecompRegion[3]; /* ilm, dlm, cmdbt*/
 } INIT_CMD_WIFI_START_WITH_DECOMPRESSION, *P_INIT_CMD_WIFI_START_WITH_DECOMPRESSION;
+
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+typedef struct _RDM_FCC5_LPN_UPDATE_T {
+	UINT16 u2Tag;                          /* Tag = 0x01 */
+	UINT16 u2FCC_LPN_MIN;
+} CMD_RDM_FCC5_LPN_UPDATE_T, *P_CMD_RDM_FCC5_LPN_UPDATE_T;
+
+typedef struct _RDM_RADAR_THRESHOLD_UPDATE_T {
+	UINT16 u2Tag;                          /* Tag = 0x02 */
+	UINT16 u2RadarType;                    /* Valid Range 0~15*/
+	UINT8  ucRT_ENB;
+	UINT8  ucRT_STGR;
+	UINT8  ucRT_CRPN_MIN;
+	UINT8  ucRT_CRPN_MAX;
+	UINT8  ucRT_CRPR_MIN;
+	UINT8  ucRT_PW_MIN;
+	UINT8  ucRT_PW_MAX;
+	UINT32 u4RT_PRI_MIN;
+	UINT32 u4RT_PRI_MAX;
+	UINT8  ucRT_CRBN_MIN;
+	UINT8  ucRT_CRBN_MAX;
+	UINT8  ucRT_STGPN_MIN;
+	UINT8  ucRT_STGPN_MAX;
+	UINT8  ucRT_STGPR_MIN;
+} CMD_RDM_RADAR_THRESHOLD_UPDATE_T, *P_CMD_RDM_RADAR_THRESHOLD_UPDATE_T;
+
+typedef struct _RDM_PULSE_THRESHOLD_UPDATE_T {
+	UINT16 u2Tag;                    /* Tag = 0x03 */
+	UINT32 u4PP_PulseWidthMAX;        /* unit us */
+	INT32 i4PulsePowerMAX;           /* unit dbm */
+	INT32 i4PulsePowerMIN;           /* unit dbm */
+	UINT32 u4PRI_MIN_STGR;			/* unit us */
+	UINT32 u4PRI_MAX_STGR;			/* unit us */
+	UINT32 u4PRI_MIN_CR;			/* unit us */
+	UINT32 u4PRI_MAX_CR;			/* unit us */
+} CMD_RDM_PULSE_THRESHOLD_UPDATE_T, *P_CMD_RDM_PULSE_THRESHOLD_UPDATE_T;
+
+typedef struct _RDM_RDD_LOG_CONFIG_UPDATE_T {
+	UINT16 u2Tag;				/* Tag = 0x04 */
+	UINT8 ucHwRDDLogEnable;		/* 0: no dump, 1: dump log */
+	UINT8 ucSwRDDLogEnable;    	/* 0: no dump, 1: dump log */
+	UINT8 ucSwRDDLogCond;		/*0: send log for every interrupt, 1: send log only when a radar is detected. */
+} CMD_RDM_RDD_LOG_CONFIG_UPDATE_T, *P_CMD_RDM_RDD_LOG_CONFIG_UPDATE_T;
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
 
 INT32 MtCmdFwDecompressStart(struct _RTMP_ADAPTER *ad, P_INIT_CMD_WIFI_START_WITH_DECOMPRESSION decompress_info);
 
@@ -5639,6 +5800,10 @@ NTSTATUS MtCmdPowerOnWiFiSys(struct _RTMP_ADAPTER *pAd);
 VOID CmdExtEventRsp(struct cmd_msg *msg, char *Data, UINT16 Len);
 
 INT32 MtCmdSendRaw(struct _RTMP_ADAPTER *pAd, UCHAR ExtendID, UCHAR *Input, INT len, UCHAR SetQuery);
+
+#ifdef TXRX_STAT_SUPPORT
+INT32 MtCmdGetPerStaTxStat(struct _RTMP_ADAPTER *pAd, UINT8 *ucEntryBitmap, UINT8 ucEntryCount);
+#endif
 
 #if defined(CUSTOMER_RSG_FEATURE) || defined (CUSTOMER_DCC_FEATURE)
 INT32 MtCmdGetWtblTxStat(struct _RTMP_ADAPTER *pAd, UINT32 u4Field, UINT8 ucWcid);
@@ -6162,6 +6327,18 @@ INT32 MtCmdRddCtrl(
 	IN UCHAR ucSetVal);
 #endif /*MT_DFS_SUPPORT*/
 
+#ifdef CUSTOMISE_RDD_THRESHOLD_SUPPORT
+INT32 MtCmdSetFcc5MinLPN(struct _RTMP_ADAPTER *pAd, UINT16 u2MinLpnUpdate);
+INT32 MtCmdSetRadarThresholdParam(struct _RTMP_ADAPTER *pAd, P_CMD_RDM_RADAR_THRESHOLD_UPDATE_T  pRadarThreshold);
+INT32 MtCmdSetPulseThresholdParam(struct _RTMP_ADAPTER *pAd, P_CMD_RDM_PULSE_THRESHOLD_UPDATE_T pPulseThreshold);
+INT32 MtCmdSetRddLogConfigUpdate(struct _RTMP_ADAPTER *pAd, UINT8 ucHwRDDLogEnable,
+	UINT8 ucSwRDDLogEnable, UINT8 ucSwRDDLogCond);
+#endif /* CUSTOMISE_RDD_THRESHOLD_SUPPORT */
+
+#ifdef RDM_FALSE_ALARM_DEBUG_SUPPORT
+INT32 MtCmdSetTestRadarPattern(struct _RTMP_ADAPTER *pAd, P_CMD_RDM_TEST_RADAR_PATTERN_T pTestPulsePattern);
+#endif
+
 INT32 MtCmdGetEdca(struct _RTMP_ADAPTER *pAd, MT_EDCA_CTRL_T *pEdcaCtrl);
 INT32 MtCmdGetTsfTime(
 	struct _RTMP_ADAPTER *pAd,
@@ -6290,10 +6467,11 @@ INT32 MtCmdTxPwrUpCtrl(struct _RTMP_ADAPTER *pAd, INT8 ucBandIdx,
 
 
 INT32 MtCmdLinkTestTxCsdCtrl(struct _RTMP_ADAPTER *pAd, BOOLEAN fgTxCsdConfigEn, UINT8 ucDbdcBandIdx, UINT8 ucBandIdx);
+INT32 MtCmdLinkTestTxCtrl(struct _RTMP_ADAPTER *pAd, BOOLEAN fgTxConfigEn, UINT8 ucBandIdx);
 INT32 MtCmdLinkTestRxCtrl(struct _RTMP_ADAPTER *pAd, UINT8 ucRxAntIdx, UINT8 ucBandIdx);
 INT32 MtCmdLinkTestTxPwrCtrl(struct _RTMP_ADAPTER *pAd, BOOLEAN fgTxPwrConfigEn, UINT8 ucDbdcBandIdx, UINT8 ucBandIdx);
 INT32 MtCmdLinkTestTxPwrUpTblCtrl(struct _RTMP_ADAPTER *pAd, UINT8 ucTxPwrUpCat, PUINT8 pucTxPwrUpValue);
-INT32 MtCmdLinkTestACRCtrl(struct _RTMP_ADAPTER *pAd, BOOLEAN fgACRConfigEn, UINT8 ucDbdcBandIdx);
+INT32 MtCmdLinkTestACRCtrl(struct _RTMP_ADAPTER *pAd, BOOLEAN fgACRConfigEn, UINT8 ucDbdcBandIdx, UINT8 ucReserved);
 INT32 MtCmdLinkTestRcpiCtrl(struct _RTMP_ADAPTER *pAd, BOOLEAN fgRCPIConfigEn);
 INT32 MtCmdLinkTestSeIdxCtrl(struct _RTMP_ADAPTER *pAd, BOOLEAN fgSeIdxConfigEn);
 INT32 MtCmdLinkTestRcpiMACtrl(struct _RTMP_ADAPTER *pAd, UINT8 ucMAParameter);

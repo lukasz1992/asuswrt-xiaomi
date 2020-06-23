@@ -168,6 +168,43 @@ VOID setNonOpChnList(
 
 
 }
+int map_make_vend_ie(IN PRTMP_ADAPTER pAd, IN UCHAR ApIdx)
+{
+	struct vendor_map_element *ie = NULL;
+	char *buf;
+	int ie_len = 0;
+
+	ie_len = sizeof(struct vendor_map_element);
+
+	os_alloc_mem(NULL, (UCHAR **)&buf, sizeof(struct vendor_map_element));
+	if (!buf) {
+		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				("memory is not available\n"));
+		return -1;
+	}
+	NdisZeroMemory(buf, ie_len);
+	ie = (struct vendor_map_element *)buf;
+
+	ie->eid = VEND_IE_TYPE;
+	ie->length = ie_len - 2;
+	NdisCopyMemory(ie->oui, MTK_OUI, OUI_LEN);
+	ie->mtk_ie_element[0] = 0;
+	ie->mtk_ie_element[1] = 1;
+	ie->type = 0;
+	ie->subtype = 0;
+	ie->root_distance = 0;
+	ie->controller_connectivity = 0;
+	ie->uplink_rate = 0;
+	NdisZeroMemory(ie->_2g_bssid, ETH_ALEN);
+	NdisZeroMemory(ie->_5g_bssid, ETH_ALEN);
+	NdisZeroMemory(ie->uplink_bssid, ETH_ALEN);
+	wapp_set_ap_ie(pAd, buf, ie_len, ApIdx);
+
+	os_free_mem(buf);
+
+	return 0;
+}
+
 
 VOID MAP_Init(
 	IN PRTMP_ADAPTER pAd,
@@ -184,6 +221,7 @@ VOID MAP_Init(
 	pAd->ApCfg.SteerPolicy.cu_thr = 0;
 	pAd->ApCfg.SteerPolicy.rcpi_thr = 0;
 	NdisZeroMemory(wdev->MAPCfg.vendor_ie_buf, VENDOR_SPECIFIC_LEN);
+	NdisZeroMemory(&(wdev->MAPCfg.scan_bh_ssids), sizeof(struct scan_BH_ssids));
 }
 
 INT map_send_bh_sta_wps_done_event(
@@ -310,6 +348,24 @@ INT ReadMapParameterFromFile(
 		pAd->bMAPTurnKeyEnable = (UCHAR) os_str_tol(tmpbuf, 0, 10);
 		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
 			("MAP_Turnkey=%d\n", pAd->bMAPTurnKeyEnable));
+#ifdef APCLI_SUPPORT
+#ifdef ROAMING_ENHANCE_SUPPORT
+		if (pAd->bMAPTurnKeyEnable == 1)
+			pAd->ApCfg.bRoamingEnhance = TRUE;
+#endif
+#endif
+		if (pAd->bMAPTurnKeyEnable) {
+			int j;
+			for (j = BSS0; j < WDEV_NUM_MAX; j++) {
+#ifdef CONFIG_MAP_SUPPORT
+			struct wifi_dev *wdev = pAd->wdev_list[j];
+			if (wdev && wdev->wdev_type == WDEV_TYPE_AP)
+				map_make_vend_ie(pAd, (UCHAR)wdev->BssIdx);
+#endif /* CONFIG_MAP_SUPPORT */
+			}
+		}
+		pAd->ApEnableBeaconTable = TRUE;
+
 	}
 	if (RTMPGetKeyParameter("MAP_Ext", tmpbuf, 25, pBuffer, TRUE)) {
 		for (i = 0, macptr = rstrtok(tmpbuf, ";");
@@ -322,6 +378,10 @@ INT ReadMapParameterFromFile(
 					pAd->ApCfg.MBSSID[i].wdev.MAPCfg.DevOwnRole));
 		}
 	}
+#ifdef CONFIG_RCSA_SUPPORT
+	if (pAd->bMAPTurnKeyEnable)
+		pAd->CommonCfg.DfsParameter.bRCSAEn = FALSE;
+#endif
 #endif /* CONFIG_MAP_SUPPORT */
 	return TRUE;
 }
@@ -394,5 +454,18 @@ BOOLEAN map_a4_deinit(
 )
 {
 	return a4_interface_deinit(adapter, if_index, is_ap, A4_TYPE_MAP);
+}
+
+BOOLEAN MapNotRequestedChannel(struct wifi_dev *wdev, unsigned char channel)
+{
+	int i = 0;
+
+	if (wdev->MAPCfg.scan_bh_ssids.scan_channel_count == 0)
+		return FALSE;
+	for (i = 0; i < wdev->MAPCfg.scan_bh_ssids.scan_channel_count; i++) {
+		if (channel == wdev->MAPCfg.scan_bh_ssids.scan_channel_list[i])
+			return FALSE;
+	}
+	return TRUE;
 }
 #endif

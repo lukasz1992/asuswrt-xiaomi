@@ -563,8 +563,13 @@ INT rt_android_private_command_entry(
 #define RTMP_DRIVER_80211_AP_MLME_PORT_SECURED(__pAd, __pMac, __Reg) \
 	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_PORT_SECURED,  0, __pMac, __Reg)
 
-#define RTMP_DRIVER_80211_AP_STA_DEL(__pAd, __pMac) \
-	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_AP_STA_DEL, 0, __pMac, 0)
+#ifdef HOSTAPD_MAP_SUPPORT /* This could be a generic fix */
+#define RTMP_DRIVER_80211_AP_STA_DEL(__pAd, __pData, __Reason) \
+	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_AP_STA_DEL, 0, __pData, __Reason)
+#else
+#define RTMP_DRIVER_80211_AP_STA_DEL(__pAd, __pMac, __Reason)  \
+	RTMP_COM_IoctlHandle(__pAd, NULL, CMD_RTPRIV_IOCTL_80211_AP_STA_DEL, 0, __pMac, __Reason)
+#endif /* HOSTAPD_MAP_SUPPORT */
 
 /* ap */
 #define RTMP_DRIVER_AP_BITRATE_GET(__pAd, __pConfig)							\

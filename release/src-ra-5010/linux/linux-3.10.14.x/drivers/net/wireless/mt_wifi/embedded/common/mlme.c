@@ -27,6 +27,9 @@
 
 #include "rt_config.h"
 #include <stdarg.h>
+#ifdef TXRX_STAT_SUPPORT
+#include "hdev/hdev_basic.h"
+#endif
 #ifdef DOT11R_FT_SUPPORT
 #include "ft.h"
 #endif /* DOT11R_FT_SUPPORT */
@@ -675,6 +678,57 @@ VOID APResetStreamingStatus(
 
 }
 
+#endif
+#ifdef TXRX_STAT_SUPPORT
+VOID Update_LastSec_TXRX_Stats(
+	IN PRTMP_ADAPTER   pAd)
+{
+	MAC_TABLE_ENTRY *pEntry = NULL;
+	UINT32 i, bandidx;
+	struct hdev_ctrl *ctrl = (struct hdev_ctrl *)pAd->hdev_ctrl;
+	for (i = 0; i < DBDC_BAND_NUM; i++) {
+		ctrl->rdev[i].pRadioCtrl->LastSecTxByte.QuadPart = 0;
+		ctrl->rdev[i].pRadioCtrl->LastSecRxByte.QuadPart = 0;
+	}
+	for (i = 0; i < pAd->ApCfg.BssidNum; i++) {
+		pAd->ApCfg.MBSSID[i].stat_bss.LastSecTxBytes.QuadPart = 0;
+		pAd->ApCfg.MBSSID[i].stat_bss.LastSecRxBytes.QuadPart = 0;
+	}
+	for (i = 0 ; VALID_UCAST_ENTRY_WCID(pAd, i); i++) {
+		pEntry = &pAd->MacTab.Content[i];
+		if (pEntry && pEntry->wdev && IS_ENTRY_CLIENT(pEntry) && (pEntry->Sst == SST_ASSOC)) {
+			bandidx = HcGetBandByWdev(pEntry->wdev);
+			if (pEntry->TxDataPacketCount.QuadPart >= pEntry->LastTxDataPacketCountValue.QuadPart)
+				pEntry->TxDataPacketCount1SecValue.QuadPart = pEntry->TxDataPacketCount.QuadPart - pEntry->LastTxDataPacketCountValue.QuadPart;
+			if (pEntry->TxDataPacketByte.QuadPart >= pEntry->LastTxDataPacketByteValue.QuadPart) {
+				pEntry->TxDataPacketByte1SecValue.QuadPart = pEntry->TxDataPacketByte.QuadPart - pEntry->LastTxDataPacketByteValue.QuadPart;
+				ctrl->rdev[bandidx].pRadioCtrl->LastSecTxByte.QuadPart += pEntry->TxDataPacketByte1SecValue.QuadPart;
+				pEntry->pMbss->stat_bss.LastSecTxBytes.QuadPart += pEntry->TxDataPacketByte1SecValue.QuadPart;
+			}
+			if (pEntry->RxDataPacketCount.QuadPart >= pEntry->LastRxDataPacketCountValue.QuadPart)
+				pEntry->RxDataPacketCount1SecValue.QuadPart = pEntry->RxDataPacketCount.QuadPart - pEntry->LastRxDataPacketCountValue.QuadPart;
+			if (pEntry->RxDataPacketByte.QuadPart >= pEntry->LastRxDataPacketByteValue.QuadPart) {
+				pEntry->RxDataPacketByte1SecValue.QuadPart = pEntry->RxDataPacketByte.QuadPart - pEntry->LastRxDataPacketByteValue.QuadPart;
+				ctrl->rdev[bandidx].pRadioCtrl->LastSecRxByte.QuadPart += pEntry->RxDataPacketByte1SecValue.QuadPart;
+				pEntry->pMbss->stat_bss.LastSecRxBytes.QuadPart += pEntry->RxDataPacketByte1SecValue.QuadPart;
+			}
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+				("%s : STA : %d \n", __func__, pEntry->wcid));
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+				("1) TotalTxCount: %lld LastTxCnt: %lld TxPktCount1Sec: %lld\n", pEntry->TxDataPacketCount.QuadPart, pEntry->LastTxDataPacketCountValue.QuadPart, pEntry->TxDataPacketCount1SecValue.QuadPart));
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+				("2) TotalRxCount: %lld LastRxCnt: %lld RxPktCount1Sec: %lld\n", pEntry->RxDataPacketCount.QuadPart, pEntry->LastRxDataPacketCountValue.QuadPart, pEntry->RxDataPacketCount1SecValue.QuadPart));
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+				("3) TotalTxByte : %lld LastTxByte: %lld TxByte1secValue: %lld\n", pEntry->TxDataPacketByte.QuadPart, pEntry->LastTxDataPacketByteValue.QuadPart, pEntry->TxDataPacketByte1SecValue.QuadPart));
+			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+				("4) TotalRxByte : %lld LastRxByte: %lld RxByte1secValue: %lld\n", pEntry->RxDataPacketByte.QuadPart, pEntry->LastRxDataPacketByteValue.QuadPart, pEntry->RxDataPacketByte1SecValue.QuadPart));
+			pEntry->LastTxDataPacketByteValue.QuadPart = pEntry->TxDataPacketByte.QuadPart;
+			pEntry->LastTxDataPacketCountValue.QuadPart = pEntry->TxDataPacketCount.QuadPart;
+			pEntry->LastRxDataPacketByteValue.QuadPart = pEntry->RxDataPacketByte.QuadPart;
+			pEntry->LastRxDataPacketCountValue.QuadPart = pEntry->RxDataPacketCount.QuadPart;
+		}
+	}
+}
 #endif
 #if defined(CUSTOMER_RSG_FEATURE) || defined (CUSTOMER_DCC_FEATURE)
 VOID Update_Wtbl_Counters(
@@ -1547,7 +1601,7 @@ struct _RTMP_CHIP_OP *ops = hc_get_chip_ops(pAd->hdev_ctrl);
 	}
 #endif	/*OFFCHANNEL_SCAN_FEATURE , NF_SUPPORT*/
 
-#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT)
+#if defined(OFFCHANNEL_SCAN_FEATURE) || defined(TR181_SUPPORT) || defined(TXRX_STAT_SUPPORT)
 	if ((!ApScanRunning(pAd, NULL))
 #ifdef OFFCHANNEL_SCAN_FEATURE
 			&& (pAd->ScanCtrl.state == OFFCHANNEL_SCAN_INVALID)
@@ -1765,6 +1819,19 @@ struct _RTMP_CHIP_OP *ops = hc_get_chip_ops(pAd->hdev_ctrl);
 		if (pAd->ApCfg.EntryClientCount)
 			Update_Wtbl_Counters(pAd);
 #endif
+#endif
+
+#ifdef TXRX_STAT_SUPPORT
+		if (pAd->ApCfg.EntryClientCount
+#ifndef VENDOR_FEATURE11_SUPPORT
+			&& pAd->EnableTxRxStats
+#endif /* VENDOR_FEATURE11_SUPPORT */
+			) {
+			MtCmdGetPerStaTxStat(pAd, NULL, 0);		/*bitmap and entryCount to be used in future*/
+#ifndef VENDOR_FEATURE11_SUPPORT
+			Update_LastSec_TXRX_Stats(pAd);
+#endif /* VENDOR_FEATURE11_SUPPORT */
+		}
 #endif
 
 #ifdef CONFIG_RECOVERY_ON_INTERRUPT_MISS
@@ -2129,7 +2196,7 @@ VOID MlmeCalculateChannelQuality(
 	MaxRssi = RTMPMaxRssi(pAd, pRssiSample->LastRssi[0],
 						  pRssiSample->LastRssi[1],
 						  pRssiSample->LastRssi[2]
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 							, pRssiSample->LastRssi[3]
 #endif
 						  );
@@ -4770,7 +4837,7 @@ CHAR RTMPAvgRssi(RTMP_ADAPTER *pAd, RSSI_SAMPLE *pRssi)
 	return Rssi;
 }
 
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 CHAR RTMPMaxRssi(RTMP_ADAPTER *pAd, CHAR Rssi0, CHAR Rssi1, CHAR Rssi2, CHAR Rssi3)
 #else
 CHAR RTMPMaxRssi(RTMP_ADAPTER *pAd, CHAR Rssi0, CHAR Rssi1, CHAR Rssi2)
@@ -4787,7 +4854,7 @@ CHAR RTMPMaxRssi(RTMP_ADAPTER *pAd, CHAR Rssi0, CHAR Rssi1, CHAR Rssi2)
 	if ((pAd->Antenna.field.RxPath == 3) && (Rssi2 != 0))
 		larger = max(larger, Rssi2);
 
-#ifdef CUSTOMER_DCC_FEATURE
+#if defined(CUSTOMER_DCC_FEATURE) || defined(CONFIG_MAP_SUPPORT)
 	if (!pAd->CommonCfg.dbdc_mode) {
 		if ((pAd->Antenna.field.RxPath == 4) && (Rssi3 != 0))
 			larger = max(larger, Rssi3);

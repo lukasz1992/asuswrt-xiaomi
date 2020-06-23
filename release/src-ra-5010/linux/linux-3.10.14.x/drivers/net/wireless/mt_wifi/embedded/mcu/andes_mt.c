@@ -15,7 +15,9 @@
 */
 
 #include	"rt_config.h"
-
+#ifdef TXRX_STAT_SUPPORT
+#include "hdev/hdev_basic.h"
+#endif
 #if defined (RLM_CAL_CACHE_SUPPORT) || defined(PRE_CAL_TRX_SET2_SUPPORT)
 #include    "phy/rlm_cal_cache.h"
 #endif /* defined(RLM_CAL_CACHE_SUPPORT) || defined(PRE_CAL_TRX_SET2_SUPPORT) */
@@ -463,7 +465,23 @@ static VOID ExtEventRddReportHandler(RTMP_ADAPTER *pAd,
 	struct _EXT_EVENT_RDD_REPORT_T *pExtEventRddReport =
 		(struct _EXT_EVENT_RDD_REPORT_T *)Data;
 	UCHAR ucRddIdx = pExtEventRddReport->ucRddIdx;
-	WrapDfsRddReportHandle(pAd, ucRddIdx);
+#ifdef RDM_FALSE_ALARM_DEBUG_SUPPORT
+	BOOLEAN fgRadarDetected = FALSE;
+
+	UpdateRadarInfo(pExtEventRddReport);
+	if ((pExtEventRddReport->ucLongDetected == TRUE) || (pExtEventRddReport->ucConstantPRFDetected == TRUE) ||
+		(pExtEventRddReport->ucStaggeredPRFDetected == TRUE))
+		fgRadarDetected = TRUE;
+
+	if (pAd->CommonCfg.DfsParameter.fgSwRDDLogEnable == TRUE)
+		DumpRadarSwPulsesInfo(pAd, pExtEventRddReport);
+	if (pAd->CommonCfg.DfsParameter.fgHwRDDLogEnable == TRUE)
+		DumpRadarHwPulsesInfo(pAd, pExtEventRddReport);
+
+	if ((pAd->CommonCfg.DfsParameter.fgRadarEmulate == TRUE) ||
+		(fgRadarDetected == TRUE))
+#endif /* RDM_FALSE_ALARM_DEBUG_SUPPORT */
+		WrapDfsRddReportHandle(pAd, ucRddIdx);
 }
 
 #endif
@@ -482,6 +500,10 @@ static VOID ExtEventWifiSpectrumHandler(
 	IN UINT32 Length)
 {
 	EXT_EVENT_SPECTRUM_RESULT_T *pResult = (EXT_EVENT_SPECTRUM_RESULT_T *)pData;
+
+#ifdef RT_BIG_ENDIAN
+	pResult->u4FuncIndex = le2cpu32(pResult->u4FuncIndex);
+#endif
 
 	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
 			("%s----------------->\n", __func__));
@@ -1090,6 +1112,18 @@ VOID ExtEventICapStatusHandler(
 	IN UINT32 Length)
 {
 	EXT_EVENT_RBIST_ADDR_T *prICapGetEvent = (EXT_EVENT_RBIST_ADDR_T *)pData;
+
+#ifdef RT_BIG_ENDIAN
+	prICapGetEvent->u4FuncIndex = le2cpu32(prICapGetEvent->u4FuncIndex);
+	prICapGetEvent->u4FuncLength = le2cpu32(prICapGetEvent->u4FuncLength);
+	prICapGetEvent->u4StartAddr1 = le2cpu32(prICapGetEvent->u4StartAddr1);
+	prICapGetEvent->u4StartAddr2 = le2cpu32(prICapGetEvent->u4StartAddr2);
+	prICapGetEvent->u4StartAddr3 = le2cpu32(prICapGetEvent->u4StartAddr3);
+	prICapGetEvent->u4EndAddr = le2cpu32(prICapGetEvent->u4EndAddr);
+	prICapGetEvent->u4StopAddr = le2cpu32(prICapGetEvent->u4StopAddr);
+	prICapGetEvent->u4Wrap = le2cpu32(prICapGetEvent->u4Wrap);
+#endif
+
 	/* save iCap result */
 	/* send iCap result to QA tool */
 #ifdef CONFIG_ATE
@@ -1937,7 +1971,7 @@ static VOID ext_event_get_igmp_multicast_table(RTMP_ADAPTER *pAd, UINT8 *data, U
 
 	if (len < sizeof(EXT_EVENT_ID_IGMP_MULTICAST_SET_GET)) {
 		MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
-			("%s: Cmd Event ength %u is less than required size %u\n",
+			("%s: Cmd Event ength %u is less than required size %lu\n",
 			__func__, len, sizeof(EXT_EVENT_ID_IGMP_MULTICAST_SET_GET)));
 		return;
 	}
@@ -1993,6 +2027,73 @@ static VOID ExtEventGetWtblTxCounter(RTMP_ADAPTER *pAd, UINT8 *Data, UINT32 Leng
 }
 #endif
 
+#ifdef TXRX_STAT_SUPPORT
+static VOID ExtEventGetStaTxStat(RTMP_ADAPTER *pAd, UINT8 *Data, UINT32 Length)
+{
+	EXT_EVENT_STA_TX_STAT_RESULT_T *CmdStaTxStatResult = (EXT_EVENT_STA_TX_STAT_RESULT_T *)Data;
+	UINT32 WcidIdx;
+#ifndef VENDOR_FEATURE11_SUPPORT
+	UINT32 i, band_idx;
+	struct hdev_ctrl *ctrl = (struct hdev_ctrl *)pAd->hdev_ctrl;
+#endif /* VENDOR_FEATURE11_SUPPORT */
+	PMAC_TABLE_ENTRY pEntry = NULL;
+
+#ifndef VENDOR_FEATURE11_SUPPORT
+	for (i = 0; i < pAd->ApCfg.BssidNum; i++) {
+		pAd->ApCfg.MBSSID[i].stat_bss.Last1TxCnt = 0;
+		pAd->ApCfg.MBSSID[i].stat_bss.Last1TxFailCnt = 0;
+	}
+	for (i = 0; i < DBDC_BAND_NUM; i++) {
+		ctrl->rdev[i].pRadioCtrl->Last1TxCnt = 0;
+		ctrl->rdev[i].pRadioCtrl->Last1TxFailCnt = 0;
+	}
+	for (WcidIdx = 0; WcidIdx < MAX_LEN_OF_MAC_TABLE; WcidIdx++) {
+		pEntry = &pAd->MacTab.Content[WcidIdx];
+		if (pEntry && pEntry->wdev &&  IS_ENTRY_CLIENT(pEntry) && pEntry->Sst == SST_ASSOC) {
+			pEntry->LastOneSecPER = 0;
+		}
+	}
+#endif /* VENDOR_FEATURE11_SUPPORT */
+	for (WcidIdx = 0; WcidIdx < MAX_LEN_OF_MAC_TABLE; WcidIdx++) {
+		pEntry = &pAd->MacTab.Content[WcidIdx];
+		if (pEntry && pEntry->wdev &&  IS_ENTRY_CLIENT(pEntry) && pEntry->Sst == SST_ASSOC) {
+#ifndef VENDOR_FEATURE11_SUPPORT
+			band_idx = HcGetBandByWdev(pEntry->wdev);
+#endif /* VENDOR_FEATURE11_SUPPORT */
+			CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx] =
+				le2cpu32(CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx]);
+			CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx] =
+				le2cpu32(CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx]);
+			pEntry->LastOneSecTxTotalCountByWtbl = CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx];
+			pEntry->LastOneSecTxFailCountByWtbl = CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx];
+#ifdef VENDOR_FEATURE11_SUPPORT
+			pEntry->mpdu_attempts.QuadPart += CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx];
+			pEntry->mpdu_retries.QuadPart += CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx];
+#endif /* VENDOR_FEATURE11_SUPPORT */
+			pEntry->TxSuccessByWtbl += CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx] -
+													CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx];
+#ifndef VENDOR_FEATURE11_SUPPORT
+			ctrl->rdev[band_idx].pRadioCtrl->TotalTxCnt += CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx];
+			ctrl->rdev[band_idx].pRadioCtrl->TotalTxFailCnt +=  CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx];
+
+			if (ctrl->rdev[band_idx].pRadioCtrl->TotalTxCnt && ctrl->rdev[band_idx].pRadioCtrl->TotalTxFailCnt)
+				ctrl->rdev[band_idx].pRadioCtrl->TotalPER = ((100 * (ctrl->rdev[band_idx].pRadioCtrl->TotalTxFailCnt))/
+													ctrl->rdev[band_idx].pRadioCtrl->TotalTxCnt);
+			ctrl->rdev[band_idx].pRadioCtrl->Last1TxCnt += CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx];
+			ctrl->rdev[band_idx].pRadioCtrl->Last1TxFailCnt += CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx];
+			pEntry->pMbss->stat_bss.Last1TxCnt += CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx];
+			pEntry->pMbss->stat_bss.Last1TxFailCnt += CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx];
+			pEntry->pMbss->stat_bss.TxRetriedPacketCount.QuadPart += CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx];
+#endif /* VENDOR_FEATURE11_SUPPORT */
+			/*PER in percentage*/
+			if (CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx] && CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx]) {
+				pEntry->LastOneSecPER = ((100 * (CmdStaTxStatResult->PerStaTxFailPktCnt[WcidIdx]))/
+													CmdStaTxStatResult->PerStaTxPktCnt[WcidIdx]);
+			}
+		}
+	}
+}
+#endif
 static BOOLEAN IsUnsolicitedEvent(EVENT_RXD *event_rxd)
 {
 	if ((GET_EVENT_FW_RXD_SEQ_NUM(event_rxd) == 0)                          ||
@@ -2496,6 +2597,12 @@ static VOID EventExtEventHandler(RTMP_ADAPTER *pAd, UINT8 ExtEID, UINT8 *Data,
 #ifdef CUSTOMER_RSG_FEATURE
 	case EXT_EVENT_ID_GET_WTBL_TX_COUNTER:
 		ExtEventGetWtblTxCounter(pAd, Data, Length);
+		break;
+#endif
+
+#ifdef TXRX_STAT_SUPPORT
+	case EXT_EVENT_ID_GET_STA_TX_STAT:
+		ExtEventGetStaTxStat(pAd, Data, Length);
 		break;
 #endif
 

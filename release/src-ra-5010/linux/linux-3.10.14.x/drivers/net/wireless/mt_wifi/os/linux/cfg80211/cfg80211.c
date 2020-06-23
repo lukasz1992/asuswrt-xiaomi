@@ -165,6 +165,9 @@ static const UINT32 CipherSuites[] = {
 	WLAN_CIPHER_SUITE_CCMP,
 #ifdef DOT11W_PMF_SUPPORT
 	WLAN_CIPHER_SUITE_AES_CMAC,
+#ifdef HOSTAPD_SUITEB_SUPPORT
+	WLAN_CIPHER_SUITE_BIP_GMAC_256,
+#endif
 #endif /*DOT11W_PMF_SUPPORT*/
 	WLAN_CIPHER_SUITE_GCMP,
 #if (KERNEL_VERSION(4, 0, 0) <= LINUX_VERSION_CODE)
@@ -1000,6 +1003,14 @@ static int CFG80211_OpsKeyAdd(
 				KeyInfo.bPairwise = FALSE;
 				KeyInfo.KeyLen = pParams->key_len;
 		}
+#ifdef HOSTAPD_SUITEB_SUPPORT
+		else if (pParams->cipher == WLAN_CIPHER_SUITE_BIP_GMAC_256) {
+				KeyInfo.KeyType = RT_CMD_80211_KEY_AES_CMAC;
+				KeyInfo.KeyId = KeyIdx;
+				KeyInfo.bPairwise = FALSE;
+				KeyInfo.KeyLen = pParams->key_len;
+		}
+#endif
 #endif /* DOT11W_PMF_SUPPORT */
         else
 			return -ENOTSUPP;
@@ -2233,7 +2244,45 @@ static int CFG80211_OpsChangeBss(
 	RTMP_DRIVER_80211_CHANGE_BSS_PARM(pAd, &bssInfo);
 	return 0;
 }
+#ifdef HOSTAPD_MAP_SUPPORT
+static int CFG80211_OpsStaDel(
+	struct wiphy *pWiphy,
+	struct net_device *dev,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0))
+	struct station_del_parameters *params)
+#else
+	UINT8 *pMacAddr)
+#endif
+{
+	VOID *pAd;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0))
+	const UINT8 *pMacAddr = params->mac;
+#endif
+	CMD_RTPRIV_IOCTL_AP_STA_DEL rApStaDel = {.pSta_MAC = NULL, .pWdev = NULL};
 
+	MAC80211_PAD_GET(pAd, pWiphy);
+
+	if (dev) {
+		rApStaDel.pWdev = RTMP_OS_NETDEV_GET_WDEV(dev);
+		CFG80211DBG(DBG_LVL_OFF, ("80211> %s ==> for bssid (%02X:%02X:%02X:%02X:%02X:%02X)\n", __func__, PRINT_MAC(rApStaDel.pWdev->bssid)));
+	} else
+		CFG80211DBG(DBG_LVL_OFF, ("80211> %s ==>", __func__));
+
+	if (pMacAddr) {
+		CFG80211DBG(DBG_LVL_TRACE, ("80211> Delete STA(%02X:%02X:%02X:%02X:%02X:%02X) ==>\n",
+									PRINT_MAC(pMacAddr)));
+		rApStaDel.pSta_MAC = (UINT8 *)pMacAddr;
+	}
+#if (KERNEL_VERSION(3, 19, 0) <= LINUX_VERSION_CODE)
+			RTMP_DRIVER_80211_AP_STA_DEL(pAd, (VOID *)&rApStaDel, params->reason_code);
+#else
+			RTMP_DRIVER_80211_AP_STA_DEL(pAd, (VOID *)&rApStaDel, 0);
+#endif
+	CFG80211DBG(DBG_LVL_OFF, ("80211> %s <==", __func__));
+
+	return 0;
+}
+#else
 static int CFG80211_OpsStaDel(
 	struct wiphy *pWiphy,
 	struct net_device *dev,
@@ -2253,15 +2302,21 @@ static int CFG80211_OpsStaDel(
 	CFG80211DBG(DBG_LVL_TRACE, ("80211> %s ==>\n", __func__));
 
 	if (pMacAddr ==  NULL)
-		RTMP_DRIVER_80211_AP_STA_DEL(pAd, NULL);
+		RTMP_DRIVER_80211_AP_STA_DEL(pAd, NULL, 0);
 	else {
 		CFG80211DBG(DBG_LVL_TRACE, ("80211> Delete STA(%02X:%02X:%02X:%02X:%02X:%02X) ==>\n",
 									PRINT_MAC(pMacAddr)));
-		RTMP_DRIVER_80211_AP_STA_DEL(pAd, (VOID *)pMacAddr);
+
+#if (KERNEL_VERSION(3, 19, 0) <= LINUX_VERSION_CODE)
+		RTMP_DRIVER_80211_AP_STA_DEL(pAd, (VOID *)pMacAddr, params->reason_code);
+#else
+		RTMP_DRIVER_80211_AP_STA_DEL(pAd, (VOID *)pMacAddr, 0);
+#endif
 	}
 
 	return 0;
 }
+#endif /* HOSTAPD_MAP_SUPPORT */
 
 static int CFG80211_OpsStaAdd(
 	struct wiphy *wiphy,
