@@ -165,7 +165,7 @@ static struct mtd_partition rt2880_partitions[] = {
                 name:           "rootfs", /* mtdblock4 */
                 size:           MTD_ROOTFS_PART_SIZE,
                 offset:         MTDPART_OFS_APPEND,
-#if 0
+#if defined(CONFIG_SOUND)
         }, {
                 name:           "Radio", /* mtdblock5 */
                 size:           MTD_RADIO_PART_SIZE,
@@ -1940,13 +1940,13 @@ static struct mtd_info *raspi_probe(struct map_info *map)
 		rt2880_partitions[4].offset = offs + rfs_offset;
 		rt2880_partitions[4].mask_flags |= MTD_WRITEABLE;
 		if (flash->mtd.size > 0x800000) {
-#if 0
+#if defined(CONFIG_SOUND)
 			rt2880_partitions[3].size = flash->mtd.size - (MTD_BOOT_PART_SIZE + MTD_CONFIG_PART_SIZE + MTD_FACTORY_PART_SIZE) - MTD_RADIO_PART_SIZE;
 			rt2880_partitions[4].size = flash->mtd.size - rt2880_partitions[4].offset - MTD_RADIO_PART_SIZE;
 			rt2880_partitions[5].offset = flash->mtd.size - MTD_RADIO_PART_SIZE;
 #else 
-			rt2880_partitions[3].size = flash->mtd.size - 0x480000;
-			rt2880_partitions[4].size = flash->mtd.size - rt2880_partitions[4].offset - 0x480000;
+			rt2880_partitions[3].size = flash->mtd.size - 0x390000;
+			rt2880_partitions[4].size = flash->mtd.size - 0x390000 - rfs_offset;
 #endif
 		} else {
 			rt2880_partitions[3].size = flash->mtd.size - (MTD_BOOT_PART_SIZE + MTD_CONFIG_PART_SIZE + MTD_FACTORY_PART_SIZE);
