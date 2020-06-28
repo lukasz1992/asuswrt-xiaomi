@@ -1347,6 +1347,11 @@ void init_syspara(void)
 #if defined(RTAC51U) || defined(RTAC51UP) || defined(RTAC53) || defined(RTN11P) 
 	reg_spec_def = "CE";
 #else
+#if defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+	if (!nvram_match("location_code", "US"))
+		reg_spec_def = "CE";
+	else
+#endif
 	reg_spec_def = "FCC";
 #endif
 	bytes = MAX_REGSPEC_LEN;

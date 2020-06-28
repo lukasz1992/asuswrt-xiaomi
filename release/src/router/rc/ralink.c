@@ -1538,7 +1538,7 @@ int gen_ralink_config(int band, int is_iNIC)
 	fprintf(fp, "CSPeriod=10\n");
 	fprintf(fp, "DfsLowerLimit=%d\n", 0);
 	fprintf(fp, "DfsUpperLimit=%d\n", 0);
-	fprintf(fp, "DfsIndoor=%d\n", 0);
+	fprintf(fp, "DfsIndoor=%d\n", 1);
 	fprintf(fp, "DFSParamFromConfig=%d\n", 0);
 	fprintf(fp, "FCCParamCh0=\n");
 	fprintf(fp, "FCCParamCh1=\n");
