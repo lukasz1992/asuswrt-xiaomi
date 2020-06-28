@@ -41,7 +41,11 @@
 
 #include <asm/bootinfo.h>
 
+#ifdef CONFIG_MTK_MTD_NAND
+#define ROOT_MTD_DEV	"root=/dev/mtdblock5"
+#else
 #define ROOT_MTD_DEV	"root=/dev/mtdblock4"
+#endif
 
 #if defined(CONFIG_RALINK_MT7620)
 #if CONFIG_MT7620_BAUDRATE == 57600
