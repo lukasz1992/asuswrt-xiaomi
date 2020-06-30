@@ -681,6 +681,6 @@ define(function(){
 			}
 		}
 	}
-	menuTree.list.splice(4,1);
+	menuTree.list.splice(4,2);
 	return menuTree;
 });
