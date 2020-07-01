@@ -2083,6 +2083,8 @@ ifeq ($(RTCONFIG_CFEZ),y)
 endif
 endif
 
+	@rm -f $(TARGETDIR)/www/*.js.new
+
 	@echo ---
 
 	@rm -f $(TARGETDIR)/lib/modules/*/build
