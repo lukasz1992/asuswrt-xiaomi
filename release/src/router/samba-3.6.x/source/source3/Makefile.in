@@ -1019,7 +1019,7 @@ TEST_LP_LOAD_OBJ = param/test_lp_load.o \
 
 PASSWD_UTIL_OBJ = utils/passwd_util.o
 
-SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSWD_UTIL_OBJ) $(PASSCHANGE_OBJ) \
+SMBPASSWD_OBJ = utils/owrt_smbpasswd.o $(PASSWD_UTIL_OBJ) $(PASSCHANGE_OBJ) \
 		$(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
 		$(GROUPDB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
 		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) \
