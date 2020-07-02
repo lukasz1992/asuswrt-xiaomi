@@ -2307,7 +2307,7 @@ int gen_ralink_config(int band, int is_iNIC)
 		)
 		fprintf(fp, "HT_BSSCoexistence=%d\n", 0);
 	else
-		fprintf(fp, "HT_BSSCoexistence=%d\n", wl_bw == 1);
+		fprintf(fp, "HT_BSSCoexistence=%d\n", 0);
 
 	//HT_AutoBA
 	str = nvram_safe_get(strcat_r(prefix, "HT_AutoBA", tmp));
