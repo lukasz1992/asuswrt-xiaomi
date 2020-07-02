@@ -422,6 +422,15 @@ start_igmpproxy(char *wan_ifname)
 
 	if (nvram_get_int("udpxy_enable_x")) {
 		_dprintf("start udpxy [%s]\n", wan_ifname);
+		if (nvram_get_int("udpxy_renew"))
+		eval("/usr/sbin/udpxy",
+			"-m", wan_ifname,
+			"-p", nvram_safe_get("udpxy_enable_x"),
+			"-B", "65536",
+			"-M", nvram_get_int("udpxy_renew"),
+			"-c", nvram_safe_get("udpxy_clients"),
+			"-a", nvram_get("lan_ifname") ? : "br0");
+		else
 		eval("/usr/sbin/udpxy",
 			"-m", wan_ifname,
 			"-p", nvram_safe_get("udpxy_enable_x"),
