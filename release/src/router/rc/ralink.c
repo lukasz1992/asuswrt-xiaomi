@@ -2215,8 +2215,7 @@ int gen_ralink_config(int band, int is_iNIC)
 				HTBW_MAX = 0;	//CANNOT use 40MHz
 			}
 #if defined(VHT_SUPPORT)
-			if  ( Channel == 165
-			  ||((Channel == 116 || Channel == 132 || Channel == 136 || Channel == 140) && IEEE80211H))
+			if  ( Channel == 165)
 				VHTBW_MAX = 0;	//CANNOT use 80MHz
 #endif
 		}
