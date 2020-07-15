@@ -188,9 +188,10 @@ config CON_WPS_SUPPORT
 #	depends on MULTI_INF_SUPPORT
 	default n
 
-#config LLTD_SUPPORT
-#	bool "LLTD (Link Layer Topology Discovery Protocol)"
-#	depends on MT_AP_SUPPORT
+config LLTD_SUPPORT
+	bool "LLTD (Link Layer Topology Discovery Protocol)"
+	depends on MT_AP_SUPPORT
+	default y
 
 #config COC_SUPPORT
 #	bool "CoC Support"
