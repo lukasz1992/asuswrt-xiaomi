@@ -362,9 +362,12 @@ typedef enum _RT_802_11_PHY_MODE {
 #define OFFSET_MAC_ADDR_2G	0x40004
 #define OFFSET_MAC_ADDR		0x48004
 #endif
-#if defined(RTAC85U) || defined(RTAC85P) || defined(RPAC87) || defined(RTAC1200GU) || defined(RTACRH26) || defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+#if defined(RTAC85U) || defined(RTAC85P) || defined(RPAC87) || defined(RTAC1200GU) || defined(RTACRH26) || defined(RTMIR3G) || defined(RTMIR4A)
 #define OFFSET_MAC_GMAC0	0x4E000
 #define OFFSET_MAC_GMAC2	0x4E006
+#elif defined(RTRM2100) || defined(RTR2100)
+#define OFFSET_MAC_GMAC0	0x4E006
+#define OFFSET_MAC_GMAC2	0x4E000
 #elif defined(RTN800HP)
 #define OFFSET_MAC_GMAC0	0x4E000
 #define OFFSET_MAC_GMAC2	0x4E000 //only one Mac
