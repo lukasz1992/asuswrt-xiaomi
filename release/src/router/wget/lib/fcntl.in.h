@@ -1,6 +1,6 @@
 /* Like <fcntl.h>, but with non-working flags defined to 0.
 
-   Copyright (C) 2006-2014 Free Software Foundation, Inc.
+   Copyright (C) 2006-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* written by Paul Eggert */
 
@@ -34,7 +34,7 @@
    extern "C" { ... } block, which leads to errors in C++ mode with the
    overridden <sys/stat.h> from gnulib.  These errors are known to be gone
    with g++ version >= 4.3.  */
-#if !(defined __GLIBC__ || defined __UCLIBC__) || (defined __cplusplus && defined GNULIB_NAMESPACE && !(__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)))
+#if !(defined __GLIBC__ || defined __UCLIBC__) || (defined __cplusplus && defined GNULIB_NAMESPACE && (defined __ICC || !(__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))))
 # include <sys/stat.h>
 #endif
 #@INCLUDE_NEXT@ @NEXT_FCNTL_H@
@@ -53,7 +53,7 @@
    extern "C" { ... } block, which leads to errors in C++ mode with the
    overridden <sys/stat.h> from gnulib.  These errors are known to be gone
    with g++ version >= 4.3.  */
-#if !(defined __GLIBC__ || defined __UCLIBC__) || (defined __cplusplus && defined GNULIB_NAMESPACE && !(__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)))
+#if !(defined __GLIBC__ || defined __UCLIBC__) || (defined __cplusplus && defined GNULIB_NAMESPACE && (defined __ICC || !(__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))))
 # include <sys/stat.h>
 #endif
 /* The include_next requires a split double-inclusion guard.  */
@@ -68,7 +68,7 @@
 
 /* Native Windows platforms declare open(), creat() in <io.h>.  */
 #if (@GNULIB_OPEN@ || defined GNULIB_POSIXCHECK) \
-    && ((defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__)
+    && (defined _WIN32 && ! defined __CYGWIN__)
 # include <io.h>
 #endif
 
@@ -186,6 +186,22 @@ _GL_WARN_ON_USE (openat, "openat is not portable - "
 
 /* Fix up the O_* macros.  */
 
+/* AIX 7.1 with XL C 12.1 defines O_CLOEXEC, O_NOFOLLOW, and O_TTY_INIT
+   to values outside 'int' range, so omit these misdefinitions.
+   But avoid namespace pollution on non-AIX systems.  */
+#ifdef _AIX
+# include <limits.h>
+# if defined O_CLOEXEC && ! (INT_MIN <= O_CLOEXEC && O_CLOEXEC <= INT_MAX)
+#  undef O_CLOEXEC
+# endif
+# if defined O_NOFOLLOW && ! (INT_MIN <= O_NOFOLLOW && O_NOFOLLOW <= INT_MAX)
+#  undef O_NOFOLLOW
+# endif
+# if defined O_TTY_INIT && ! (INT_MIN <= O_TTY_INIT && O_TTY_INIT <= INT_MAX)
+#  undef O_TTY_INIT
+# endif
+#endif
+
 #if !defined O_DIRECT && defined O_DIRECTIO
 /* Tru64 spells it 'O_DIRECTIO'.  */
 # define O_DIRECT O_DIRECTIO
@@ -197,7 +213,10 @@ _GL_WARN_ON_USE (openat, "openat is not portable - "
 #endif
 
 #ifndef O_CLOEXEC
-# define O_CLOEXEC 0
+# define O_CLOEXEC 0x40000000 /* Try to not collide with system O_* flags.  */
+# define GNULIB_defined_O_CLOEXEC 1
+#else
+# define GNULIB_defined_O_CLOEXEC 0
 #endif
 
 #ifndef O_DIRECT

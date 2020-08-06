@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/env -S perl -I .
 
 use strict;
 use warnings;
@@ -21,7 +21,7 @@ my %urls = (
 );
 
 unless(-e "/dev/full") {
-    exit 2; # skip
+    exit 77; # skip
 }
 
 my $cmdline = $WgetTest::WGETPATH . " -c http://localhost:{{port}}/somefile.txt -O /dev/full";

@@ -1,7 +1,7 @@
 /* sha1.c - Functions to compute SHA1 message digest of files or
    memory blocks according to the NIST specification FIPS-180-1.
 
-   Copyright (C) 2000-2001, 2003-2006, 2008-2014 Free Software Foundation, Inc.
+   Copyright (C) 2000-2001, 2003-2006, 2008-2018 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by the
@@ -14,7 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Scott G. Miller
    Credits:
@@ -37,11 +37,11 @@
 # include "unlocked-io.h"
 #endif
 
+#include <byteswap.h>
 #ifdef WORDS_BIGENDIAN
 # define SWAP(n) (n)
 #else
-# define SWAP(n) \
-    (((n) << 24) | (((n) & 0xff00) << 8) | (((n) >> 8) & 0xff00) | ((n) >> 24))
+# define SWAP(n) bswap_32 (n)
 #endif
 
 #define BLOCKSIZE 32768
@@ -122,21 +122,29 @@ sha1_finish_ctx (struct sha1_ctx *ctx, void *resbuf)
 }
 #endif
 
+#ifdef GL_COMPILE_CRYPTO_STREAM
+
+#include "af_alg.h"
+
 /* Compute SHA1 message digest for bytes read from STREAM.  The
-   resulting message digest number will be written into the 16 bytes
+   resulting message digest number will be written into the 20 bytes
    beginning at RESBLOCK.  */
 int
 sha1_stream (FILE *stream, void *resblock)
 {
-  struct sha1_ctx ctx;
-  size_t sum;
+  switch (afalg_stream (stream, "sha1", resblock, SHA1_DIGEST_SIZE))
+    {
+    case 0: return 0;
+    case -EIO: return 1;
+    }
 
   char *buffer = malloc (BLOCKSIZE + 72);
   if (!buffer)
     return 1;
 
-  /* Initialize the computation context.  */
+  struct sha1_ctx ctx;
   sha1_init_ctx (&ctx);
+  size_t sum;
 
   /* Iterate over full file contents.  */
   while (1)
@@ -150,6 +158,14 @@ sha1_stream (FILE *stream, void *resblock)
       /* Read block.  Take care for partial reads.  */
       while (1)
         {
+          /* Either process a partial fread() from this loop,
+             or the fread() in afalg_stream may have gotten EOF.
+             We need to avoid a subsequent fread() as EOF may
+             not be sticky.  For details of such systems, see:
+             https://sourceware.org/bugzilla/show_bug.cgi?id=1190  */
+          if (feof (stream))
+            goto process_partial_block;
+
           n = fread (buffer + sum, 1, BLOCKSIZE - sum, stream);
 
           sum += n;
@@ -169,12 +185,6 @@ sha1_stream (FILE *stream, void *resblock)
                 }
               goto process_partial_block;
             }
-
-          /* We've read at least one byte, so ignore errors.  But always
-             check for EOF, since feof may be true even though N > 0.
-             Otherwise, we could end up calling fread after EOF.  */
-          if (feof (stream))
-            goto process_partial_block;
         }
 
       /* Process buffer with BLOCKSIZE bytes.  Note that
@@ -194,6 +204,7 @@ sha1_stream (FILE *stream, void *resblock)
   free (buffer);
   return 0;
 }
+#endif
 
 #if ! HAVE_OPENSSL_SHA1
 /* Compute SHA1 message digest for LEN bytes beginning at BUFFER.  The
@@ -233,7 +244,8 @@ sha1_process_bytes (const void *buffer, size_t len, struct sha1_ctx *ctx)
           sha1_process_block (ctx->buffer, ctx->buflen & ~63, ctx);
 
           ctx->buflen &= 63;
-          /* The regions in the following copy operation cannot overlap.  */
+          /* The regions in the following copy operation cannot overlap,
+             because ctx->buflen < 64 ≤ (left_over + add) & ~63.  */
           memcpy (ctx->buffer,
                   &((char *) ctx->buffer)[(left_over + add) & ~63],
                   ctx->buflen);
@@ -246,7 +258,7 @@ sha1_process_bytes (const void *buffer, size_t len, struct sha1_ctx *ctx)
   /* Process available complete blocks.  */
   if (len >= 64)
     {
-#if !_STRING_ARCH_unaligned
+#if !(_STRING_ARCH_unaligned || _STRING_INLINE_unaligned)
 # define UNALIGNED_P(p) ((uintptr_t) (p) % alignof (uint32_t) != 0)
       if (UNALIGNED_P (buffer))
         while (len > 64)
@@ -275,6 +287,8 @@ sha1_process_bytes (const void *buffer, size_t len, struct sha1_ctx *ctx)
         {
           sha1_process_block (ctx->buffer, 64, ctx);
           left_over -= 64;
+          /* The regions in the following copy operation cannot overlap,
+             because left_over ≤ 64.  */
           memcpy (ctx->buffer, &ctx->buffer[16], left_over);
         }
       ctx->buflen = left_over;
@@ -431,3 +445,10 @@ sha1_process_block (const void *buffer, size_t len, struct sha1_ctx *ctx)
     }
 }
 #endif
+
+/*
+ * Hey Emacs!
+ * Local Variables:
+ * coding: utf-8
+ * End:
+ */

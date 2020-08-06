@@ -1,4 +1,4 @@
-/* Copyright (C) 2000, 2009-2014 Free Software Foundation, Inc.
+/* Copyright (C) 2000, 2009-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    This program is free software: you can redistribute it and/or modify
@@ -12,7 +12,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #include <config.h>
 
@@ -26,7 +26,7 @@
 # define __sysconf(open_max) getdtablesize ()
 #endif
 
-#if !HAVE_WORKING_POSIX_SPAWN
+#if REPLACE_POSIX_SPAWN
 # include "spawn_int.h"
 #endif
 
@@ -44,7 +44,7 @@ posix_spawn_file_actions_addopen (posix_spawn_file_actions_t *file_actions,
   if (fd < 0 || fd >= maxfd)
     return EBADF;
 
-#if HAVE_WORKING_POSIX_SPAWN
+#if !REPLACE_POSIX_SPAWN
   return posix_spawn_file_actions_addopen (file_actions, fd, path, oflag, mode);
 #else
   /* Allocate more memory if needed.  */

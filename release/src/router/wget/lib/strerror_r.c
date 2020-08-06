@@ -1,6 +1,6 @@
 /* strerror_r.c --- POSIX compatible system error routine
 
-   Copyright (C) 2010-2014 Free Software Foundation, Inc.
+   Copyright (C) 2010-2018 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Bruno Haible <bruno@clisp.org>, 2010.  */
 
@@ -28,13 +28,20 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#if !HAVE_SNPRINTF
+# include <stdarg.h>
+#endif
 
 #include "strerror-override.h"
 
 #if (__GLIBC__ >= 2 || defined __UCLIBC__ || defined __CYGWIN__) && HAVE___XPG_STRERROR_R /* glibc >= 2.3.4, cygwin >= 1.7.9 */
 
 # define USE_XPG_STRERROR_R 1
-extern int __xpg_strerror_r (int errnum, char *buf, size_t buflen);
+extern
+#ifdef __cplusplus
+"C"
+#endif
+int __xpg_strerror_r (int errnum, char *buf, size_t buflen);
 
 #elif HAVE_DECL_STRERROR_R && !(__GLIBC__ >= 2 || defined __UCLIBC__ || defined __CYGWIN__)
 
@@ -54,7 +61,7 @@ extern int __xpg_strerror_r (int errnum, char *buf, size_t buflen);
 
 # define USE_SYSTEM_STRERROR 1
 
-# if defined __NetBSD__ || defined __hpux || ((defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__) || defined __sgi || (defined __sun && !defined _LP64) || defined __CYGWIN__
+# if defined __NetBSD__ || defined __hpux || (defined _WIN32 && !defined __CYGWIN__) || defined __sgi || (defined __sun && !defined _LP64) || defined __CYGWIN__
 
 /* No locking needed.  */
 
@@ -62,6 +69,10 @@ extern int __xpg_strerror_r (int errnum, char *buf, size_t buflen);
 #  if HAVE_CATGETS
 #   include <nl_types.h>
 #  endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Get sys_nerr, sys_errlist on HP-UX (otherwise only declared in C++ mode).
    Get sys_nerr, sys_errlist on IRIX (otherwise only declared with _SGIAPI).  */
@@ -74,6 +85,10 @@ extern char *sys_errlist[];
 #  if defined __sun && !defined _LP64
 extern int sys_nerr;
 #  endif
+
+#ifdef __cplusplus
+}
+#endif
 
 # else
 
@@ -197,13 +212,16 @@ strerror_r (int errnum, char *buf, size_t buflen)
 # else
     ret = strerror_r (errnum, buf, buflen);
 
-    /* Some old implementations may return (-1, EINVAL) instead of EINVAL.  */
+    /* Some old implementations may return (-1, EINVAL) instead of EINVAL.
+       But on Haiku, valid error numbers are negative.  */
+#  if !defined __HAIKU__
     if (ret < 0)
       ret = errno;
+#  endif
 # endif
 
-# ifdef _AIX
-    /* AIX returns 0 rather than ERANGE when truncating strings; try
+# if defined _AIX || defined __HAIKU__
+    /* AIX and Haiku return 0 rather than ERANGE when truncating strings; try
        again until we are sure we got the entire string.  */
     if (!ret && strlen (buf) == buflen - 1)
       {
@@ -240,7 +258,7 @@ strerror_r (int errnum, char *buf, size_t buflen)
     /* Try to do what strerror (errnum) does, but without clobbering the
        buffer used by strerror().  */
 
-# if defined __NetBSD__ || defined __hpux || ((defined _WIN32 || defined __WIN32__) && !defined __CYGWIN__) || defined __CYGWIN__ /* NetBSD, HP-UX, native Windows, Cygwin */
+# if defined __NetBSD__ || defined __hpux || (defined _WIN32 && !defined __CYGWIN__) || defined __CYGWIN__ /* NetBSD, HP-UX, native Windows, Cygwin */
 
     /* NetBSD:         sys_nerr, sys_errlist are declared through _NETBSD_SOURCE
                        and <errno.h> above.
@@ -317,8 +335,124 @@ strerror_r (int errnum, char *buf, size_t buflen)
 
 #endif
 
+#if defined _WIN32 && !defined __CYGWIN__
+    /* MSVC 14 defines names for many error codes in the range 100..140,
+       but _sys_errlist contains strings only for the error codes
+       < _sys_nerr = 43.  */
+    if (ret == EINVAL)
+      {
+        const char *errmsg;
+
+        switch (errnum)
+          {
+          case 100 /* EADDRINUSE */:
+            errmsg = "Address already in use";
+            break;
+          case 101 /* EADDRNOTAVAIL */:
+            errmsg = "Cannot assign requested address";
+            break;
+          case 102 /* EAFNOSUPPORT */:
+            errmsg = "Address family not supported by protocol";
+            break;
+          case 103 /* EALREADY */:
+            errmsg = "Operation already in progress";
+            break;
+          case 105 /* ECANCELED */:
+            errmsg = "Operation canceled";
+            break;
+          case 106 /* ECONNABORTED */:
+            errmsg = "Software caused connection abort";
+            break;
+          case 107 /* ECONNREFUSED */:
+            errmsg = "Connection refused";
+            break;
+          case 108 /* ECONNRESET */:
+            errmsg = "Connection reset by peer";
+            break;
+          case 109 /* EDESTADDRREQ */:
+            errmsg = "Destination address required";
+            break;
+          case 110 /* EHOSTUNREACH */:
+            errmsg = "No route to host";
+            break;
+          case 112 /* EINPROGRESS */:
+            errmsg = "Operation now in progress";
+            break;
+          case 113 /* EISCONN */:
+            errmsg = "Transport endpoint is already connected";
+            break;
+          case 114 /* ELOOP */:
+            errmsg = "Too many levels of symbolic links";
+            break;
+          case 115 /* EMSGSIZE */:
+            errmsg = "Message too long";
+            break;
+          case 116 /* ENETDOWN */:
+            errmsg = "Network is down";
+            break;
+          case 117 /* ENETRESET */:
+            errmsg = "Network dropped connection on reset";
+            break;
+          case 118 /* ENETUNREACH */:
+            errmsg = "Network is unreachable";
+            break;
+          case 119 /* ENOBUFS */:
+            errmsg = "No buffer space available";
+            break;
+          case 123 /* ENOPROTOOPT */:
+            errmsg = "Protocol not available";
+            break;
+          case 126 /* ENOTCONN */:
+            errmsg = "Transport endpoint is not connected";
+            break;
+          case 128 /* ENOTSOCK */:
+            errmsg = "Socket operation on non-socket";
+            break;
+          case 129 /* ENOTSUP */:
+            errmsg = "Not supported";
+            break;
+          case 130 /* EOPNOTSUPP */:
+            errmsg = "Operation not supported";
+            break;
+          case 132 /* EOVERFLOW */:
+            errmsg = "Value too large for defined data type";
+            break;
+          case 133 /* EOWNERDEAD */:
+            errmsg = "Owner died";
+            break;
+          case 134 /* EPROTO */:
+            errmsg = "Protocol error";
+            break;
+          case 135 /* EPROTONOSUPPORT */:
+            errmsg = "Protocol not supported";
+            break;
+          case 136 /* EPROTOTYPE */:
+            errmsg = "Protocol wrong type for socket";
+            break;
+          case 138 /* ETIMEDOUT */:
+            errmsg = "Connection timed out";
+            break;
+          case 140 /* EWOULDBLOCK */:
+            errmsg = "Operation would block";
+            break;
+          default:
+            errmsg = NULL;
+            break;
+          }
+        if (errmsg != NULL)
+          ret = safe_copy (buf, buflen, errmsg);
+      }
+#endif
+
     if (ret == EINVAL && !*buf)
-      snprintf (buf, buflen, "Unknown error %d", errnum);
+      {
+#if defined __HAIKU__
+        /* For consistency with perror().  */
+        snprintf (buf, buflen, "Unknown Application Error (%d)", errnum);
+#else
+        snprintf (buf, buflen, "Unknown error %d", errnum);
+#endif
+      }
 
     errno = saved_errno;
     return ret;

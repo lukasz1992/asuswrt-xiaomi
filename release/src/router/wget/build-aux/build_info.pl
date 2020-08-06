@@ -2,7 +2,7 @@
 
 # Generate build_info.c.
 
-# Copyright (C) 2009, 2010, 2011 Free Software Foundation, Inc.
+# Copyright (C) 2009-2011, 2018 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -137,3 +137,4 @@ __DATA__
 
 #include "wget.h"
 #include <stdio.h>
+#include "version.h"

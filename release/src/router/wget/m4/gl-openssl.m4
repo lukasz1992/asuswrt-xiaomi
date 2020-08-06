@@ -1,5 +1,5 @@
 # gl-openssl.m4 serial 3
-dnl Copyright (C) 2013-2014 Free Software Foundation, Inc.
+dnl Copyright (C) 2013-2018 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
@@ -23,7 +23,9 @@ AC_DEFUN([gl_CRYPTO_CHECK],
       [use libcrypto hash routines. Valid ARGs are:
        'yes', 'no', 'auto' => use if available,
        'optional' => use if available and warn if not available;
-       default is ']gl_CRYPTO_CHECK_DEFAULT['])],
+       default is ']gl_CRYPTO_CHECK_DEFAULT['.
+       Note also --with-linux-crypto, which will enable
+       use of kernel crypto routines, which have precedence])],
     [],
     [with_openssl=$with_openssl_default])
 
