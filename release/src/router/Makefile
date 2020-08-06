@@ -6102,10 +6102,12 @@ wget/Makefile.in: wget/Makefile.am
 
 wget/Makefile: wget/Makefile.in
 	cd wget && $(CONFIGURE) \
-		--with-ssl=openssl --with-libssl-prefix=$(TOP)/openssl \
-		--disable-opie --disable-ntlm --disable-debug --disable-nls --disable-rpath \
-		$(if $(RTCONFIG_IPV6),,--disable-ipv6) --disable-iri --without-included-regex  \
-		--disable-dependency-tracking \
+		--with-ssl=openssl --with-openssl \
+		--disable-opie --disable-ntlm --disable-debug --disable-nls --disable-xattr \
+		$(if $(RTCONFIG_IPV6),,--disable-ipv6) --disable-iri --disable-pcre --disable-pcre2 \
+		--disable-rpath --disable-dependency-tracking \
+		--without-libpsl --without-libiconv-prefix --without-libintl-prefix \
+		--without-included-regex --without-libuuid \
 		CFLAGS="-Os -Wall $(EXTRACFLAGS) -ffunction-sections -fdata-sections -I$(TOP)/openssl/include -I$(TOP)/zlib" \
 		LDFLAGS="$(EXTRALDFLAGS) -Wl,--gc-sections -L$(TOP)/openssl -lssl -lcrypto -L$(TOP)/zlib -lz"
 
