@@ -37,6 +37,7 @@
 #define TIMEZONE "Timezone_Entry"
 #define FIREWALL "Firewall_Entry"
 #define WANDUCK	"Wanduck_Common"
+#define DUALWAN "Dualwan_Entry"
 #define WAN_COMMON "Wan_Common"
 #define DDNS_ENANBLE_X	"Active"	// #define DDNS_ENANBLE_X	"ddns_enable_x"
 #define DDNS_SERVER_X	"SERVERNAME"	// #define DDNS_SERVER_X	"ddns_server_x"
@@ -304,6 +305,7 @@ int f_read_alloc(const char *path, char **buffer, int max)
 	return _f_read_alloc(path, buffer, max, 0);
 }
 
+/* copy from libshared, is it possible to avoid copy? */
 char *get_productid(void)
 {
         char *productid = nvram_get("productid");
@@ -314,6 +316,18 @@ char *get_productid(void)
                 productid = odmpid;
         }
         return productid;
+}
+
+/* copy from libshared, is it possible to avoid copy?
+ * due copy, is_valid_hostname() is not here. */
+char *get_lan_hostname(void)
+{
+	char *hostname = nvram_safe_get("lan_hostname");
+
+	if (*hostname /* && is_valid_hostname(hostname) */)
+		return hostname;
+
+	return get_productid();
 }
 
 //test{
@@ -365,10 +379,6 @@ err:
 char *nvram_get_original(char *name);
 char *nvram_get(char *name)
 {
-    //fprintf(stderr,"name = %s\n",name);
-    //if(!strcmp(name,"computer_name"))
-        //return nvram_get_original(name);
-
         char tmp[100];
         char *value;
         char *out;
@@ -863,7 +873,7 @@ char* nvram_get_ddns_host_name(void)
 	nvram get/set ddns_enable_x
 	nvram get/set ddns_server_x (WWW.ASUS.COM)
 	nvram get/set ddns_hostname_x (RT-N66U-00E012112233.asuscomm.com)
-	rc rc_service restart_ddns or notify_rc(?œrestart_ddns?? through libshared
+	rc rc_service restart_ddns or notify_rc, restart_ddns through libshared
 	 */
 	char* ddns_host_name_x=NULL;
 	if(!nvram_is_ddns_enable())
@@ -1055,7 +1065,10 @@ char* nvram_get_computer_name(void)
 	tcapi_get(SAMBA, COMPUTER_NAME, computer_name);
 	return computer_name;
 #else
-	return nvram_get(COMPUTER_NAME);
+	char *computer_name = nvram_safe_get(COMPUTER_NAME);
+	// if (*computer_name == '\0')
+	// 	computer_name = get_lan_hostname();
+	return computer_name;
 #endif
 }
 
@@ -1074,11 +1087,17 @@ char* nvram_get_router_mac(void)
 char* nvram_get_firmware_version(void)
 {
 #ifdef USE_TCAPI
-	static char firmware_version[16] = {0};
-	tcapi_get(DEVICEINFO, FIRMVER, firmware_version);
-	return firmware_version;
+        static char firmware_version[16] = {0};
+        tcapi_get(DEVICEINFO, FIRMVER, firmware_version);
+
+        fprintf(stderr, "firmware_version=%s\n", firmware_version);
+
+        static char fw[12] = {0};
+        snprintf(fw, sizeof(fw), "%s", firmware_version);
+        fprintf(stderr, "fw=%s\n", fw);
+        return fw;
 #else
-	return nvram_get(FIRMVER);
+        return nvram_get(FIRMVER);
 #endif
 }
 
@@ -1421,21 +1440,28 @@ char* nvram_get_wan_ip(void)
 		pch = strtok(wans_dualwan, " ");
 		while(pch!=NULL){
 			if(strncmp(pch, "lan", 3)==0){
-			   unit = 12;
-			   snprintf(prefix, sizeof(prefix), "wan%d_ipaddr", unit);
-			   tcapi_get(WANDUCK, prefix, wan_ip);																								}
+				unit = 12;
+				snprintf(prefix, sizeof(prefix), "wan%d_ipaddr", unit);
+				tcapi_get(WANDUCK, prefix, wan_ip);
+			}
 			else if(strncmp(pch, "usb", 3)==0){
-			   unit = 11;
-			   snprintf(prefix, sizeof(prefix), "wan%d_ipaddr", unit);
-			   tcapi_get(WANDUCK, prefix, wan_ip);																								}																													                else if(strncmp(pch, "wan", 3)==0){
+				unit = 11;
+			   	snprintf(prefix, sizeof(prefix), "wan%d_ipaddr", unit);
+			   	tcapi_get(WANDUCK, prefix, wan_ip);
+			}
+			else if(strncmp(pch, "wan", 3)==0){
 				unit = 10;
-				snprintf(prefix, sizeof(prefix), "wan%d_ipaddr", unit);																				tcapi_get(WANDUCK, prefix, wan_ip);																								}
+				snprintf(prefix, sizeof(prefix), "wan%d_ipaddr", unit);
+				tcapi_get(WANDUCK, prefix, wan_ip);
+			}
 			else if(strncmp(pch, "dsl", 3)==0){
 				char dsl_mode[32] = {0};
 				tcapi_get(WAN_COMMON, "DSLMode", dsl_mode);
+				
 				if(strncmp(dsl_mode, "VDSL", 4)==0){
 					unit = 8;
-				}																																	else
+				}
+				else
 					unit = 0;
 
 				snprintf(prefix, sizeof(prefix), "wan%d_ipaddr", unit);

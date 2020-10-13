@@ -162,6 +162,7 @@ typedef struct ovpn_cconf {
 
 //TLS Mode Options:
 	int reneg;	//TLS Renegotiation Time
+	int tlscrypt;	//Encrypt and authenticate all control channel packets.
 	int verify_x509_type;	//TYPE of verify-x509-name
 	char verify_x509_name[32];	//NAME of verify-x509-name
 
@@ -192,6 +193,7 @@ typedef enum ovpn_errno{
 	OVPN_ERRNO_DH,
 	OVPN_ERRNO_AUTH,
 	OVPN_ERRNO_CONF,
+	OVPN_ERRNO_NET_CONN,
 }ovpn_errno_t;
 
 #define OVPN_ACCNT_MAX	15

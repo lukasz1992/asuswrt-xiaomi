@@ -763,7 +763,7 @@ handle_request (struct evhttp_request * req, void * arg)
             fclose(fp);
          }*/
       /* if(nvram_val==1){
-           pw_dec(buf_password,buf_dec);
+           pw_dec(buf_password,buf_dec, sizeof(buf_dec));
            if (!tr_ssha1_matches (server->username, buf_username)|| !tr_ssha1_matches (server->password,buf_dec))
            {
                tr_rpcSetUsername (server,buf_username);
@@ -832,7 +832,7 @@ handle_request (struct evhttp_request * req, void * arg)
           if(nvram_val==1){
               shadow_cp=0;
               no_encrypt=0;
-             pw_de = pw_dec(buf_password,pass);
+             pw_de = pw_dec(buf_password,pass, 128);
              if((pw_de==1)&& !strcmp(user,buf_username)){
                  us_na=1;
              }

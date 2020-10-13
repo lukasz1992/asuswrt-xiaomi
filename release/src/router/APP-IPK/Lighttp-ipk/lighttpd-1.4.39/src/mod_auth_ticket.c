@@ -656,7 +656,7 @@ static handler_t
        else if(nvramver==1) {
            char dec_password[256];
            memset(dec_password,0,sizeof(dec_password));
-           pw_dec(dut_password,dec_password);
+           pw_dec(dut_password,dec_password, sizeof(dec_password));
            if((strcmp(field->ptr, dut_username)) ||(strcmp(pw+1, dec_password)))
            {
                buffer_free(field);
@@ -1518,7 +1518,7 @@ URIHANDLER_FUNC(module_uri_handler) {
                //nvram is encrypted
            char dec_passwd[128];
            memset(dec_passwd,0,128);
-           pw_dec(dut_password,dec_passwd);
+           pw_dec(dut_password,dec_passwd, sizeof(dec_passwd));
            decode_url(check_user_tmp,1);
             /*   char command_name[128];
                memset(command_name,'\0',sizeof(command_name));

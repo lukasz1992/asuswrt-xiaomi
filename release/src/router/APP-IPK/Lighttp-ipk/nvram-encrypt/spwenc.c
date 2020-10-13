@@ -1015,7 +1015,7 @@ int pw_enc(const char *input, char *output)
 	return 0;
 }
 
-int pw_dec(const char *input, char *output)
+int pw_dec(const char *input, char *output, int len)
 {
 	if(!strlen(input)){
 		strcpy(output, "");
@@ -1024,7 +1024,7 @@ int pw_dec(const char *input, char *output)
 
 	struct AES_ctx ctx;
 	int i, n, ret;
-	int decodedLen, crc_isalnum = 0;
+	int crc_isalnum = 0;
 	int inputLen = strlen(input);
 	char key[33];
 	char crc_str[CRC_LEN+1];
@@ -1042,8 +1042,7 @@ int pw_dec(const char *input, char *output)
 	n = base64_decode(input, decoded, inputLen);
 
 	decoded[n] = '\0';
-	decodedLen = pw_enc_blen((char *)decoded);
-	unsigned char output_buf[decodedLen];
+	unsigned char output_buf[len];
 	memset(output_buf, 0, sizeof(output_buf));
 
 	memcpy(output_buf, decoded, n);
@@ -1071,7 +1070,7 @@ int pw_dec(const char *input, char *output)
 		ret = 1;
 	}
 	else{
-		strcpy(output, input);
+		strlcpy(output, input, len);
 		ret = 0;
 	}
 	return ret;
@@ -1193,7 +1192,7 @@ int dec_nvram(char *name, char *input, char *output)
 					continue;
 				memset(passwdbuf, 0, sizeof(passwdbuf));
 
-				ret = pw_dec(passwd, passwdbuf);
+				ret = pw_dec(passwd, passwdbuf, sizeof(passwdbuf));
 				sprintf(tmp_buf, "<%s>%s%s", username, passwdbuf, buf);
 
 				strlcpy(buf, tmp_buf, sizeof(buf));
@@ -1202,7 +1201,7 @@ int dec_nvram(char *name, char *input, char *output)
 			free(nv);
 		}
 	}else{
-		ret = pw_dec(input, passwdbuf);
+		ret = pw_dec(input, passwdbuf, sizeof(passwdbuf));
 		strlcpy(output, passwdbuf, sizeof(passwdbuf));
 	}
 
