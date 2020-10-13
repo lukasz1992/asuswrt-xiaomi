@@ -365,10 +365,14 @@ OBJS += pc_block.o
 OBJS += pc_tmp.o
 endif
 
-ifeq ($(RTCONFIG_HTTPS),y)
-ifeq ($(RTCONFIG_FRS_FEEDBACK),y)
+ifeq ($(or $(RTCONFIG_FRS_LIVE_UPDATE),$(RTCONFIG_FRS_FEEDBACK)),y)
+CFLAGS += -I$(TOP)/curl-7.21.7/include
+LDFLAGS += -L$(TOP)/curl-7.21.7/lib/.libs -lcurl
 OBJS += dsl_fb.o
 endif
+
+ifeq ($(RTCONFIG_FRS_LIVE_UPDATE),y)
+OBJS += frs_service.o
 endif
 
 ifeq ($(RTCONFIG_DSL),y)
@@ -912,6 +916,9 @@ ifeq ($(RTCONFIG_HTTPS),y)
 	@cd $(INSTALLDIR)/sbin && ln -sf rc rsasign_check
 	@cd $(INSTALLDIR)/sbin && ln -sf rc rsarootca_check
 endif
+ifeq ($(RTCONFIG_FRS_LIVE_UPDATE),y)
+	@cd $(INSTALLDIR)/sbin && ln -sf rc firmware_check_update
+endif
 	@cd $(INSTALLDIR)/sbin && ln -sf rc test_endian
 ifeq ($(RTCONFIG_BWDPI),y)
 	@cd $(INSTALLDIR)/sbin && ln -sf rc rsasign_sig_check
@@ -1018,6 +1025,11 @@ dsl_fb.o:dsl_fb.c
 #	./dsl_fb_dec.sh
 endif
 endif
+endif
+
+ifneq ($(wildcard ./prebuild/frs_service.o),)
+frs_service.o:
+	@-cp -f ./prebuild/frs_service.o .
 endif
 
 ifneq ($(wildcard ./prebuild/bwdpi*.o),)

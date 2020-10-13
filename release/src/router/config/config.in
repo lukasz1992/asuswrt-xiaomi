@@ -377,6 +377,14 @@ config RTCONFIG_SYSSTATE
 	bool "Support additional debug logs"
 	default n
 
+config RTCONFIG_AHS
+	bool "Auto Healing System"
+	default n
+
+config RTCONFIG_LIBASC
+	bool "ASUS server command library"
+	default n
+
 config RTCONFIG_DUALWAN
 	bool "Dual WAN Support"
 	default n
@@ -1769,6 +1777,17 @@ config RTCONFIG_WTF_REDEEM
 	bool "wtf_redeem support"
 	default n
 
+config RTCONFIG_FRS_LIVE_UPDATE
+	bool "RTCONFIG_FRS_LIVE_UPDATE support"
+	default n
+
+config RTCONFIG_ASD
+	bool "RTCONFIG_ASD support"
+	default n
 config RTCONFIG_UUPLUGIN
 	bool "UU plugin support"
+	default n
+
+config RTCONFIG_CAPTCHA
+	bool "Web UI supports captcha"
 	default n

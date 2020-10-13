@@ -6985,9 +6985,9 @@ void set_acs_ifnames()
 #endif
 
 	nvram_set_int("wl0_acs_dfs", 0);
-	nvram_set_int("wl1_acs_dfs", nvram_match("wl1_reg_mode", "h") ? 2 : 0);
+	nvram_set_int("wl1_acs_dfs", nvram_match("wl1_reg_mode", "h") ? 1 : 0);
 #if defined(RTAC3200) || defined(RTAC5300) || defined(GTAC5300)
-	nvram_set_int("wl2_acs_dfs", nvram_match("wl2_reg_mode", "h") ? 2 : 0);
+	nvram_set_int("wl2_acs_dfs", nvram_match("wl2_reg_mode", "h") ? 1 : 0);
 #endif
 }
 #endif

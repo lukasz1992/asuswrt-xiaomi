@@ -965,7 +965,7 @@ function startLiveUpdate(){
 		setTimeout(arguments.callee, 1000);
 	}
 	else{
-		httpApi.nvramSet({"action_mode":"apply", "rc_service":"start_webs_update"}, function(){
+		httpApi.nvramSet({"action_mode":"apply", "webs_update_trigger":"QIS", "rc_service":"start_webs_update"}, function(){
 			setTimeout(function(){
 				var fwInfo = httpApi.nvramGet(["webs_state_update", "webs_state_info", "webs_state_flag"], true);
 				

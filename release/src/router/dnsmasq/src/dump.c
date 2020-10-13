@@ -1,4 +1,4 @@
-/* dnsmasq is Copyright (c) 2000-2018 Simon Kelley
+/* dnsmasq is Copyright (c) 2000-2020 Simon Kelley
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -132,8 +132,12 @@ void dump_packet(int mask, void *packet, size_t len, union mysockaddr *src, unio
 	}
             
       /* start UDP checksum */
-      for (sum = 0, i = 0; i < IN6ADDRSZ; i++)
-	sum += ((u16 *)&ip6.ip6_src)[i];
+      for (sum = 0, i = 0; i < IN6ADDRSZ; i+=2)
+	{
+	  sum += ip6.ip6_src.s6_addr[i] + (ip6.ip6_src.s6_addr[i+1] << 8) ;
+	  sum += ip6.ip6_dst.s6_addr[i] + (ip6.ip6_dst.s6_addr[i+1] << 8) ;
+	  
+	}
     }
   else
     {

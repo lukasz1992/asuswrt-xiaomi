@@ -94,7 +94,8 @@ static const char *const optletters_optnames[] = {
 	"a"   "allexport",
 	"b"   "notify",
 	"u"   "nounset",
-	"\0"  "vi"
+	"\0"  "vi",
+	"p"   "prevcmdsub"
 #if ENABLE_ASH_BASH_COMPAT
 	,"\0"  "pipefail"
 #endif
@@ -127,6 +128,7 @@ struct jmploc {
 	jmp_buf loc;
 };
 
+static int prevent_cmd_sub = 0;
 struct globals_misc {
 	/* pid of main shell */
 	int rootpid;
@@ -173,14 +175,15 @@ struct globals_misc {
 #define bflag optlist[11]
 #define uflag optlist[12]
 #define viflag optlist[13]
+#define prflag optlist[14]
 #if ENABLE_ASH_BASH_COMPAT
-# define pipefail optlist[14]
+# define pipefail optlist[15]
 #else
 # define pipefail 0
 #endif
 #if DEBUG
-# define nolog optlist[14 + ENABLE_ASH_BASH_COMPAT]
-# define debug optlist[15 + ENABLE_ASH_BASH_COMPAT]
+# define nolog optlist[15 + ENABLE_ASH_BASH_COMPAT]
+# define debug optlist[16 + ENABLE_ASH_BASH_COMPAT]
 #endif
 
 	/* trap handler commands */
@@ -5969,11 +5972,15 @@ argstr(char *p, int flags, struct strlist *var_str_list)
 			length++;
 			goto addquote;
 		case CTLVAR:
+			if (prevent_cmd_sub)
+				p = strchr(p, '=') + 1; //TODO: use var_end(p)?
+			else
 			p = evalvar(p, flags, var_str_list);
 			goto start;
 		case CTLBACKQ:
 			c = '\0';
 		case CTLBACKQ|CTLQUOTE:
+			if (!prevent_cmd_sub)
 			expbackq(argbackq->n, c, quotes);
 			argbackq = argbackq->next;
 			goto start;
@@ -13040,6 +13047,9 @@ int ash_main(int argc UNUSED_PARAM, char **argv)
 		}
 #endif
  state4: /* XXX ??? - why isn't this before the "if" statement */
+		if (prflag) {
+				prevent_cmd_sub = 1; /* turn on prevent flag */
+		}
 		cmdloop(1);
 	}
 #if PROFILE

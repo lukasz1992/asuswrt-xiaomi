@@ -1,6 +1,6 @@
 /* A more-standard <time.h>.
 
-   Copyright (C) 2007-2014 Free Software Foundation, Inc.
+   Copyright (C) 2007-2018 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 #if __GNUC__ >= 3
 @PRAGMA_SYSTEM_HEADER@
@@ -22,11 +22,13 @@
 
 /* Don't get in the way of glibc when it includes time.h merely to
    declare a few standard symbols, rather than to declare all the
-   symbols.  Also, Solaris 8 <time.h> eventually includes itself
+   symbols.  (However, skip this for MinGW as it treats __need_time_t
+   incompatibly.)  Also, Solaris 8 <time.h> eventually includes itself
    recursively; if that is happening, just include the system <time.h>
    without adding our own declarations.  */
-#if (defined __need_time_t || defined __need_clock_t \
-     || defined __need_timespec \
+#if (((defined __need_time_t || defined __need_clock_t \
+       || defined __need_timespec)                     \
+      && !defined __MINGW32__)                         \
      || defined _@GUARD_PREFIX@_TIME_H)
 
 # @INCLUDE_NEXT@ @NEXT_TIME_H@
@@ -46,7 +48,7 @@
 
 /* The definition of _GL_WARN_ON_USE is copied here.  */
 
-/* Some systems don't define struct timespec (e.g., AIX 4.1, Ultrix 4.3).
+/* Some systems don't define struct timespec (e.g., AIX 4.1).
    Or they define it with the wrong member names or define it in <sys/time.h>
    (e.g., FreeBSD circa 1997).  Stock Mingw prior to 3.0 does not define it,
    but the pthreads-win32 library defines it in <pthread.h>.  */
@@ -55,6 +57,8 @@
 #   include <sys/time.h>
 #  elif @PTHREAD_H_DEFINES_STRUCT_TIMESPEC@
 #   include <pthread.h>
+#  elif @UNISTD_H_DEFINES_STRUCT_TIMESPEC@
+#   include <unistd.h>
 #  else
 
 #   ifdef __cplusplus
@@ -114,6 +118,24 @@ _GL_CXXALIAS_SYS (nanosleep, int,
                   (struct timespec const *__rqtp, struct timespec *__rmtp));
 #  endif
 _GL_CXXALIASWARN (nanosleep);
+# endif
+
+/* Initialize time conversion information.  */
+# if @GNULIB_TZSET@
+#  if @REPLACE_TZSET@
+#   if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+#    undef tzset
+#    define tzset rpl_tzset
+#   endif
+_GL_FUNCDECL_RPL (tzset, void, (void));
+_GL_CXXALIAS_RPL (tzset, void, (void));
+#  else
+#   if ! @HAVE_TZSET@
+_GL_FUNCDECL_SYS (tzset, void, (void));
+#   endif
+_GL_CXXALIAS_SYS (tzset, void, (void));
+#  endif
+_GL_CXXALIASWARN (tzset);
 # endif
 
 /* Return the 'time_t' representation of TP and normalize TP.  */
@@ -183,14 +205,14 @@ _GL_CXXALIASWARN (gmtime_r);
 /* Convert TIMER to RESULT, assuming local time and UTC respectively.  See
    <http://www.opengroup.org/susv3xsh/localtime.html> and
    <http://www.opengroup.org/susv3xsh/gmtime.html>.  */
-# if @GNULIB_GETTIMEOFDAY@
+# if @GNULIB_LOCALTIME@ || @REPLACE_LOCALTIME@
 #  if @REPLACE_LOCALTIME@
 #   if !(defined __cplusplus && defined GNULIB_NAMESPACE)
 #    undef localtime
 #    define localtime rpl_localtime
 #   endif
 _GL_FUNCDECL_RPL (localtime, struct tm *, (time_t const *__timer)
-		                          _GL_ARG_NONNULL ((1)));
+                                          _GL_ARG_NONNULL ((1)));
 _GL_CXXALIAS_RPL (localtime, struct tm *, (time_t const *__timer));
 #  else
 _GL_CXXALIAS_SYS (localtime, struct tm *, (time_t const *__timer));
@@ -198,7 +220,7 @@ _GL_CXXALIAS_SYS (localtime, struct tm *, (time_t const *__timer));
 _GL_CXXALIASWARN (localtime);
 # endif
 
-# if @GNULIB_GETTIMEOFDAY@
+# if 0 || @REPLACE_GMTIME@
 #  if @REPLACE_GMTIME@
 #   if !(defined __cplusplus && defined GNULIB_NAMESPACE)
 #    undef gmtime
@@ -213,7 +235,7 @@ _GL_CXXALIAS_SYS (gmtime, struct tm *, (time_t const *__timer));
 _GL_CXXALIASWARN (gmtime);
 # endif
 
-/* Parse BUF as a time stamp, assuming FORMAT specifies its layout, and store
+/* Parse BUF as a timestamp, assuming FORMAT specifies its layout, and store
    the resulting broken-down time into TM.  See
    <http://www.opengroup.org/susv3xsh/strptime.html>.  */
 # if @GNULIB_STRPTIME@
@@ -227,6 +249,60 @@ _GL_CXXALIAS_SYS (strptime, char *, (char const *restrict __buf,
                                      char const *restrict __format,
                                      struct tm *restrict __tm));
 _GL_CXXALIASWARN (strptime);
+# endif
+
+/* Convert *TP to a date and time string.  See
+   <http://pubs.opengroup.org/onlinepubs/9699919799/functions/ctime.html>.  */
+# if @GNULIB_CTIME@
+#  if @REPLACE_CTIME@
+#   if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+#    define ctime rpl_ctime
+#   endif
+_GL_FUNCDECL_RPL (ctime, char *, (time_t const *__tp)
+                                 _GL_ARG_NONNULL ((1)));
+_GL_CXXALIAS_RPL (ctime, char *, (time_t const *__tp));
+#  else
+_GL_CXXALIAS_SYS (ctime, char *, (time_t const *__tp));
+#  endif
+_GL_CXXALIASWARN (ctime);
+# endif
+
+/* Convert *TP to a date and time string.  See
+   <http://pubs.opengroup.org/onlinepubs/9699919799/functions/strftime.html>.  */
+# if @GNULIB_STRFTIME@
+#  if @REPLACE_STRFTIME@
+#   if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+#    define strftime rpl_strftime
+#   endif
+_GL_FUNCDECL_RPL (strftime, size_t, (char *__buf, size_t __bufsize,
+                                     const char *__fmt, const struct tm *__tp)
+                                    _GL_ARG_NONNULL ((1, 3, 4)));
+_GL_CXXALIAS_RPL (strftime, size_t, (char *__buf, size_t __bufsize,
+                                     const char *__fmt, const struct tm *__tp));
+#  else
+_GL_CXXALIAS_SYS (strftime, size_t, (char *__buf, size_t __bufsize,
+                                     const char *__fmt, const struct tm *__tp));
+#  endif
+_GL_CXXALIASWARN (strftime);
+# endif
+
+# if defined _GNU_SOURCE && @GNULIB_TIME_RZ@ && ! @HAVE_TIMEZONE_T@
+typedef struct tm_zone *timezone_t;
+_GL_FUNCDECL_SYS (tzalloc, timezone_t, (char const *__name));
+_GL_CXXALIAS_SYS (tzalloc, timezone_t, (char const *__name));
+_GL_FUNCDECL_SYS (tzfree, void, (timezone_t __tz));
+_GL_CXXALIAS_SYS (tzfree, void, (timezone_t __tz));
+_GL_FUNCDECL_SYS (localtime_rz, struct tm *,
+                  (timezone_t __tz, time_t const *restrict __timer,
+                   struct tm *restrict __result) _GL_ARG_NONNULL ((2, 3)));
+_GL_CXXALIAS_SYS (localtime_rz, struct tm *,
+                  (timezone_t __tz, time_t const *restrict __timer,
+                   struct tm *restrict __result));
+_GL_FUNCDECL_SYS (mktime_z, time_t,
+                  (timezone_t __tz, struct tm *restrict __result)
+                  _GL_ARG_NONNULL ((2)));
+_GL_CXXALIAS_SYS (mktime_z, time_t,
+                  (timezone_t __tz, struct tm *restrict __result));
 # endif
 
 /* Convert TM to a time_t value, assuming UTC.  */

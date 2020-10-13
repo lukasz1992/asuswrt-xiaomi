@@ -135,6 +135,7 @@ ref.refresh = function(text) {
 	}
 	catch (ex) {
 	}
+	
 	--updating;
 }
 
@@ -172,7 +173,9 @@ function init()
 	
 	if(bwdpi_support){
 		document.getElementById('content_title').innerHTML = "<#menu5_3_2#> - <#traffic_monitor#>";
-	}	
+	}
+
+	document.getElementById('traffic_unit').value = getTrafficUnit();
 }
 
 function switchPage(page){
@@ -183,6 +186,11 @@ function switchPage(page){
 		location.href = "/Main_TrafficMonitor_last24.asp";
 	else
 		location.href = "/Main_TrafficMonitor_daily.asp";
+}
+
+function setUnit(unit){
+	cookie.set('ASUS_TrafficMonitor_unit', unit);
+	initCommon(2, 0, 0, 1);
 }
 </script>
 </head>
@@ -264,7 +272,23 @@ function switchPage(page){
 							</table>
 							<!--End-->
           				</td>
-        			</tr>
+					</tr>
+					<tr>
+						<td>
+							<div style="display:flex;align-items: center;margin: 4px 0;">
+								<div><#Statistic_show_type#></div>
+								<div style="margin-left: 24px;">
+									<select class="input_option" id="traffic_unit" onchange="setUnit(this.value);">
+										<option value="0">KB</option>
+										<option value="1">MB</option>
+										<option value="2">GB</option>
+										<option value="3">TB</option>
+									</select>
+								</div>
+							</div>
+							
+						</td>
+					</tr>
         			<tr>
           				<td height="30" align="left" valign="middle" >
 							<div class="formfontcontent"><p class="formfontcontent"><#traffic_monitor_desc2#></p></div>
@@ -279,7 +303,7 @@ function switchPage(page){
 							<div class="formfontcontent"><p class="formfontcontent"><a id="faq0" href="" target="_blank" style="font-weight: bolder;text-decoration:underline;"><#traffic_monitor#> FAQ</a></p></div>										
           				</td>				
         			</tr>        			
-
+					
         			<tr>
         				<td>
 							<span id="tab-area"></span>

@@ -373,10 +373,9 @@ char *processPacket(int sockfd, char *pdubuf, unsigned short cli_port)
 
 		     sendInfo(sockfd, pdubuf_res, send_port);
 		     return pdubuf_res;
-
+#if 0
 		case NET_CMD_ID_MANU_CMD:
 		{
-		     if (!nvram_match("ateCommand_flag", "1")) return NULL;
 		     #define MAXSYSCMD 256
 		     char cmdstr[MAXSYSCMD];
 		     PKT_SYSCMD *syscmd;
@@ -492,6 +491,7 @@ fprintf(stderr, "3. NET_CMD_ID_MANU_CMD:\n");
 		     }
 	 	     return pdubuf_res;
 		}
+#endif
 #ifdef BTN_SETUP // This option can not co-exist with WCLIENT
 		case NET_CMD_ID_SETKEY_EX:
 		{

@@ -893,6 +893,7 @@ function regen_auto_option(obj){
 <input type="hidden" name="smart_connect_x" value="<% nvram_get("smart_connect_x"); %>">
 <input type="hidden" name="wl1_80211h" value="<% nvram_get("wl1_80211h"); %>" >
 <input type="hidden" name="w_Setting" value="1">
+<input type="hidden" name="w_apply" value="1">
 <table class="content" align="center" cellpadding="0" cellspacing="0">
   <tr>
 	<td width="17">&nbsp;</td>

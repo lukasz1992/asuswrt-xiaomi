@@ -148,11 +148,11 @@ function get_real_ip(){
 
 function submitForm(){
 	if(letsencrypt_support){
-		if(document.form.ddns_enable_x.value == "1" && document.form.le_enable.value == "1"){
+		if($("input[name='ddns_enable_x']:checked").val() == "1" && $("input[name='le_enable']:checked").val() == "1"){
 			document.form.action_wait.value = "10";
 			document.form.action_script.value = "restart_ddns_le";
 		}
-		else if(http_enable != "0" && document.form.le_enable.value != orig_le_enable){
+		else if(http_enable != "0" && $("input[name='le_enable']:checked").val() != orig_le_enable){
 			document.form.action_wait.value = "10";
 			if(orig_le_enable == "1")
 				document.form.action_script.value = "restart_httpd;restart_webdav;restart_ddns_le";
@@ -450,7 +450,7 @@ function change_cert_method(cert_method){
 		if(cert_method === undefined){
 			//Let's encrypt default on
 			if(ddns_server_x_t != document.form.ddns_server_x.value && orig_le_enable == "0")
-				cert_method = "1";
+				cert_method = "0";
 			else
 				cert_method = orig_le_enable;
 

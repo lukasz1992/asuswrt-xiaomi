@@ -602,7 +602,7 @@ int start_vlan(void)
 	close(s);
 #endif
 
-#if (defined(RTCONFIG_QCA) || (defined(RTCONFIG_RALINK) && (defined(RTCONFIG_RALINK_MT7620) || defined(RTCONFIG_RALINK_MT7621))))
+#if (defined(RTCONFIG_QCA) || (defined(RTCONFIG_RALINK) && (defined(RTCONFIG_RALINK_MT7620) || defined(RTCONFIG_RALINK_MT7621) || defined(RTCONFIG_RALINK_MT7628))))
 	if(!nvram_match("switch_wantag", "none")&&!nvram_match("switch_wantag", "")&&!nvram_match("switch_wantag", "hinet"))
 	{
 #if defined(RTCONFIG_QCA)
@@ -622,7 +622,7 @@ int start_vlan(void)
 		}
 #endif	/* RTCONFIG_DETWAN */
 #elif defined(RTCONFIG_RALINK)
-#if defined(RTCONFIG_RALINK_MT7620) /* RT-N14U, RT-AC52U, RT-AC51U, RT-N11P, RT-N54U, RT-AC1200HP, RT-AC54U */
+#if defined(RTCONFIG_RALINK_MT7620) || defined(RTCONFIG_RALINK_MT7628) /* RT-N14U, RT-AC52U, RT-AC51U, RT-N11P, RT-N54U, RT-AC1200HP, RT-AC54U */
 		char *wan_base_if = "eth2";
 #elif defined(RTCONFIG_RALINK_MT7621) /* RT-N56UB1, RT-N56UB2 */
 		char *wan_base_if = "eth3";

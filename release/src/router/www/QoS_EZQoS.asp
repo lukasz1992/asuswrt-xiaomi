@@ -69,8 +69,8 @@
 }
 
 #category_list {
-	width:99%;
-	height:520px;
+	width: 99%;
+	height: 590px;
 }
 
 #category_list div{
@@ -107,35 +107,51 @@
 }
 
 .priority_lowest{
-	margin:-10px 0px 20px 0px;
+	margin-bottom: 10px;
 }
 
 .Quick_Setup_title{
-	font-family: Arial, Helvetica, sans-serif;
-	font-size:16px;
-	font-weight:bold;
+	font-size: 16px;
+	font-weight: bold;
+	text-align: center;
 }
 
-.quick_setup{
-	width:96px;
-	height:96px;
-	margin-left:2px;
-	cursor:pointer;
+#Game_act, #Game:hover,
+#Media_act, #Media:hover,
+#Web_act, #Web:hover,
+#eLearning_act, #eLearning:hover,
+#videoConference_act, #videoConference:hover,
+#Customize_act, #Customize:hover{
+	width: 96px;
+	height: 96px;
+}
+
+#Game,
+#Media,
+#Web,
+#eLearning,
+#videoConference,
+#Customize{
+	width: 84px;
+	height: 84px;	
+}
+
+#Game, #Game_act, #Game:hover,
+#Media, #Media_act, #Media:hover,
+#Web, #Web_act, #Web:hover,
+#eLearning, #eLearning_act, #eLearning:hover,
+#videoConference, #videoConference_act, #videoConference:hover,
+#Customize, #Customize_act, #Customize:hover{
+	background-size: 100%;
+	background-repeat: no-repeat;
+	margin: auto;
 }
 
 #Game{
 	background-image:url('images/New_ui/QoS_quick/game.svg');
 }
 
-#Game:hover{
-	width:118px;
-	height:118px;
-	background-image:url('images/New_ui/QoS_quick/game_act.svg');
-}
-
-#Game_act{
-	width:118px;
-	height:118px;
+#Game_act, #Game:hover{
 	background-image:url('images/New_ui/QoS_quick/game_act.svg');
 }
 
@@ -143,15 +159,7 @@
 	background-image:url('images/New_ui/QoS_quick/media.svg');
 }
 
-#Media:hover{
-	width:118px;
-	height:118px;
-	background-image:url('images/New_ui/QoS_quick/media_act.svg');
-}
-
-#Media_act{
-	width:118px;
-	height:118px;
+#Media_act, #Media:hover{
 	background-image:url('images/New_ui/QoS_quick/media_act.svg');
 }
 
@@ -159,33 +167,34 @@
 	background-image:url('images/New_ui/QoS_quick/web.svg');
 }
 
-#Web:hover{
-	width:118px;
-	height:118px;
+#Web_act, #Web:hover{
 	background-image:url('images/New_ui/QoS_quick/web_act.svg');
 }
 
-#Web_act{
-	width:118px;
-	height:118px;
-	background-image:url('images/New_ui/QoS_quick/web_act.svg');
+#eLearning{
+	background-image:url('images/New_ui/QoS_quick/elearning.svg');
+}
+
+#eLearning_act, #eLearning:hover{
+	background-image:url('images/New_ui/QoS_quick/elearning_act.svg');	
+}
+
+#videoConference{
+	background-image:url('images/New_ui/QoS_quick/video_conference.svg');
+}
+
+#videoConference_act, #videoConference:hover{
+	background-image:url('images/New_ui/QoS_quick/video_conference_act.svg');
 }
 
 #Customize{
 	background-image:url('images/New_ui/QoS_quick/customize.svg');
 }
 
-#Customize:hover{
-	width:118px;
-	height:118px;
+#Customize_act, #Customize:hover{;
 	background-image:url('images/New_ui/QoS_quick/customize_act.svg');
 }
 
-#Customize_act{
-	width:118px;
-	height:118px;
-	background-image:url('images/New_ui/QoS_quick/customize_act.svg');
-}
 
 .bandwidth_setting{
 	display:inline-block;
@@ -256,17 +265,14 @@ else
 var dsl_DataRateDown = parseInt("<% nvram_get("dsllog_dataratedown"); %>");
 var dsl_DataRateUp = parseInt("<% nvram_get("dsllog_datarateup"); %>");
 
-var qos_enable_orig = '<% nvram_get("qos_enable"); %>';
-var qos_type_orig = '<% nvram_get("qos_type"); %>';
-
 //HND_ROUTER HW NAT (fc_disable/runner_disable) ON: 0/0 ; OFF: 1/1
 var fc_disable_orig = '<% nvram_get("fc_disable"); %>';
 var runner_disable_orig = '<% nvram_get("runner_disable"); %>';
 
 
 var bwdpi_app_rulelist = "<% nvram_get("bwdpi_app_rulelist"); %>".replace(/&#60/g, "<");
-var category_title = ["", "<#Adaptive_Game#>", "<#Adaptive_Stream#>","<#Adaptive_Message#>", "<#Adaptive_WebSurf#>","<#Adaptive_FileTransfer#>", "<#Adaptive_Others#>"];
-var cat_id_array = [[9,20], [8], [4], [0,5,6,15,17], [13,24], [1,3,14], [7,10,11,21,23]];
+var category_title = ["", "<#Adaptive_Game#>", "<#Adaptive_Stream#>", "<#Adaptive_Message#>", "<#Adaptive_WebSurf#>","<#Adaptive_FileTransfer#>", "<#Adaptive_Others#>", "<#Adaptive_eLearning#>"];
+var cat_id_array = [[9,20], [8], [4], [0,5,6,15,17], [13,24], [1,3,14], [7,10,11,21,23], [4,13]];
 var ctf_disable = '<% nvram_get("ctf_disable"); %>';
 var ctf_disable_force  = '<% nvram_get("ctf_disable_force "); %>';
 var ctf_fa_mode = '<% nvram_get("ctf_fa_mode"); %>';
@@ -366,14 +372,14 @@ function initial(){
 	}
 
 	var qos_type = document.form.qos_type.value;
-	if(qos_enable_orig == "1"){
+	if(document.form.qos_enable_orig.value == "1"){
 		change_qos_type(qos_type);
 
 		document.getElementById('qos_type_tr').style.display = "";
 		if(bwdpi_support){
 			document.getElementById('int_type').style.display = "";
 			document.getElementById('int_type_link').style.display = "";
-			change_qos_type(qos_type_orig);
+			change_qos_type(document.form.qos_type_orig.value);
 		}
 		else
 			show_settings("NonAdaptive");
@@ -420,7 +426,7 @@ function initial(){
 
 	/* MODELDEP */
 	if(based_modelid == "RT-AC85U" || based_modelid == "RT-AC85P" || based_modelid == "RT-AC65U"){
-		if(qos_type_orig == "1"){
+		if(document.form.qos_type_orig.value == "1"){
 			document.getElementById('bandwidth_setting_tr').style.display = "none";
 			document.form.qos_type_radio[1].checked = true;
 		}
@@ -528,9 +534,15 @@ function switchPage(page){
 }
 
 function validForm(){
-
-	if(document.form.qos_enable.value == "0" && qos_enable_orig == "0"){
-		return false;
+	if(document.form.qos_enable.value == 0 && document.form.qos_enable_orig.value == 0){
+		if(geforceNow_support){
+			if(document.form.nvgfn_enable.value == orig_nvgfn_enable){
+				return false;
+			}
+		}
+		else{
+			return false;
+		}
 	}
 
 	if(document.form.qos_enable.value == "1"){
@@ -602,16 +614,31 @@ function validForm(){
 			}
 
 			if(qos_type == 1){	//Adaptive QoS
-				if(document.getElementById("Game_act") || document.getElementById("Media_act") || document.getElementById("Web_act") || document.getElementById("Customize_act")){
+				if(document.getElementById("Game_act")
+				|| document.getElementById("Media_act")
+				|| document.getElementById("Web_act")
+				|| document.getElementById("eLearning_act")
+				|| document.getElementById("videoConference_act")
+				|| document.getElementById("Customize_act")){
 					document.form.bwdpi_app_rulelist.disabled = "";
-					if(document.getElementById("Game_act"))
-						document.form.bwdpi_app_rulelist.value = "9,20<8<4<0,5,6,15,17<13,24<1,3,14<7,10,11,21,23<<game";
-					else if(document.getElementById("Media_act"))
-						document.form.bwdpi_app_rulelist.value = "9,20<4<0,5,6,15,17<8<13,24<1,3,14<7,10,11,21,23<<media";
-					else if(document.getElementById("Web_act"))
-						document.form.bwdpi_app_rulelist.value = "9,20<13,24<4<0,5,6,15,17<8<1,3,14<7,10,11,21,23<<web";
-					else
+					if(document.getElementById("Game_act")){
+						document.form.bwdpi_app_rulelist.value = "9,20<8<4<0,5,6,15,17<4,13<13,24<1,3,14<7,10,11,21,23<game";
+					}						
+					else if(document.getElementById("Media_act")){
+						document.form.bwdpi_app_rulelist.value = "9,20<4<0,5,6,15,17<4,13<8<13,24<1,3,14<7,10,11,21,23<media";
+					}						
+					else if(document.getElementById("Web_act")){
+						document.form.bwdpi_app_rulelist.value = "9,20<13,24<4<0,5,6,15,17<4,13<8<1,3,14<7,10,11,21,23<web";
+					}
+					else if(document.getElementById("eLearning_act")){
+						document.form.bwdpi_app_rulelist.value = "9,20<4,13<4<0,5,6,15,17<13,24<8<1,3,14<7,10,11,21,23<eLearning";
+					}
+					else if(document.getElementById("videoConference_act")){
+						document.form.bwdpi_app_rulelist.value = "9,20<0,5,6,15,17<4<4,13<13,24<8<1,3,14<7,10,11,21,23<videoConference";
+					}						
+					else{
 						document.form.bwdpi_app_rulelist.value = bwdpi_app_rulelist;
+					}				
 				}
 				else{
 					alert("You have not selected QoS priority mode.");		//untranslated
@@ -634,14 +661,14 @@ function validForm(){
 }
 
 function determineActionScript(){
-	if(geforceNow_support && document.form.qos_enable.value == "0" && qos_enable_orig == "0" &&
+	if(geforceNow_support && document.form.qos_enable.value == "0" && document.form.qos_enable_orig.value == "0" &&
 		(document.form.nvgfn_enable.value != orig_nvgfn_enable)){
 		document.form.action_script.value = "restart_upnp;";
 	}
 	else if( lantiq_support || Rawifi_support || (ctf_disable == "1" || ctf_disable_force == "1") ||  //BULECAVE; MTK Models; HW NAT OFF
-			 (qos_enable_orig == "1" && document.form.qos_enable.value == "0") ||   //qos enable => disable
-			 ((qos_enable_orig == document.form.qos_enable.value) && 				//qos_enable and qos_type no change
-			  (qos_type_orig == document.form.qos_type.value)) ){
+			 (document.form.qos_enable_orig.value == "1" && document.form.qos_enable.value == "0") ||   //qos enable => disable
+			 ((document.form.qos_enable_orig.value == document.form.qos_enable.value) && 				//qos_enable and qos_type no change
+			  (document.form.qos_type_orig.value == document.form.qos_type.value)) ){
 		document.form.action_script.value = "restart_qos;restart_firewall;";
 		document.form.action_wait.value = "15";
 	}
@@ -659,7 +686,7 @@ function determineActionScript(){
 		document.form.action_wait.value = "<% get_default_reboot_time(); %>";
 	}
 
-	if((qos_type_orig != document.form.qos_type.value) && document.form.qos_type.value == "0")
+	if((document.form.qos_type_orig.value != document.form.qos_type.value) && document.form.qos_type.value == "0")
 		document.form.next_page.value = "Advanced_QOSUserRules_Content.asp";
 }
 
@@ -673,8 +700,15 @@ function submitQoS(){
 				.show("tm")
 		}
 		else{
-			if(reset_wan_to_fo.change_status)
+			if(	document.form.qos_enable.value == "1" && document.form.qos_type_orig.value != document.form.qos_type.value &&
+				document.form.qos_type.value == 0 && lantiq_support){
+				var hwnatPrompt = "NAT traffic will be processed by CPU if traditional QoS is enabled. Are you sure want to enable?";
+				if(!confirm(hwnatPrompt)) return false;
+			}
+
+			if(reset_wan_to_fo.change_status){
 				reset_wan_to_fo.change_wan_mode(document.form);
+			}	
 
 			determineActionScript();
 			showLoading();
@@ -766,23 +800,45 @@ function check_actived(){
 	if(document.getElementById("Game_act")) document.getElementById("Game_act").id = "Game";
 	if(document.getElementById("Media_act")) document.getElementById("Media_act").id = "Media";
 	if(document.getElementById("Web_act")) document.getElementById("Web_act").id = "Web";
+	if(document.getElementById("eLearning_act")) document.getElementById("eLearning_act").id = "eLearning";
+	if(document.getElementById("videoConference_act")) document.getElementById("videoConference_act").id = "videoConference";
 	if(document.getElementById("Customize_act")) document.getElementById("Customize_act").id = "Customize";
 
-	if(bwdpi_app_rulelist == "9,20<8<4<0,5,6,15,17<13,24<1,3,14<7,10,11,21,23<<"){	//default APP priority of QoS
+	//default APP priority of QoS
+	if(bwdpi_app_rulelist == "9,20<8<4<0,5,6,15,17<13,24<1,3,14<7,10,11,21,23<<"		// old version
+	|| bwdpi_app_rulelist == "9,20<8<4<0,5,6,15,17<4,13<13,24<1,3,14<7,10,11,21,23<"){	// new version
 		return;
 	}
 
-	if(bwdpi_app_rulelist == "9,20<8<4<0,5,6,15,17<13,24<1,3,14<7,10,11,21,23<<game"){
-		if(document.getElementById("Game"))		document.getElementById("Game").id = "Game_act";
+	if(bwdpi_app_rulelist.indexOf('game') != -1){
+		if(document.getElementById("Game")){
+			document.getElementById("Game").id = "Game_act";
+		}
 	}
-	else if(bwdpi_app_rulelist == "9,20<4<0,5,6,15,17<8<13,24<1,3,14<7,10,11,21,23<<media"){
-		if(document.getElementById("Media"))	document.getElementById("Media").id = "Media_act";
+	else if(bwdpi_app_rulelist.indexOf('media') != -1){
+		if(document.getElementById("Media")){
+			document.getElementById("Media").id = "Media_act";
+		}	
 	}
-	else if(bwdpi_app_rulelist == "9,20<13,24<4<0,5,6,15,17<8<1,3,14<7,10,11,21,23<<web"){
-		if(document.getElementById("Web"))		document.getElementById("Web").id = "Web_act";
+	else if(bwdpi_app_rulelist.indexOf('web') != -1){
+		if(document.getElementById("Web")){
+			document.getElementById("Web").id = "Web_act";
+		}
+	}
+	else if(bwdpi_app_rulelist.indexOf('eLearning') != -1){
+		if(document.getElementById("eLearning")){
+			document.getElementById("eLearning").id = "eLearning_act";
+		}
+	}
+	else if(bwdpi_app_rulelist.indexOf('videoConference') != -1){
+		if(document.getElementById("videoConference")){
+			document.getElementById("videoConference").id = "videoConference_act";
+		}
 	}
 	else{
-		if(document.getElementById("Customize"))	document.getElementById("Customize").id = "Customize_act";
+		if(document.getElementById("Customize")){
+			document.getElementById("Customize").id = "Customize_act";
+		}
 	}
 }
 
@@ -792,23 +848,28 @@ function clickEvent(obj){
 	if(document.getElementById("Game_act")) document.getElementById("Game_act").id = "Game";
 	if(document.getElementById("Media_act")) document.getElementById("Media_act").id = "Media";
 	if(document.getElementById("Web_act")) document.getElementById("Web_act").id = "Web";
+	if(document.getElementById("eLearning_act")) document.getElementById("eLearning_act").id = "eLearning";
+	if(document.getElementById("videoConference_act")) document.getElementById("videoConference_act").id = "videoConference";
 	if(document.getElementById("Customize_act")) document.getElementById("Customize_act").id = "Customize";
+
 	if(obj.id.indexOf("Game") >= 0){
 		document.getElementById("Game").id = "Game_act";
-		stitle = "Game";
 	}
 	else if(obj.id.indexOf("Media") >= 0){
 		obj.id = "Media_act";
-		stitle = "Media";
 	}
 	else if(obj.id.indexOf("Web") >= 0){
 		obj.id = "Web_act";
-		stitle = "Web";
+	}
+	else if(obj.id.indexOf("eLearning") >= 0){
+		obj.id = "eLearning_act";
+	}
+	else if(obj.id.indexOf("videoConference") >= 0){
+		obj.id = "videoConference_act";
 	}
 	else if(obj.id.indexOf("Customize") >= 0){
 		obj.id = "Customize_act";
 		show_settings("NonAdaptive");
-		stitle = "Customize";
 	}
 	else
 		alert("mouse over on wrong place!");
@@ -830,7 +891,6 @@ function regen_priority(obj){
 		rule_temp += cat_id_array[priority_array[i].id] + "<";
 	}
 
-	rule_temp += "<";
 	bwdpi_app_rulelist = rule_temp+"customize";
 }
 
@@ -838,14 +898,33 @@ function gen_category_block(){
 	bwdpi_app_rulelist = bwdpi_app_rulelist.replace(/&#60/g, "<");
 	var bwdpi_app_rulelist_row = bwdpi_app_rulelist.split("<");
 	if(bwdpi_app_rulelist == "" || bwdpi_app_rulelist_row.length != 9){	//Avoid customized app list cannot show out
-		//customize default "bwdpi_app_rulelist", "9,20<8<4<0,5,6,15,17<13,24<1,3,14<7,10,11,21,23<<"
-		bwdpi_app_rulelist = "9,20<8<4<0,5,6,15,17<13,24<1,3,14<7,10,11,21,23<<";
+		bwdpi_app_rulelist = "9,20<8<4<0,5,6,15,17<4,13<13,24<1,3,14<7,10,11,21,23<";
 		bwdpi_app_rulelist_row = bwdpi_app_rulelist.split("<");
 	}
+	else{
+		if(bwdpi_app_rulelist.indexOf('4,13') == -1){		// old version transforms to new version
+			if(bwdpi_app_rulelist.indexOf('game') != -1){
+				bwdpi_app_rulelist = '9,20<8<4<0,5,6,15,17<4,13<13,24<1,3,14<7,10,11,21,23<game';
+			}
+			else if(bwdpi_app_rulelist.indexOf('media') != -1){
+				bwdpi_app_rulelist = '9,20<4<0,5,6,15,17<4,13<8<13,24<1,3,14<7,10,11,21,23<media';
+			}
+			else if(bwdpi_app_rulelist.indexOf('web') != -1){
+				bwdpi_app_rulelist = '9,20<13,24<4<0,5,6,15,17<4,13<8<1,3,14<7,10,11,21,23<web';
+			}
+			else{	// default state, transform default value
+				bwdpi_app_rulelist = "9,20<8<4<0,5,6,15,17<4,13<13,24<1,3,14<7,10,11,21,23<";
+			}
+
+			bwdpi_app_rulelist_row = bwdpi_app_rulelist.split("<");
+		}
+	}
+
+
 	var index = 0;
 	var code = "";
-
-	for(i=1;i<bwdpi_app_rulelist_row.length-2;i++){
+	
+	for(i=1;i<bwdpi_app_rulelist_row.length-1;i++){
 		for(j=1;j<cat_id_array.length;j++){
 			if(cat_id_array[j] == bwdpi_app_rulelist_row[i]){
 				index = j;
@@ -879,6 +958,7 @@ function register_event1(){
 				regen_priority(this);
 			}
 		});
+
 		$("#category_list").disableSelection();
 	});
 }
@@ -896,6 +976,10 @@ function register_overHint(){
 	document.getElementById('5').onmouseout = function(){nd();}
 	document.getElementById('6').onmouseover = function(){overHint(96);}
 	document.getElementById('6').onmouseout = function(){nd();}
+	if(document.getElementById('7')){
+		document.getElementById('7').onmouseover = function(){overHint(97);}
+		document.getElementById('7').onmouseout = function(){nd();}
+	}
 }
 
 function bandwidth_setting(){
@@ -1381,7 +1465,7 @@ function setGroup(name){
 								</tr>
 								</tbody>
 							</table>
-							<div style="margin-top:5px;width:100%;text-align:center;">
+							<div style="margin-bottom:10px;width:100%;text-align:center;">
 								<input class="button_gen" id="btn_cancel_priority" type="button" onclick="cancel_priority_panel();" value="<#CTL_Cancel#>">
 								<input class="button_gen" type="button" onclick="save_priority();" value="<#CTL_onlysave#>">
 							</div>
@@ -1403,6 +1487,8 @@ function setGroup(name){
 			<input type="hidden" name="flag" value="">
 			<input type="hidden" name="TM_EULA" value="<% nvram_get("TM_EULA"); %>">
 			<input type="hidden" name="qos_enable" value="<% nvram_get("qos_enable"); %>">
+			<input type="hidden" name="qos_enable_orig" value="<% nvram_get("qos_enable"); %>">
+			<input type="hidden" name="qos_type_orig" value="<% nvram_get("qos_type"); %>">
 			<input type="hidden" name="qos_type" value="<% nvram_get("qos_type"); %>">
 			<input type="hidden" name="qos_obw" value="<% nvram_get("qos_obw"); %>" disabled>
 			<input type="hidden" name="qos_ibw" value="<% nvram_get("qos_ibw"); %>" disabled>
@@ -1475,7 +1561,7 @@ function setGroup(name){
 														$('#radio_qos_enable').iphoneSwitch('<% nvram_get("qos_enable"); %>',
 															 function() {
 																document.form.qos_enable.value = "1";
-																if(qos_enable_orig != "1"){
+																if(document.form.qos_enable_orig.value != "1"){
 																	if(document.getElementById('int_type').checked == true && bwdpi_support)
 																		document.form.next_page.value = "QoS_EZQoS.asp";
 																	else if(document.getElementById('trad_type').checked)		//Traditional QoS
@@ -1493,7 +1579,7 @@ function setGroup(name){
 																if(bwdpi_support){
 																	document.getElementById('qos_enable_hint').style.display = "";
 																}
-																change_qos_type(qos_type_orig);
+																change_qos_type(document.form.qos_type_orig.value);
 															 },
 															 function() {
 																document.form.qos_enable.value = "0";
@@ -1594,40 +1680,46 @@ function setGroup(name){
 							</tr>
 						</table>
 
-						<table id="quick_setup_table" width="100%" border="0" align="center" style="display:none;">
-							<tr height="130px">
-								<td width="10px"></td>
-								<td width="130px" align="center">
-									<div id="Game" class="quick_setup" onclick="clickEvent(this);" onmouseover="overHint(86);" onmouseout="nd();"><a href=""></a></div>
-								</td>
-								<td width="50px"></td>
-								<td width="130px" align="center">
-									<div id="Media" class="quick_setup" onclick="clickEvent(this);" onmouseover="overHint(87);" onmouseout="nd();"><a href=""></a></div>
-								</td>
-								<td width="50px"></td>
-								<td width="130px" align="center">
-									<div id="Web" class="quick_setup" onclick="clickEvent(this);" onmouseover="overHint(88);" onmouseout="nd();"><a href=""></a></div>
-								</td>
-								<td width="50px"></td>
-								<td width="130px" align="center">
-									<div id="Customize" class="quick_setup" onclick="clickEvent(this);set_priority('on');" onmouseover="overHint(85);" onmouseout="nd();"><a href=""></a></div>
-								</td>
-								<td width="20px"></td>
-							</tr>
-							<tr height="40px" align="center">
-								<td width="10px"></td>
-								<td class="Quick_Setup_title" align="center"><#AiProtection_filter_stream1#></td><!--Games-->
-								<td width="50px"></td>
-								<td class="Quick_Setup_title" align="center"><#AiProtection_filter_stream2#></td><!--Media Streaming-->
-								<td width="50px"></td>
-								<td class="Quick_Setup_title" align="center"><#Adaptive_WebSurf#></td><!--Web Surfing-->
-								<td width="50px"></td>
-								<td class="Quick_Setup_title" align="center"><#Customize#></td>
-								<td width="20px"></td>
-							</tr>
-							<tr height="40">
-							</tr>
-						</table>
+						<div id="quick_setup_table" style="display:none;">
+							<div style="display:flex;align-items: center;justify-content: center;">
+								<div style="width: 120px;height:174px;">
+									<div style="display:flex;height:132px;">
+										<div id="Game" onclick="clickEvent(this);" onmouseover="overHint(86);" onmouseout="nd();"></div>
+									</div>				
+									<div class="Quick_Setup_title"><#AiProtection_filter_stream1#></div>
+								</div>
+								<div style="width: 120px;height:174px;">
+									<div style="display:flex;height:132px;">
+										<div id="Media" onclick="clickEvent(this);" onmouseover="overHint(87);" onmouseout="nd();"></div>
+									</div>		
+									<div class="Quick_Setup_title"><#AiProtection_filter_stream2#></div>
+								</div>
+								<div style="width: 120px;height:174px;">
+									<div style="display:flex;height:132px;">
+										<div id="Web" onclick="clickEvent(this);" onmouseover="overHint(88);" onmouseout="nd();"></div>
+									</div>					
+									<div class="Quick_Setup_title"><#Adaptive_WebSurf#></div>
+								</div>
+								<div style="width: 120px;height:174px;">
+									<div style="display:flex;height:132px;">
+										<div id="eLearning" onclick="clickEvent(this);" onmouseover="overHint(104);" onmouseout="nd();"></div>
+									</div>								
+									<div class="Quick_Setup_title"><#Adaptive_eLearning#></div>
+								</div>
+								<div style="width: 120px;height:174px;">
+									<div style="display:flex;height:132px;">
+										<div id="videoConference" onclick="clickEvent(this);" onmouseover="overHint(103);" onmouseout="nd();"></div>
+									</div>		
+									<div class="Quick_Setup_title"><#Adaptive_Message#></div>
+								</div>
+								<div style="width: 120px;height:174px;">
+									<div style="display:flex;height:132px;">
+										<div id="Customize" onclick="clickEvent(this);set_priority('on');" onmouseover="overHint(85);" onmouseout="nd();"></div>
+									</div>
+									<div class="Quick_Setup_title"><#Customize#></div>
+								</div>
+							</div>
+						</div>
 
 						<table id="list_table" width="94%" border="0" cellpadding="0" cellspacing="0" style="padding-left:8px;">
 							<tr>

@@ -173,7 +173,9 @@ function init()
 	document.getElementById("faq0").href = "https://www.asus.com/support/FAQ/114483/" ;
 	if(bwdpi_support){
 		document.getElementById('content_title').innerHTML = "<#menu5_3_2#> - <#traffic_monitor#>";
-	}	
+	}
+
+	document.getElementById('traffic_unit').value = getTrafficUnit();
 }
 
 function switchPage(page){
@@ -207,6 +209,11 @@ function Zoom(func){
 		document.form.zoom.value = 1;
 	else
 		return false;
+}
+
+function setUnit(unit){
+	cookie.set('ASUS_TrafficMonitor_unit', unit);
+	initCommon(1, 0, 0, 1);
 }
 </script>
 </head>
@@ -287,7 +294,23 @@ function Zoom(func){
 							</table>
 							<!--End-->
           				</td>
-        			</tr>
+					</tr>
+					<tr>
+						<td>
+							<div style="display:flex;align-items: center;margin: 4px 0;">
+								<div><#Statistic_show_type#></div>
+								<div style="margin-left: 24px;">
+									<select class="input_option" id="traffic_unit" onchange="setUnit(this.value);">
+										<option value="0">KB</option>
+										<option value="1">MB</option>
+										<option value="2">GB</option>
+										<option value="3">TB</option>
+									</select>
+								</div>
+							</div>
+							
+						</td>
+					</tr>
         			<tr>
           				<td height="30" align="left" valign="middle" >
 							<div class="formfontcontent"><p><#traffic_monitor_desc2#></p></div>		

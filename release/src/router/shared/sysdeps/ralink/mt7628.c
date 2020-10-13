@@ -1445,7 +1445,7 @@ static void create_Vlan(int bitmask)
 		mt7628_vlan_set(1, vid, portmap, vid);
 		/* Tag or untag */
 		for (i = 0; i < 7 ; i++) {
-			if (i != CPU_PORT && i != WAN_PORT && i != 7) // Skip CPU/WAN
+			if (i != CPU_PORT && i != WAN_PORT && i != LAN4_PORT && i != 7) // Skip CPU/WAN
 				untag_mask += (1 << i);
 		}
 		set_Vlan_untag(1, untag_mask);

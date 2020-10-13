@@ -1264,6 +1264,7 @@ extern int vpnc_set_dev_policy_rule();
 // ovpn.c
 extern int ovpn_up_main(int argc, char **argv);
 extern int ovpn_down_main(int argc, char **argv);
+extern int ovpn_route_up_main(int argc, char **argv);
 
 // openvpn.c
 #ifdef RTCONFIG_OPENVPN
@@ -1537,7 +1538,7 @@ extern int firmware_check_main(int argc, char *argv[]);
 #ifdef RTCONFIG_HTTPS
 extern int rsasign_check_main(int argc, char *argv[]);
 extern int rsarootca_check_main(int argc, char *argv[]);
-extern char *pwdec(const char *input, char *output);
+extern char *pwdec(const char *input, char *output, int output_len);
 extern char *pwdec_dsl(char *input);
 #endif
 extern int service_main(int argc, char *argv[]);
@@ -1552,7 +1553,10 @@ extern void stop_dsl_diag(void);
 extern int start_dsl_diag(void);
 #endif
 #endif
-#ifdef RTCONFIG_FEEDBACK
+#ifdef RTCONFIG_FRS_LIVE_UPDATE
+extern int firmware_check_update_main(int argc, char *argv[]);
+#endif
+#ifdef RTCONFIG_FRS_FEEDBACK
 extern void start_sendfeedback(void);
 #ifdef RTCONFIG_DBLOG
 extern void start_senddblog(char *path);
@@ -1562,7 +1566,7 @@ extern void stop_dblog(void);
 #ifdef RTCONFIG_DSL_TCLINUX
 extern void start_sendDSLdiag(void);
 #endif
-#endif /* RTCONFIG_FEEDBACK */
+#endif /* RTCONFIG_FRS_FEEDBACK */
 #ifdef RTCONFIG_SNMPD
 extern void start_snmpd(void);
 extern void stop_snmpd(void);
@@ -2086,7 +2090,7 @@ extern void exec_uu();
 #endif
 
 // dsl_fb.c
-#ifdef RTCONFIG_FEEDBACK
+#ifdef RTCONFIG_FRS_FEEDBACK
 extern int do_feedback(const char* feedback_file, char* attach_cmd);
 #endif
 

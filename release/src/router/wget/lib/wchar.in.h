@@ -1,6 +1,6 @@
 /* A substitute for ISO C99 <wchar.h>, for platforms that have issues.
 
-   Copyright (C) 2007-2014 Free Software Foundation, Inc.
+   Copyright (C) 2007-2018 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, see <http://www.gnu.org/licenses/>.  */
+   along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
 /* Written by Eric Blake.  */
 
@@ -30,15 +30,23 @@
 #endif
 @PRAGMA_COLUMNS@
 
-#if defined __need_mbstate_t || defined __need_wint_t || (defined __hpux && ((defined _INTTYPES_INCLUDED && !defined strtoimax) || defined _GL_JUST_INCLUDE_SYSTEM_WCHAR_H)) || defined _GL_ALREADY_INCLUDING_WCHAR_H
+#if (((defined __need_mbstate_t || defined __need_wint_t)               \
+      && !defined __MINGW32__)                                          \
+     || (defined __hpux                                                 \
+         && ((defined _INTTYPES_INCLUDED && !defined strtoimax)         \
+             || defined _GL_JUST_INCLUDE_SYSTEM_WCHAR_H))               \
+     || (defined __MINGW32__ && defined __STRING_H_SOURCED__)           \
+     || defined _GL_ALREADY_INCLUDING_WCHAR_H)
 /* Special invocation convention:
-   - Inside glibc and uClibc header files.
+   - Inside glibc and uClibc header files, but not MinGW.
    - On HP-UX 11.00 we have a sequence of nested includes
      <wchar.h> -> <stdlib.h> -> <stdint.h>, and the latter includes <wchar.h>,
      once indirectly <stdint.h> -> <sys/types.h> -> <inttypes.h> -> <wchar.h>
      and once directly.  In both situations 'wint_t' is not yet defined,
      therefore we cannot provide the function overrides; instead include only
      the system's <wchar.h>.
+   - With MinGW 3.22, when <string.h> includes <wchar.h>, only some part of
+     <wchar.h> is actually processed, and that doesn't include 'mbstate_t'.
    - On IRIX 6.5, similarly, we have an include <wchar.h> -> <wctype.h>, and
      the latter includes <wchar.h>.  But here, we have no way to detect whether
      <wctype.h> is completely included or is still being included.  */
@@ -105,12 +113,16 @@
 #  define WEOF -1
 # endif
 #else
-/* MSVC defines wint_t as 'unsigned short' in <crtdefs.h>.
-   This is too small: ISO C 99 section 7.24.1.(2) says that wint_t must be
-   "unchanged by default argument promotions".  Override it.  */
-# if defined _MSC_VER
+/* mingw and MSVC define wint_t as 'unsigned short' in <crtdefs.h> or
+   <stddef.h>.  This is too small: ISO C 99 section 7.24.1.(2) says that
+   wint_t must be "unchanged by default argument promotions".  Override it.  */
+# if @GNULIB_OVERRIDES_WINT_T@
 #  if !GNULIB_defined_wint_t
-#   include <crtdefs.h>
+#   if @HAVE_CRTDEFS_H@
+#    include <crtdefs.h>
+#   else
+#    include <stddef.h>
+#   endif
 typedef unsigned int rpl_wint_t;
 #   undef wint_t
 #   define wint_t rpl_wint_t
@@ -1019,6 +1031,38 @@ _GL_CXXALIASWARN (wcswidth);
 # if HAVE_RAW_DECL_WCSWIDTH
 _GL_WARN_ON_USE (wcswidth, "wcswidth is unportable - "
                  "use gnulib module wcswidth for portability");
+# endif
+#endif
+
+
+/* Convert *TP to a date and time wide string.  See
+   <http://pubs.opengroup.org/onlinepubs/9699919799/functions/wcsftime.html>.  */
+#if @GNULIB_WCSFTIME@
+# if @REPLACE_WCSFTIME@
+#  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+#   undef wcsftime
+#   define wcsftime rpl_wcsftime
+#  endif
+_GL_FUNCDECL_RPL (wcsftime, size_t, (wchar_t *__buf, size_t __bufsize,
+                                     const wchar_t *__fmt, const struct tm *__tp)
+                                    _GL_ARG_NONNULL ((1, 3, 4)));
+_GL_CXXALIAS_RPL (wcsftime, size_t, (wchar_t *__buf, size_t __bufsize,
+                                     const wchar_t *__fmt, const struct tm *__tp));
+# else
+#  if !@HAVE_WCSFTIME@
+_GL_FUNCDECL_SYS (wcsftime, size_t, (wchar_t *__buf, size_t __bufsize,
+                                     const wchar_t *__fmt, const struct tm *__tp)
+                                    _GL_ARG_NONNULL ((1, 3, 4)));
+#  endif
+_GL_CXXALIAS_SYS (wcsftime, size_t, (wchar_t *__buf, size_t __bufsize,
+                                     const wchar_t *__fmt, const struct tm *__tp));
+# endif
+_GL_CXXALIASWARN (wcsftime);
+#elif defined GNULIB_POSIXCHECK
+# undef wcsftime
+# if HAVE_RAW_DECL_WCSFTIME
+_GL_WARN_ON_USE (wcsftime, "wcsftime is unportable - "
+                 "use gnulib module wcsftime for portability");
 # endif
 #endif
 

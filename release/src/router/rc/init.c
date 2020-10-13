@@ -1083,10 +1083,10 @@ void usbctrl_default()
 
 		http_passwd = nvram_safe_get("http_passwd");
 #ifdef RTCONFIG_NVRAM_ENCRYPT
-		int declen = pw_dec_len(http_passwd);
+		int declen = strlen(http_passwd);
 		char dec_passwd[declen];
 		memset(dec_passwd, 0, sizeof(dec_passwd));
-		pw_dec(http_passwd, dec_passwd);
+		pw_dec(http_passwd, dec_passwd, sizeof(dec_passwd));
 
 		char_to_ascii_safe(ascii_passwd, dec_passwd, 84);
 
@@ -1537,7 +1537,7 @@ misc_defaults(int restore_defaults)
 		case MODEL_BRTAC828:
 		case MODEL_RTAC88S:
 		case MODEL_RTAD7200:
-			nvram_set("reboot_time", "100");	// default is 70 sec
+			nvram_set("reboot_time", "110");	// default is 70 sec
 #if defined(RTCONFIG_LETSENCRYPT)
 			if (nvram_match("le_acme_auth", "dns"))
 				nvram_set("le_acme_auth", "http");
@@ -1614,18 +1614,6 @@ misc_defaults(int restore_defaults)
 	nvram_set("svc_ready", "0");
 #ifdef RTCONFIG_QTN
 	nvram_unset("qtn_ready");
-#endif
-	nvram_set("mfp_ip_requeue", "");
-	nvram_unset("webs_state_update");
-	nvram_unset("webs_state_upgrade");
-	nvram_unset("webs_state_info");
-	nvram_unset("webs_state_REQinfo");
-	nvram_unset("webs_state_url");
-	nvram_unset("webs_state_flag");
-	nvram_unset("webs_state_error");
-#if defined(RTAC68U) || defined(RTCONFIG_FORCE_AUTO_UPGRADE)
-	nvram_set_int("auto_upgrade", 0);
-	nvram_unset("fw_check_period");
 #endif
 
 	if (restore_defaults)
@@ -1715,6 +1703,7 @@ misc_defaults(int restore_defaults)
 	nvram_set("aae_support", "1");
 #define AAE_ENABLE_AIHOME 2
 #define AAE_EANBLE_AICLOUD 4
+	nvram_set("aae_enable", "0");
 #ifdef RTCONFIG_AIHOME_TUNNEL
 	nvram_set_int("aae_enable", (nvram_get_int("aae_enable") | AAE_ENABLE_AIHOME));
 #endif
@@ -3858,6 +3847,7 @@ int init_nvram(void)
 		add_rc_support("manual_stb");
 		add_rc_support("11AC");
 		add_rc_support("app");
+		add_rc_support("gameMode");
 		//add_rc_support("pwrctrl");
 		// the following values is model dep. so move it from default.c to here
 		nvram_set("wl0_HT_TxStream", "4");
@@ -9013,6 +9003,12 @@ int init_nvram(void)
 
 #ifdef RTCONFIG_HTTPS
 	add_rc_support("HTTPS");
+
+	/* workaround : openssl self-signed certificate from old firmware version */
+	// force to enable https_crt_save to store certificate
+	if (nvram_get_int("https_crt_save") == 0) {
+		nvram_set_int("https_crt_save", 1);
+	}
 #ifdef RTCONFIG_LETSENCRYPT
 	add_rc_support("letsencrypt");
 #endif
@@ -9373,6 +9369,22 @@ int init_nvram2(void)
 	nvram_unset("disableWifiDrv_fac");
 #endif
 	nvram_set("label_mac", get_label_mac());
+
+	// upgrade/downgrade dont keep info
+	if(!nvram_match("extendno", nvram_safe_get("extendno_org"))){
+		nvram_set("mfp_ip_requeue", "");
+		nvram_unset("webs_state_update");
+		nvram_unset("webs_state_upgrade");
+		nvram_unset("webs_state_info");
+		nvram_unset("webs_state_REQinfo");
+		nvram_unset("webs_state_url");
+		nvram_unset("webs_state_flag");
+		nvram_unset("webs_state_error");
+#if defined(RTAC68U) || defined(RTCONFIG_FORCE_AUTO_UPGRADE)
+		nvram_set_int("auto_upgrade", 0);
+#endif
+	}
+
 	return 0;
 }
 
@@ -10531,6 +10543,7 @@ void config_format_compatibility_handler(void)
 #endif
 }
 
+#ifdef RTCONFIG_WIFILOGO
 static void
 run_rc_local(void)
 {
@@ -10542,6 +10555,7 @@ run_rc_local(void)
 		system(cmd);
 	}
 }
+#endif
 
 int init_main(int argc, char *argv[])
 {
@@ -11150,7 +11164,9 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 
 #endif // RTCONFIG_USB
 
+#ifdef RTCONFIG_WIFILOGO
 			run_rc_local();
+#endif
 
 #ifndef RTCONFIG_LANTIQ
 			nvram_set("success_start_service", "1");
@@ -11216,6 +11232,9 @@ dbg("boot/continue fail= %d/%d\n", nvram_get_int("Ate_boot_fail"),nvram_get_int(
 			check_services();
 		}
 
+#ifdef RTCONFIG_ASD
+		monitor_asd();
+#endif
 		do {
 		ret = sigwaitinfo(&sigset, &info);
 		} while (ret == -1);

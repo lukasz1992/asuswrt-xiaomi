@@ -1,4 +1,4 @@
-/* dnsmasq is Copyright (c) 2000-2018 Simon Kelley
+/* dnsmasq is Copyright (c) 2000-2020 Simon Kelley
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ static struct ubus_object_type ubus_object_type =
   UBUS_OBJECT_TYPE("dnsmasq", ubus_object_methods);
 
 static struct ubus_object ubus_object = {
-  .name = "dnsmasq",
+  .name = NULL,
   .type = &ubus_object_type,
   .methods = ubus_object_methods,
   .n_methods = ARRAY_SIZE(ubus_object_methods),
@@ -94,6 +94,7 @@ void ubus_init()
       return;
     }
 
+  ubus_object.name = daemon->ubus_name;
   ret = ubus_add_object(ubus, &ubus_object);
   if (ret)
     {
@@ -102,6 +103,7 @@ void ubus_init()
           my_syslog(LOG_ERR, _("Cannot add object to UBus: %s"), ubus_strerror(ret));
           error_logged = 1;
         }
+      ubus_destroy(ubus);
       return;
     }
 

@@ -672,6 +672,8 @@ gen_qca_wifi_cfgs(void)
 	if (!(fp2 = fopen("/tmp/postwifi.sh", "w+")))
 		return;
 
+	fprintf(fp, "#!/bin/sh -p\n");
+	fprintf(fp2, "#!/bin/sh -p\n");
 	memset(wl_mask, 0, sizeof(wl_mask));
 	strlcpy(lan_ifnames, nvram_safe_get("lan_ifnames"), sizeof(lan_ifnames));
 
@@ -1054,7 +1056,7 @@ gen_qca_wifi_cfgs(void)
 #if defined(RTCONFIG_CONCURRENTREPEATER)
 #if defined(RPAC51)
 					/* workaround for default to avoid 2G can't connect */
-					if (strcmp(wif, WIF_2G)==0)
+					if (strcmp(wif, WIF_2G)==0 && nvram_pf_match(main_prefix, "radio", "1"))
 					{
 						fprintf(fp, "ifconfig %s down up\n", wif);
 					}

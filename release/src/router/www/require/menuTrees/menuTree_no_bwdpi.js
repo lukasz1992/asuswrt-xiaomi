@@ -293,7 +293,7 @@ define(function(){
 					retArray.push("menu_VLAN");
 				}
 
-				if(!wtfast_support) {
+				if(!wtfast_support && !gameMode_support) {
 					retArray.push("menu_GameBoost");
 				}
 
@@ -509,10 +509,6 @@ define(function(){
 
 				if(!rog_support){
 					retArray.push("AdaptiveQoS_ROG.asp");
-				}
-
-				if(!wtfast_support){
-					retArray.push("GameBoost.asp");
 				}
 
 				if(!IPv6_support){

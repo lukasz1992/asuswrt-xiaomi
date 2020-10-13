@@ -95,6 +95,7 @@
 <script type="text/javascript" src="/validator.js"></script>
 <script language="JavaScript" type="text/javascript" src="/client_function.js"></script>
 <script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
+<script language="JavaScript" type="text/javascript" src="/js/httpApi.js"></script>
 <script type="text/javascript" src="/switcherplugin/jquery.iphone-switch.js"></script>
 <script language="JavaScript" type="text/javascript" src="/form.js"></script>
 <script language="JavaScript" type="text/javascript" src="/js/asus_eula.js"></script>
@@ -1953,50 +1954,14 @@ function redirectTimeScheduling() {
 	location.href = "ParentalControl.asp" ;
 }
 function updateClientsCount() {
-	$.ajax({
-		url: '/update_networkmapd.asp',
-		dataType: 'script', 
-		error: function(xhr) {
-			setTimeout("updateClientsCount();", 1000);
-		},
-		success: function(response){
-			var re_tune_client_count = function() {
-				var count = 0;
-				var fromNetworkmapd_array = [];
-				for(var i in fromNetworkmapd_maclist[0]){
-					if (fromNetworkmapd_maclist[0].hasOwnProperty(i)) {
-						fromNetworkmapd_array[fromNetworkmapd_maclist[0][i]] = 1;
-					}
-				}
-				count = fromNetworkmapd_maclist[0].length;
-				for(var i in get_cfg_clientlist[0]){
-					if (get_cfg_clientlist[0].hasOwnProperty(i)) {
-						if(fromNetworkmapd_array[get_cfg_clientlist[0][i].mac] != undefined)
-							count--;
-					}
-				}
-				return count;
-			};
-			//When not click iconClient and not click View Client List need update client count.
-			if(lastName != "iconClient") {
-				if(document.getElementById("clientlist_viewlist_content")) {
-					if(document.getElementById("clientlist_viewlist_content").style.display == "none") {
-						if(amesh_support && (isSwMode("rt") || isSwMode("ap")))
-							show_client_status(re_tune_client_count());
-						else
-							show_client_status(fromNetworkmapd_maclist[0].length);
-					}
-				}
-				else {
-					if(amesh_support && (isSwMode("rt") || isSwMode("ap")))
-						show_client_status(re_tune_client_count());
-					else
-						show_client_status(fromNetworkmapd_maclist[0].length);
-				}
-			}
-			setTimeout("updateClientsCount();", 5000);
-		}
-	});
+	//When not click iconClient and not click View Client List need update client count.
+	var viewlist_obj = document.getElementById("clientlist_viewlist_content");
+	if(lastName != "iconClient" && (viewlist_obj == null || (viewlist_obj && viewlist_obj.style.display == "none"))){
+		originData.fromNetworkmapd[0] = httpApi.hookGet("get_clientlist", true);
+		genClientList();
+		show_client_status(totalClientNum.online);
+	}
+	setTimeout("updateClientsCount();", 5000);
 }
 function setDefaultIcon() {
 	var mac = document.getElementById("macaddr_field").value;

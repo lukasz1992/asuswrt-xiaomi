@@ -1,4 +1,4 @@
-/* dnsmasq is Copyright (c) 2000-2018 Simon Kelley
+/* dnsmasq is Copyright (c) 2000-2020 Simon Kelley
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -413,7 +413,7 @@ size_t dhcp_reply(struct dhcp_context *context, char *iface_name, int int_index,
 		for (o2 = offset + 5; o2 < offset + len + 5; o2 += elen + 1)
 		  { 
 		    elen = option_uint(opt, o2, 1);
-		    if ((o2 + elen + 1 <= option_len(opt)) &&
+		    if ((o2 + elen + 1 <= (unsigned)option_len(opt)) &&
 			(match = match_bytes(o, option_ptr(opt, o2 + 1), elen)))
 		      break;
 		  }
@@ -504,7 +504,7 @@ size_t dhcp_reply(struct dhcp_context *context, char *iface_name, int int_index,
   mess->op = BOOTREPLY;
   
   config = find_config(daemon->dhcp_conf, context, clid, clid_len, 
-		       mess->chaddr, mess->hlen, mess->htype, NULL);
+		       mess->chaddr, mess->hlen, mess->htype, NULL, run_tag_if(netid));
 
   /* set "known" tag for known hosts */
   if (config)
@@ -514,7 +514,7 @@ size_t dhcp_reply(struct dhcp_context *context, char *iface_name, int int_index,
       netid = &known_id;
     }
   else if (find_config(daemon->dhcp_conf, NULL, clid, clid_len, 
-		       mess->chaddr, mess->hlen, mess->htype, NULL))
+		       mess->chaddr, mess->hlen, mess->htype, NULL, run_tag_if(netid)))
     {
       known_id.net = "known-othernet";
       known_id.next = netid;
@@ -725,9 +725,37 @@ size_t dhcp_reply(struct dhcp_context *context, char *iface_name, int int_index,
 	client_hostname = daemon->dhcp_buff;
     }
 
-  if (client_hostname && option_bool(OPT_LOG_OPTS))
-    my_syslog(MS_DHCP | LOG_INFO, _("%u client provides name: %s"), ntohl(mess->xid), client_hostname);
-
+  if (client_hostname)
+    {
+      struct dhcp_match_name *m;
+      size_t nl = strlen(client_hostname);
+      
+      if (option_bool(OPT_LOG_OPTS))
+	my_syslog(MS_DHCP | LOG_INFO, _("%u client provides name: %s"), ntohl(mess->xid), client_hostname);
+      for (m = daemon->dhcp_name_match; m; m = m->next)
+	{
+	  size_t ml = strlen(m->name);
+	  char save = 0;
+	  
+	  if (nl < ml)
+	    continue;
+	  if (nl > ml)
+	    {
+	      save = client_hostname[ml];
+	      client_hostname[ml] = 0;
+	    }
+	  
+	  if (hostname_isequal(client_hostname, m->name) &&
+	      (save == 0 || m->wildcard))
+	    {
+	      m->netid->next = netid;
+	      netid = m->netid;
+	    }
+	  
+	  if (save != 0)
+	    client_hostname[ml] = save;
+	}
+    }
   
   if (have_config(config, CONFIG_NAME))
     {
@@ -753,7 +781,7 @@ size_t dhcp_reply(struct dhcp_context *context, char *iface_name, int int_index,
 		 to avoid impersonation by name. */
 	      struct dhcp_config *new = find_config(daemon->dhcp_conf, context, NULL, 0,
 						    mess->chaddr, mess->hlen, 
-						    mess->htype, hostname);
+						    mess->htype, hostname, run_tag_if(netid));
 	      if (new && !have_config(new, CONFIG_CLID) && !new->hwaddr)
 		{
 		  config = new;
@@ -763,36 +791,6 @@ size_t dhcp_reply(struct dhcp_context *context, char *iface_name, int int_index,
 		  netid = &known_id;
 		}
 	    }
-	}
-    }
-
-  if (hostname)
-    {
-      struct dhcp_match_name *m;
-      size_t nl = strlen(hostname);
-      
-      for (m = daemon->dhcp_name_match; m; m = m->next)
-	{
-	  size_t ml = strlen(m->name);
-	  char save = 0;
-	  
-	  if (nl < ml)
-	    continue;
-	  if (nl > ml)
-	    {
-	      save = hostname[ml];
-	      hostname[ml] = 0;
-	    }
-	  
-	  if (hostname_isequal(hostname, m->name) &&
-	      (save == 0 || m->wildcard))
-	    {
-	      m->netid->next = netid;
-	      netid = m->netid;
-	    }
-	  
-	  if (save != 0)
-	    hostname[ml] = save;
 	}
     }
   

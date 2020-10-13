@@ -1,5 +1,5 @@
 /* dnssec.c is Copyright (c) 2012 Giovanni Bajo <rasky@develer.com>
-           and Copyright (c) 2012-2018 Simon Kelley
+           and Copyright (c) 2012-2020 Simon Kelley
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -899,7 +899,7 @@ int dnssec_validate_ds(time_t now, struct dns_header *header, size_t plen, char 
   
   if (rc == STAT_INSECURE)
     {
-      my_syslog(LOG_WARNING, _("Insecure DS reply received, do upstream DNS servers support DNSSEC?"));
+      my_syslog(LOG_WARNING, _("Insecure DS reply received for %s, check domain configuration and upstream DNS server DNSSEC support"), name);
       rc = STAT_BOGUS;
     }
   
@@ -1003,7 +1003,7 @@ int dnssec_validate_ds(time_t now, struct dns_header *header, size_t plen, char 
       
       cache_end_insert();  
       
-      log_query(F_NOEXTRA | F_UPSTREAM, name, NULL, "no DS");
+      log_query(F_NOEXTRA | F_UPSTREAM, name, NULL, nons ? "no DS/cut" : "no DS");
     }
       
   return STAT_OK;

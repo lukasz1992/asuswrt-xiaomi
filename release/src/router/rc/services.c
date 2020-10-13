@@ -683,7 +683,7 @@ void create_passwd(void)
 #ifdef RTCONFIG_NVRAM_ENCRYPT
 	else{
 		memset(dec_passwd, 0, sizeof(dec_passwd));
-		pw_dec(p, dec_passwd);
+		pw_dec(p, dec_passwd, sizeof(dec_passwd));
 		p = dec_passwd;
 	}
 #endif
@@ -3771,6 +3771,38 @@ void start_sysstate(void)
 }
 #endif
 
+#ifdef RTCONFIG_AHS
+#define AHS_PIDFILE "/var/run/ahs.pid"
+void stop_ahs(void)
+{
+	if (pids("ahs"))
+	{
+		killall_tk("ahs");
+	}
+}
+
+void start_ahs(void)
+{
+	stop_ahs();
+	xstart("ahs");
+}
+#endif /* RTCONFIG_AHS */
+
+#ifdef RTCONFIG_ASD
+void stop_asd(void)
+{
+	if (pids("asd"))
+	{
+		killall("asd", SIGTERM);
+	}
+}
+
+void start_asd(void)
+{
+	stop_asd();
+	xstart("asd");
+}
+#endif /* RTCONFIG_ASD */
 void
 stop_misc(void)
 {
@@ -3898,6 +3930,9 @@ stop_misc(void)
 #ifdef RTCONFIG_SYSSTATE
 	stop_sysstate();
 #endif
+#ifdef RTCONFIG_AHS
+	stop_ahs();
+#endif /* RTCONFIG_AHS */
 	stop_logger();
 #ifdef RTCONFIG_DISK_MONITOR
 	stop_diskmon();
@@ -5846,12 +5881,12 @@ void chilli_config(void)
 
 	fprintf(fp, "dns1 %s\n", nvram_safe_get("lan_ipaddr"));
 
-	char *chilli_uamsecret =  nvram_get("chilli_uamsecret");
+	char *chilli_uamsecret =  nvram_safe_get("chilli_uamsecret");
 #ifdef RTCONFIG_NVRAM_ENCRYPT
-	int declen = pw_dec_len(chilli_uamsecret);
+	int declen = strlen(chilli_uamsecret);
 	char dec_passwd[declen];
 	memset(dec_passwd, 0, sizeof(dec_passwd));
-	pw_dec(chilli_uamsecret, dec_passwd);
+	pw_dec(chilli_uamsecret, dec_passwd, sizeof(dec_passwd));
 	chilli_uamsecret = dec_passwd;
 #endif
 	if (nvram_invmatch("chilli_uamsecret", ""))
@@ -5872,10 +5907,10 @@ void chilli_config(void)
 		fprintf(fp, "macauth\n");
 		char *chilli_macpasswd = nvram_safe_get("chilli_macpasswd");
 #ifdef RTCONFIG_NVRAM_ENCRYPT
-		int declen2 = pw_dec_len(chilli_macpasswd);
+		int declen2 = strlen(chilli_macpasswd);
 		char dec_passwd2[declen2];
 		memset(dec_passwd2, 0, sizeof(dec_passwd2));
-		pw_dec(chilli_macpasswd, dec_passwd2;);
+		pw_dec(chilli_macpasswd, dec_passwd2, sizeof(dec_passwd2));
 		chilli_macpasswd = dec_passwd2;
 #endif
 		if (strlen(chilli_macpasswd) > 0)
@@ -6020,12 +6055,12 @@ void chilli_config_CP(void)
 
 	fprintf(fp, "dns1 %s\n", nvram_safe_get("lan_ipaddr"));
 
-	char *enc_value =  nvram_get("cp_uamsecret");
+	char *enc_value =  nvram_safe_get("cp_uamsecret");
 #ifdef RTCONFIG_NVRAM_ENCRYPT
-	int declen = pw_dec_len(enc_value);
+	int declen = strlen(enc_value);
 	char dec_passwd[declen];
 	memset(dec_passwd, 0, sizeof(dec_passwd));
-	pw_dec(enc_value, dec_passwd);
+	pw_dec(enc_value, dec_passwd, sizeof(dec_passwd));
 	enc_value = dec_passwd;
 #endif
 	if (nvram_invmatch("cp_uamsecret", ""))
@@ -7279,6 +7314,9 @@ stop_netool(void)
 int
 start_services(void)
 {
+#ifdef RTCONFIG_ASD
+	start_asd();
+#endif
 #ifdef RTCONFIG_LANTIQ
 	start_wave_monitor();
 #endif
@@ -7379,6 +7417,9 @@ start_services(void)
 #ifdef RTCONFIG_SYSSTATE
 	start_sysstate();
 #endif
+#ifdef RTCONFIG_AHS
+	start_ahs();
+#endif /* RTCONFIG_AHS */
 #ifdef RTCONFIG_TRAFFIC_LIMITER
 	init_traffic_limiter();
 #endif
@@ -7777,6 +7818,9 @@ stop_services(void)
 #ifdef RTCONFIG_SYSSTATE
 	stop_sysstate();
 #endif
+#ifdef RTCONFIG_AHS
+	stop_ahs();
+#endif /* RTCONFIG_AHS */
 #ifdef RTCONFIG_CFGSYNC
 	stop_cfgsync();
 #endif
@@ -7955,6 +7999,9 @@ stop_services_mfg(void)
 #ifdef RTCONFIG_SYSSTATE
 	stop_sysstate();
 #endif
+#ifdef RTCONFIG_AHS
+	stop_ahs();
+#endif /* RTCONFIG_AHS */
 #ifdef RTCONFIG_PROTECTION_SERVER
 	stop_ptcsrv();
 #endif
@@ -8473,22 +8520,22 @@ int start_quagga(void)
 	zebra_hostname = nvram_safe_get("productid");
 	rip_hostname = nvram_safe_get("productid");
 #ifdef RTCONFIG_NVRAM_ENCRYPT
-	int declen = pw_dec_len(zebra_passwd);
+	int declen = strlen(zebra_passwd);
 	char dec_passwd[declen];
 	memset(dec_passwd, 0, sizeof(dec_passwd));
-	pw_dec(zebra_passwd, dec_passwd);
+	pw_dec(zebra_passwd, dec_passwd, sizeof(dec_passwd));
 	zebra_passwd = dec_passwd;
 
-	int declen2 = pw_dec_len(zebra_enpasswd);
+	int declen2 = strlen(zebra_enpasswd);
 	char dec_passwd2[declen2];
 	memset(dec_passwd2, 0, sizeof(dec_passwd2));
-	pw_dec(zebra_enpasswd, dec_passwd2);
+	pw_dec(zebra_enpasswd, dec_passwd2, sizeof(dec_passwd2));
 	zebra_enpasswd = dec_passwd2;
 
-	int declen3 = pw_dec_len(rip_passwd);
+	int declen3 = strlen(rip_passwd);
 	char dec_passwd3[declen3];
 	memset(dec_passwd3, 0, sizeof(dec_passwd3));
-	pw_dec(rip_passwd, dec_passwd3);
+	pw_dec(rip_passwd, dec_passwd3, sizeof(dec_passwd3));
 	rip_passwd = dec_passwd3;
 #endif
 	if (pids("zebra")){
@@ -9066,12 +9113,9 @@ again:
 #else /* !RTCONFIG_REALTEK */
 #if defined(RTCONFIG_QCA) && defined(RTCONFIG_FITFDT)
 					{
-						char *upgrade_file2 = "/tmp/linux2.trx";
-						char command_buf[256];
-						sprintf(command_buf,"dd if=%s of=%s bs=%d skip=1", upgrade_file, upgrade_file2, get_imageheader_size());
-						system(command_buf);
-						unlink(upgrade_file);
-						eval("mtd-write", "-i", upgrade_file2, "-d", "linux");
+						char header_size[20];
+						snprintf(header_size, sizeof(header_size)-1, "%d", get_imageheader_size());
+						eval("mtd-write", "-i", upgrade_file, "-d", "linux", "-s", header_size);
 					}
 #else
 					eval("mtd-write", "-i", upgrade_file, "-d", "linux");
@@ -9331,12 +9375,9 @@ again:
 #else /* !RTCONFIG_REALTEK */
 #if defined(RTCONFIG_QCA) && defined(RTCONFIG_FITFDT)
 					{
-						char *upgrade_file2 = "/tmp/linux2.trx";
-						char command_buf[256];
-						sprintf(command_buf,"dd if=%s of=%s bs=%d skip=1", upgrade_file, upgrade_file2, get_imageheader_size());
-						system(command_buf);
-						unlink(upgrade_file);
-						eval("mtd-write", "-i", upgrade_file2, "-d", "linux");
+						char header_size[20];
+						snprintf(header_size, sizeof(header_size)-1, "%d", get_imageheader_size());
+						eval("mtd-write", "-i", upgrade_file, "-d", "linux", "-s", header_size);
 					}
 #else
 					eval("mtd-write", "-i", upgrade_file, "-d", "linux");
@@ -10422,6 +10463,12 @@ check_ddr_done:
 	}
 #endif /* RTCONFIG_DBLOG */
 #endif /* RTCONFIG_FRS_FEEDBACK */
+#ifdef RTCONFIG_AHS
+	else if (strcmp(script, "ahs") == 0) {
+		if(action & RC_SERVICE_STOP) stop_ahs();
+		if(action & RC_SERVICE_START) start_ahs();
+	}
+#endif /* RTCONFIG_AHS */
 	else if (strcmp(script, "wan_line") == 0) {
 		_dprintf("%s: restart_wan_line: %s.\n", __FUNCTION__, cmd[1]);
 		if(cmd[1]) {
@@ -12422,7 +12469,7 @@ _dprintf("test 2. turn off the USB power during %d seconds.\n", reset_seconds[re
 	}
 
 skip:
-	if(nvptr){
+	if(nvptr && strlen(nvptr)){
 _dprintf("goto again(%d)...\n", getpid());
 		goto again;
 	}

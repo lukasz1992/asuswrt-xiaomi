@@ -2,7 +2,7 @@
 # This Makefile fragment tries to be general-purpose enough to be
 # used by many projects via the gnulib maintainer-makefile module.
 
-## Copyright (C) 2001-2014 Free Software Foundation, Inc.
+## Copyright (C) 2001-2018 Free Software Foundation, Inc.
 ##
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -15,18 +15,11 @@
 ## GNU General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+## along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # This is reported not to work with make-3.79.1
 # ME := $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 ME := maint.mk
-
-# Diagnostic for continued use of deprecated variable.
-# Remove in 2013
-ifneq ($(build_aux),)
- $(error "$(ME): \
-set $$(_build-aux) relative to $$(srcdir) instead of $$(build_aux)")
-endif
 
 # Helper variables.
 _empty =
@@ -61,6 +54,10 @@ GIT = git
 VC = $(GIT)
 
 VC_LIST = $(srcdir)/$(_build-aux)/vc-list-files -C $(srcdir)
+
+# You can override this variable in cfg.mk if your gnulib submodule lives
+# in a different location.
+gnulib_dir ?= $(srcdir)/gnulib
 
 # You can override this variable in cfg.mk to set your own regexp
 # matching files to ignore.
@@ -133,8 +130,8 @@ gnu_ftp_host-stable = ftp.gnu.org
 gnu_rel_host ?= $(gnu_ftp_host-$(release-type))
 
 url_dir_list ?= $(if $(call _equal,$(gnu_rel_host),ftp.gnu.org),	\
-                     http://ftpmirror.gnu.org/$(PACKAGE),		\
-                     ftp://$(gnu_rel_host)/gnu/$(PACKAGE))
+                     https://ftpmirror.gnu.org/$(PACKAGE),		\
+                     https://$(gnu_rel_host)/gnu/$(PACKAGE))
 
 # Override this in cfg.mk if you are using a different format in your
 # NEWS file.
@@ -155,6 +152,7 @@ export LC_ALL = C
 ## Sanity checks.  ##
 ## --------------- ##
 
+ifneq ($(_gl-Makefile),)
 _cfg_mk := $(wildcard $(srcdir)/cfg.mk)
 
 # Collect the names of rules starting with 'sc_'.
@@ -196,6 +194,7 @@ local-check :=								\
     $(filter-out $(local-checks-to-skip), $(local-checks-available)))
 
 syntax-check: $(local-check)
+endif
 
 # _sc_search_regexp
 #
@@ -422,6 +421,7 @@ sc_error_message_period:
 
 sc_file_system:
 	@prohibit=file''system						\
+	exclude='/proc/filesystems'					\
 	ignore_case=1							\
 	halt='found use of "file''system"; spell it "file system"'	\
 	  $(_sc_search_regexp)
@@ -442,17 +442,26 @@ sc_require_config_h:
 	halt='the above files do not include <config.h>'		\
 	  $(_sc_search_regexp)
 
+# Print each file name for which the first #include does not match
+# $(config_h_header).  Like grep -m 1, this only looks at the first match.
+perl_config_h_first_ =							\
+  -e 'BEGIN {$$ret = 0}'						\
+  -e 'if (/^\# *include\b/) {'						\
+  -e '  if (not m{^\# *include $(config_h_header)}) {'			\
+  -e '    print "$$ARGV\n";'						\
+  -e '    $$ret = 1;'							\
+  -e '  }'								\
+  -e '  \# Move on to next file after first include'			\
+  -e '  close ARGV;'							\
+  -e '}'								\
+  -e 'END {exit $$ret}'
+
 # You must include <config.h> before including any other header file.
 # This can possibly be via a package-specific header, if given by cfg.mk.
 sc_require_config_h_first:
-	@if $(VC_LIST_EXCEPT) | grep -l '\.c$$' > /dev/null; then	\
-	  fail=0;							\
-	  for i in $$($(VC_LIST_EXCEPT) | grep '\.c$$'); do		\
-	    grep '^# *include\>' $$i | $(SED) 1q			\
-		| grep -E '^# *include $(config_h_header)' > /dev/null	\
-	      || { echo $$i; fail=1; };					\
-	  done;								\
-	  test $$fail = 1 &&						\
+	@if $(VC_LIST_EXCEPT) | grep '\.c$$' > /dev/null; then		\
+	  files=$$($(VC_LIST_EXCEPT) | grep '\.c$$') &&			\
+	  perl -n $(perl_config_h_first_) $$files ||			\
 	    { echo '$(ME): the above files include some other header'	\
 		'before <config.h>' 1>&2; exit 1; } || :;		\
 	else :;								\
@@ -469,7 +478,7 @@ sc_prohibit_HAVE_MBRTOWC:
 define _sc_header_without_use
   dummy=; : so we do not need a semicolon before each use;		\
   h_esc=`echo '[<"]'"$$h"'[">]'|$(SED) 's/\./\\\\./g'`;			\
-  if $(VC_LIST_EXCEPT) | grep -l '\.c$$' > /dev/null; then		\
+  if $(VC_LIST_EXCEPT) | grep '\.c$$' > /dev/null; then			\
     files=$$(grep -l '^# *include '"$$h_esc"				\
 	     $$($(VC_LIST_EXCEPT) | grep '\.c$$')) &&			\
     grep -LE "$$re" $$files | grep . &&					\
@@ -563,7 +572,7 @@ sc_prohibit_posixver_without_use:
 	@h='posixver.h' re='\<posix2_version *\(' $(_sc_header_without_use)
 
 sc_prohibit_same_without_use:
-	@h='same.h' re='\<same_name *\(' $(_sc_header_without_use)
+	@h='same.h' re='\<same_name(at)? *\(' $(_sc_header_without_use)
 
 sc_prohibit_hash_pjw_without_use:
 	@h='hash-pjw.h' \
@@ -653,18 +662,14 @@ sc_prohibit_strings_without_use:
 	re='\<(strn?casecmp|ffs(ll)?)\>'				\
 	  $(_sc_header_without_use)
 
-# Get the list of symbol names with this:
-# perl -lne '/^# *define ([A-Z]\w+)\(/ and print $1' lib/intprops.h|fmt
-_intprops_names =							\
-  TYPE_IS_INTEGER TYPE_TWOS_COMPLEMENT TYPE_ONES_COMPLEMENT		\
-  TYPE_SIGNED_MAGNITUDE TYPE_SIGNED TYPE_MINIMUM TYPE_MAXIMUM		\
-  INT_BITS_STRLEN_BOUND INT_STRLEN_BOUND INT_BUFSIZE_BOUND		\
-  INT_ADD_RANGE_OVERFLOW INT_SUBTRACT_RANGE_OVERFLOW			\
-  INT_NEGATE_RANGE_OVERFLOW INT_MULTIPLY_RANGE_OVERFLOW			\
-  INT_DIVIDE_RANGE_OVERFLOW INT_REMAINDER_RANGE_OVERFLOW		\
-  INT_LEFT_SHIFT_RANGE_OVERFLOW INT_ADD_OVERFLOW INT_SUBTRACT_OVERFLOW	\
-  INT_NEGATE_OVERFLOW INT_MULTIPLY_OVERFLOW INT_DIVIDE_OVERFLOW		\
-  INT_REMAINDER_OVERFLOW INT_LEFT_SHIFT_OVERFLOW
+# Extract the raw list of symbol names with this:
+gl_extract_define_simple = \
+  /^\# *define ([A-Z]\w+)\(/ and print $$1
+# Filter out duplicates and convert to a space-separated list:
+_intprops_names = \
+  $(shell f=$(gnulib_dir)/lib/intprops.h;				\
+    perl -lne '$(gl_extract_define_simple)' $$f | sort -u | tr '\n' ' ')
+# Remove trailing space and convert to a regular expression:
 _intprops_syms_re = $(subst $(_sp),|,$(strip $(_intprops_names)))
 # Prohibit the inclusion of intprops.h without an actual use.
 sc_prohibit_intprops_without_use:
@@ -692,7 +697,7 @@ sc_prohibit_dirent_without_use:
 # Prohibit the inclusion of verify.h without an actual use.
 sc_prohibit_verify_without_use:
 	@h='verify.h'							\
-	re='\<(verify(true|expr)?|static_assert) *\('			\
+	re='\<(verify(true|expr)?|assume|static_assert) *\('		\
 	  $(_sc_header_without_use)
 
 # Don't include xfreopen.h unless you use one of its functions.
@@ -711,15 +716,6 @@ sc_changelog:
 	@prohibit='^[^12	]'					\
 	in_vc_files='^ChangeLog$$'					\
 	halt='found unexpected prefix in a ChangeLog'			\
-	  $(_sc_search_regexp)
-
-# Ensure that each .c file containing a "main" function also
-# calls set_program_name.
-sc_program_name:
-	@require='set_program_name *\(m?argv\[0\]\);'			\
-	in_vc_files='\.c$$'						\
-	containing='\<main *('						\
-	halt='the above files do not call set_program_name'		\
 	  $(_sc_search_regexp)
 
 # Ensure that each .c file containing a "main" function also
@@ -876,7 +872,7 @@ sc_GFDL_version:
 	  $(_sc_search_regexp)
 
 # Don't use Texinfo's @acronym{}.
-# http://lists.gnu.org/archive/html/bug-gnulib/2010-03/msg00321.html
+# https://lists.gnu.org/r/bug-gnulib/2010-03/msg00321.html
 texinfo_suffix_re_ ?= \.(txi|texi(nfo)?)$$
 sc_texinfo_acronym:
 	@prohibit='@acronym\{'						\
@@ -959,8 +955,13 @@ perl_filename_lineno_text_ =						\
     -e '    print "$$ARGV:$$n:$$v\n";'					\
     -e '  }'
 
+prohibit_doubled_words_ = \
+    the then in an on if is it but for or at and do to
+# expand the regex before running the check to avoid using expensive captures
+prohibit_doubled_word_expanded_ = \
+    $(join $(prohibit_doubled_words_),$(addprefix \s+,$(prohibit_doubled_words_)))
 prohibit_doubled_word_RE_ ?= \
-  /\b(then?|[iao]n|i[fst]|but|f?or|at|and|[dt]o)\s+\1\b/gims
+    /\b(?:$(subst $(_sp),|,$(prohibit_doubled_word_expanded_)))\b/gims
 prohibit_doubled_word_ =						\
     -e 'while ($(prohibit_doubled_word_RE_))'				\
     $(perl_filename_lineno_text_)
@@ -983,10 +984,11 @@ sc_prohibit_doubled_word:
 # Also prohibit a prefix matching "\w+ +".
 # @pxref gets the same see/also treatment and should be parenthesized;
 # presume it must *not* start a sentence.
+# POSIX spells it "timestamp" rather than "time\s+stamp", so we do, too.
 bad_xref_re_ ?= (?:[\w,:;] +|(?:see|also)\s+)\@xref\{
 bad_pxref_re_ ?= (?:[.!?]|(?:see|also))\s+\@pxref\{
 prohibit_undesirable_word_seq_RE_ ?=					\
-  /(?:\bcan\s+not\b|$(bad_xref_re_)|$(bad_pxref_re_))/gims
+  /(?:\bcan\s+not\b|\btime\s+stamps?\b|$(bad_xref_re_)|$(bad_pxref_re_))/gims
 prohibit_undesirable_word_seq_ =					\
     -e 'while ($(prohibit_undesirable_word_seq_RE_))'			\
     $(perl_filename_lineno_text_)
@@ -1000,6 +1002,14 @@ sc_prohibit_undesirable_word_seq:
 	     $$($(VC_LIST_EXCEPT))					\
 	  | grep -vE '$(ignore_undesirable_word_sequence_RE_)' | grep .	\
 	  && { echo '$(ME): undesirable word sequence' >&2; exit 1; } || :
+
+# Except for shell files and for loops, double semicolon is probably a mistake
+sc_prohibit_double_semicolon:
+	@prohibit='; *;[	{} \]*(/[/*]|$$)'			\
+	in_vc_files='\.[chly]$$'					\
+	exclude='\bfor *\(.*\)'						\
+	halt="Double semicolon detected"				\
+	  $(_sc_search_regexp)
 
 _ptm1 = use "test C1 && test C2", not "test C1 -''a C2"
 _ptm2 = use "test C1 || test C2", not "test C1 -''o C2"
@@ -1121,6 +1131,21 @@ fix_po_file_diag = \
 'you have changed the set of files with translatable diagnostics;\n\
 apply the above patch\n'
 
+# Generate a list of files in which to search for translatable strings.
+perl_translatable_files_list_ =						\
+  -e 'foreach $$file (@ARGV) {'						\
+  -e '	\# Consider only file extensions with one or two letters'	\
+  -e '	$$file =~ /\...?$$/ or next;'					\
+  -e '	\# Ignore m4 and mk files'					\
+  -e '	$$file =~ /\.m[4k]$$/ and next;'				\
+  -e '	\# Ignore a .c or .h file with a corresponding .l or .y file'	\
+  -e '	$$file =~ /(.+)\.[ch]$$/ && (-e "$${1}.l" || -e "$${1}.y")'	\
+  -e '	  and next;'							\
+  -e '	\# Skip unreadable files'					\
+  -e '	-r $$file or next;'						\
+  -e '	print "$$file ";'						\
+  -e '}'
+
 # Verify that all source files using _() (more specifically, files that
 # match $(_gl_translatable_string_re)) are listed in po/POTFILES.in.
 po_file ?= $(srcdir)/po/POTFILES.in
@@ -1130,21 +1155,8 @@ sc_po_check:
 	@if test -f $(po_file); then					\
 	  grep -E -v '^(#|$$)' $(po_file)				\
 	    | grep -v '^src/false\.c$$' | sort > $@-1;			\
-	  files=;							\
-	  for file in $$($(VC_LIST_EXCEPT)) $(generated_files); do	\
-	    test -r $$file || continue;					\
-	    case $$file in						\
-	      *.m4|*.mk) continue ;;					\
-	      *.?|*.??) ;;						\
-	      *) continue;;						\
-	    esac;							\
-	    case $$file in						\
-	    *.[ch])							\
-	      base=`expr " $$file" : ' \(.*\)\..'`;			\
-	      { test -f $$base.l || test -f $$base.y; } && continue;;	\
-	    esac;							\
-	    files="$$files $$file";					\
-	  done;								\
+	  files=$$(perl $(perl_translatable_files_list_)		\
+	    $$($(VC_LIST_EXCEPT)) $(generated_files));			\
 	  grep -E -l '$(_gl_translatable_string_re)' $$files		\
 	    | $(SED) 's|^$(_dot_escaped_srcdir)/||' | sort -u > $@-2;	\
 	  diff -u -L $(po_file) -L $(po_file) $@-1 $@-2			\
@@ -1258,7 +1270,7 @@ sc_vulnerable_makefile_CVE-2009-4029:
 	halt=$$(printf '%s\n'						\
 	  'the above files are vulnerable; beware of running'		\
 	  '  "make dist*" rules, and upgrade to fixed automake'		\
-	  '  see http://bugzilla.redhat.com/542609 for details')	\
+	  '  see https://bugzilla.redhat.com/show_bug.cgi?id=542609 for details') \
 	  $(_sc_search_regexp)
 
 sc_vulnerable_makefile_CVE-2012-3386:
@@ -1267,7 +1279,7 @@ sc_vulnerable_makefile_CVE-2012-3386:
 	halt=$$(printf '%s\n'						\
 	  'the above files are vulnerable; beware of running'		\
 	  '  "make distcheck", and upgrade to fixed automake'		\
-	  '  see http://bugzilla.redhat.com/CVE-2012-3386 for details')	\
+	  '  see https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2012-3386 for details') \
 	  $(_sc_search_regexp)
 
 vc-diff-check:
@@ -1282,7 +1294,6 @@ vc-diff-check:
 
 rel-files = $(DIST_ARCHIVES)
 
-gnulib_dir ?= $(srcdir)/gnulib
 gnulib-version = $$(cd $(gnulib_dir)				\
                     && { git describe || git rev-parse --short=10 HEAD; } )
 bootstrap-tools ?= autoconf,automake,gnulib
@@ -1343,8 +1354,8 @@ release-commit:
 ## Updating files.  ##
 ## ---------------- ##
 
-ftp-gnu = ftp://ftp.gnu.org/gnu
-www-gnu = http://www.gnu.org
+ftp-gnu = https://ftp.gnu.org/gnu
+www-gnu = https://www.gnu.org
 
 upload_dest_dir_ ?= $(PACKAGE)
 upload_command =						\
@@ -1492,7 +1503,10 @@ gen-coverage:
 		--highlight --frames --legend \
 		--title "$(PACKAGE_NAME)"
 
-coverage: init-coverage build-coverage gen-coverage
+coverage:
+	$(MAKE) init-coverage
+	$(MAKE) build-coverage
+	$(MAKE) gen-coverage
 
 # Some projects carry local adjustments for gnulib modules via patches in
 # a gnulib patch directory whose default name is gl/ (defined in bootstrap
@@ -1522,7 +1536,7 @@ refresh-gnulib-patches:
 # Update gettext files.
 PACKAGE ?= $(shell basename $(PWD))
 PO_DOMAIN ?= $(PACKAGE)
-POURL = http://translationproject.org/latest/$(PO_DOMAIN)/
+POURL = https://translationproject.org/latest/$(PO_DOMAIN)/
 PODIR ?= po
 refresh-po:
 	rm -f $(PODIR)/*.po && \
@@ -1597,7 +1611,7 @@ ifeq (a,b)
 # do not need to be marked.  Symbols matching '__.*' are
 # reserved by the compiler, so are automatically excluded below.
 _gl_TS_unmarked_extern_functions ?= main usage
-_gl_TS_function_match ?= /^(?:$(_gl_TS_extern)) +.*?(\S+) *\(/
+_gl_TS_function_match ?= /^(?:$(_gl_TS_extern)) +.*?(\w+) *\(/
 
 # If your project uses a macro like "XTERN", then put
 # the following in cfg.mk to override this default:
@@ -1630,6 +1644,7 @@ _gl_TS_other_headers ?= *.h
 
 .PHONY: _gl_tight_scope
 _gl_tight_scope: $(bin_PROGRAMS)
+	sed_wrap='s/^/^_?/;s/$$/$$/';					\
 	t=exceptions-$$$$;						\
 	trap 's=$$?; rm -f $$t; exit $$s' 0;				\
 	for sig in 1 2 3 13 15; do					\
@@ -1639,20 +1654,20 @@ _gl_tight_scope: $(bin_PROGRAMS)
 	       test -f $$f && d= || d=$(srcdir)/; echo $$d$$f; done`;	\
 	hdr=`for f in $(_gl_TS_headers); do				\
 	       test -f $$f && d= || d=$(srcdir)/; echo $$d$$f; done`;	\
-	( printf '^%s$$\n' '__.*' $(_gl_TS_unmarked_extern_functions);	\
+	( printf '%s\n' '__.*' $(_gl_TS_unmarked_extern_functions);	\
 	  grep -h -A1 '^extern .*[^;]$$' $$src				\
-	    | grep -vE '^(extern |--)' | $(SED) 's/ .*//';		\
+	    | grep -vE '^(extern |--|#)' | $(SED) 's/ .*//; /^$$/d';	\
 	  perl -lne							\
-	     '$(_gl_TS_function_match) and print "^$$1\$$"' $$hdr;	\
-	) | sort -u > $$t;						\
-	nm -e $(_gl_TS_obj_files)|$(SED) -n 's/.* T //p'|grep -Ev -f $$t \
+	     '$(_gl_TS_function_match) and print $$1' $$hdr;		\
+	) | sort -u | $(SED) "$$sed_wrap" > $$t;			\
+	nm -g $(_gl_TS_obj_files)|$(SED) -n 's/.* T //p'|grep -Ev -f $$t \
 	  && { echo the above functions should have static scope >&2;	\
 	       exit 1; } || : ;						\
-	( printf '^%s$$\n' '__.*' $(_gl_TS_unmarked_extern_vars);	\
-	  perl -lne '$(_gl_TS_var_match) and print "^$$1\$$"'		\
+	( printf '%s\n' '__.*' main $(_gl_TS_unmarked_extern_vars);	\
+	  perl -lne '$(_gl_TS_var_match) and print $$1'			\
 		$$hdr $(_gl_TS_other_headers)				\
-	) | sort -u > $$t;						\
-	nm -e $(_gl_TS_obj_files) | $(SED) -n 's/.* [BCDGRS] //p'	\
+	) | sort -u | $(SED) "$$sed_wrap" > $$t;			\
+	nm -g $(_gl_TS_obj_files) | $(SED) -n 's/.* [BCDGRS] //p'	\
             | sort -u | grep -Ev -f $$t					\
 	  && { echo the above variables should have static scope >&2;	\
 	       exit 1; } || :

@@ -737,6 +737,7 @@ static const applets_t applets[] = {
 #ifdef RTCONFIG_OPENVPN
 	{ "ovpn-up",			ovpn_up_main				},
 	{ "ovpn-down",			ovpn_down_main			},
+	{ "ovpn-route-up",		ovpn_route_up_main				},
 #endif
 #ifdef RTCONFIG_EAPOL
 	{ "wpa_cli",			wpacli_main			},
@@ -847,6 +848,9 @@ static const applets_t applets[] = {
 	{ "disk_remove",		diskremove_main			},
 #endif
 	{ "firmware_check",		firmware_check_main		},
+#if defined(RTCONFIG_FRS_LIVE_UPDATE)
+	{ "firmware_check_update",      firmware_check_update_main      },
+#endif
 #ifdef BUILD_READMEM
 	{ "readmem",			readmem_main			},
 #endif

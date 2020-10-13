@@ -1,4 +1,4 @@
-/* dnsmasq is Copyright (c) 2000-2018 Simon Kelley
+/* dnsmasq is Copyright (c) 2000-2020 Simon Kelley
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -93,10 +93,13 @@ int send_from(int fd, int nowild, char *packet, size_t len,
   
   while (retry_send(sendmsg(fd, &msg, 0)));
 
-  /* If interface is still in DAD, EINVAL results - ignore that. */
-  if (errno != 0 && errno != EINVAL)
+  if (errno != 0)
     {
-      my_syslog(LOG_ERR, _("failed to send packet: %s"), strerror(errno));
+#ifdef HAVE_LINUX_NETWORK
+      /* If interface is still in DAD, EINVAL results - ignore that. */
+      if (errno != EINVAL)
+	my_syslog(LOG_ERR, _("failed to send packet: %s"), strerror(errno));
+#endif
       return 0;
     }
   
@@ -125,7 +128,9 @@ static unsigned int search_servers(time_t now, union all_addr **addrpp, unsigned
       {
 	unsigned int sflag = serv->addr.sa.sa_family == AF_INET ? F_IPV4 : F_IPV6; 
 	*type = SERV_FOR_NODOTS;
-	if (serv->flags & SERV_NO_ADDR)
+	if ((serv->flags & SERV_NO_REBIND) && norebind)
+	  *norebind = 1;
+	else if (serv->flags & SERV_NO_ADDR)
 	  flags = F_NXDOMAIN;
 	else if (serv->flags & SERV_LITERAL_ADDRESS)
 	  { 
@@ -343,7 +348,7 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
       type &= ~SERV_DO_DNSSEC;      
 
       if (daemon->servers && !flags)
-	forward = get_new_frec(now, NULL, 0);
+	forward = get_new_frec(now, NULL, NULL);
       /* table full - flags == 0, return REFUSED */
       
       if (forward)
@@ -1034,7 +1039,9 @@ void reply_query(int fd, int family, time_t now)
 		  /* Find the original query that started it all.... */
 		  for (orig = forward; orig->dependent; orig = orig->dependent);
 		  
-		  if (--orig->work_counter == 0 || !(new = get_new_frec(now, NULL, 1)))
+		  /* Make sure we don't expire and free the orig frec during the
+		     allocation of a new one. */
+		  if (--orig->work_counter == 0 || !(new = get_new_frec(now, NULL, orig)))
 		    status = STAT_ABANDONED;
 		  else
 		    {
@@ -2246,9 +2253,10 @@ static void free_frec(struct frec *f)
    else return *wait zero if one available, or *wait is delay to
    when the oldest in-use record will expire. Impose an absolute
    limit of 4*TIMEOUT before we wipe things (for random sockets).
-   If force is set, always return a result, even if we have
-   to allocate above the limit. */
-struct frec *get_new_frec(time_t now, int *wait, int force)
+   If force is non-NULL, always return a result, even if we have
+   to allocate above the limit, and never free the record pointed
+   to by the force argument. */
+struct frec *get_new_frec(time_t now, int *wait, struct frec *force)
 {
   struct frec *f, *oldest, *target;
   int count;
@@ -2265,7 +2273,7 @@ struct frec *get_new_frec(time_t now, int *wait, int force)
 	    /* Don't free DNSSEC sub-queries here, as we may end up with
 	       dangling references to them. They'll go when their "real" query 
 	       is freed. */
-	    if (!f->dependent)
+	    if (!f->dependent && f != force)
 #endif
 	      {
 		if (difftime(now, f->time) >= 4*TIMEOUT)

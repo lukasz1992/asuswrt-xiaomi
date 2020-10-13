@@ -287,11 +287,16 @@ function genBWTable(_unit){
 				array_160m = filter_5g_channel_by_bw(ch.split(","), 160);
 			}
 			if(vht80_80_support && array_80m.length/4 >= 2){
-				bws.push([4]);
+				bwsDesc[0] = "20/40/80/80+80 MHz";
+				bws.push(4);
 				bwsDesc.push("80+80 MHz");
 			}
 			if(vht160_support && array_160m.length/4 >= 1){
-				bws.push([5]);
+				if (vht80_80_support && array_80m.length/4 >= 2)
+					bwsDesc[0] = "20/40/80/80+80/160 MHz";
+				else
+					bwsDesc[0] = "20/40/80/160 MHz";
+				bws.push(5);
 				bwsDesc.push("160 MHz");
 			}
 		}
@@ -954,6 +959,7 @@ function change_wl_nmode(o){
 <input type="hidden" name="wps_band" value="<% nvram_get("wps_band_x"); %>" disabled>
 <input type="hidden" name="wps_multiband" value="<% nvram_get("wps_multiband"); %>" disabled>
 <input type="hidden" name="w_Setting" value="1">
+<input type="hidden" name="w_apply" value="1">
 <input type="hidden" name="smart_connect_x" value="<% nvram_get("smart_connect_x"); %>">
 
 <table class="content" align="center" cellpadding="0" cellspacing="0">

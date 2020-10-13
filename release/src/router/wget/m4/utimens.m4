@@ -1,16 +1,15 @@
-dnl Copyright (C) 2003-2014 Free Software Foundation, Inc.
+dnl Copyright (C) 2003-2018 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
 
-dnl serial 7
+dnl serial 9
 
 AC_DEFUN([gl_UTIMENS],
 [
   dnl Prerequisites of lib/utimens.c.
   AC_REQUIRE([gl_FUNC_UTIMES])
   AC_REQUIRE([gl_CHECK_TYPE_STRUCT_TIMESPEC])
-  AC_REQUIRE([gl_CHECK_TYPE_STRUCT_UTIMBUF])
   AC_REQUIRE([AC_CANONICAL_HOST]) dnl for cross-compiles
   AC_CHECK_FUNCS_ONCE([futimes futimesat futimens utimensat lutimes])
 
@@ -32,10 +31,12 @@ AC_DEFUN([gl_UTIMENS],
         [gl_cv_func_futimesat_works=yes],
         [gl_cv_func_futimesat_works=no],
         [case "$host_os" in
-                   # Guess yes on glibc systems.
-           *-gnu*) gl_cv_func_futimesat_works="guessing yes" ;;
-                   # If we don't know, assume the worst.
-           *)      gl_cv_func_futimesat_works="guessing no" ;;
+                            # Guess yes on Linux systems.
+           linux-* | linux) gl_cv_func_futimesat_works="guessing yes" ;;
+                            # Guess yes on glibc systems.
+           *-gnu*)          gl_cv_func_futimesat_works="guessing yes" ;;
+                            # If we don't know, assume the worst.
+           *)               gl_cv_func_futimesat_works="guessing no" ;;
          esac
         ])
       rm -f conftest.file])

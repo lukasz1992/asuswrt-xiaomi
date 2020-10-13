@@ -1193,7 +1193,7 @@ function shadeHandle(flag){
 													<table>
 														<tr>
 															<td>
-																<div style="width:430px"><#AiProtection_desc#></div>
+																<div style="width:430px"><#AiProtection_HomeDesc2#></div>
 																<div style="width:430px">
 																	<a id="faq" style="text-decoration:underline;" href="" target="_blank"><#AiProtection_title#> FAQ</a>
 																</div>
@@ -1217,7 +1217,7 @@ function shadeHandle(flag){
 									<div style="margin:10px;">
 										<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3"  class="FormTable">
 											<tr>
-												<th><#AiProtection_title#></th>
+												<th><#CTL_Enabled#> <#AiProtection_title#></th>
 												<td>
 													<div align="center" class="left" style="width:94px; float:left; cursor:pointer;" id="radio_protection_enable"></div>
 													<div class="iphone_switch_container" style="height:32px; width:74px; position: relative; overflow: hidden">

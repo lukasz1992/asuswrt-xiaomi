@@ -1,5 +1,5 @@
 /* Definitions for POSIX spawn interface.
-   Copyright (C) 2000, 2003-2004, 2008-2014 Free Software Foundation, Inc.
+   Copyright (C) 2000, 2003-2004, 2008-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    This program is free software: you can redistribute it and/or modify
@@ -13,7 +13,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 #ifndef _@GUARD_PREFIX@_SPAWN_H
 
@@ -79,10 +79,10 @@
 
 
 /* Data structure to contain attributes for thread creation.  */
-#if @REPLACE_POSIX_SPAWN@
+#if @REPLACE_POSIX_SPAWN@ || (@HAVE_POSIX_SPAWNATTR_T@ && !@HAVE_POSIX_SPAWN@)
 # define posix_spawnattr_t rpl_posix_spawnattr_t
 #endif
-#if @REPLACE_POSIX_SPAWN@ || !@HAVE_POSIX_SPAWNATTR_T@
+#if @REPLACE_POSIX_SPAWN@ || !@HAVE_POSIX_SPAWNATTR_T@ || !@HAVE_POSIX_SPAWN@
 # if !GNULIB_defined_posix_spawnattr_t
 typedef struct
 {
@@ -101,10 +101,10 @@ typedef struct
 
 /* Data structure to contain information about the actions to be
    performed in the new process with respect to file descriptors.  */
-#if @REPLACE_POSIX_SPAWN@
+#if @REPLACE_POSIX_SPAWN@ || (@HAVE_POSIX_SPAWN_FILE_ACTIONS_T@ && !@HAVE_POSIX_SPAWN@)
 # define posix_spawn_file_actions_t rpl_posix_spawn_file_actions_t
 #endif
-#if @REPLACE_POSIX_SPAWN@ || !@HAVE_POSIX_SPAWN_FILE_ACTIONS_T@
+#if @REPLACE_POSIX_SPAWN@ || !@HAVE_POSIX_SPAWN_FILE_ACTIONS_T@ || !@HAVE_POSIX_SPAWN@
 # if !GNULIB_defined_posix_spawn_file_actions_t
 typedef struct
 {
@@ -142,7 +142,8 @@ typedef struct
 # endif
 #endif
 /* A GNU extension.  Use the next free bit position.  */
-#define POSIX_SPAWN_USEVFORK \
+#ifndef POSIX_SPAWN_USEVFORK
+# define POSIX_SPAWN_USEVFORK \
   ((POSIX_SPAWN_RESETIDS | (POSIX_SPAWN_RESETIDS - 1)                     \
     | POSIX_SPAWN_SETPGROUP | (POSIX_SPAWN_SETPGROUP - 1)                 \
     | POSIX_SPAWN_SETSIGDEF | (POSIX_SPAWN_SETSIGDEF - 1)                 \
@@ -152,6 +153,7 @@ typedef struct
     | POSIX_SPAWN_SETSCHEDULER                                            \
     | (POSIX_SPAWN_SETSCHEDULER > 0 ? POSIX_SPAWN_SETSCHEDULER - 1 : 0))  \
    + 1)
+#endif
 #if !GNULIB_defined_verify_POSIX_SPAWN_USEVFORK_no_overlap
 typedef int verify_POSIX_SPAWN_USEVFORK_no_overlap
             [(((POSIX_SPAWN_RESETIDS | POSIX_SPAWN_SETPGROUP
@@ -873,6 +875,41 @@ _GL_CXXALIASWARN (posix_spawn_file_actions_adddup2);
 _GL_WARN_ON_USE (posix_spawn_file_actions_adddup2,
                  "posix_spawn_file_actions_adddup2 is unportable - "
                  "use gnulib module posix_spawn_file_actions_adddup2 for portability");
+# endif
+#endif
+
+#if @GNULIB_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR@
+/* Add an action to FILE-ACTIONS which tells the implementation to call
+   'chdir' to the given directory during the 'spawn' call.  */
+# if @REPLACE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR@
+#  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+#   define posix_spawn_file_actions_addchdir rpl_posix_spawn_file_actions_addchdir
+#  endif
+_GL_FUNCDECL_RPL (posix_spawn_file_actions_addchdir, int,
+                  (posix_spawn_file_actions_t *_Restrict_ __file_actions,
+                   const char *_Restrict_ __path)
+                  __THROW _GL_ARG_NONNULL ((1, 2)));
+_GL_CXXALIAS_RPL (posix_spawn_file_actions_addchdir, int,
+                  (posix_spawn_file_actions_t *_Restrict_ __file_actions,
+                   const char *_Restrict_ __path));
+# else
+#  if !@HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR@
+_GL_FUNCDECL_SYS (posix_spawn_file_actions_addchdir, int,
+                  (posix_spawn_file_actions_t *_Restrict_ __file_actions,
+                   const char *_Restrict_ __path)
+                  __THROW _GL_ARG_NONNULL ((1, 2)));
+#  endif
+_GL_CXXALIAS_SYS (posix_spawn_file_actions_addchdir, int,
+                  (posix_spawn_file_actions_t *_Restrict_ __file_actions,
+                   const char *_Restrict_ __path));
+# endif
+_GL_CXXALIASWARN (posix_spawn_file_actions_addchdir);
+#elif defined GNULIB_POSIXCHECK
+# undef posix_spawn_file_actions_addchdir
+# if HAVE_RAW_DECL_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR
+_GL_WARN_ON_USE (posix_spawn_file_actions_addchdir,
+                 "posix_spawn_file_actions_addchdir is unportable - "
+                 "use gnulib module posix_spawn_file_actions_addchdir for portability");
 # endif
 #endif
 

@@ -819,11 +819,6 @@ function submitForm(){
 	}
 
 	document.form.submit();
-	if((document.form.sw_mode.value == "1" || document.form.sw_mode.value == "3") && !(!parent.flag_manual && parent.pppoe_failed_flag)){
-		setTimeout(function(){
-			location.href = "/qis/QIS_finish.htm";
-		}, 500)
-	}
 }
 
 function reset_wl_hwaddr(prefix){

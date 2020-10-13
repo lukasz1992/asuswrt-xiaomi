@@ -359,17 +359,21 @@ int mtd_write_main(int argc, char *argv[])
 	char *dev = NULL;
 	char msg_buf[2048];
 	int alloc = 0, bounce = 0, fd;
+	int skip_bytes = 0;
 #ifdef DEBUG_SIMULATE
 	FILE *of;
 #endif
 
-	while ((c = getopt(argc, argv, "i:d:")) != -1) {
+	while ((c = getopt(argc, argv, "i:d:s:")) != -1) {
 		switch (c) {
 		case 'i':
 			iname = optarg;
 			break;
 		case 'd':
 			dev = optarg;
+			break;
+		case 's':
+			skip_bytes = atoi(optarg);
 			break;
 		}
 	}
@@ -461,8 +465,8 @@ int mtd_write_main(int argc, char *argv[])
 
 	fd = fileno(f);
 	fseek( f, 0, SEEK_END);
-	filelen = ftell(f);
-	fseek( f, 0, SEEK_SET);
+	filelen = ftell(f) - skip_bytes;
+	fseek( f, skip_bytes, SEEK_SET);
 	_dprintf("file len=0x%x\n", filelen);
 
 #ifdef RTCONFIG_BCMARM
@@ -499,14 +503,16 @@ int mtd_write_main(int argc, char *argv[])
 		goto ERROR;
 	}
 
-	if ((buf = mmap(0, filelen, PROT_READ, MAP_SHARED, fd, 0)) == (unsigned char*)MAP_FAILED) {
+	if (skip_bytes) {// do not use mmap
+		alloc = 1;
+	} else if ((buf = mmap(0, filelen, PROT_READ, MAP_SHARED, fd, 0)) == (unsigned char*)MAP_FAILED) {
 		_dprintf("mmap %x bytes fail!. errno %d (%s).\n", filelen, errno, strerror(errno));
 		alloc = 1;
 	}
 
 	sysinfo(&si);
 	if (alloc) {
-		if ((si.freeram * si.mem_unit) <= (unit_len + (4096 * 1024)))
+		if (skip_bytes || ((si.freeram * si.mem_unit) <= (unit_len + (4096 * 1024))))
 			unit_len = mi.erasesize;
 	}
 
@@ -519,8 +525,8 @@ int mtd_write_main(int argc, char *argv[])
 			goto ERROR;
 		}
 	}
-	_dprintf("freeram=%lx unit_len=%lx filelen=%lx mi.erasesize=%x mi.writesize=%x\n",
-		si.freeram, unit_len, filelen, mi.erasesize, mi.writesize);
+	_dprintf("freeram=%lx unit_len=%lx filelen=%lx mi.erasesize=%x mi.writesize=%x, skip_bytes=%x\n",
+		si.freeram, unit_len, filelen, mi.erasesize, mi.writesize, skip_bytes);
 
 	if (alloc && !(buf = malloc(unit_len))) {
 		error = "Not enough memory";

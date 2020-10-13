@@ -432,20 +432,6 @@ void config_switch()
 			int t, vlan_val = -1, prio_val = -1;
 			unsigned int mask = 0;
 
-#if defined(RTCONFIG_RALINK_MT7628)
-			/* Create WAN VLAN interface */
-			if (nvram_get_int("switch_wan0tagid") != 0) {
-				char wan_dev[10];
-				eval("vconfig", "rem", "vlan2");
-				eval("vconfig", "add", "eth2", nvram_safe_get("switch_wan0tagid"));
-
-				snprintf(wan_dev, sizeof(wan_dev), "vlan%d", nvram_get_int("switch_wan0tagid"));
-
-				prio_val = nvram_get_int("switch_wan1prio");
-				if (prio_val >= 0 && prio_val <= 7)
-					eval("vconfig", "set_egress_map", wan_dev, "0", nvram_get("switch_wan0prio"));
-			}
-#endif
 			switch (model) {
 #if defined(RTAC51UP) || defined(RTAC53)
 			case MODEL_RTAC51UP:
@@ -922,6 +908,70 @@ switch_exist(void)
 
 void init_wl(void)
 {
+	unsigned char buffer[16];
+	unsigned char *dst;
+	char tmpStr1[16];
+	char tmpStr2[24];
+	char tmpStr3[24];
+	int i;
+
+	memset(tmpStr1, 0, sizeof(tmpStr1));
+	memset(tmpStr2, 0, sizeof(tmpStr2));
+	memset(tmpStr3, 0, sizeof(tmpStr3));
+	dst = buffer;
+	memset(buffer, 0, sizeof(buffer));
+	memset(dst, 0, MAX_REGSPEC_LEN+1);
+	
+	if(FRead(dst, REGSPEC_ADDR, MAX_REGSPEC_LEN) < 0)
+	{
+		_dprintf("READ REGSPEC_ADDR ERROR\n");
+	}
+	else
+	{
+		for(i = 0; i < MAX_REGSPEC_LEN && dst[i] != '\0'; i++) {
+			if (dst[i] == 0xff)
+			{
+				dst[i] = '\0';
+				break;
+			}
+		}
+	}
+	sprintf(tmpStr1, "regspec=%s", dst);
+	
+	memset(dst, 0, MAX_REGDOMAIN_LEN+1);
+	if(FRead(dst, REG2G_EEPROM_ADDR, MAX_REGDOMAIN_LEN) < 0)
+	{
+		_dprintf("READ REG2G_EEPROM_ADDR ERROR\n");
+	}
+	else
+	{
+		for(i = 0; i < MAX_REGDOMAIN_LEN && dst[i] != '\0'; i++) {
+			if (dst[i] == 0xff)
+			{
+				dst[i] = '\0';
+				break;
+			}
+		}
+	}
+	sprintf(tmpStr2, "regspec_2g=%s", dst);
+
+	memset(dst, 0, MAX_REGDOMAIN_LEN+1);
+	if(FRead(dst, REG5G_EEPROM_ADDR, MAX_REGDOMAIN_LEN) < 0)
+	{
+		_dprintf("READ REG5G_EEPROM_ADDR ERROR\n");
+	}
+	else
+	{
+		for(i = 0; i < MAX_REGDOMAIN_LEN && dst[i] != '\0'; i++) {
+			if (dst[i] == 0xff)
+			{
+				dst[i] = '\0';
+				break;
+			}
+		}
+	}
+	sprintf(tmpStr3, "regspec_5g=%s", dst);
+
 	if (!module_loaded("rt2860v2_ap"))
 		modprobe("rt2860v2_ap");
 #if defined (RTCONFIG_WLMODULE_RT3090_AP)
@@ -962,7 +1012,7 @@ void init_wl(void)
 
 #if defined (RTCONFIG_WLMODULE_MT7615E_AP)
 	if (!module_loaded("mt_wifi_7615E"))
-		modprobe("mt_wifi_7615E");
+		modprobe("mt_wifi_7615E", tmpStr1, tmpStr2, tmpStr3);
 #endif
 	sleep(1);
 }
@@ -1847,6 +1897,9 @@ set_wan_tag(char *interface) {
 	snprintf(wan_dev, sizeof(wan_dev), "vlan%d", wan_vid);
 
 	switch(model) {
+#if defined(RTCONFIG_RALINK_MT7628)
+	default:
+#else
 	case MODEL_RTAC1200HP:
 	case MODEL_RTAC51U:
 	case MODEL_RTAC51UP:
@@ -1864,6 +1917,7 @@ set_wan_tag(char *interface) {
 	case MODEL_RTAC85P:
 	case MODEL_RTACRH26:
 	case MODEL_RTN800HP:
+#endif
 		ifconfig(interface, IFUP, 0, 0);
 		if(wan_vid) { /* config wan port */
 			eval("vconfig", "rem", "vlan2");

@@ -97,7 +97,10 @@ function initial(){
 	parent.hideEditBlock();
 	generate_wireless_band_list();
 	updateClientList();
-	updateClientListBackground();
+	setTimeout(function(){parent.httpApi.updateClientList();}, 5000);//delay to update client list, in order to avoiding the wired client disappeared
+	setInterval(function(){
+		parent.httpApi.updateClientList();
+	}, 1000*60*3);
 
 	reset_NM_height();
 }

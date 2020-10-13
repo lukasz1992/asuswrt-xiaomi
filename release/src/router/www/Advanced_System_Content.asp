@@ -92,6 +92,9 @@ if(wan_unit == "0")
 else
 	var wan_ipaddr = '<% nvram_get("wan1_ipaddr"); %>';
 
+var le_enable = '<% nvram_get("le_enable"); %>';
+var orig_http_enable = '<% nvram_get("http_enable"); %>';
+
 function initial(){	
 	//parse nvram to array
 	var parseNvramToArray = function(oriNvram) {
@@ -145,6 +148,11 @@ function initial(){
 	if(svc_ready == "0")
 		document.getElementById('svc_hint_div').style.display = "";
 
+	if(!dualWAN_support) {
+		$("#network_monitor_tr").hide();
+		document.form.dns_probe_chk.checked = false;
+		document.form.wandog_enable_chk.checked = false;
+	}
 	show_network_monitoring();
 
 	if(!HTTPS_support){
@@ -258,6 +266,8 @@ function initial(){
 		$('select[name="usb_idle_enable"]').prop("disabled", false);
 		$('input[name="usb_idle_timeout"]').prop("disabled", false);
 	}
+
+	$("#https_download_cert").css("display", (le_enable == "0" && orig_http_enable != "0")? "": "none");
 }
 
 var time_zone_tmp="";
@@ -745,7 +755,7 @@ var timezones = [
 	["UTC4_2",	"(GMT-04:00) <#TZ18_1#>"],
 	["UTC4DST_2",	"(GMT-04:00) <#TZ19#>"],
 	["NST3.30DST",	"(GMT-03:30) <#TZ20#>"],
-	["EBST3DST_1",	"(GMT-03:00) <#TZ21#>"],
+	["EBST3",	"(GMT-03:00) <#TZ21#>"],	//EBST3DST_1
 	["UTC3",	"(GMT-03:00) <#TZ22#>"],
 	["EBST3DST_2",	"(GMT-03:00) <#TZ23#>"],
 	["UTC2",	"(GMT-02:00) <#TZ24#>"],
@@ -776,13 +786,13 @@ var timezones = [
 	["UTC-3_1",	"(GMT+03:00) <#TZ46#>"],
 	["UTC-3_2",	"(GMT+03:00) <#TZ47#>"],
 	["UTC-3_3",	"(GMT+03:00) <#TZ40_1#>"],
-	["UTC-3_4",	"(GMT+03:00) <#TZ44#>"],
-	["UTC-3_5",	"(GMT+03:00) <#TZ45#>"],
+	["UTC-3_4",	"(GMT+03:00) <#TZ44#>"],	
 	["IST-3",	"(GMT+03:00) <#TZ48#>"],
 	["UTC-3_6",	"(GMT+03:00) <#TZ48_1#>"],
 	["UTC-3.30DST",	"(GMT+03:30) <#TZ49#>"],	
 	["UTC-4_1",	"(GMT+04:00) <#TZ50#>"],
 	["UTC-4_5",	"(GMT+04:00) <#TZ50_2#>"],
+	["UTC-4_7",	"(GMT+04:00) <#TZ45#>"],	//UTC-3_5
 	["UTC-4_4",	"(GMT+04:00) <#TZ50_1#>"],
 	["UTC-4_6",	"(GMT+04:00) <#TZ51#>"],
 	["UTC-4.30",	"(GMT+04:30) <#TZ52#>"],
@@ -929,6 +939,22 @@ function hide_https_lanport(_value){
 	}
 	else{
 		document.getElementById("https_access_page").style.display = 'none';
+	}
+
+
+	if(le_enable == "0" && _value != "0"){
+		$("#https_download_cert").css("display", "");
+		if(orig_http_enable == "0"){
+			$("#download_cert_btn").css("display", "none");
+			$("#download_cert_desc").css("display", "");
+		}
+		else{
+			$("#download_cert_btn").css("display", "");
+			$("#download_cert_desc").css("display", "none");
+		}
+	}
+	else{
+		$("#https_download_cert").css("display", "none");
 	}
 }
 
@@ -1452,6 +1478,10 @@ function reset_portconflict_hint(){
 	$("#port_conflict_sshdport").hide();
 	$("#port_conflict_httpslanport").hide();
 }
+
+function save_cert_key(){
+	location.href = "cert.tar";
+}
 </script>
 </head>
 
@@ -1895,6 +1925,14 @@ function reset_portconflict_hint(){
 						<span id="port_conflict_httpslanport" style="color: #e68282; display: none;">Port Conflict</span>
 						<div id="https_access_page" style="color: #FFCC00;"></div>
 						<div style="color: #FFCC00;">* <#HttpsLanport_Hint#></div>
+					</td>
+				</tr>
+
+				<tr id="https_download_cert" style="display: none;">
+					<th>Download Certificate</th>
+					<td>
+						<input id="download_cert_btn" class="button_gen" onclick="save_cert_key();" type="button" value="<#btn_Export#>" />
+						<span id="download_cert_desc">Download and install SSL certificate on your browser to trust accessing your local domain “router.asus.com” with HTTPS protocol. To export certificate after applying setting.</span><a href="https://www.asus.com/support/FAQ/1034294" style="font-family:Lucida Console;text-decoration:underline;color:#FFCC00; margin-left: 5px;" target="_blank">FAQ</a>
 					</td>
 				</tr>
 			</table>

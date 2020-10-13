@@ -138,6 +138,14 @@ define(function(){
 				] 
 			},
 			{
+				menuName: "Open NAT",
+				index: "menu_OpenNAT", 
+				tab: [
+					{url: "GameProfile.asp", tabName: "Open NAT"},
+					{url: "NULL", tabName: "__INHERIT__"}
+				] 
+			},
+			{
 				menuName: "<#Menu_usb_application#>",
 				index: "menu_APP", 
 				tab: [
@@ -355,8 +363,17 @@ define(function(){
 					retArray.push("menu_VLAN");
 				}
 
-				if(!wtfast_support) {
+				if(!gameMode_support) {
 					retArray.push("menu_GameBoost");
+					retArray.push("menu_OpenNAT");
+				}
+
+				if(!rog_support){
+					for(i=0; i<menuTree.list.length; i++){
+						if(menuTree.list[i].menuName == '<#Game_Boost#>'){
+							menuTree.list[i].menuName = 'Game';
+						}
+					}
 				}
 
 				if(!uu_support){
@@ -568,7 +585,7 @@ define(function(){
 					retArray.push("AdaptiveQoS_ROG.asp");
 				}
 
-				if(!wtfast_support){
+				if(!wtfast_support && !gameMode_support){
 					retArray.push("GameBoost.asp");
 				}
 

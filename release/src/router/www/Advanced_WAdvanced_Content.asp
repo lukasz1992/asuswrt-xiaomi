@@ -1631,7 +1631,7 @@ function checkWLReady(){
 			  			</td>
 					</tr>
 					<tr id="wl_dtim_field">
-			  			<th><a class="hintstyle" id="wl_dtim_th" href="javascript:void(0);" onClick=""><#WLANConfig11b_x_DTIM_itemname#></a></th>
+			  			<th><a class="hintstyle" id="wl_dtim_th"><#WLANConfig11b_x_DTIM_itemname#></a></th>
 						<td>
 			  				<input type="text" maxlength="3" name="wl_dtim" class="input_6_table" value="<% nvram_get("wl_dtim"); %>" onKeyPress="return validator.isNumber(this,event)" autocorrect="off" autocapitalize="off">
 						</td>			  
@@ -1763,7 +1763,7 @@ function checkWLReady(){
 					<!-- [MODELDEP] end -->
 					<!--For 5GHz of RT-AC87U  -->
 					<tr id="wl_80211h_tr" style="display:none;">
-						<th><a class="hintstyle" href="javascript:void(0);" onClick=""><#WLANConfig11b_x_80211H#></a></th>
+						<th><a class="hintstyle"><#WLANConfig11b_x_80211H#></a></th>
 						<td>
 							<select name="wl1_80211h" class="input_option">
 									<option value="0" <% nvram_match("wl1_80211h", "0","selected"); %>><#WLANConfig11b_WirelessCtrl_buttonname#></option>
@@ -1786,7 +1786,7 @@ function checkWLReady(){
 					
 					<!--Multi-User MU-MIMO for RT-AC88U, RT-AC86U, AC2900, RT-AC3100, RT-AC5300 and RT-AC87U 5 GHz only-->
 					<tr id="wl_MU_MIMO_field" style="display:none">
-						<th><a class="hintstyle" href="javascript:void(0);" onClick=""><#WLANConfig11b_MUMIMO_itemdesc#></a></th>
+						<th><a class="hintstyle"><#WLANConfig11b_MUMIMO_itemdesc#></a></th>
 						<td>
 							<div style="display:table-cell;vertical-align:middle">
 								<select name="wl_mumimo" class="input_option" onchange="handle_mimo(this.value)" disabled>
@@ -1816,7 +1816,7 @@ function checkWLReady(){
 					</tr>					
 					<!-- RT-AC82U & RT-AC58U & 4G-AC53U & MAP-AC1300 & MAP-AC2200 & VZW-AC1300 & MAP-AC3000 -->
 					<tr id="wl_implicitxbf_field"  style="display:none">
-						<th><a class="hintstyle" href="javascript:void(0);" onClick="">Implicit beamforming</a></th>
+						<th><a class="hintstyle">Implicit beamforming</a></th>
 						<td>
 							<select name="wl_implicitxbf" class="input_option">
 								<option value="0" <% nvram_match("wl_implicitxbf", "0","selected"); %>><#WLANConfig11b_WirelessCtrl_buttonname#></option>
@@ -1855,7 +1855,7 @@ function checkWLReady(){
 					</tr>
 
 					<tr id="region_tr" style="display:none" class="rept ew">
-						<th><a class="hintstyle" href="javascript:void(0);" onClick=""><#WLANConfig11b_x_Region#></a></th>
+						<th><a class="hintstyle"><#WLANConfig11b_x_Region#></a></th>
 						<td><div id="region_div"></div></td>
 					</tr>
 				</table>				
