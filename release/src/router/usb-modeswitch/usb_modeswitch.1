@@ -1,29 +1,32 @@
 .TH "USB_MODESWITCH" "1"
 .SH "NAME"
-usb_modeswitch - switch mode of "multi-state" USB devices
+usb_modeswitch - control the mode of 'multi-state' USB devices
 .SH "SYNOPSIS"
 .PP
-\fBusb_modeswitch\fR [\fB\-heWQDIvpVPmM23rwdHSOBGTNALnsRiuagft\fP] [\fB\-c \fIfilename\fP]
+\fBusb_modeswitch\fR [\fB\-heWQDIvpVPmM23rwKdHSOBGTNALnsRiuagft\fP] [\fB\-c \fIfilename\fP]
 .SH "DESCRIPTION"
 .PP
 Several new USB devices have their proprietary Windows drivers onboard,
-most of them WAN dongles. When plugged in for the first time, they act
-like a flash storage and start installing the Windows driver from there.
-If the driver is already installed, it makes the storage device disappear
-and a new device, mainly composite with modem ports, shows up.
+most of them WWAN and WLAN  dongles. When plugged in for the first time,
+they act like a flash storage and start installing the Windows driver from
+there. If the driver is already installed, it makes the storage device
+disappear and a new device, mainly composite with modem ports, shows up.
 .PP
 On Linux, in most cases the drivers are available as kernel modules,
-such as "usbserial" or "option". However, the device shows up as
-"usb-storage" by default. \fBusb_modeswitch\fR can send a provided bulk
-message (most likely a mass storage command) to the device which is known
-to initiate the mode switching.
+such as "usbserial" or "option". However, the device initially binds to
+"usb-storage" by default. \fBusb_modeswitch\fR can then send a provided bulk
+message (most likely a mass storage command) to the device; this message
+has to be determined by analyzing the actions of the Windows driver.
 .PP
 In some cases, USB control commands are used for switching. These cases are
 handled by custom functions, and no bulk message needs to be provided.
 .PP
 Usually, the program is distributed with a set of configurations for many
-known devices, which in combination with a wrapper script launched from the
-udev daemon allows a fully automatic handling of a device upon insertion.
+known devices, which allows a fully automatic handling of a device upon
+insertion, made possible by combining usb_modeswitch with the wrapper script
+\fBusb_modeswitch_dispatcher\fR which is launched by the udev daemon.
+.PP
+Note that \fBusb_modeswitch\fR itself has no specific Linux dependencies.
 
 .SH "OPTIONS"
 .PP
@@ -45,10 +48,12 @@ Product ID to look for (mandatory)
 Target vendor ID. When given will be searched for and detected initially
 for information purposes. If success checking (option \-s) is active,
 providing target IDs (vendor/product) or target class is recommended
+.IP "\fB-j\fP \fB\-\-find-mbim\fP         " 10
+Return configuration number with MBIM interface and exit.
 .IP "\fB-P\fP \fB\-\-target-product NUM\fP         " 10
 Target product ID
-.IP "\fB-b\fP \fB\-\-busnum NUM\fP         " 10
-.IP "\fB-g\fP \fB\-\-devnum NUM\fP         " 10
+.IP "\fB-b\fP \fB\-\-bus-num NUM\fP         " 10
+.IP "\fB-g\fP \fB\-\-device-num NUM\fP         " 10
 If bus and device number are provided, the handling of a specific device on
 a specific USB port is guaranteed, in contrast to using only the USB ID. This
 is important if there are multiple similar devices on a system
@@ -72,15 +77,14 @@ strongly advised to comply with specifications and to avoid likely errors
 After issuing all bulk messages, wait for NUM milliseconds before releasing the interface.
 Required for some modems on older systems (especially after an EJECT message)
 .IP "\fB-n\fP \fB\-\-need-response\fP         " 10
-Read the response (command status wrapper) to a mass storage command
-transfer.
-Some devices have trouble switching if the response is not read; most
-are disappearing right away. When sending multiple mass storage commands
-with \fB\-2\fR and \fB\-3\fR, this may need to be set to avoid transfer errors
+Obsolete. CSW is always attempted to being read after mass storage transfers. No downside
 .IP "\fB-r\fP \fB\-\-response-endpoint NUM\fP         " 10
-Try to read the response to a storage command from there
-if option \-n is active. Only for testing purposes; usually
-endpoints are determined from the device attributes
+Try to read the response to a storage command from there. Only for testing purposes;
+usually endpoints are determined from the device attributes
+.IP "\fB-K\fP \fB\-\-std-eject\fP         " 10
+Apply the standard SCSI sequence of "Allow Medium Removal" and
+"Eject". Implies \fB-n\fP. One 'Message' can be added with \fB-M\fP
+that will be transmitted after the eject sequence. Used by many modems
 .IP "\fB-d\fP \fB\-\-detach-only\fP         " 10
 Just detach the current driver. This is sufficient for some early
 devices to switch successfully. Otherwise this feature can
@@ -88,20 +92,31 @@ be used as a 'scalpel' for special cases, like separating the
 driver from individual interfaces
 .IP "\fB-H\fP \fB\-\-huawei-mode\fP         " 10
 Send a special control message used by older Huawei devices
+.IP "\fB-J\fP \fB\-\-huawei-new-mode\fP         " 10
+Send a specific bulk message used by all newer Huawei devices
 .IP "\fB-S\fP \fB\-\-sierra-mode\fP         " 10
 Send a special control message used by Sierra devices
 .IP "\fB-G\fP \fB\-\-gct-mode\fP         " 10
 Send a special control message used by GCT chipsets
 .IP "\fB-T\fP \fB\-\-kobil-mode\fP         " 10
 Send a special control message used by Kobil devices
-.IP "\fB-T\fP \fB\-\-sequans-mode\fP         " 10
+.IP "\fB-N\fP \fB\-\-sequans-mode\fP         " 10
 Send a special control message used by Sequans chipset
-.IP "\fB-T\fP \fB\-\-mobileaction-mode\fP         " 10
+.IP "\fB-A\fP \fB\-\-mobileaction-mode\fP         " 10
 Send a special control message used by the MobileAction device
 .IP "\fB-B\fP \fB\-\-qisda-mode\fP         " 10
 Send a special control message used by Qisda devices
+.IP "\fB-E\fP \fB\-\-quanta-mode\fP         " 10
+Send a special control message used by Quanta devices
+.IP "\fB-F\fP \fB\-\-pantech-mode NUM\fP         " 10
+Send a special control message used by Pantech devices.
+Value NUM will be used in control message as 'wValue'
+.IP "\fB-Z\fP \fB\-\-blackberry-mode\fP         " 10
+Send a special control message used by some newer Blackberry devices
+.IP "\fB-S\fP \fB\-\-option-mode\fP         " 10
+Send a special control message used by all Option devices
 .IP "\fB-O\fP \fB\-\-sony-mode\fP         " 10
-Apply a special sequence used by Sony Ericsson devices. Implies option \--success
+Apply a special sequence used by Sony Ericsson devices. Implies option \--check-success
 .IP "\fB-L\fP \fB\-\-cisco-mode\fP         " 10
 Send a sequence of bulk messages used by Cisco devices
 .IP "\fB-R\fP \fB\-\-reset-usb\fP         " 10
@@ -110,7 +125,7 @@ method or stand alone. It is always done as the last step of all device
 interactions.
 Few devices need it to complete the switching; apart from that it may be
 useful during testing
-.IP "\fB-c\fP \fB\-\-config FILENAME\fP         " 10
+.IP "\fB-c\fP \fB\-\-config-file FILENAME\fP         " 10
 Use a specific config file. If any ID or switching options are given as
 command line parameters, this option is ignored.
 In that case all mandatory parameters have to be provided on
@@ -129,14 +144,12 @@ Print all settings before running and show libusb debug messages
 Changes the behaviour of the program slightly. A success message including the
 effective target device ID is put out and a syslog notice is issued. Mainly for
 integration with a wrapper script
-.IP "\fB-s\fP \fB\-\-success NUM\fP         " 10
+.IP "\fB-s\fP \fB\-\-check-success NUM\fP         " 10
 After switching, keep checking for the result up to max. NUM seconds. If target IDs
 or target class were provided, their appearance indicates certain success. Otherwise
 the disconnection of the original device is rated as likely proof
-.IP "\fB-I\fP \fB\-\-no-inquire\fP         " 10
-do not obtain SCSI attributes from device (default is on). For proper identification
-of differing devices the attributes of the storage part provide valuable information.
-This is not needed for devices that are known and supported
+.IP "\fB-I\fP \fB\-\-inquire\fP         " 10
+Obsolete. Formerly obtained SCSI attributes, now ignored
 .IP "\fB-i\fP \fB\-\-interface NUM\fP         " 10
 Select initial USB interface (default: 0). Only for testing purposes
 .IP "\fB-u\fP \fB\-\-configuration NUM\fP         " 10
@@ -156,4 +169,4 @@ later version published by the Free Software Foundation.
 The complete text of the current GNU General Public
 License can be found in http://www.gnu.org/licenses/gpl.txt
 
-.\" last edited 2011-10-23 for version 1.2.2
+.\" last edited 2016-01-11 for version 2.3.0

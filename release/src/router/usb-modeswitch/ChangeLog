@@ -2,6 +2,120 @@
 History of USB_ModeSwitch
 =========================
 
+Version 2.4.0, 2016/06/12
+    ATTENTION: All ad-hoc driver binding code (using new_id driver attribute)
+    removed - was a potential source of side effects and should now be
+    obsoleted by good kernel support for modems; Added "dummy" setting for
+    config files, to conditionally refrain from handling a device (see this
+    topic: www.draisberghof.de/usb_modeswitch/bb/viewtopic.php?f=4&t=2458 );
+    extended StandardEject sequence to include LUN 1, required for some D-Link
+    devices; add device class 239 ("miscellaneous") to sanity check (thanks to
+    Daniel Drake for reporting); udev shell script - removed driver binding,
+    removed almost all waiting and forking, improved check for systemd (thanks
+    to Daniel Drake for problem analysis and solution, see this topic/patch:
+    www.draisberghof.de/usb_modeswitch/bb/viewtopic.php?p=16777#p16777 ,
+    gist.github.com/dsd/9f83c4830ab78ce94078aedb2cf16a8f )
+Version 2.3.0, 2016/01/12
+    ATTENTION: -I flag is now history and being ignored - determining SCSI
+    attributes is really an 'outside task'; -n flag (NeedResponse) is being
+    ignored, CSW response will now always be read; introduction of parameter
+    "OptionMode", wrapping the standard bulk message for all newer Huawei
+    devices; fixed missing variable initialization in dispatcher script which
+    could lead to crash (thanks, Dmitry Kunilov!); fixed bug which prevented
+    early logging; fixed success report for Cisco AM10; some source code
+    formatting and clean-up
+Version 2.2.6, 2015/11/01
+    Renamed function abort(), avoiding possible conflicts in static builds
+    with libjim (thanks, Gustavo Zacharias); removed storage class check of
+    interface 0 from dispatcher, enabling new multi-config devices in data
+    package 20151101
+Version 2.2.5, 2015/07/16
+    Fixed bug in configuration check, possibly leading to segfault (thanks,
+    Leonid Lisovskiy); fixed Pantech commandline parameter evaluation (was
+    not working at all); added driver unbind step via sysfs in wrapper,
+    getting rid of the USB subsystem complaint "interface 0 claimed by
+    usb-storage while 'usb_modeswitch' <does this and that>"
+Version 2.2.4, 2015/07/14
+    Fixed buggy check of USB configuration selection (possibly leading
+    to segfault), tested with Alcatel X602D; removed call to 'libusb_strerror'
+    from libusb initialization - not available in earlier libusb1 versions
+Version 2.2.3, 2015/06/29
+    Fixed problem arising with systemd version 221 (220 untested), which
+    affects starting the usb_modeswitch systemd unit from the sh script
+    (reported by Archlinux users)
+Version 2.2.2, 2015/06/27
+    Added catch for libusb init error (thanks, Henrik Gustafsson); removed
+    global function result variable; added catch for USB configuration
+    read error (both thanks to "otila"); fixed wrapper script where port
+    search for symlinking modem port was broken ("/dev/gsmmodem"); changed
+    PantechMode parameter to represent different targets; added global
+    config option to disable MBIM checking and setting alltogether (request
+    from "kai"); changed udev sh script so that systemd processing takes
+    precedence over upstart; changed systemd template unit parameter to
+    avoid escaping problems
+Version 2.2.1, 2015/01/15
+    Fixed unreliable switching function for Cisco AM10
+Version 2.2.0, 2014/05/29
+    Introduction of parameter "HuaweiNewMode", wrapping the standard bulk
+    message for all newer Huawei devices; support for generic fall-back
+    config files, combined with OS switch (per vendor ID), implementation
+    to use a specific switching command on Android for all Huawei devices
+    (see README of data package for details); this change was suggested
+    by Huawei
+Version 2.1.1, 2014/03/27
+    Code cleanup, better use of libusb1; this also fixes problems with
+    determination of the active USB configuration (Samsung, Option modems);
+    "Interface" parameter was not working as expected, fixed (see also:
+    https://bugs.launchpad.net/bugs/1261923 ); fixed bogus interface release
+    in "inquire" function, again a report by "Sonya@zte"
+Version 2.1.0, 2014/01/28
+    ATTENTION: -I flag meaning reversed, default is to skip SCSI inquiry;
+    introduction of StandardEject, replacing many MessageContents with the
+    same function, reducing size of device config files, and always including
+    the 'Allow Medium Removal' before ejecting (thanks to Lars Melin for
+    the idea); fix in "bulk_read", removing bogus CSW request (report from
+    "Sonya@zte")
+Version 2.0.1, 2013/09/03
+    Fixed stupid string size bug which could lead to memory corruption
+    (thanks to Leonid Myravjev)
+Version 2.0.0, 2013/09/01
+    Switched to libusb1.0, with much help from folks of the wl500g project
+    (http://wl500g.googlecode.com): Vladislav Grishenko, Leonid Lisovskiy,
+    Roman Samarev, Andrey Tikhomirov;
+    major code and debug output cleanup; man page corrections and additions
+    (thanks to Thomas Haller);
+    experimental systemd and upstart integration, if present
+    (Explanation: newer udev versions kill all subprocesses, detached or
+    not. The suggested way to handle longer running processes like the
+    usb_modeswitch_dispatcher is to add simple services or tasks and start
+    these by sending signals from the udev rule)
+    !! Attention, system integrators: a crude install facility is included
+    in the Makefile to check if "upstart" or "systemd" is active and to
+    install the matching service file; you may want to adapt it better to
+    your respective system, possibly adding dependencies/targets to the
+    services. Note that the udev starter script usb_modeswitch.sh also
+    checks for the existence of the service/unit files
+Version 1.2.7, 2013/08/07
+    Two new dedicated control message functions to support Pantech LTE
+    (thanks to Adam Goode) and Blackberry Q10/Z10 (thanks to Daniel Mende)
+Version 1.2.6, 2013/06/02
+    Several changes to streamline compiling as part of larger projects
+    (thanks to Nicolas Carrier), mostly in Makefile; fix compiler warnings
+    appearing in certain build environments (N. Carrier); new Quanta
+    procedure (thanks to Andrey Tikhomirov) for Quanta 1K3 LTE; fix for
+    error with cascaded hubs in dispatcher script (hint from N. Carrier)
+Version 1.2.5, 2012/11/09
+    Initial support for MBIM devices, use with data package >= 20121109;
+    checking for these is the automatic default, new parameter NoMBIMCheck
+    prevents the check per device in case of problems; new global option
+    to set "delay_use" of usb-storage (as low values may prevent
+    mode-switching); fix for handling multi-configuration devices (thanks
+    to Bjørn Mork for advice)
+Version 1.2.4, 2012/08/12
+    Additional interface checks to prevent sending UFI commands to non-
+    storage interfaces (prompted by more ambiguous device IDs popping up);
+    change in SierraMode for handling newer devices which caused an error
+    abort before; Makefile fix for parallelized make runs
 Version 1.2.3, 2012/01/28
     Fixed two bugs both causing the embedded-jimsh install variant of the
     dispatcher crash (the "pure-script" install variant was NOT affected);

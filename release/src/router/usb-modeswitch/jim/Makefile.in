@@ -1,5 +1,5 @@
 # Tools
-CC = @CCACHE@ @CC@
+CC ?= @CCACHE@ @CC@
 CXX = @CCACHE@ @CXX@
 RANLIB = @RANLIB@
 AR = @AR@
