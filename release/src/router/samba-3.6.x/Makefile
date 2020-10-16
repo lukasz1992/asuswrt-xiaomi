@@ -11,25 +11,12 @@ ifneq ($(CONFIG_LINUX26),y)
 SMBCFLAGS += -DMAX_DEBUG_LEVEL="-1"
 endif
 
-ifeq ($(RTCONFIG_BCMWL6), y)
-ifeq ($(RTCONFIG_BCMARM), y)
 SMBLDFLAGS += -lgcc_s
-HOST = arm
-
-ifeq ($(HND_ROUTER),y)
 FUNC_GETADDRINFO=yes
 FUNC_GETIFADDRS=yes
-LIB_RESOLV=yes
-else
-FUNC_GETADDRINFO=yes
-FUNC_GETIFADDRS=no
 DEF_FCNTL=-Dfcntl=fcntl64
 LIB_RESOLV=no
-endif
-else
 HOST = mips
-endif
-endif
 
 ifeq ($(RTCONFIG_QCA),y)
 SMBCFLAGS += -Wl,-z,relro,-z,now -Wno-error=unused-but-set-variable
