@@ -2315,3 +2315,9 @@ int check_current_ip_is_lan_or_wan()
 	return _check_ip_is_lan_or_wan(target_ip, nvram_safe_get("lan_ipaddr"), nvram_safe_get("lan_netmask"));
 }
 
+#ifndef RTCONFIG_BWDPI
+int dump_dpi_support(int index)
+{
+	return 0;
+}
+#endif

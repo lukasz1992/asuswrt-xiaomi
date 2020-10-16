@@ -51,7 +51,6 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/timer.h>
-#include <asm/system.h>
 #include <asm/uaccess.h>
 #include <asm/rt2880/surfboardint.h>
 #include <linux/interrupt.h>

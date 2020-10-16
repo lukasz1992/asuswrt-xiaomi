@@ -12,6 +12,20 @@
 #include <time.h>
 #endif
 
+#ifndef RTCONFIG_USB // fix compilation for models without USB
+int is_usb_modem_ready(int wan_type)
+{
+	return 0;
+}
+#endif
+
+#ifndef RTCONFIG_BWDPI // fix compilation for models without DPI
+int check_wrs_switch()
+{
+	return 0;
+}
+#endif
+
 #ifdef RTCONFIG_RALINK
 #include <ralink.h>
 #endif
@@ -1535,7 +1549,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 #endif
-	else if (!strcmp(base, "ATE")) {
+	else if (/*!strcmp(base, "ATE")*/ 0) {
 		if ( argc == 2 || argc == 3 || argc == 4) {
 			asus_ate_command(argv[1], argv[2], argv[3]);
 		}

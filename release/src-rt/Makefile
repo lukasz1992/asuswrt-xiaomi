@@ -105,11 +105,7 @@ EXSTRING="-$(EXTENDTYPE)"
 else
 EXSTRING=
 endif
-export EXTENDNO := $(shell expr $(EXTENDNO1) + $(RC_EXT_NO))-g$(shell git log --pretty=format:'%h' -n 1|sed -e "s,\([0-9a-z]\{7\}\)[0-9a-z]*,\1,")$(EXSTRING)
-endif
-
-ifeq ($(EXTENDNO),)
-export EXTENDNO := 0-g$(shell git log --pretty=format:'%h' -n 1|sed -e "s,\([0-9a-z]\{7\}\)[0-9a-z]*,\1,")
+export EXTENDNO := $(shell cat ./router/extendno.conf | sed 's/EXTENDNO=//g')
 endif
 
 export SWPJNAME := $(shell git branch | grep "*" | grep "swpj-" | sed 's/.*swpj-//g')
@@ -4131,7 +4127,7 @@ endif
 		sed -i "/RTCONFIG_WLMODULE_RLT_WIFI/d" router/.config; \
 		echo "RTCONFIG_WLMODULE_RLT_WIFI=y" >> router/.config; \
 	fi
-	@if grep -q "CONFIG_WIFI_MT7603E=m" $(LINUXDIR)/.config ; then \
+	@if grep -q "CONFIG_MT7603E_RLT_WIFI=m" $(LINUXDIR)/.config ; then \
 		sed -i "/RTCONFIG_WLMODULE_MT7603E_AP/d" router/.config; \
 		echo "RTCONFIG_WLMODULE_MT7603E_AP=y" >> router/.config; \
 	fi
@@ -4141,7 +4137,7 @@ endif
 		echo "RTCONFIG_WLMODULE_MT7628_AP=y" >> router/.config; \
 	fi
 
-	@if grep -q "CONFIG_CHIP_MT7615E=y" $(LINUXDIR)/.config ; then \
+	@if grep -q "CONFIG_MT_WIFI=m" $(LINUXDIR)/.config ; then \
 		sed -i "/RTCONFIG_WLMODULE_MT7615E_AP/d" router/.config; \
 		echo "RTCONFIG_WLMODULE_MT7615E_AP=y" >> router/.config; \
 	fi

@@ -716,13 +716,8 @@ int get_bw_via_channel(int band, int channel)
 		return wl_bw;
 	}
 
-	if(channel == 116 || channel == 140 || channel >= 165) {
+	if(channel >= 165) {
 		return 0;	// 20 MHz
-	}
-	if(channel == 132 || channel == 136) {
-		if(wl_bw == 0)
-			return 0;
-		return 2;		// 40 MHz
 	}
 
 	//check for TW band2
@@ -2220,8 +2215,7 @@ int gen_ralink_config(int band, int is_iNIC)
 				HTBW_MAX = 0;	//CANNOT use 40MHz
 			}
 #if defined(VHT_SUPPORT)
-			if  ( Channel == 165
-			  ||((Channel == 116 || Channel == 132 || Channel == 136 || Channel == 140) && IEEE80211H))
+			if  ( Channel == 165)
 				VHTBW_MAX = 0;	//CANNOT use 80MHz
 #endif
 		}
@@ -2307,7 +2301,7 @@ int gen_ralink_config(int band, int is_iNIC)
 		)
 		fprintf(fp, "HT_BSSCoexistence=%d\n", 0);
 	else
-		fprintf(fp, "HT_BSSCoexistence=%d\n", 1);
+		fprintf(fp, "HT_BSSCoexistence=%d\n", 0);
 
 	//HT_AutoBA
 	str = nvram_safe_get(strcat_r(prefix, "HT_AutoBA", tmp));
@@ -2446,6 +2440,10 @@ int gen_ralink_config(int band, int is_iNIC)
 		fprintf(fp, "VHT_BW=%d\n", 1);
 	else if(wl_bw == 3 && (HTBW_MAX == 1) && (VHTBW_MAX == 1))	// 80 MHz
 		fprintf(fp, "VHT_BW=%d\n", 1);
+	else if(wl_bw == 4 && (HTBW_MAX == 1) && (VHTBW_MAX == 1))	// 80+80 MHz
+		fprintf(fp, "VHT_BW=%d\n", 3);
+	else if(wl_bw == 5 && (HTBW_MAX == 1) && (VHTBW_MAX == 1))	// 160 MHz
+		fprintf(fp, "VHT_BW=%d\n", 2);
 #if defined(RTCONFIG_WIRELESSREPEATER) && defined(RTCONFIG_CONCURRENTREPEATER)	
 	else if ((wlc_express - 1) == band)   //express way (apclii0)
 		fprintf(fp, "VHT_BW=%d\n", 1);

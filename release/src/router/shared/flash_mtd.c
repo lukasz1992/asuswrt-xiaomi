@@ -16,7 +16,6 @@
 #elif defined(RTCONFIG_LANTIQ)
 #include <mtd/mtd-user.h>
 #elif defined(LINUX26)
-#include <linux/compiler.h>
 #include <mtd/mtd-user.h>
 #else
 #include <linux/mtd/mtd.h>
@@ -93,7 +92,7 @@ static int get_mtd_info(const char *mtd_name, struct mtd_info *mi)
 			continue;
 
 		snprintf(mtd_dev, sizeof(mtd_dev), "/dev/mtd%d", i);
-		if ((r = open(mtd_dev, O_RDWR|O_SYNC)) < 0)
+		if ((r = open(mtd_dev, O_RDONLY)) < 0)
 			continue;
 
 		if (ioctl(r, MEMGETINFO, &m) < 0)

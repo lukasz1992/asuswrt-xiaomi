@@ -972,8 +972,6 @@ void init_wl(void)
 	}
 	sprintf(tmpStr3, "regspec_5g=%s", dst);
 
-	if (!module_loaded("rt2860v2_ap"))
-		modprobe("rt2860v2_ap");
 #if defined (RTCONFIG_WLMODULE_RT3090_AP)
 	if (!module_loaded("RTPCI_ap"))
 	{
@@ -1005,14 +1003,14 @@ void init_wl(void)
 	if (!module_loaded("mt_wifi"))
 		modprobe("mt_wifi");
 #else
-	if (!module_loaded("rlt_wifi_7603e"))
-		modprobe("rlt_wifi_7603e");
+	if (!module_loaded("mt7603_wifi"))
+		modprobe("mt7603_wifi");
 #endif
 #endif
 
 #if defined (RTCONFIG_WLMODULE_MT7615E_AP)
-	if (!module_loaded("mt_wifi_7615E"))
-		modprobe("mt_wifi_7615E", tmpStr1, tmpStr2, tmpStr3);
+	if (!module_loaded("mt_wifi"))
+		modprobe("mt_wifi", tmpStr1, tmpStr2, tmpStr3);
 #endif
 	sleep(1);
 }
@@ -1028,6 +1026,11 @@ void fini_wl(void)
 #endif
 		modprobe_r("hw_nat");
 	}
+
+#if defined (RTCONFIG_WLMODULE_MT7615E_AP)
+	if (module_loaded("mt_wifi"))
+		modprobe_r("mt_wifi");
+#endif
 
 #if defined (RTCONFIG_WLMODULE_MT7610_AP)
 	if (module_loaded("MT7610_ap"))
@@ -1053,8 +1056,8 @@ void fini_wl(void)
 	if (module_loaded("mt_wifi"))
 		modprobe_r("mt_wifi");
 #else
-	if (module_loaded("rlt_wifi_7603e"))
-		modprobe_r("rlt_wifi_7603e");
+	if (module_loaded("mt7603_wifi"))
+		modprobe_r("mt7603_wifi");
 #endif
 #endif
 #if defined (RTCONFIG_WLMODULE_RT3352_INIC_MII)
@@ -1068,9 +1071,6 @@ void fini_wl(void)
 		modprobe_r("RTPCI_ap");
 	}
 #endif
-
-	if (module_loaded("rt2860v2_ap"))
-		modprobe_r("rt2860v2_ap");
 
 }
 
@@ -1576,7 +1576,22 @@ void init_syspara(void)
 	_dprintf("bootloader version: %s\n", nvram_safe_get("blver"));
 	_dprintf("firmware version: %s\n", nvram_safe_get("firmver"));
 
-#if !defined (RTCONFIG_WLMODULE_MT7615E_AP)
+	// set country from location_code
+	char *loc_code[] = {"DB", "EU", "RU", "US", "CN", 0};
+	char **curr_loc_code = loc_code;
+	for (; *curr_loc_code; *curr_loc_code++)
+		if (nvram_match("location_code", *curr_loc_code)) {
+			nvram_set("wl_country_code", *curr_loc_code);
+			nvram_set("wl0_country_code", *curr_loc_code);
+			nvram_set("wl1_country_code", *curr_loc_code);
+#ifdef RTCONFIG_RALINK_DFS
+			if (!strcmp(*curr_loc_code, "EU"))
+				nvram_set("wl1_IEEE80211H", "1");
+#endif
+			break;
+		}
+
+#if 0
 	dst = txbf_para;
 	int count_0xff = 0;
 	if (FRead(dst, OFFSET_TXBF_PARA, 33) < 0)
@@ -1999,9 +2014,9 @@ set_wan_tag(char *interface) {
 #endif
 }
 
-#ifdef RA_SINGLE_SKU
 void reset_ra_sku(const char *location, const char *country, const char *reg_spec)
 {
+#ifdef RA_SINGLE_SKU
 	const char *try_list[] = { reg_spec, location, country, "CE", "FCC"};
 	int i;
 	for (i = 0; i < ARRAY_SIZE(try_list); i++) {
@@ -2016,8 +2031,8 @@ void reset_ra_sku(const char *location, const char *country, const char *reg_spe
 
 	cprintf("using %s SKU for %s\n", try_list[i], location);
 	gen_ra_sku(try_list[i]);
-}
 #endif	/* RA_SINGLE_SKU */
+}
 
 
 /*=============================================================================

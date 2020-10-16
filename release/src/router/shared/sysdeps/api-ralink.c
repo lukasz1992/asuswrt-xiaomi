@@ -137,16 +137,17 @@ int wl_ioctl(const char *ifname, int cmd, struct iwreq *pwrq)
 
 unsigned int get_radio_status(char *ifname)
 {
-	struct iwreq wrq;
-	unsigned int data = 0;
+	struct ifreq ifr;
+	int sfd, ret;
 
-	wrq.u.data.length = sizeof(data);
-	wrq.u.data.pointer = (caddr_t) &data;
-	wrq.u.data.flags = ASUS_SUBCMD_RADIO_STATUS;
-	if (wl_ioctl(ifname, RTPRIV_IOCTL_ASUSCMD, &wrq) < 0)
-		printf("ioctl error\n");
-
-	return data;
+	if ((sfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) >= 0) {
+		strcpy(ifr.ifr_name, ifname);
+		ret = ioctl(sfd, SIOCGIFFLAGS, &ifr);
+		close(sfd);
+		if (ret == 0)
+			return !!(ifr.ifr_flags & IFF_UP);
+	}
+	return 0;
 }
 
 int get_radio(int unit, int subunit)
@@ -484,7 +485,7 @@ COUNTRY_CODE_TO_COUNTRY_REGION allCountry[] = {
 	{"RU", A_BAND_REGION_24, G_BAND_REGION_1},
 	{"IL", A_BAND_REGION_25, G_BAND_REGION_1},
 #else
-	{"RU", A_BAND_REGION_0, G_BAND_REGION_1},
+	{"RU", A_BAND_REGION_24,G_BAND_REGION_1},
 #endif
 #endif
 	{"SA", A_BAND_REGION_0, G_BAND_REGION_1},
@@ -511,7 +512,7 @@ COUNTRY_CODE_TO_COUNTRY_REGION allCountry[] = {
 #endif
 	{"AE", A_BAND_REGION_0, G_BAND_REGION_1},
 	{"GB", A_BAND_REGION_1, G_BAND_REGION_1},
-	{"US", A_BAND_REGION_0, G_BAND_REGION_0},
+	{"US", A_BAND_REGION_22,G_BAND_REGION_0},
 #ifdef RTCONFIG_LOCALE2012
 	{"UY", A_BAND_REGION_0, G_BAND_REGION_1},
 #else
@@ -526,6 +527,7 @@ COUNTRY_CODE_TO_COUNTRY_REGION allCountry[] = {
 	{"VN", A_BAND_REGION_0, G_BAND_REGION_1},
 	{"YE", A_BAND_REGION_0, G_BAND_REGION_1},
 	{"ZW", A_BAND_REGION_0, G_BAND_REGION_1},
+	{"EU", A_BAND_REGION_12,G_BAND_REGION_1},
 	{"",	0,	0}
 };
 
