@@ -184,7 +184,7 @@ void format_mount_2nd_jffs2(void)
 	sprintf(s, MTD_BLKDEV(%d), part);
 	model = get_model();
 	if (mount(s, SECOND_JFFS2_PATH, JFFS_NAME, MS_NOATIME, "") != 0) {
-		if ((model==MODEL_RTAC56U || model==MODEL_RTAC56S || model==MODEL_RTAC3200 || model==MODEL_RTAC68U || model==MODEL_DSLAC68U || model==MODEL_RTAC87U || model==MODEL_RTAC88U || model==MODEL_RTAC86U || model==MODEL_RTAC3100 || model==MODEL_RTAC5300 || model==MODEL_GTAC5300 || model==MODEL_RTN18U) ^ (!mtd_erase(JFFS2_MTD_NAME))){
+		if (/*(model==MODEL_RTAC56U || model==MODEL_RTAC56S || model==MODEL_RTAC3200 || model==MODEL_RTAC68U || model==MODEL_DSLAC68U || model==MODEL_RTAC87U || model==MODEL_RTAC88U || model==MODEL_RTAC86U || model==MODEL_RTAC3100 || model==MODEL_RTAC5300 || model==MODEL_GTAC5300 || model==MODEL_RTN18U) ^ */(!mtd_erase(JFFS2_MTD_NAME))){
 			error("formatting");
 			return;
 		}
@@ -205,7 +205,7 @@ void format_mount_2nd_jffs2(void)
 
 	notice_set("2nd_jffs", format ? "Formatted" : "Loaded");
 
-#if 0 /* disable legacy & asus autoexec */
+#if 1
 	if (((p = nvram_get("jffs2_exec")) != NULL) && (*p != 0)) {
 		chdir(SECOND_JFFS2_PATH);
 		system(p);
@@ -240,7 +240,7 @@ void start_jffs2(void)
 
 	if (nvram_match("jffs2_format", "1")) {
 		nvram_set("jffs2_format", "0");
-		if ((model==MODEL_RTAC56U || model==MODEL_RTAC56S || model==MODEL_RTAC3200 || model==MODEL_RTAC68U || model==MODEL_DSLAC68U || model==MODEL_RTAC87U || model==MODEL_RTAC88U || model==MODEL_RTAC86U || model==MODEL_RTAC3100 || model==MODEL_RTAC5300 || model==MODEL_GTAC5300 || model==MODEL_RTN18U || model==MODEL_RTAC1200G || model==MODEL_RTAC1200GP) ^ (!mtd_erase(JFFS2_MTD_NAME))){
+		if (/*(model==MODEL_RTAC56U || model==MODEL_RTAC56S || model==MODEL_RTAC3200 || model==MODEL_RTAC68U || model==MODEL_DSLAC68U || model==MODEL_RTAC87U || model==MODEL_RTAC88U || model==MODEL_RTAC86U || model==MODEL_RTAC3100 || model==MODEL_RTAC5300 || model==MODEL_GTAC5300 || model==MODEL_RTN18U || model==MODEL_RTAC1200G || model==MODEL_RTAC1200GP) ^ */(!mtd_erase(JFFS2_MTD_NAME))){
 			error("formatting");
 			return;
 		}
@@ -274,7 +274,7 @@ void start_jffs2(void)
 	sprintf(s, MTD_BLKDEV(%d), part);
 
 	if (mount(s, "/jffs", JFFS_NAME, MS_NOATIME, "") != 0) {
-		if ((model==MODEL_RTAC56U || model==MODEL_RTAC56S || model==MODEL_RTAC3200 || model==MODEL_RTAC68U || model==MODEL_DSLAC68U || model==MODEL_RTAC87U || model==MODEL_RTAC88U || model==MODEL_RTAC86U || model==MODEL_RTAC3100 || model==MODEL_RTAC5300 || model==MODEL_GTAC5300 || model==MODEL_RTN18U || model==MODEL_RTAC1200G || model==MODEL_RTAC1200GP) ^ (!mtd_erase(JFFS2_MTD_NAME))){
+		if (/*(model==MODEL_RTAC56U || model==MODEL_RTAC56S || model==MODEL_RTAC3200 || model==MODEL_RTAC68U || model==MODEL_DSLAC68U || model==MODEL_RTAC87U || model==MODEL_RTAC88U || model==MODEL_RTAC86U || model==MODEL_RTAC3100 || model==MODEL_RTAC5300 || model==MODEL_GTAC5300 || model==MODEL_RTN18U || model==MODEL_RTAC1200G || model==MODEL_RTAC1200GP) ^ */(!mtd_erase(JFFS2_MTD_NAME))){
 			jffs2_fail = 1;
 			error("formatting");
 			return;
@@ -343,7 +343,7 @@ void start_jffs2(void)
 #endif
 #endif
 
-#if 0 /* disable legacy & asus autoexec */
+#if 1
 	if (((p = nvram_get("jffs2_exec")) != NULL) && (*p != 0)) {
 		chdir("/jffs");
 		system(p);
@@ -364,7 +364,7 @@ void stop_jffs2(int stop)
 
 	if ((statfs("/jffs", &sf) == 0) && (sf.f_type != 0x73717368)) {
 		// is mounted
-#if 0 /* disable legacy & asus autoexec */
+#if 1
 		run_userfile("/jffs", ".autostop", "/jffs", 5);
 		run_nvscript("script_autostop", "/jffs", 5);
 #endif

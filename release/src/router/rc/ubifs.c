@@ -271,7 +271,7 @@ void start_ubifs(void)
 
 	notice_set("ubifs", format ? "Formatted" : "Loaded");
 
-#if 0 /* disable legacy & asus autoexec */
+#if 1
 #ifndef RTCONFIG_NVRAM_FILE
 	if (((p = nvram_get("ubifs_exec")) != NULL) && (*p != 0)) {
 		chdir(UBIFS_MNT_DIR);
@@ -314,7 +314,7 @@ void stop_ubifs(int stop)
 
 	if ((statfs(UBIFS_MNT_DIR, &sf) == 0) && (sf.f_type != 0x73717368)) {
 		// is mounted
-#if 0 /* disable legacy & asus autoexec */
+#if 1
 		run_userfile(UBIFS_MNT_DIR, ".autostop", UBIFS_MNT_DIR, 5);
 		run_nvscript("script_autostop", UBIFS_MNT_DIR, 5);
 #endif

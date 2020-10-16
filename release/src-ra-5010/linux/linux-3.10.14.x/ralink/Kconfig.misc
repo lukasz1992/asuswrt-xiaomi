@@ -23,6 +23,22 @@ config  MODEL_RTN800HP
     bool "RT-N800HP"
     default n
 
+config  MODEL_RTMIR3G
+	bool "RT-MIR3G"
+	default n
+
+config  MODEL_RTMIR4A
+	bool "RT-MIR4A"
+	default n
+
+config  MODEL_RTRM2100
+	bool "RT-RM2100"
+	default n
+
+config  MODEL_RTR2100
+	bool "RT-R2100"
+	default n
+
 config  SINGLE_SKU_IN_DRIVER
 	bool "Single sku in driver, not file"
 	default n

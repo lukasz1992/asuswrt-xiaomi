@@ -3811,6 +3811,67 @@ int init_nvram(void)
 		break;
 #endif /*  RTAC85U  */
 
+#if defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+#if defined(RTMIR3G)
+	case MODEL_RTMIR3G:
+#elif defined(RTMIR4A)
+	case MODEL_RTMIR4A:
+#elif defined(RTRM2100)
+	case MODEL_RTRM2100:
+#elif defined(RTR2100)
+	case MODEL_RTR2100:
+#endif
+		nvram_set("boardflags", "0x100"); // although it is not used in ralink driver, set for vlan
+		nvram_set("vlan1hwname", "et0");  // vlan. used to get "%smacaddr" for compare and find parent interface.
+		nvram_set("lan_ifname", "br0");
+
+		wl_ifaces[WL_2G_BAND] = "ra0";
+		wl_ifaces[WL_5G_BAND] = "rai0";
+#if defined(RTMIR3G)
+		set_basic_ifname_vars("eth3", "vlan1", wl_ifaces, "usb", "vlan1", NULL, "vlan3", NULL, 0);
+		nvram_set_int("led_usb_gpio", 10|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_usb3_gpio",10|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_wan_gpio", 13|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
+		nvram_set("ehci_ports", "1-1");
+		nvram_set("ohci_ports", "2-1");
+		add_rc_support("2.4G 5G noupdate usbX1");
+#else
+        set_basic_ifname_vars("eth3", "vlan1", wl_ifaces, NULL, "vlan1", NULL, "vlan3", NULL, 0);
+		add_rc_support("2.4G 5G noupdate");
+#endif
+#if defined(RTMIR4A)
+		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
+#elif defined(RTRM2100)
+		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_wan_gpio", 12|GPIO_ACTIVE_LOW);
+#elif defined(RTR2100)
+		nvram_set_int("led_pwr_gpio", 12|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_wan_gpio",  8|GPIO_ACTIVE_LOW);
+#endif
+		nvram_set_int("btn_rst_gpio", 18|GPIO_ACTIVE_LOW);
+
+		eval("rtkswitch", "11");
+		nvram_set("ct_max", "300000"); // force
+
+		add_rc_support("mssid");
+		add_rc_support("rawifi");
+		add_rc_support("11AC");
+		add_rc_support("manual_stb");
+		add_rc_support("loclist");
+		add_rc_support("mfp");
+		nvram_set("wl0_HT_TxStream", "2");
+		nvram_set("wl0_HT_RxStream", "2");
+#if defined(RTRM2100) || defined(RTR2100)
+		nvram_set("wl1_HT_TxStream", "4");
+		nvram_set("wl1_HT_RxStream", "4");
+#else
+		nvram_set("wl1_HT_TxStream", "2");
+		nvram_set("wl1_HT_RxStream", "2");
+#endif
+		break;
+#endif /* Xiaomi */
+
 #if defined(RTAC85P) 
 	case MODEL_RTAC85P:
 		nvram_set("boardflags", "0x100"); // although it is not used in ralink driver, set for vlan
@@ -11265,7 +11326,7 @@ int reboothalt_main(int argc, char *argv[])
 	_dprintf(reboot ? "Rebooting..." : "Shutting down...");
 	kill(1, reboot ? SIGTERM : SIGQUIT);
 
-#if defined(RTN14U) || defined(RTN65U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTCONFIG_QCA) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTAC54U) || defined(RTN56UB2) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26)
+#if defined(RTN14U) || defined(RTN65U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTCONFIG_QCA) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTAC54U) || defined(RTN56UB2) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26) || defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
 	def_reset_wait = 50;
 #endif
 

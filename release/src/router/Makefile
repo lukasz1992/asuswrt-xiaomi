@@ -484,7 +484,7 @@ obj-y += $(if $(RTCONFIG_ATED122),ated_1.2.2,ated)
 endif
 obj-y += $(if $(RTCONFIG_MII_MGR),mii_mgr)
 
-ifeq ($(or $(RTAC85P),$(RTN800HP),$(RTACRH26)),y)
+ifeq ($(or $(RTAC85P),$(RTN800HP),$(RTACRH26),$(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
 obj-y += switch
 endif
 
@@ -2085,7 +2085,7 @@ image:
 	@rm -f $(PLATFORMDIR)/target.image
 ifneq (,$(filter y,$(RTCONFIG_RALINK) $(RTCONFIG_QCA) $(RTCONFIG_REALTEK) $(RTCONFIG_ALPINE) $(RTCONFIG_LANTIQ)))
 	@$(MAKE) -C $(LINUXDIR)/scripts/squashfs $(MKSQUASHFS_TARGET)
-	@$(LINUXDIR)/scripts/squashfs/$(MKSQUASHFS) $(TARGETDIR) $(PLATFORMDIR)/target.image -all-root -noappend -nopad
+	@$(LINUXDIR)/scripts/squashfs/$(MKSQUASHFS) $(TARGETDIR) $(PLATFORMDIR)/target.image -all-root -noappend -nopad -b 262144
 else ifeq ($(RTCONFIG_BCMARM),y)
 	@$(SRCBASE)/ctools/mksquashfs $(TARGETDIR) $(PLATFORMDIR)/target.image -all-root -noappend -Xbcj arm,armthumb
 else ifeq ($(RTCONFIG_REALTEK),y)
