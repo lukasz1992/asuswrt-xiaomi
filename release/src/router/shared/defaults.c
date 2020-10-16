@@ -395,6 +395,8 @@ struct nvram_tuple router_defaults[] = {
 #ifdef RTCONFIG_PSR_GUEST
 	{ "wl_psr_guest", "0", CKN_STR_DEFAULT, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* Default to disable PSR guest support */
 #endif
+#elif defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+	{ "wl_mfp", "0", CKN_STR1, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* Protected Management Frame */
 #endif
 #ifdef RTCONFIG_WPS
 	/* WSC parameters */

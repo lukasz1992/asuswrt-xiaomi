@@ -3354,6 +3354,12 @@ next_mrate:
 	fprintf(fp, "SKUenable=1\n");
 #endif
 
+#if defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+	fprintf(fp, "PMFMFPC=%d\n",   (nvram_get_int(strcat_r(prefix, "mfp", tmp)) == 0) ? 0 : 1);
+	fprintf(fp, "PMFMFPR=%d\n",   (nvram_get_int(strcat_r(prefix, "mfp", tmp)) == 2) ? 1 : 0);
+	fprintf(fp, "PMFSHA256=%d\n", (nvram_get_int(strcat_r(prefix, "mfp", tmp)) == 0) ? 0 : 1);
+#endif
+
 	if (warning)
 	{
 		printf("warning: %d!!!!\n", warning);
