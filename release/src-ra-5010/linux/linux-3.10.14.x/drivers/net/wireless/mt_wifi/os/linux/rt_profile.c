@@ -375,7 +375,11 @@ static NDIS_STATUS match_index_by_chipname(IN RTMP_STRING *l1profile_data,
 					   IN RTMP_STRING *chipName)
 {
 	INT retVal = NDIS_STATUS_FAILURE;
+#ifdef CONFIG_FIRST_IF_MT7615E
 	INT if_idx = 0;
+#else
+	INT if_idx = 1;
+#endif
 	RTMP_STRING	key[10] = {0};
 	RTMP_STRING *tmpbuf = NULL;
 

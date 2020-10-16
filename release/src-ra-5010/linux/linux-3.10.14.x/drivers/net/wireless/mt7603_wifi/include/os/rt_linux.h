@@ -749,7 +749,7 @@ extern ULONG		RTDebugFunc;
 do{                                   \
 	ULONG __gLevel = (Level) & 0xff;\
 	ULONG __fLevel = ((Level) & 0xffffff00);\
-    if (((RTDebugLevel == RT_DEBUG_FPGA) && (__gLevel == RTDebugLevel)) || ((RTDebugLevel != RT_DEBUG_FPGA) && (__gLevel <= RTDebugLevel)))      \
+    if (((Level & 0xff) <= RT_DEBUG_WARN) && (((RTDebugLevel == RT_DEBUG_FPGA) && (__gLevel == RTDebugLevel)) || ((RTDebugLevel != RT_DEBUG_FPGA) && (__gLevel <= RTDebugLevel))))      \
     {                               \
     	if ((RTDebugFunc == 0) || \
 		((RTDebugFunc != 0) && (((__fLevel & RTDebugFunc)!= 0) || (__gLevel <= RT_DEBUG_ERROR))))\
@@ -762,7 +762,7 @@ do{                                   \
 do{                                   \
 	ULONG __gLevel = (Level) & 0xff;\
 	ULONG __fLevel = ((Level) & 0xffffff00);\
-    if (__gLevel <= RTDebugLevel)      \
+    if (((Level & 0xff) <= RT_DEBUG_WARN) && (__gLevel <= RTDebugLevel))      \
     {                               \
     	if ((RTDebugFunc == 0) || \
 		((RTDebugFunc != 0) && (((__fLevel & RTDebugFunc)!= 0) || (__gLevel <= RT_DEBUG_ERROR))))\
@@ -839,7 +839,7 @@ do{                                   \
 
 #define MTWF_LOG(Category, SubCategory, Level, Fmt)	\
 do{	\
-				if ((Level) <= RTDebugLevel)	\
+				if ((Level <= RT_DEBUG_WARN) && (Level <= RTDebugLevel))	\
 					MTWF_PRINT Fmt;	\
 				else {	\
 				}	\

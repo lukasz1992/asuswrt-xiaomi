@@ -5,10 +5,10 @@ DRV_NAME = mt7603e
 RT_WIFI_DIR = ../mt7603_wifi
 
 else
-ccflags-y = -Idrivers/net/wireless/mtk/mt7603e/mt7603_wifi/include \
-		-Idrivers/net/wireless/mtk/mt7603e/mt7603_wifi/ate/include
-#EXTRA_CFLAGS = -Idrivers/net/wireless/mtk/mt7603e/mt7603_wifi/include \
-		-Idrivers/net/wireless/mtk/mt7603e/mt7603_wifi/ate/include
+ccflags-y = -Idrivers/net/wireless/mt7603_wifi/include \
+		-Idrivers/net/wireless/mt7603_wifi/ate/include
+#EXTRA_CFLAGS = -Idrivers/net/wireless/mt7603_wifi/include \
+		-Idrivers/net/wireless/mt7603_wifi/ate/include
 
 WIFI_HEAD_GEN  = $(shell make -C drivers/net/wireless/rlt_wifi RT28xx_MODE=AP CHIPSET=mt7603e EE_TYPE=$(CONFIG_MT7603E_PA_LNA) sdk_build_tools >/dev/null)
 
@@ -701,10 +701,6 @@ endif
 #                    $(RT_WIFI_DIR)/chips/rt305x.o\
 #                    $(RT_WIFI_DIR)/chips/rt5350.o
 #endif
-CONFIG_PROPRIETARY_DRIVER=y
-ifeq ($(CONFIG_PROPRIETARY_DRIVER),y)
-EXTRA_CFLAGS += -DCONFIG_PROPRIETARY_DRIVER
-endif
 #ifeq ($(CONFIG_RALINK_RT6352),y)
 #EXTRA_CFLAGS += -DRT6352 -DRTMP_RF_RW_SUPPORT -DRTMP_FLASH_SUPPORT -DCONFIG_SWMCU_SUPPORT
 #EXTRA_CFLAGS += -DRTMP_RBUS_SUPPORT -DRTMP_MAC_PCI
@@ -797,7 +793,6 @@ else
 ccflags-y += -DRTMP_WLAN_HOOK_SUPPORT -DUSE_BMC
 endif
 EXTRA_CFLAGS += -DMT_PS -DDMA_RESET_SUPPORT -DTXRXCR_DEBUG_SUPPORT
-EXTRA_CFLAGS += -DMT7603_E1
 EXTRA_CFLAGS += -DMT7603_E2
 EXTRA_CFLAGS += -DEDCCA_RB
 #EXTRA_CFLAGS += -Os -DECONET_ALPHA_RELEASE
@@ -937,7 +932,7 @@ endif
 #  CFLAGS
 ##################
 EXTRA_CFLAGS += -DAGGREGATION_SUPPORT -DPIGGYBACK_SUPPORT -DWMM_SUPPORT  -DLINUX \
-               -Wall -Wstrict-prototypes -Wno-trigraphs -Wframe-larger-than=4096 -Werror
+               -Wall -Wstrict-prototypes -Wno-trigraphs -Wframe-larger-than=4096
 #-DDBG_DIAGNOSE -DDBG_RX_MCS -DDBG_TX_MCS
 
 EXTRA_CFLAGS += -DCONFIG_AP_SUPPORT -DSCAN_SUPPORT -DAP_SCAN_SUPPORT

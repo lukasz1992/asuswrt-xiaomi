@@ -4233,7 +4233,7 @@ RTMP_STRING *GetAuthMode(CHAR auth)
 			3.) UI needs to prepare at least 4096bytes to get the results
     ==========================================================================
 */
-#define	LINE_LEN	(4+33+20+23+9+7+7+3)	/* Channel+SSID+Bssid+Security+Signal+WiressMode+ExtCh+NetworkType*/
+#define	LINE_LEN	(4+33+18+9+16+9+8)	/* Channel+SSID+Bssid+Enc+Auth+Signal+WiressMode*/
 
 
 #ifdef WSC_INCLUDED
@@ -4254,7 +4254,6 @@ VOID RTMPCommSiteSurveyData(
 	UINT        Rssi_Quality = 0;
 	NDIS_802_11_NETWORK_TYPE    wireless_mode;
 	CHAR		Ssid[MAX_LEN_OF_SSID + 1];
-	RTMP_STRING SecurityStr[32] = {0};
 	/*Channel*/
 	sprintf(msg + strlen(msg), "%-4d", pBss->Channel);
 	/*SSID*/
@@ -4281,9 +4280,7 @@ VOID RTMPCommSiteSurveyData(
 			pBss->Bssid[4],
 			pBss->Bssid[5]);
 	/*Security*/
-	RTMPZeroMemory(SecurityStr, 32);
-	snprintf(SecurityStr, sizeof(SecurityStr), "%s/%s", GetAuthModeStr(pBss->AKMMap), GetEncryModeStr(pBss->PairwiseCipher));
-	sprintf(msg + strlen(msg), "%-23s", SecurityStr);
+	sprintf(msg+strlen(msg), "%-9s%-16s", GetEncryModeStr(pBss->PairwiseCipher), GetAuthModeStr(pBss->AKMMap));
 	/* Rssi*/
 	Rssi = (INT)pBss->Rssi;
 
@@ -4308,7 +4305,7 @@ VOID RTMPCommSiteSurveyData(
 	else if (wireless_mode == Ndis802_11OFDM5_N)
 		sprintf(msg + strlen(msg), "%-7s", "11a/n");
 	else if (wireless_mode == Ndis802_11OFDM5_AC)
-		sprintf(msg + strlen(msg), "%-8s", "11a/n/ac");
+		sprintf(msg + strlen(msg), "%-7s", "11a/ac");
 	else if (wireless_mode == Ndis802_11OFDM24)
 		sprintf(msg + strlen(msg), "%-7s", "11b/g");
 	else if (wireless_mode == Ndis802_11OFDM24_N)
@@ -4316,6 +4313,7 @@ VOID RTMPCommSiteSurveyData(
 	else
 		sprintf(msg + strlen(msg), "%-7s", "unknow");
 
+#if 0
 	/* Ext Channel*/
 	if (pBss->AddHtInfoLen > 0) {
 		if (pBss->AddHtInfo.AddHtInfo.ExtChanOffset == EXTCHA_ABOVE)
@@ -4335,7 +4333,7 @@ VOID RTMPCommSiteSurveyData(
 
 	/* SSID Length */
 	sprintf(msg + strlen(msg), " %-8d", pBss->SsidLen);
-
+#endif
 	sprintf(msg + strlen(msg), "\n");
 	return;
 }
@@ -4619,6 +4617,7 @@ VOID RTMPIoctlGetSiteSurvey(
 	UINT32		bss_start_idx;
 	BSS_ENTRY *pBss;
 	UINT32 TotalLen, BufLen = IW_SCAN_MAX_DATA;
+#if 0
 #ifdef WSC_INCLUDED
 max_len += WPS_LINE_LEN;
 #endif
@@ -4627,6 +4626,7 @@ max_len += BCNREP_LINE_LEN;
 #ifdef APCLI_OWE_SUPPORT
 max_len += OWETRANSIE_LINE_LEN;
 
+#endif
 #endif
 	os_alloc_mem(NULL, (UCHAR **)&this_char, wrq->u.data.length + 1);
 	if (!this_char) {
@@ -4989,6 +4989,8 @@ VOID RTMPIoctlGetMacTableStaInfo(
 			pDst->ConnectedTime = pEntry->StaConnectTime;
 			pDst->TxRate.word = RTMPGetLastTxRate(pAd, pEntry);
 			pDst->LastRxRate = pEntry->LastRxRate;
+			pDst->StreamSnr[0] = pDst->StreamSnr[1] = pDst->StreamSnr[2] = 0;
+			pDst->SoundingRespSnr[0] = pDst->SoundingRespSnr[1] = pDst->SoundingRespSnr[2] = 0;
 			pMacTab->Num += 1;
 		}
 	}
@@ -5087,6 +5089,8 @@ VOID RTMPIoctlGetMacTable(
 			/* the connected time per entry*/
 			pDst->ConnectedTime = pEntry->StaConnectTime;
 			pDst->TxRate.word = RTMPGetLastTxRate(pAd, pEntry);
+			pDst->StreamSnr[0] = pDst->StreamSnr[1] = pDst->StreamSnr[2] = 0;
+			pDst->SoundingRespSnr[0] = pDst->SoundingRespSnr[1] = pDst->SoundingRespSnr[2] = 0;
 #ifndef CUSTOMER_DCC_FEATURE
 #ifdef RTMP_RBUS_SUPPORT
 

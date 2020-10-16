@@ -1263,12 +1263,12 @@ typedef struct _RT_802_11_MAC_ENTRY {
 
 //sync with MT7620
 //#if 1//def RTMP_RBUS_SUPPORT
-#ifndef CUSTOMER_DCC_FEATURE
-	int StreamSnr[3];				/* BF SNR from RXWI. Units=0.25 dB. 22 dB offset removed */
-	int SoundingRespSnr[3];			/* SNR from Sounding Response. Units=0.25 dB. 22 dB offset removed */
+//#ifndef CUSTOMER_DCC_FEATURE
+	SHORT StreamSnr[3];				/* BF SNR from RXWI. Units=0.25 dB. 22 dB offset removed */
+	SHORT SoundingRespSnr[3];			/* SNR from Sounding Response. Units=0.25 dB. 22 dB offset removed */
 /*	SHORT TxPER;	*/					/* TX PER over the last second. Percent */
 /*	SHORT reserved;*/
-#endif /* RTMP_RBUS_SUPPORT */
+//#endif /* RTMP_RBUS_SUPPORT */
 } RT_802_11_MAC_ENTRY, *PRT_802_11_MAC_ENTRY;
 
 typedef struct _RT_802_11_MAC_TABLE {
