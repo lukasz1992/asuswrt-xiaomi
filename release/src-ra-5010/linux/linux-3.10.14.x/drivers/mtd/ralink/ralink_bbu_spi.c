@@ -147,20 +147,20 @@ static struct mtd_partition rt2880_partitions[] = {
 	/* Put your own partition definitions here */
         {
                 name:           "Bootloader",  /* mtdblock0 */
-                size:           MTD_BOOT_PART_SIZE,
+                size:           0x50000,
                 offset:         0,
         }, {
                 name:           "nvram", /* mtdblock1 */
                 size:           MTD_CONFIG_PART_SIZE,
-                offset:         MTDPART_OFS_APPEND
+                offset:         0xff0000
         }, {
                 name:           "Factory", /* mtdblock2 */
                 size:           MTD_FACTORY_PART_SIZE,
-                offset:         MTDPART_OFS_APPEND
+                offset:         0x50000
         }, {
                 name:           "linux", /* mtdblock3 */
-                size:           MTD_KERN_PART_SIZE,
-                offset:         MTDPART_OFS_APPEND,
+                size:           0xb80000,
+                offset:         0x180000,
         }, {
                 name:           "rootfs", /* mtdblock4 */
                 size:           MTD_ROOTFS_PART_SIZE,
@@ -173,8 +173,8 @@ static struct mtd_partition rt2880_partitions[] = {
 #else
         }, {
                 name:           "jffs2", /* mtdblock5 */
-                size:           MTD_JFFS2_PART_SIZE,
-                offset:         MTDPART_OFS_APPEND,
+                size:           0x200000,
+                offset:         0xdf0000,
 #endif
         } ,{
                 name:           "ALL", /* mtdblock6 */
@@ -1914,7 +1914,7 @@ static struct mtd_info *raspi_probe(struct map_info *map)
 
 //asus #if defined (CONFIG_RT2880_ROOTFS_IN_FLASH) && defined (CONFIG_ROOTFS_IN_FLASH_NO_PADDING)
 #if defined (CONFIG_ROOTFS_IN_FLASH_NO_PADDING) //asus
-	offs = MTD_BOOT_PART_SIZE + MTD_CONFIG_PART_SIZE + MTD_FACTORY_PART_SIZE;
+	offs = 0x180000;
 	ramtd_read(NULL, offs, sizeof(hdr), (size_t *)&i, (u_char *)(&hdr));
 #if 0	//sdud
 	if (hdr.ih_ksz != 0) {
@@ -1937,7 +1937,7 @@ static struct mtd_info *raspi_probe(struct map_info *map)
 	}
 
 	if (rfs_offset != 0) {
-		rt2880_partitions[4].offset = MTD_BOOT_PART_SIZE + MTD_CONFIG_PART_SIZE + MTD_FACTORY_PART_SIZE + rfs_offset;
+		rt2880_partitions[4].offset = offs + rfs_offset;
 		rt2880_partitions[4].mask_flags |= MTD_WRITEABLE;
 		if (flash->mtd.size > 0x800000) {
 #if defined(CONFIG_SOUND)
@@ -1945,9 +1945,8 @@ static struct mtd_info *raspi_probe(struct map_info *map)
 			rt2880_partitions[4].size = flash->mtd.size - rt2880_partitions[4].offset - MTD_RADIO_PART_SIZE;
 			rt2880_partitions[5].offset = flash->mtd.size - MTD_RADIO_PART_SIZE;
 #else 
-			rt2880_partitions[3].size = flash->mtd.size - (MTD_BOOT_PART_SIZE + MTD_CONFIG_PART_SIZE + MTD_FACTORY_PART_SIZE) - MTD_JFFS2_PART_SIZE;
-			rt2880_partitions[4].size = flash->mtd.size - rt2880_partitions[4].offset - MTD_JFFS2_PART_SIZE;
-			rt2880_partitions[5].offset = flash->mtd.size - MTD_JFFS2_PART_SIZE;
+			rt2880_partitions[3].size = flash->mtd.size - 0x390000;
+			rt2880_partitions[4].size = flash->mtd.size - 0x390000 - rfs_offset;
 #endif
 		} else {
 			rt2880_partitions[3].size = flash->mtd.size - (MTD_BOOT_PART_SIZE + MTD_CONFIG_PART_SIZE + MTD_FACTORY_PART_SIZE);
