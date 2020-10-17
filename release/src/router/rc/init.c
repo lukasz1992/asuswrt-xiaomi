@@ -3863,6 +3863,7 @@ int init_nvram(void)
 		nvram_set("wl0_HT_TxStream", "2");
 		nvram_set("wl0_HT_RxStream", "2");
 #if defined(RTRM2100) || defined(RTR2100)
+		add_rc_support("vht160");
 		nvram_set("wl1_HT_TxStream", "4");
 		nvram_set("wl1_HT_RxStream", "4");
 #else
