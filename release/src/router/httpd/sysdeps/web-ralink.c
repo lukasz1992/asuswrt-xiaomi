@@ -278,6 +278,9 @@ char* GetBW(int BW)
 	switch(BW)
 	{
 		case BW_10:
+#if defined(RTRM2100) || defined(RTR2100)
+            return "160M";
+#endif
 			return "10M";
 
 		case BW_20:
@@ -290,7 +293,6 @@ char* GetBW(int BW)
 		case BW_80:
 			return "80M";
 #endif
-
 		default:
 			return "N/A";
 	}

@@ -23819,3 +23819,12 @@ struct log_pass_url_list log_pass_handlers[] = {
 	{ "**.xml", NULL },
 	{ NULL, NULL }
 };
+
+int check_cmd_injection_blacklist(char *para) {
+    if (!para)
+        return 0;
+    if (para[0] == '\0')
+        return 0;
+     return (strpbrk(para, "&|;`") != 0);
+}
+

@@ -513,10 +513,8 @@ OBJS += pwdec.o
 endif
 endif
 
-ifeq ($(RTCONFIG_FRS_LIVE_UPDATE),y)
 CFLAGS += -I$(TOP)/json-c
 LDFLAGS += -L$(TOP)/json-c/.libs -ljson-c
-endif
 
 ifeq ($(RTCONFIG_INTERNAL_GOBI),y)
 OBJS += lteled.o
