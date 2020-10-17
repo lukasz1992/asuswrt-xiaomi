@@ -2043,23 +2043,20 @@ ifeq ($(RTCONFIG_QTN),y)
 endif
 ifeq ($(RTCONFIG_BWDPI),y)
 	@install -d $(TARGETDIR)/usr/bwdpi/
-	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.so $(TARGETDIR)/usr/lib/
-	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.ko $(TARGETDIR)/usr/bwdpi/
-	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.trf $(TARGETDIR)/usr/bwdpi/
-	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.cert $(TARGETDIR)/usr/bwdpi/
+ifneq ($(or $(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/wred $(TARGETDIR)/usr/sbin/wred
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/wred_set_conf $(TARGETDIR)/usr/sbin/wred_set_conf
-	-@install -D $(TOP)/bwdpi_source/RC_INDEP/wred_set_wbl $(TARGETDIR)/usr/sbin/wred_set_wbl
+	@install -D $(TOP)/bwdpi_source/RC_INDEP/wred_set_wbl $(TARGETDIR)/usr/sbin/wred_set_wbl
+endif
+	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.so $(TARGETDIR)/usr/lib/
+	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.ko $(TARGETDIR)/usr/bwdpi/
+	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.cert $(TARGETDIR)/usr/bwdpi/
+	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.trf $(TARGETDIR)/usr/bwdpi/
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/dcd $(TARGETDIR)/usr/sbin/dcd
-	-@install -D $(TOP)/bwdpi_source/RC_INDEP/tcd $(TARGETDIR)/usr/sbin/tcd
+	@install -D $(TOP)/bwdpi_source/RC_INDEP/tcd $(TARGETDIR)/usr/sbin/tcd
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/shn_ctrl $(TARGETDIR)/usr/sbin/shn_ctrl
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/tdts_rule_agent $(TARGETDIR)/usr/sbin/tdts_rule_agent
 	@install -D $(shell dirname $(shell which $(CXX)))/../lib/librt.so.0 $(TARGETDIR)/lib/librt.so.0
-ifeq ($(RTCONFIG_RALINK),y)
-	# Due to some library strip will make wred crash, need to rollback library from toolchains
-	install $(LIBDIR)/libpthread.so.0 $(TARGETDIR)/lib/
-	install $(LIBDIR)/libc.so.0 $(TARGETDIR)/lib/
-endif
 endif
 
 ifeq ($(RTCONFIG_BCMARM),y)
