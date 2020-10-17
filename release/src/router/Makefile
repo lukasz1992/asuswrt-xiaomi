@@ -2047,12 +2047,12 @@ ifneq ($(or $(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/wred $(TARGETDIR)/usr/sbin/wred
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/wred_set_conf $(TARGETDIR)/usr/sbin/wred_set_conf
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/wred_set_wbl $(TARGETDIR)/usr/sbin/wred_set_wbl
-endif
+	@install -D $(TOP)/bwdpi_source/RC_INDEP/dcd $(TARGETDIR)/usr/sbin/dcd
 	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.so $(TARGETDIR)/usr/lib/
+endif
 	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.ko $(TARGETDIR)/usr/bwdpi/
 	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.cert $(TARGETDIR)/usr/bwdpi/
 	@cp -f $(TOP)/bwdpi_source/RC_INDEP/*.trf $(TARGETDIR)/usr/bwdpi/
-	@install -D $(TOP)/bwdpi_source/RC_INDEP/dcd $(TARGETDIR)/usr/sbin/dcd
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/tcd $(TARGETDIR)/usr/sbin/tcd
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/shn_ctrl $(TARGETDIR)/usr/sbin/shn_ctrl
 	@install -D $(TOP)/bwdpi_source/RC_INDEP/tdts_rule_agent $(TARGETDIR)/usr/sbin/tdts_rule_agent
