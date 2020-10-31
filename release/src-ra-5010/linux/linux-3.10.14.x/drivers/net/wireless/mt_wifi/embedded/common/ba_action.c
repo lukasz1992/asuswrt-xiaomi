@@ -760,7 +760,7 @@ void ba_flush_reordering_timeout_mpdus(PRTMP_ADAPTER pAd,
 		if (Sequence != INVALID_RCV_SEQ)
 			pBAEntry->LastIndSeq = Sequence;
 
-		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_OFF, ("%x, flush one!\n", pBAEntry->LastIndSeq));
+		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_TRACE, ("%x, flush one!\n", pBAEntry->LastIndSeq));
 	}
 
 }
@@ -1007,7 +1007,7 @@ BOOLEAN ba_rec_session_add(
 		pBAEntry->TimeOutValue = pFrame->TimeOutValue;
 		pBAEntry->REC_BA_Status = Recipient_Initialization;
 		pBAEntry->check_amsdu_miss = TRUE;
-		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_OFF, ("Start Seq = %08x\n",  pFrame->BaStartSeq.field.StartSeq));
+		MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_TRACE, ("Start Seq = %08x\n",  pFrame->BaStartSeq.field.StartSeq));
 		NdisReleaseSpinLock(&pAd->BATabLock);
 
 		if (pEntry->RXBAbitmap & (1 << TID))
@@ -1274,7 +1274,7 @@ VOID peer_addba_req_action(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 
 	if (PeerAddBAReqActionSanity(pAd, Elem->Msg, Elem->MsgLen, pAddr)) {
 		if ((pAd->CommonCfg.bBADecline == FALSE) && IS_HT_STA(pMacEntry)) {
-			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_OFF, ("Rcv Wcid(%d) AddBAReq\n", Elem->Wcid));
+			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_TRACE, ("Rcv Wcid(%d) AddBAReq\n", Elem->Wcid));
 
 			if (ba_rec_session_add(pAd, &pAd->MacTab.Content[Elem->Wcid], pAddreqFrame)) {
 #ifdef PEER_DELBA_TX_ADAPT
@@ -1656,7 +1656,7 @@ static VOID ba_enqueue_reordering_packet(
 		if (msdu_blk)
 			ba_mpdu_blk_free(pAd, msdu_blk);
 		else {
-			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_ERROR,  ("!!! (used:%d/free:%d) Can't allocate reordering mpdu blk\n",
+			MTWF_LOG(DBG_CAT_PROTO, CATPROTO_BA, DBG_LVL_TRACE,  ("!!! (used:%d/free:%d) Can't allocate reordering mpdu blk\n",
 					 pBAEntry->list.qlen, pAd->mpdu_blk_pool.freelist.qlen));
 		}
 

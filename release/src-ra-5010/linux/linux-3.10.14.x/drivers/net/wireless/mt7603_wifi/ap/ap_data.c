@@ -97,7 +97,7 @@ INT ApAllowToSendPacket(
 		
 			tr_entry = &pAd->MacTab.tr_entry[pEntry->wcid];
 			if (tr_entry && (tr_entry->PortSecured != WPA_802_1X_PORT_SECURED)) {
-				DBGPRINT(RT_DEBUG_ERROR, ("sta port not secure, os should not send packets!!!\n"));
+				DBGPRINT(RT_DEBUG_TRACE, ("sta port not secure, os should not send packets!!!\n"));
 				return FALSE;
 			}
 			*pWcid = (UCHAR)pEntry->wcid;

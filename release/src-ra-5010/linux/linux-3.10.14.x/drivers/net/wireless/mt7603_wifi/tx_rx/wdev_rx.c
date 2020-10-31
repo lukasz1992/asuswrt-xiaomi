@@ -1423,7 +1423,7 @@ VOID dev_rx_ctrl_frm(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk)
 					if (pEntry)
 						pRxBlk->wcid = pEntry->wcid;
 					else {
-						DBGPRINT(RT_DEBUG_ERROR, ("%s(): Cannot found WCID of PS-Poll packet!\n",
+						DBGPRINT(RT_DEBUG_TRACE, ("%s(): Cannot found WCID of PS-Poll packet!\n",
 									__FUNCTION__));
 					}
 				}

@@ -5197,7 +5197,7 @@ VOID dev_rx_ctrl_frm(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk)
 			if (pEntry)
 				pRxBlk->wcid = pEntry->wcid;
 			else {
-				MTWF_LOG(DBG_CAT_RX, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s(): Cannot found WCID of PS-Poll packet!\n",
+				MTWF_LOG(DBG_CAT_RX, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("%s(): Cannot found WCID of PS-Poll packet!\n",
 						 __func__));
 			}
 		}

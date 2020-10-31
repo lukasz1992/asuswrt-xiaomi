@@ -454,7 +454,7 @@ void ba_flush_reordering_timeout_mpdus(
     			pBAEntry->LastIndSeq = Sequence;
     		}
 
-		DBGPRINT(RT_DEBUG_OFF, ("%x, flush one!\n", pBAEntry->LastIndSeq));
+		DBGPRINT(RT_DEBUG_TRACE, ("%x, flush one!\n", pBAEntry->LastIndSeq));
 
 	}
 }
@@ -680,7 +680,7 @@ BOOLEAN BARecSessionAdd(
 				/* initial LastIndSeq = SSN - 1*/
 		pBAEntry->LastIndSeq = (pFrame->BaStartSeq.field.StartSeq - 1) & MAXSEQ;
 		
-		DBGPRINT(RT_DEBUG_OFF, ("Start Seq = %08x\n",  pFrame->BaStartSeq.field.StartSeq));
+		DBGPRINT(RT_DEBUG_TRACE, ("Start Seq = %08x\n",  pFrame->BaStartSeq.field.StartSeq));
 
 		if (pEntry->RXBAbitmap & (1<<TID))
 			RTMPCancelTimer(&pBAEntry->RECBATimer, &Cancelled);
@@ -1171,7 +1171,7 @@ VOID PeerAddBAReqAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 	{
 		if ((pAd->CommonCfg.bBADecline == FALSE) && IS_HT_STA(pMacEntry))
 		{
-			DBGPRINT(RT_DEBUG_OFF, ("Rcv Wcid(%d) AddBAReq\n", Elem->Wcid));
+			DBGPRINT(RT_DEBUG_TRACE, ("Rcv Wcid(%d) AddBAReq\n", Elem->Wcid));
 			if (BARecSessionAdd(pAd, &pAd->MacTab.Content[Elem->Wcid], pAddreqFrame))
 			{
 #ifdef PEER_DELBA_TX_ADAPT
@@ -1719,7 +1719,7 @@ static VOID ba_enqueue_reordering_packet(
 		if (mpdu_blk)
 			ba_mpdu_blk_free(pAd, mpdu_blk);
 		else {
-		DBGPRINT(RT_DEBUG_ERROR,  ("!!! (%d) Can't allocate reordering mpdu blk\n",
+		DBGPRINT(RT_DEBUG_TRACE,  ("!!! (%d) Can't allocate reordering mpdu blk\n",
 								   pBAEntry->list.qlen));
 		}
 		/* 
