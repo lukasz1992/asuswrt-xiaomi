@@ -712,12 +712,5 @@ define(function(){
 		}
 	}
 
-	if(odmpid == "RT-N66U_C1"){
-		menuTree.list.splice(7,2);
-	}
-	else{
-		menuTree.list.splice(5,2);
-	}
-
 	return menuTree;
 });

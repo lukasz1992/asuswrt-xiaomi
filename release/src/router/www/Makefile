@@ -489,6 +489,15 @@ ifeq ($(or $(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
 	rm -rf $(INSTALLDIR)/www/images/New_ui/HomeProtection.png
 	rm -rf $(INSTALLDIR)/www/images/New_ui/Web_Apps_Restriction.png
 	rm -rf $(INSTALLDIR)/www/images/New_ui/tm_logo_power.png
+	rm -rf $(INSTALLDIR)/www/UUAccelerator.asp
+	rm -rf $(INSTALLDIR)/www/GameProfile.asp
+	rm -rf $(INSTALLDIR)/www/css/gameprofile.css
+	rm -rf $(INSTALLDIR)/www/images/New_ui/GameBoost_gamePriority.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/GameBoost_mobileGame.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/GameBoost_openNAT.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/openNAT.svg
+	rm -rf $(INSTALLDIR)/www/images/gameprofile
+	rm -rf $(INSTALLDIR)/www/js/gameProfile.js
 endif
 
 ifneq ($(RTCONFIG_ROG),y)

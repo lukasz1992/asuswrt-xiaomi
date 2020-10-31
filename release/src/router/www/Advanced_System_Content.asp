@@ -201,7 +201,7 @@ function initial(){
 	}
 
 	/* MODELDEP */
-	if(based_modelid == "AC2900"){	//MODELDEP: AC2900(RT-AC86U)
+	if(based_modelid == "AC2900" || based_modelid == "RT-MIR3G" || based_modelid == "RT-MIR4A" || based_modelid == "RT-RM2100" || based_modelid == "RT-R2100"){	//MODELDEP: AC2900(RT-AC86U)
 		document.form.btn_ez_radiotoggle[0].disabled = true;
 		document.form.btn_ez_radiotoggle[1].disabled = true;
 		document.form.btn_ez_radiotoggle[2].disabled = true;
