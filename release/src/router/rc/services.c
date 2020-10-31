@@ -7549,9 +7549,9 @@ start_services(void)
 #ifdef RTCONFIG_QCA_PLC_UTILS
 	start_plchost();
 #endif
-#ifdef RTCONFIG_NEW_USER_LOW_RSSI
+//#ifdef RTCONFIG_NEW_USER_LOW_RSSI
 	start_roamast();
-#endif
+//#endif
 
 #if defined(RTCONFIG_KEY_GUARD)
 	start_keyguard();
@@ -11773,9 +11773,9 @@ retry_wps_enr:
 			start_dnsmasq();
 			start_httpd();
 			start_telnetd();
-#ifdef RTCONFIG_NEW_USER_LOW_RSSI
+//#ifdef RTCONFIG_NEW_USER_LOW_RSSI
 			start_roamast();
-#endif
+//#endif
 
 #ifdef RTCONFIG_SSH
 			start_sshd();
@@ -13594,6 +13594,24 @@ void start_roamast(void){
 		}
 	}
 }
+#elif defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+void start_roamast(void){
+	int rssi, i;
+	char prefix[] = "wl_XXXXX";
+	char cmd[64], tmp[32];
+	for (i = 0; i < 2; i++) {
+		sprintf(prefix, "wl%d_", i);
+		rssi = nvram_get_int(strcat_r(prefix, "user_rssi", tmp));
+		if ((rssi < -1) && (rssi > -100)) {
+			snprintf(cmd, 64, "iwpriv ra%s0 set KickStaRssiLow=%d", i ? "i" : "", rssi);
+			system(cmd);
+			snprintf(cmd, 64, "iwpriv ra%s0 set AssocReqRssiThres=%d", i ? "i" : "", rssi);
+			system(cmd);
+		}
+	}
+}
+#else
+inline void start_roamast(void) {}
 #endif
 
 #if defined(RTCONFIG_KEY_GUARD)

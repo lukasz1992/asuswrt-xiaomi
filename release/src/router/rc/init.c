@@ -3858,6 +3858,7 @@ int init_nvram(void)
 		add_rc_support("rawifi");
 		add_rc_support("11AC");
 		add_rc_support("manual_stb");
+		add_rc_support("user_low_rssi");
 		add_rc_support("loclist");
 		add_rc_support("mfp");
 		nvram_set("wl0_HT_TxStream", "2");
