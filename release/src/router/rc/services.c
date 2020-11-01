@@ -13603,7 +13603,7 @@ void start_roamast(void){
 		sprintf(prefix, "wl%d_", i);
 		rssi = nvram_get_int(strcat_r(prefix, "user_rssi", tmp));
 		if ((rssi < -1) && (rssi > -100)) {
-			snprintf(cmd, 64, "iwpriv ra%s0 set KickStaRssiLow=%d", i ? "i" : "", rssi);
+			snprintf(cmd, 64, "iwpriv ra%s0 set KickStaRssiLow=%d", i ? "i" : "", (rssi > -95 ? rssi - 5 : -99));
 			system(cmd);
 			snprintf(cmd, 64, "iwpriv ra%s0 set AssocReqRssiThres=%d", i ? "i" : "", rssi);
 			system(cmd);
