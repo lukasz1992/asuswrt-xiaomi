@@ -489,15 +489,31 @@ ifeq ($(or $(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
 	rm -rf $(INSTALLDIR)/www/images/New_ui/HomeProtection.png
 	rm -rf $(INSTALLDIR)/www/images/New_ui/Web_Apps_Restriction.png
 	rm -rf $(INSTALLDIR)/www/images/New_ui/tm_logo_power.png
-	rm -rf $(INSTALLDIR)/www/UUAccelerator.asp
-	rm -rf $(INSTALLDIR)/www/GameProfile.asp
 	rm -rf $(INSTALLDIR)/www/css/gameprofile.css
+	rm -rf $(INSTALLDIR)/www/GameBoost.asp
+	rm -rf $(INSTALLDIR)/www/GameProfile.asp
+	rm -rf $(INSTALLDIR)/www/images/gameprofile
+	rm -rf $(INSTALLDIR)/www/images/mainimage_img_Game.jpg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/coolerstatus.png
 	rm -rf $(INSTALLDIR)/www/images/New_ui/GameBoost_gamePriority.svg
 	rm -rf $(INSTALLDIR)/www/images/New_ui/GameBoost_mobileGame.svg
 	rm -rf $(INSTALLDIR)/www/images/New_ui/GameBoost_openNAT.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/GameBoost_WTFast.png
+	rm -rf $(INSTALLDIR)/www/images/New_ui/icon_ifttt.png
+	rm -rf $(INSTALLDIR)/www/images/New_ui/mainimage_img_Game.jpg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/networkmap/icon_guest1.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/networkmap/icon_guest2.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/networkmap/icon_guest3.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/networkmap/icon_guest.svg
+	rm -rf $(INSTALLDIR)/www/images/New_ui/open_NAT.svg
 	rm -rf $(INSTALLDIR)/www/images/New_ui/openNAT.svg
-	rm -rf $(INSTALLDIR)/www/images/gameprofile
+	rm -rf $(INSTALLDIR)/www/images/New_ui/pvid.png
+	rm -rf $(INSTALLDIR)/www/images/qis/lyra_io.png
+	rm -rf $(INSTALLDIR)/www/images/qis/trio_io.png
+	rm -rf $(INSTALLDIR)/www/images/uu_accelerator.png
+	rm -rf $(INSTALLDIR)/www/images/vpn_illustration.png
 	rm -rf $(INSTALLDIR)/www/js/gameProfile.js
+	rm -rf $(INSTALLDIR)/www/UUAccelerator.asp
 endif
 
 ifneq ($(RTCONFIG_ROG),y)
