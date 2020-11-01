@@ -641,6 +641,7 @@ var tagged_based_vlan = isSupport("tagged_based_vlan");
 var vpn_fusion_support = isSupport("vpn_fusion");
 var cfg_sync_support = isSupport("cfg_sync");
 var utf8_ssid_support = isSupport("utf8_ssid");
+var wpa3_support = isSupport('wpa3');
 var uu_support = uiSupport('uu_accel');
 var gameMode_support = isSupport('gameMode');
 var QISWIZARD = "QIS_wizard.htm";

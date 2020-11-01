@@ -1249,6 +1249,8 @@ function change_wl_nmode(o){
 								<option value="1" <% nvram_match("wl_mfp", "1", "selected"); %>><#WLANConfig11b_x_mfp_opt1#></option>
 								<option value="2" <% nvram_match("wl_mfp", "2", "selected"); %>><#WLANConfig11b_x_mfp_opt2#></option>
 						</select>
+						<span id="mbo_notice_wpa3" style="display:none">*If the Authenticatoin Method is WAP3-Personal, the Protected Management Frames will be Required.</span>
+						<span id="mbo_notice_combo" style="display:none">*If the Authentication Method is WPA2/WAP3-Personal, the Protected Management Frames will be Capable.</span>
 					</td>
 				</tr>
 			  	<tr>

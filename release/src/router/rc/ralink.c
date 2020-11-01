@@ -826,6 +826,7 @@ int gen_ralink_config(int band, int is_iNIC)
 	char tmp1[128];
 	int wlc_express = nvram_get_int("wlc_express");
 #endif
+	int wpa3_mfp = 0;
 
 	if (!is_iNIC)
 	{
@@ -846,6 +847,14 @@ int gen_ralink_config(int band, int is_iNIC)
 	fprintf(fp, "Default\n");
 
 	snprintf(prefix, sizeof(prefix), "wl%d_", band);
+
+	str = nvram_safe_get(strcat_r(prefix, "auth_mode", tmp));
+	if (str && strlen(str)) {
+		if(!strcmp(str, "sae"))
+			wpa3_mfp = 2;
+		else if (!strcmp(str, "psk2sae"))
+			wpa3_mfp = 1;
+	}
 
 	//CountryRegion
 	str = nvram_safe_get(strcat_r(prefix, "country_code", tmp));
@@ -1648,6 +1657,14 @@ int gen_ralink_config(int band, int is_iNIC)
 			else if (!strcmp(str, "pskpsk2"))
 			{
 				sprintf(tmpstr, "%s%s", tmpstr, "WPAPSKWPA2PSK");
+			}
+			else if (!strcmp(str, "sae"))
+			{
+			    sprintf(tmpstr, "%s%s", tmpstr, "WPA3PSK");
+			}
+			else if (!strcmp(str, "psk2sae"))
+			{
+			    sprintf(tmpstr, "%s%s", tmpstr, "WPA2PSKWPA3PSK");
 			}
 			else if (!strcmp(str, "wpa"))
 			{
@@ -2657,7 +2674,7 @@ int gen_ralink_config(int band, int is_iNIC)
 	if (str && strlen(str))
 	{
 		if (	(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "open") ||
-			(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2") && nvram_match(strcat_r(prefix, "crypto", tmp), "aes")))
+			((nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2") || nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "sae") || nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2sae")) && nvram_match(strcat_r(prefix, "crypto", tmp), "aes")))
 		)
 		{
 			if (atoi(str) == 0)
@@ -2700,7 +2717,7 @@ int gen_ralink_config(int band, int is_iNIC)
 		fprintf(fp, "WdsEncrypType=%s\n", "NONE;NONE;NONE;NONE");
 	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "open") && nvram_invmatch(strcat_r(prefix, "wep_x", tmp), "0"))
 		fprintf(fp, "WdsEncrypType=%s\n", "WEP;WEP;WEP;WEP");
-	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2") && nvram_match(strcat_r(prefix, "crypto", tmp), "aes"))
+	else if ((nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2") || nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "sae") || nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2sae")) && nvram_match(strcat_r(prefix, "crypto", tmp), "aes"))
 		fprintf(fp, "WdsEncrypType=%s\n", "AES;AES;AES;AES");
 	else
 		fprintf(fp, "WdsEncrypType=%s\n", "NONE;NONE;NONE;NONE");
@@ -2709,7 +2726,7 @@ int gen_ralink_config(int band, int is_iNIC)
 	list[1]=0;
 	if (	(nvram_match(strcat_r(prefix, "mode_x", tmp), "1") || (nvram_match(strcat_r(prefix, "mode_x", tmp), "2") && nvram_match(strcat_r(prefix, "wdsapply_x", tmp), "1"))) &&
 		(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "open") ||
-		(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2") && nvram_match(strcat_r(prefix, "crypto", tmp), "aes")))
+		((nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2") || nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "sae") || nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2sae")) && nvram_match(strcat_r(prefix, "crypto", tmp), "aes")))
 	)
 	{
 #if 0
@@ -2756,7 +2773,7 @@ int gen_ralink_config(int band, int is_iNIC)
 		fprintf(fp, "Wds2Key=%s\n", nvram_safe_get(list));
 		fprintf(fp, "Wds3Key=%s\n", nvram_safe_get(list));
 	}
-	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2") && nvram_match(strcat_r(prefix, "crypto", tmp), "aes"))
+	else if ((nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2") || nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "sae") || nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2sae")) && nvram_match(strcat_r(prefix, "crypto", tmp), "aes"))
 	{
 		fprintf(fp, "WdsKey=%s\n", nvram_safe_get(strcat_r(prefix, "wpa_psk", tmp)));
 		fprintf(fp, "Wds0Key=%s\n", nvram_safe_get(strcat_r(prefix, "wpa_psk", tmp)));
@@ -2906,17 +2923,21 @@ int gen_ralink_config(int band, int is_iNIC)
 				fprintf(fp, "ApCliAuthMode=%s\n", "WEPAUTO");
 				fprintf(fp, "ApCliEncrypType=%s\n", "WEP");
 			}
-			else if (!strcmp(str, "psk") || !strcmp(str, "psk2"))
+			else if (!strcmp(str, "psk") || !strcmp(str, "psk2") || !strcmp(str, "sae") || !strcmp(str, "psk2sae"))
 			{
 				if (!strcmp(str, "psk"))
 					fprintf(fp, "ApCliAuthMode=%s\n", "WPAPSK");
+				else if (!strcmp(str, "sae"))
+					fprintf(fp, "ApCliAuthMode=%s\n", "WPA3PSK");
+				else if (!strcmp(str, "psk2sae"))
+					fprintf(fp, "ApCliAuthMode=%s\n", "WPA2PSKWPA3PSK");
 				else
 					fprintf(fp, "ApCliAuthMode=%s\n", "WPA2PSK");
 
 				//EncrypType
-				if (nvram_match(strcat_r(prefix_wlc, "crypto", tmp), "tkip"))
+				if (!wpa3_mfp && nvram_match(strcat_r(prefix_wlc, "crypto", tmp), "tkip"))
 					fprintf(fp, "ApCliEncrypType=%s\n", "TKIP");
-				else if (nvram_match(strcat_r(prefix_wlc, "crypto", tmp), "aes"))
+				else if (wpa3_mfp || nvram_match(strcat_r(prefix_wlc, "crypto", tmp), "aes"))
 					fprintf(fp, "ApCliEncrypType=%s\n", "AES");
 
 				//WPAPSK
@@ -3033,17 +3054,21 @@ int gen_ralink_config(int band, int is_iNIC)
 				fprintf(fp, "ApCliAuthMode=%s\n", "WEPAUTO");
 				fprintf(fp, "ApCliEncrypType=%s\n", "WEP");
 			}
-			else if (!strcmp(str, "psk") || !strcmp(str, "psk2"))
+			else if (!strcmp(str, "psk") || !strcmp(str, "psk2") || !strcmp(str, "sae") || !strcmp(str, "psk2sae"))
 			{
 				if (!strcmp(str, "psk"))
 					fprintf(fp, "ApCliAuthMode=%s\n", "WPAPSK");
+				else if (!strcmp(str, "sae"))
+					fprintf(fp, "ApCliAuthMode=%s\n", "WPA3PSK");
+				else if (!strcmp(str, "psk2sae"))
+					fprintf(fp, "ApCliAuthMode=%s\n", "WPA2PSKWPA3PSK");
 				else
 					fprintf(fp, "ApCliAuthMode=%s\n", "WPA2PSK");
 
 				//EncrypType
-				if (nvram_match("wlc_crypto", "tkip"))
+				if (!wpa3_mfp && nvram_match("wlc_crypto", "tkip"))
 					fprintf(fp, "ApCliEncrypType=%s\n", "TKIP");
-				else if (nvram_match("wlc_crypto", "aes"))
+				else if (wpa3_mfp || nvram_match("wlc_crypto", "aes"))
 					fprintf(fp, "ApCliEncrypType=%s\n", "AES");
 
 				//WPAPSK
@@ -3355,9 +3380,9 @@ next_mrate:
 #endif
 
 #if defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
-	fprintf(fp, "PMFMFPC=%d\n",   (nvram_get_int(strcat_r(prefix, "mfp", tmp)) == 0) ? 0 : 1);
-	fprintf(fp, "PMFMFPR=%d\n",   (nvram_get_int(strcat_r(prefix, "mfp", tmp)) == 2) ? 1 : 0);
-	fprintf(fp, "PMFSHA256=%d\n", (nvram_get_int(strcat_r(prefix, "mfp", tmp)) == 0) ? 0 : 1);
+	fprintf(fp, "PMFMFPC=%d\n",   (nvram_get_int(strcat_r(prefix, "mfp", tmp)) == 0) ? (wpa3_mfp ? 1 : 0) : 1);
+	fprintf(fp, "PMFMFPR=%d\n",   (nvram_get_int(strcat_r(prefix, "mfp", tmp)) == 2) ? 1 : (wpa3_mfp == 2 ? 1 : 0));
+	fprintf(fp, "PMFSHA256=%d\n", (nvram_get_int(strcat_r(prefix, "mfp", tmp)) == 0) ? (wpa3_mfp ? 1 : 0) : 1);
 #endif
 
 	if (warning)
@@ -3841,6 +3866,8 @@ getSiteSurvey(int band,char* ofile)
 						fprintf(fp, "\"%s\",","WPA-Personal");
 					else if(strstr(ssap->SiteSurvey[i].authmode,"WPA2-Personal"))
 						fprintf(fp, "\"%s\",","WPA2-Personal");
+					else if(strstr(ssap->SiteSurvey[i].authmode,"WPA3-Personal"))
+						fprintf(fp, "\"%s\",","WPA3-Personal");
 					else if(strstr(ssap->SiteSurvey[i].authmode,"Open System")) {
 						if(strstr(ssap->SiteSurvey[i].encryption, "WEP"))
 							fprintf(fp, "\"%s\",","Unknown");
@@ -5035,7 +5062,7 @@ getstat(int band)
 void
 wsc_user_commit(void)
 {
-	int i, flag_wep;
+	int i, flag_wep, wpa3_mfp = 0;
 	char tmp[128], prefix[] = "wlXXXXXXXXXX_";
 	char auth_mode[16], wep[16];
 	const char *wif;
@@ -5070,21 +5097,34 @@ wsc_user_commit(void)
 
 			doSystem("iwpriv %s set IEEE8021X=%d", wif, 0);
 		}
-		else if (!strcmp(auth_mode, "psk") || !strcmp(auth_mode, "psk2") || !strcmp(auth_mode, "pskpsk2")) {
+		else if (!strcmp(auth_mode, "psk") || !strcmp(auth_mode, "psk2") || !strcmp(auth_mode, "pskpsk2") || !strcmp(auth_mode, "sae") || !strcmp(auth_mode, "psk2sae")) {
 			if (!strcmp(auth_mode, "pskpsk2"))
 				doSystem("iwpriv %s set AuthMode=%s", wif, "WPAPSKWPA2PSK");
 			else if (!strcmp(auth_mode, "psk"))
 				doSystem("iwpriv %s set AuthMode=%s", wif, "WPAPSK");
 			else if (!strcmp(auth_mode, "psk2"))
 				doSystem("iwpriv %s set AuthMode=%s", wif, "WPA2PSK");
+			else if (!strcmp(auth_mode, "sae")) {
+				doSystem("iwpriv %s set AuthMode=%s", wif, "WPA3PSK");
+				wpa3_mfp = 2;
+			} else if (!strcmp(auth_mode, "psk2sae")) {
+				doSystem("iwpriv %s set AuthMode=%s", wif, "WPA2PSKWPA3PSK");
+				wpa3_mfp = 1;
+			}
 
 			//EncrypType
-			if (nvram_match(strcat_r(prefix, "crypto", tmp), "tkip"))
+			if (!wpa3_mfp && nvram_match(strcat_r(prefix, "crypto", tmp), "tkip"))
 				doSystem("iwpriv %s set EncrypType=%s", wif, "TKIP");
-			else if (nvram_match(strcat_r(prefix, "crypto", tmp), "aes"))
+			else if (wpa3_mfp || nvram_match(strcat_r(prefix, "crypto", tmp), "aes"))
 				doSystem("iwpriv %s set EncrypType=%s", wif, "AES");
 			else if (nvram_match(strcat_r(prefix, "crypto", tmp), "tkip+aes"))
 				doSystem("iwpriv %s set EncrypType=%s", wif, "TKIPAES");
+
+			if (wpa3_mfp) {
+			    doSystem("iwpriv %s set PMFMFPC=%d", wif, wpa3_mfp == 0 ? 0 : 1);
+			    doSystem("iwpriv %s set PMFMFPR=%d", wif, wpa3_mfp == 2 ? 1 : 0);
+			    doSystem("iwpriv %s set PMFSHA256=%d", wif, wpa3_mfp == 0 ? 0 : 1);
+			}
 
 			doSystem("iwpriv %s set IEEE8021X=%d", wif, 0);
 
