@@ -1463,7 +1463,7 @@ function dis_qos_enable(_wl_idx, _form_obj, _control_item){
 										<option value="shared"  <% nvram_match("wl_auth_mode_x", "shared", "selected"); %>>Shared Key</option>
 										<option value="psk"     <% nvram_match("wl_auth_mode_x", "psk",    "selected"); %>>WPA-Personal</option>
 										<option value="psk2"    <% nvram_match("wl_auth_mode_x", "psk2",   "selected"); %>>WPA2-Personal</option>
-										<option value="sae"    <% nvram_match("wl_auth_mode_x", "psk2",   "selected"); %>>WPA3-Personal</option>
+										<option value="sae"     <% nvram_match("wl_auth_mode_x", "sae",    "selected"); %>>WPA3-Personal</option>
 										<option value="pskpsk2" <% nvram_match("wl_auth_mode_x", "pskpsk2","selected"); %>>WPA-Auto-Personal</option>
 										<option value="psk2sae" <% nvram_match("wl_auth_mode_x", "psk2sae","selected"); %>>WPA2/WPA3-Personal</option>
 									</select>

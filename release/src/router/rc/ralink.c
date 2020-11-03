@@ -848,14 +848,6 @@ int gen_ralink_config(int band, int is_iNIC)
 
 	snprintf(prefix, sizeof(prefix), "wl%d_", band);
 
-	str = nvram_safe_get(strcat_r(prefix, "auth_mode", tmp));
-	if (str && strlen(str)) {
-		if(!strcmp(str, "sae"))
-			wpa3_mfp = 2;
-		else if (!strcmp(str, "psk2sae"))
-			wpa3_mfp = 1;
-	}
-
 	//CountryRegion
 	str = nvram_safe_get(strcat_r(prefix, "country_code", tmp));
 	if (str && strlen(str))
@@ -1660,11 +1652,13 @@ int gen_ralink_config(int band, int is_iNIC)
 			}
 			else if (!strcmp(str, "sae"))
 			{
-			    sprintf(tmpstr, "%s%s", tmpstr, "WPA3PSK");
+				sprintf(tmpstr, "%s%s", tmpstr, "WPA3PSK");
+				wpa3_mfp = 2;
 			}
 			else if (!strcmp(str, "psk2sae"))
 			{
-			    sprintf(tmpstr, "%s%s", tmpstr, "WPA2PSKWPA3PSK");
+				sprintf(tmpstr, "%s%s", tmpstr, "WPA2PSKWPA3PSK");
+				wpa3_mfp = 1;
 			}
 			else if (!strcmp(str, "wpa"))
 			{
