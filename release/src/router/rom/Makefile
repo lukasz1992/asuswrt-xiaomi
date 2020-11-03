@@ -189,6 +189,9 @@ ifeq ($(or $(RTCONFIG_BWDPI),$(RTCONFIG_BWDPI_DEP)),y)
 ifneq ($(or $(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
 	cp -f webs_scripts/sig2nd_upgrade.sh $(INSTALLDIR)/usr/sbin/sig_upgrade.sh
 	cp -f webs_scripts/sig2nd_update.sh $(INSTALLDIR)/usr/sbin/sig_update.sh
+else
+	rm -f $(INSTALLDIR)/usr/sbin/webs_update.sh
+	rm -f $(INSTALLDIR)/usr/sbin/webs_upgrade.sh
 endif
 endif
 ifeq ($(RTCONFIG_HTTPS),y)

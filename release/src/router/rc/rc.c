@@ -879,9 +879,9 @@ static const applets_t applets[] = {
 #if defined(RTCONFIG_BWDPI)
 	{ "bwdpi",			bwdpi_main			},
 	{ "bwdpi_check",		bwdpi_check_main		},
-	{ "bwdpi_wred_alive",		bwdpi_wred_alive_main		},
+	//{ "bwdpi_wred_alive",		bwdpi_wred_alive_main		},
 	{ "bwdpi_db_10",		bwdpi_db_10_main		},
-	{ "rsasign_sig_check",		rsasign_sig_check_main		},
+	//{ "rsasign_sig_check",		rsasign_sig_check_main		},
 #endif
 	{ "hour_monitor",		hour_monitor_main		},
 #ifdef RTCONFIG_USB_MODEM
@@ -1965,6 +1965,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 #endif	/* RTCONFIG_BT_CONN */
+#if !defined(RTMIR3G) && !defined(RTMIR4A) && !defined(RTRM2100) && !defined(RTR2100)
 #if defined(RTCONFIG_RALINK) || defined(RTCONFIG_QCA)
 	else if (!strcmp(base, "dump_powertable")) {
 		if (!IS_ATE_FACTORY_MODE())
@@ -1980,6 +1981,7 @@ int main(int argc, char **argv)
 		dump_txbftable();
 		return 0;
 	}
+#endif
 #endif
 	printf("Unknown applet: %s\n", base);
 	return 0;

@@ -923,10 +923,12 @@ ifeq ($(RTCONFIG_FRS_LIVE_UPDATE),y)
 endif
 	@cd $(INSTALLDIR)/sbin && ln -sf rc test_endian
 ifeq ($(RTCONFIG_BWDPI),y)
-	@cd $(INSTALLDIR)/sbin && ln -sf rc rsasign_sig_check
 	@cd $(INSTALLDIR)/sbin && ln -sf rc bwdpi
 	@cd $(INSTALLDIR)/sbin && ln -sf rc bwdpi_check
+ifneq ($(or $(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
 	@cd $(INSTALLDIR)/sbin && ln -sf rc bwdpi_wred_alive
+	@cd $(INSTALLDIR)/sbin && ln -sf rc rsasign_sig_check
+endif
 	@cd $(INSTALLDIR)/sbin && ln -sf rc bwdpi_db_10
 endif
 	@cd $(INSTALLDIR)/sbin && ln -sf rc hour_monitor
@@ -971,9 +973,11 @@ ifeq ($(RTCONFIG_QCA),y)
 endif
 
 ifeq ($(RTCONFIG_RALINK),y)
+ifneq ($(or $(RTMIR3G),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
 	@cd $(INSTALLDIR)/sbin && ln -sf rc dump_powertable
 	@cd $(INSTALLDIR)/sbin && ln -sf rc dump_txbftable
 	@cd $(INSTALLDIR)/sbin && ln -sf rc air_monitor
+endif
 endif
 
 ifneq ($(RTCONFIG_RALINK)$(RTCONFIG_QCA)$(RTCONFIG_REALTEK),y)
