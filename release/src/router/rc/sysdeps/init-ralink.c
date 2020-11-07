@@ -1047,7 +1047,7 @@ void init_wl(void)
 
 #if defined (RTCONFIG_WLMODULE_MT7615E_AP)
 	if (!module_loaded("mt_wifi"))
-		modprobe("mt_wifi", tmpStr1, tmpStr2, tmpStr3);
+		modprobe("mt_wifi"/*, tmpStr1, tmpStr2, tmpStr3*/);
 #endif
 	sleep(1);
 }
