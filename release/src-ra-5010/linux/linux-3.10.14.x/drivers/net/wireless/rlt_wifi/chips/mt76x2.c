@@ -2886,7 +2886,7 @@ int mt76x2_read_chl_pwr(RTMP_ADAPTER *ad)
 
 	/* 1. U-NII lower/middle band: 36, 38, 40; 44, 46, 48; 52, 54, 56; 60, 62, 64 (including central frequency in BW 40MHz)*/
 	choffset = 14;
-	ASSERT((ad->TxPower[choffset].Channel == 36));
+	//ASSERT((ad->TxPower[choffset].Channel == 36));
 
 	for (i = 0; i < 39; i++) {
 		ad->TxPower[i + choffset].Power = cap->tx_0_target_pwr_a_band[get_chl_grp(ad->TxPower[i+choffset].Channel)];
@@ -2896,7 +2896,7 @@ int mt76x2_read_chl_pwr(RTMP_ADAPTER *ad)
 	choffset = 14 + 12 + 16 + 11;
 
 #ifdef DOT11_VHT_AC
-	ASSERT((ad->TxPower[choffset].Channel == 42));
+	//ASSERT((ad->TxPower[choffset].Channel == 42));
 
 	// TODO: shiang-6590, fix me for the TxPower setting code here!
 	/* For VHT80MHz, we need assign tx power for central channel 42, 58, 106, 122, and 155 */

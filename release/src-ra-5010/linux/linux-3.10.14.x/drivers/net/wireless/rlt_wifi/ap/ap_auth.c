@@ -182,11 +182,11 @@ static VOID APPeerDeauthReqAction(
 			unsigned char *tmp2 = (unsigned char *)&Fr->Hdr.Addr1;
 			if (memcmp(&Fr->Hdr.Addr1, pMbss->wdev.bssid, 6) != 0)
 			{
-				printk("da not match bssid,bssid:0x%02x%02x%02x%02x%02x%02x, addr1:0x%02x%02x%02x%02x%02x%02x\n",*tmp, *(tmp+1), *(tmp+2), *(tmp+3), *(tmp+4), *(tmp+5), *tmp2, *(tmp2+1), *(tmp2+2), *(tmp2+3), *(tmp2+4), *(tmp2+5));
+				DBG_PRINT(RT_DEBUG_INFO, ("da not match bssid,bssid:0x%02x%02x%02x%02x%02x%02x, addr1:0x%02x%02x%02x%02x%02x%02x\n",*tmp, *(tmp+1), *(tmp+2), *(tmp+3), *(tmp+4), *(tmp+5), *tmp2, *(tmp2+1), *(tmp2+2), *(tmp2+3), *(tmp2+4), *(tmp2+5)));
 				return;
 			}
 			else
-				printk("da match,0x%02x%02x%02x%02x%02x%02x\n", *tmp, *(tmp+1), *(tmp+2), *(tmp+3), *(tmp+4), *(tmp+5));
+				DBG_PRINT(RT_DEBUG_INFO, ("da match,0x%02x%02x%02x%02x%02x%02x\n", *tmp, *(tmp+1), *(tmp+2), *(tmp+3), *(tmp+4), *(tmp+5)));
 		}
 
 #ifdef DOT1X_SUPPORT    

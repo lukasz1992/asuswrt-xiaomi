@@ -360,7 +360,7 @@ VOID PsRetrieveTimeout(RTMP_ADAPTER *pAd, STA_TR_ENTRY *tr_entry)
 
 	MtPsRedirectDisableCheck(pAd, tr_entry->wcid);
 
-	DBGPRINT(RT_DEBUG_OFF, ("%s() Recover ps state(state %d to state %d) [wcid = %d]!!\n",
+	DBGPRINT(RT_DEBUG_INFO, ("%s() Recover ps state(state %d to state %d) [wcid = %d]!!\n",
 		__func__, ps_state_tmp, tr_entry->ps_state, tr_entry->wcid));
 }
 

@@ -2239,7 +2239,7 @@ VOID PeerDelBATxAdaptTimeOut(
 {
 	PMAC_TABLE_ENTRY pEntry = (PMAC_TABLE_ENTRY) FunctionContext;
 
-	DBGPRINT(RT_DEBUG_OFF, ("%s()\n", __FUNCTION__));
+	DBGPRINT(RT_DEBUG_INFO, ("%s()\n", __FUNCTION__));
 		
 	/* Disable Tx Mac look up table (Ressume original setting) */
 	Peer_DelBA_Tx_Adapt_Disable(pEntry->pAd, pEntry);

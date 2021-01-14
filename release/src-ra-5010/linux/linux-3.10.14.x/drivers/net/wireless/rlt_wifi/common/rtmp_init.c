@@ -3717,7 +3717,7 @@ VOID RTMP_TimerListRelease(RTMP_ADAPTER *pAd, VOID *pRsc)
 		delEntryList(pRscList, pListEntry);
 
 		/* free a timer record entry */
-		DBGPRINT(RT_DEBUG_ERROR, ("%s: release timer obj %lx!\n", __FUNCTION__, (ULONG)pRsc));
+		DBGPRINT(RT_DEBUG_INFO, ("%s: release timer obj %lx!\n", __FUNCTION__, (ULONG)pRsc));
 		os_free_mem(NULL, pObj);
 	}
 }
