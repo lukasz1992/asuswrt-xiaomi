@@ -3811,9 +3811,11 @@ int init_nvram(void)
 		break;
 #endif /*  RTAC85U  */
 
-#if defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+#if defined(RTMIR3G) || defined(RTMIR3P) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
 #if defined(RTMIR3G)
 	case MODEL_RTMIR3G:
+#elif defined(RTMIR3P)
+	case MODEL_RTMIR3P:
 #elif defined(RTMIR4A)
 	case MODEL_RTMIR4A:
 #elif defined(RTRM2100)
@@ -3827,11 +3829,15 @@ int init_nvram(void)
 
 		wl_ifaces[WL_2G_BAND] = "ra0";
 		wl_ifaces[WL_5G_BAND] = "rai0";
-#if defined(RTMIR3G)
+#if defined(RTMIR3G) || defined(RTMIR3P)
 		set_basic_ifname_vars("eth3", "vlan1", wl_ifaces, "usb", "vlan1", NULL, "vlan3", NULL, 0);
 		nvram_set_int("led_usb_gpio", 10|GPIO_ACTIVE_LOW);
 		nvram_set_int("led_usb3_gpio",10|GPIO_ACTIVE_LOW);
+#if defined(RTMIR3G)
 		nvram_set_int("led_wan_gpio", 13|GPIO_ACTIVE_LOW);
+#elif defined(RTMIR3P)
+		nvram_set_int("led_wan_gpio", 14|GPIO_ACTIVE_LOW);
+#endif
 		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
 		nvram_set("ehci_ports", "1-1");
 		nvram_set("ohci_ports", "2-1");
@@ -3861,9 +3867,14 @@ int init_nvram(void)
 		add_rc_support("user_low_rssi");
 		add_rc_support("loclist");
 		add_rc_support("mfp");
+#if defined(RTMIR3P)
+		nvram_set("wl0_HT_TxStream", "4");
+		nvram_set("wl0_HT_RxStream", "4");
+#else
 		nvram_set("wl0_HT_TxStream", "2");
 		nvram_set("wl0_HT_RxStream", "2");
-#if defined(RTRM2100) || defined(RTR2100)
+#endif
+#if defined(RTMIR3P) || defined(RTRM2100) || defined(RTR2100)
 		add_rc_support("vht160");
 		add_rc_support("wpa3");
 		nvram_set("wl1_HT_TxStream", "4");
@@ -9062,7 +9073,7 @@ int init_nvram(void)
 	}
 
 	// wrs - white and black list
-#if !defined(RTMIR3G) && !defined(RTMIR4A) && !defined(RTRM2100) && !defined(RTR2100)
+#if !defined(RTMIR3G) && !defined(RTMIR3P) && !defined(RTMIR4A) && !defined(RTRM2100) && !defined(RTR2100)
 	add_rc_support("wrs_wbl");
 #endif
 #endif
@@ -11331,7 +11342,7 @@ int reboothalt_main(int argc, char *argv[])
 	_dprintf(reboot ? "Rebooting..." : "Shutting down...");
 	kill(1, reboot ? SIGTERM : SIGQUIT);
 
-#if defined(RTN14U) || defined(RTN65U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTCONFIG_QCA) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTAC54U) || defined(RTN56UB2) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26) || defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+#if defined(RTN14U) || defined(RTN65U) || defined(RTAC52U) || defined(RTAC51U) || defined(RTN11P) || defined(RTN300) || defined(RTN54U) || defined(RTCONFIG_QCA) || defined(RTAC1200HP) || defined(RTN56UB1) || defined(RTAC54U) || defined(RTN56UB2) || defined(RTAC85U) || defined(RTAC85P) || defined(RTN800HP) || defined(RTACRH26) || defined(RTMIR3G) || defined(RTMIR3P) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
 	def_reset_wait = 50;
 #endif
 

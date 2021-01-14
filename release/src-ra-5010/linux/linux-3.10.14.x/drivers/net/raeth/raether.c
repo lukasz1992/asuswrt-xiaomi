@@ -217,7 +217,7 @@ extern struct ethtool_ops	ra_virt_ethtool_ops;
 #endif // CONFIG_PSEUDO_SUPPORT //
 #endif // (CONFIG_ETHTOOL //
 
-#if defined(CONFIG_MODEL_RTAC85U) || defined(CONFIG_MODEL_RTAC85P) || defined(CONFIG_MODEL_RTAC65U) || defined(CONFIG_MODEL_RTN800HP)	|| defined(CONFIG_MODEL_RTACRH26) || defined(CONFIG_MODEL_RTMIR3G) || defined(CONFIG_MODEL_RTMIR4A) || defined(CONFIG_MODEL_RTRM2100) || defined(CONFIG_MODEL_RTR2100) //ASUS_EXT
+#if defined(CONFIG_MODEL_RTAC85U) || defined(CONFIG_MODEL_RTAC85P) || defined(CONFIG_MODEL_RTAC65U) || defined(CONFIG_MODEL_RTN800HP)	|| defined(CONFIG_MODEL_RTACRH26) || defined(CONFIG_MODEL_RTMIR3G) || defined(CONFIG_MODEL_RTMIR3P) || defined(CONFIG_MODEL_RTMIR4A) || defined(CONFIG_MODEL_RTRM2100) || defined(CONFIG_MODEL_RTR2100) //ASUS_EXT
 int first_gsw_init=0;
 #endif
 
@@ -1985,7 +1985,7 @@ static irqreturn_t ei_interrupt(int irq, void *dev_id, struct pt_regs * regs)
 	{
 		gsw_delay_setting();
 #if defined (CONFIG_RALINK_MT7621)
-#if defined(CONFIG_MODEL_RTAC85U) || defined(CONFIG_MODEL_RTAC85P) || defined(CONFIG_MODEL_RTAC65U) || defined(CONFIG_MODEL_RTN800HP)	|| defined(CONFIG_MODEL_RTACRH26) || defined(CONFIG_MODEL_RTMIR3G) || defined(CONFIG_MODEL_RTMIR4A) || defined(CONFIG_MODEL_RTRM2100) || defined(CONFIG_MODEL_RTR2100) //ASUS_EXT
+#if defined(CONFIG_MODEL_RTAC85U) || defined(CONFIG_MODEL_RTAC85P) || defined(CONFIG_MODEL_RTAC65U) || defined(CONFIG_MODEL_RTN800HP)	|| defined(CONFIG_MODEL_RTACRH26) || defined(CONFIG_MODEL_RTMIR3G) || defined(CONFIG_MODEL_RTMIR3P) || defined(CONFIG_MODEL_RTMIR4A) || defined(CONFIG_MODEL_RTRM2100) || defined(CONFIG_MODEL_RTR2100) //ASUS_EXT
 	    	esw_link_status_changed(4, dev_id);
 #else
 //#error "Define WAN Port Check"	    

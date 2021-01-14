@@ -13594,7 +13594,7 @@ void start_roamast(void){
 		}
 	}
 }
-#elif defined(RTMIR3G) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
+#elif defined(RTMIR3G) || defined(RTMIR3P) || defined(RTMIR4A) || defined(RTRM2100) || defined(RTR2100)
 void start_roamast(void){
 	int rssi, i;
 	char prefix[] = "wl_XXXXX";

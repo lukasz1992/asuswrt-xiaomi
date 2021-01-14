@@ -50,6 +50,8 @@ static const struct model_s model_list[] = {
 	{ "RP-AC87", MODEL_RPAC87},	
 #if defined(RTMIR3G)
 	{ "RT-MIR3G", MODEL_RTMIR3G},
+#elif defined(RTMIR3P)
+	{ "RT-MIR3P", MODEL_RTMIR3P},
 #elif defined(RTMIR4A)
 	{ "RT-MIR4A", MODEL_RTMIR4A},
 #elif defined(RTRM2100)
@@ -203,6 +205,8 @@ int get_model(void)
 {
 #if defined(RTMIR3G)
 	return MODEL_RTMIR3G;
+#elif defined(RTMIR3P)
+	return MODEL_RTMIR3P;
 #elif defined(RTMIR4A)
 	return MODEL_RTMIR4A;
 #elif defined(RTRM2100)
