@@ -3837,7 +3837,7 @@ int init_nvram(void)
 		nvram_set("ohci_ports", "2-1");
 		add_rc_support("2.4G 5G noupdate usbX1");
 #else
-        set_basic_ifname_vars("eth3", "vlan1", wl_ifaces, NULL, "vlan1", NULL, "vlan3", NULL, 0);
+		set_basic_ifname_vars("eth3", "vlan1", wl_ifaces, NULL, "vlan1", NULL, "vlan3", NULL, 0);
 		add_rc_support("2.4G 5G noupdate");
 #endif
 #if defined(RTMIR4A)
