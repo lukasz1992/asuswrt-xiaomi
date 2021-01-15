@@ -3764,7 +3764,7 @@ getSiteSurvey(int band,char* ofile)
 	}
 	memset(header, 0, sizeof(header));
 	//sprintf(header, "%-3s%-33s%-18s%-8s%-15s%-9s%-8s%-2s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode", "NT");
-	sprintf(header, "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode");
+	sprintf(header, "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 	dbg("\n%s", header);
 
 	if (wrq.u.data.length > 0 && strlen(wrq.u.data.pointer)>0)
@@ -3880,7 +3880,7 @@ getSiteSurvey(int band,char* ofile)
 					else if(strstr(ssap->SiteSurvey[i].encryption, "AES"))
 						fprintf(fp, "\"%s\",", "AES");
 					else 
-						fprintf(fp, "\"%s\",", "UNKNOW");
+						fprintf(fp, "\"%s\",", "UNKNOWN");
 
 #if 0					
 					if (apinfos[i].wpa == 1){
@@ -4112,7 +4112,7 @@ int site_survey_for_channel(int n, const char *wif, int *HT_EXT)
 	}
 
 	memset(header, 0, sizeof(header));
-	sprintf(header, "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode");
+	sprintf(header, "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 	//dbg("\n%s", header);
 	if (wrq.u.data.length > 0) {
 		char commch[4];

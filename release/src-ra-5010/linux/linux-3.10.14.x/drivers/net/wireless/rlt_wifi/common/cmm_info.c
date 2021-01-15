@@ -2072,7 +2072,7 @@ PSTRING GetEncryptType(CHAR enc)
     	return "SMS4";
 #endif /* WAPI_SUPPORT */
     else
-    	return "UNKNOW";
+    	return "UNKNOWN";
 }
 
 PSTRING GetAuthMode(CHAR auth)
@@ -2104,7 +2104,7 @@ PSTRING GetAuthMode(CHAR auth)
     	return "WAI-PSK";
 #endif /* WAPI_SUPPORT */
 	
-    	return "UNKNOW";
+    	return "UNKNOWN";
 }		
 
 
@@ -2158,7 +2158,7 @@ VOID	RTMPCommSiteSurveyData(
 		sprintf(msg+strlen(msg),"%-33s", Ssid);      
 		
 		/*BSSID*/
-		sprintf(msg+strlen(msg),"%02x:%02x:%02x:%02x:%02x:%02x   ", 
+		sprintf(msg+strlen(msg),"%02x:%02x:%02x:%02x:%02x:%02x ", 
 			pBss->Bssid[0], 
 			pBss->Bssid[1],
 			pBss->Bssid[2], 
@@ -2292,7 +2292,7 @@ VOID	RTMPCommSiteSurveyData(
 		else if (wireless_mode == Ndis802_11OFDM24_N)
 			sprintf(msg+strlen(msg),"%-7s", "11b/g/n");
 		else
-			sprintf(msg+strlen(msg),"%-7s", "unknow");
+			sprintf(msg+strlen(msg),"%-7s", "unknown");
 
 #if 0
 		
@@ -2609,10 +2609,10 @@ VOID RTMPIoctlGetSiteSurvey(
 		return;
 	}
 
-	memset(msg, 0 , TotalLen);
-	sprintf(msg,"%s","\n");
+	/*memset(msg, 0 , TotalLen);
+	sprintf(msg,"%s","\n");*/
 
-	sprintf(msg+strlen(msg),"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
+	sprintf(msg,"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
 	    "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 #ifdef CUSTOMER_DCC_FEATURE
 	sprintf(msg+strlen(msg)-1,"%-11s%-10s%-6s%-7s\n", " STA_COUNT", " MED_UTIL", " SNR0", " SNR1");
@@ -4673,7 +4673,7 @@ PSTRING RTMPGetRalinkAuthModeStr(
 		case Ndis802_11AuthModeWPANone:
 			return "WPANONE";
 		default:
-			return "UNKNOW";
+			return "UNKNOWN";
 	}
 }
 
@@ -4693,7 +4693,7 @@ PSTRING RTMPGetRalinkEncryModeStr(
         case Ndis802_11TKIPAESMix:
 			return "TKIPAES";
 		default:
-			return "UNKNOW";
+			return "UNKNOWN";
 	}
 }
 

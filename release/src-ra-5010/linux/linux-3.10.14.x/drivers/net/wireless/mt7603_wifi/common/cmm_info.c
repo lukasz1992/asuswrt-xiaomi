@@ -2705,7 +2705,7 @@ RTMP_STRING *GetEncryptType(CHAR enc)
     	return "SMS4";
 #endif /* WAPI_SUPPORT */
     else
-    	return "UNKNOW";
+    	return "UNKNOWN";
 }
 
 RTMP_STRING *GetAuthMode(CHAR auth)
@@ -2747,7 +2747,7 @@ RTMP_STRING *GetAuthMode(CHAR auth)
 		return "OWE";
 #endif
 	
-    	return "UNKNOW";
+    	return "UNKNOWN";
 }		
 
 
@@ -2832,7 +2832,7 @@ VOID RTMPCommSiteSurveyData(
 #endif /* AIRPLAY_SUPPORT */		
 		
 		/*BSSID*/
-		sprintf(msg+strlen(msg),"%02x:%02x:%02x:%02x:%02x:%02x   ", 
+		sprintf(msg+strlen(msg),"%02x:%02x:%02x:%02x:%02x:%02x ", 
 			pBss->Bssid[0], 
 			pBss->Bssid[1],
 			pBss->Bssid[2], 
@@ -2951,7 +2951,7 @@ VOID RTMPCommSiteSurveyData(
 		else if (wireless_mode == Ndis802_11OFDM24_N)
 			sprintf(msg+strlen(msg),"%-7s", "11b/g/n");
 		else
-			sprintf(msg+strlen(msg),"%-7s", "unknow");
+			sprintf(msg+strlen(msg),"%-7s", "unknown");
 
 #if 0
 		/* Ext Channel*/
@@ -3122,15 +3122,15 @@ VOID RTMPIoctlGetSiteSurvey(
 		return;
 	}
 
-	snprintf(msg, TotalLen, "%s", "\n");
+	/*snprintf(msg, TotalLen, "%s", "\n");
 	sprintf(msg, "%s", "\n");
 	sprintf(msg + strlen(msg), "Total=%-4d", pAdapter->ScanTab.BssNr);
-	sprintf(msg + strlen(msg), "%s", "\n");
+	sprintf(msg + strlen(msg), "%s", "\n");*/
 #ifdef AIRPLAY_SUPPORT
-		sprintf(msg+strlen(msg),"%-4s%-33s%-4s%-20s%-23s%-9s%-7s%-7s%-3s\n",
+		sprintf(msg,"%-4s%-33s%-4s%-20s%-23s%-9s%-7s%-7s%-3s\n",
 			"Ch", "SSID", "UN", "BSSID", "Security", "Signal(%)", "W-Mode", " ExtCH"," NT");
 #else
-	sprintf(msg+strlen(msg),"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
+	sprintf(msg,"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
 	    "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 #endif /* AIRPLAY_SUPPORT */
 
@@ -5412,7 +5412,7 @@ RTMP_STRING *RTMPGetRalinkAuthModeStr(
 		case Ndis802_11AuthModeWPANone:
 			return "WPANONE";
 		default:
-			return "UNKNOW";
+			return "UNKNOWN";
 	}
 }
 
@@ -5432,7 +5432,7 @@ RTMP_STRING *RTMPGetRalinkEncryModeStr(
         case Ndis802_11TKIPAESMix:
 			return "TKIPAES";
 		default:
-			return "UNKNOW";
+			return "UNKNOWN";
 	}
 }
 

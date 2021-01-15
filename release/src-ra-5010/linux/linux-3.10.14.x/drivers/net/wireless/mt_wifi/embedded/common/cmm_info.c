@@ -4176,7 +4176,7 @@ RTMP_STRING *GetEncryptType(CHAR enc)
 		return "TKIPAES";
 
 	else
-		return "UNKNOW";
+		return "UNKNOWN";
 }
 
 RTMP_STRING *GetAuthMode(CHAR auth)
@@ -4211,7 +4211,7 @@ RTMP_STRING *GetAuthMode(CHAR auth)
 	if (auth == Ndis802_11AuthModeWPA1PSKWPA2PSK)
 		return "WPA1PSKWPA2PSK";
 
-	return "UNKNOW";
+	return "UNKNOWN";
 }
 
 
@@ -4272,7 +4272,7 @@ VOID RTMPCommSiteSurveyData(
 
 	sprintf(msg + strlen(msg), "%-33s", Ssid);
 	/*BSSID*/
-	sprintf(msg + strlen(msg), "%02x:%02x:%02x:%02x:%02x:%02x   ",
+	sprintf(msg + strlen(msg), "%02x:%02x:%02x:%02x:%02x:%02x ",
 			pBss->Bssid[0],
 			pBss->Bssid[1],
 			pBss->Bssid[2],
@@ -4311,7 +4311,7 @@ VOID RTMPCommSiteSurveyData(
 	else if (wireless_mode == Ndis802_11OFDM24_N)
 		sprintf(msg + strlen(msg), "%-7s", "11b/g/n");
 	else
-		sprintf(msg + strlen(msg), "%-7s", "unknow");
+		sprintf(msg + strlen(msg), "%-7s", "unknown");
 
 #if 0
 	/* Ext Channel*/
@@ -4684,11 +4684,12 @@ max_len += OWETRANSIE_LINE_LEN;
 		return;
 	}
 
-	sprintf(msg, "\n");
+	/*sprintf(msg, "\n");
 	sprintf(msg + strlen(msg), "Total=%-4d", pAdapter->ScanTab.BssNr);
-	sprintf(msg + strlen(msg), "\n");
-	sprintf(msg + strlen(msg), "%-4s%-4s%-33s%-20s%-23s%-9s%-7s%-7s%-3s%-8s\n",
-			"No", "Ch", "SSID", "BSSID", "Security", "Siganl(%)", "W-Mode", " ExtCH", " NT", " SSID_Len");
+	sprintf(msg + strlen(msg), "\n");*/
+	sprintf(msg,"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
+	    "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
+#if 0
 #ifdef WSC_INCLUDED
 	sprintf(msg + strlen(msg) - 1, "%-4s%-5s\n", " WPS", " DPID");
 #endif /* WSC_INCLUDED */
@@ -4696,6 +4697,7 @@ max_len += OWETRANSIE_LINE_LEN;
 #ifdef APCLI_OWE_SUPPORT
 		sprintf(msg + strlen(msg) - 1, "%-10s\n", " OWETranIe");
 #endif /* APCLI_OWE_SUPPORT */
+#endif
 
 	WaitCnt = 0;
 
@@ -4720,8 +4722,9 @@ max_len += OWETRANSIE_LINE_LEN;
 			break;
 
 		/*No*/
-		sprintf(msg + strlen(msg), "%-4d", i);
+		//sprintf(msg + strlen(msg), "%-4d", i);
 		RTMPCommSiteSurveyData(msg, pBss, TotalLen);
+		continue;
 #ifdef WSC_INCLUDED
 
 		/*WPS*/
