@@ -356,7 +356,7 @@ function initial(){
 			document.getElementById("wl_plcphdr_field").style.display = "none";
 		}
 
-		if(based_modelid == "RT-AC66U" || based_modelid == "RT-AC85U" || based_modelid == "RT-AC65U" || based_modelid == "RT-AC85P" || based_modelid == "RT-ACRH26"){
+		if(based_modelid == "RT-AC66U" || based_modelid == "RT-AC85U" || based_modelid == "RT-AC65U" || based_modelid == "RT-AC85P" || based_modelid == "RT-ACRH26" || based_modelid == "RT-MIR3P" || based_modelid == "RT-RM2100" || based_modelid == "RT-R2100"){
 			document.getElementById('wl_txbf_desc').innerHTML = "<#WLANConfig11b_x_acBeam#>";
 			inputCtrl(document.form.wl_txbf, 1);
 		}
@@ -412,11 +412,14 @@ function initial(){
 				inputCtrl(document.form.wl_itxbf, 1);
 			}	
 		}	
-		if(based_modelid == "RT-AC88N" || based_modelid == "RT-AC88Q" || based_modelid == "BRT-AC828" || based_modelid == "RT-AD7200" || based_modelid == "RT-AC58U" || based_modelid == "RT-AC82U" || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC3000")
+		if(based_modelid == "RT-AC88N" || based_modelid == "RT-AC88Q" || based_modelid == "BRT-AC828" || based_modelid == "RT-AD7200" || based_modelid == "RT-AC58U" || based_modelid == "RT-AC82U" || based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC3000" || based_modelid == "RT-MIR3P")
 		{
 			$('wl_txbf_desc').innerHTML = "<#WLANConfig11b_x_ExpBeam#>";
 			inputCtrl(document.form.wl_txbf, 1);
-			inputCtrl(document.form.wl_turbo_qam, 1);
+			if(document.form.wl_nmode_x.value == "0" || document.form.wl_nmode_x.value == "1")
+				inputCtrl(document.form.wl_turbo_qam, 1);
+			else
+				inputCtrl(document.form.wl_turbo_qam, 0);
 		}
 	}
 
@@ -446,7 +449,7 @@ function initial(){
 		add_option(document.form.wl_mrate_x, mcast_rates[i][0], mcast_rates[i][1], (mcast_rate == mcast_rates[i][1]) ? 1 : 0);
 	}
 
-	if(repeater_support || psta_support){		//with RE mode
+	if(sw_mode % 2){		// repeater and media bridge
 		document.getElementById("DLSCapable").style.display = "none";	
 	}	
 
@@ -489,7 +492,7 @@ function initial(){
 		document.form.wl_mumimo.disabled = false;
 
 		/* MODELDEP */
-		if((based_modelid == "RT-AC85U" || based_modelid == "RT-AC85P" || based_modelid == "RT-ACRH26" || based_modelid == "RT-AC65U") && wl_unit_value == '0'){
+		if((based_modelid == "RT-AC85U" || based_modelid == "RT-AC85P" || based_modelid == "RT-ACRH26" || based_modelid == "RT-AC65U" || based_modelid == "RT-RM2100" || based_modelid == "RT-R2100") && wl_unit_value == '0'){
 			document.getElementById("wl_MU_MIMO_field").style.display = "none";
 		}
 	}

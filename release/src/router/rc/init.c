@@ -3867,6 +3867,7 @@ int init_nvram(void)
 		add_rc_support("user_low_rssi");
 		add_rc_support("loclist");
 		add_rc_support("mfp");
+		add_rc_support("pwrctrl");
 #if defined(RTMIR3P)
 		nvram_set("wl0_HT_TxStream", "4");
 		nvram_set("wl0_HT_RxStream", "4");
