@@ -2481,7 +2481,7 @@ int gen_ralink_config(int band, int is_iNIC)
 		str = nvram_safe_get(strcat_r(prefix, "txbf", tmp));
 		if ((atoi(str) > 0) && nvram_match(strcat_r(prefix, "txbf_en", tmp), "1"))
 		{
-#if defined (RTCONFIG_WLMODULE_MT7615E_AP)
+#if defined (RTCONFIG_WLMODULE_MT7615E_AP) || defined(RTCONFIG_WLMODULE_RLT_WIFI)
 			fprintf(fp, "BFBACKOFFenable=%d\n", 1);
 			fprintf(fp, "ITxBfEn=%d\n", 0);
 			fprintf(fp, "ETxBfIncapable=%d\n", 0);			
@@ -2515,7 +2515,7 @@ int gen_ralink_config(int band, int is_iNIC)
 #else
 			fprintf(fp, "ETxBfEnCond=%d\n", 0);
 #endif
-#if defined (RTCONFIG_WLMODULE_MT7615E_AP)
+#if defined (RTCONFIG_WLMODULE_MT7615E_AP) || defined(RTCONFIG_WLMODULE_RLT_WIFI)
 			fprintf(fp, "ETxBfIncapable=%d\n", 1);
 #endif			
 		}

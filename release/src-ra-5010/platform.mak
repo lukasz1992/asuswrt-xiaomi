@@ -492,7 +492,7 @@ define platformKernelConfig
 		sed -i "/CONFIG_DOT11W_PMF_SUPPORT/d" $(1); \
 		echo "CONFIG_DOT11W_PMF_SUPPORT=y" >>$(1); \
 		sed -i "/CONFIG_TXBF_SUPPORT/d" $(1); \
-		echo "# CONFIG_TXBF_SUPPORT is not set" >>$(1); \
+		echo "CONFIG_TXBF_SUPPORT=y" >>$(1); \
 		sed -i "/CONFIG_LLTD_SUPPORT/d" $(1); \
 		echo "CONFIG_LLTD_SUPPORT=y" >>$(1); \
 		sed -i "/CONFIG_QOS_DLS_SUPPORT/d" $(1); \
