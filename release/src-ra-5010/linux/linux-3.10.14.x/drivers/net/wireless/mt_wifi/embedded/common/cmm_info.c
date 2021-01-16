@@ -4684,10 +4684,7 @@ max_len += OWETRANSIE_LINE_LEN;
 		return;
 	}
 
-	/*sprintf(msg, "\n");
-	sprintf(msg + strlen(msg), "Total=%-4d", pAdapter->ScanTab.BssNr);
-	sprintf(msg + strlen(msg), "\n");*/
-	sprintf(msg,"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
+	sprintf(msg,"\n%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
 	    "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 #if 0
 #ifdef WSC_INCLUDED

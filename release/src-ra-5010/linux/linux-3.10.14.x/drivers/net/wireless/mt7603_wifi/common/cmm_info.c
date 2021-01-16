@@ -3122,15 +3122,11 @@ VOID RTMPIoctlGetSiteSurvey(
 		return;
 	}
 
-	/*snprintf(msg, TotalLen, "%s", "\n");
-	sprintf(msg, "%s", "\n");
-	sprintf(msg + strlen(msg), "Total=%-4d", pAdapter->ScanTab.BssNr);
-	sprintf(msg + strlen(msg), "%s", "\n");*/
 #ifdef AIRPLAY_SUPPORT
-		sprintf(msg,"%-4s%-33s%-4s%-20s%-23s%-9s%-7s%-7s%-3s\n",
+		sprintf(msg + strlen(msg),"%-4s%-33s%-4s%-20s%-23s%-9s%-7s%-7s%-3s\n",
 			"Ch", "SSID", "UN", "BSSID", "Security", "Signal(%)", "W-Mode", " ExtCH"," NT");
 #else
-	sprintf(msg,"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
+	sprintf(msg,"\n%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
 	    "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 #endif /* AIRPLAY_SUPPORT */
 

@@ -449,7 +449,7 @@ function initial(){
 		add_option(document.form.wl_mrate_x, mcast_rates[i][0], mcast_rates[i][1], (mcast_rate == mcast_rates[i][1]) ? 1 : 0);
 	}
 
-	if(sw_mode % 2){		// repeater and media bridge
+	if(1 - sw_mode % 2){		// repeater and media bridge
 		document.getElementById("DLSCapable").style.display = "none";	
 	}	
 

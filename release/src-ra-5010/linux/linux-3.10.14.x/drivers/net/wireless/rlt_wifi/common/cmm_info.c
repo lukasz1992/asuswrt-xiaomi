@@ -2609,10 +2609,9 @@ VOID RTMPIoctlGetSiteSurvey(
 		return;
 	}
 
-	/*memset(msg, 0 , TotalLen);
-	sprintf(msg,"%s","\n");*/
+	memset(msg, 0 , TotalLen);
 
-	sprintf(msg,"%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
+	sprintf(msg,"\n%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n",
 	    "Ch", "SSID", "BSSID", "Enc", "Auth", "Signal(%)", "W-Mode");
 #ifdef CUSTOMER_DCC_FEATURE
 	sprintf(msg+strlen(msg)-1,"%-11s%-10s%-6s%-7s\n", " STA_COUNT", " MED_UTIL", " SNR0", " SNR1");

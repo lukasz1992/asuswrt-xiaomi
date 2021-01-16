@@ -3852,17 +3852,17 @@ getSiteSurvey(int band,char* ofile)
 
 					fprintf(fp, "\"%d\",", atoi(ssap->SiteSurvey[i].channel));
 
-					if(strstr(ssap->SiteSurvey[i].authmode,"WPA-Enterprise"))
-						fprintf(fp, "\"%s\",","WPA-Enterprise");
-					else if(strstr(ssap->SiteSurvey[i].authmode,"WPA2-Enterprise"))
-						fprintf(fp, "\"%s\",","WPA2-Enterprise");
-					else if(strstr(ssap->SiteSurvey[i].authmode,"WPA-Personal"))
-						fprintf(fp, "\"%s\",","WPA-Personal");
-					else if(strstr(ssap->SiteSurvey[i].authmode,"WPA2-Personal"))
+					if(strstr(ssap->SiteSurvey[i].authmode,"WPA2PSK"))
 						fprintf(fp, "\"%s\",","WPA2-Personal");
-					else if(strstr(ssap->SiteSurvey[i].authmode,"WPA3-Personal"))
-						fprintf(fp, "\"%s\",","WPA3-Personal");
-					else if(strstr(ssap->SiteSurvey[i].authmode,"Open System")) {
+					else if(strstr(ssap->SiteSurvey[i].authmode,"WPAPSK"))
+						fprintf(fp, "\"%s\",","WPA-Personal");
+					else if(strstr(ssap->SiteSurvey[i].authmode,"WPA2"))
+						fprintf(fp, "\"%s\",","WPA2-Enterprise");
+					else if(strstr(ssap->SiteSurvey[i].authmode,"WPA"))
+						fprintf(fp, "\"%s\",","WPA-Enterprise");
+					else if(strstr(ssap->SiteSurvey[i].authmode,"WPA3"))
+						fprintf(fp, "\"%s\",","WPA3-Personal"); // not implemented
+					else if(strstr(ssap->SiteSurvey[i].authmode,"OPEN")) {
 						if(strstr(ssap->SiteSurvey[i].encryption, "WEP"))
 							fprintf(fp, "\"%s\",","Unknown");
 						else
@@ -3873,12 +3873,12 @@ getSiteSurvey(int band,char* ofile)
 
 					if(strstr(ssap->SiteSurvey[i].encryption, "NONE"))
 						fprintf(fp, "\"%s\",", "NONE");
-					else if(strstr(ssap->SiteSurvey[i].encryption, "WEP"))
-						fprintf(fp, "\"%s\",", "WEP");
-					else if(strstr(ssap->SiteSurvey[i].encryption, "TKIP"))
-						fprintf(fp, "\"%s\",", "TKIP");
 					else if(strstr(ssap->SiteSurvey[i].encryption, "AES"))
 						fprintf(fp, "\"%s\",", "AES");
+					else if(strstr(ssap->SiteSurvey[i].encryption, "TKIP"))
+						fprintf(fp, "\"%s\",", "TKIP");
+					else if(strstr(ssap->SiteSurvey[i].encryption, "WEP"))
+						fprintf(fp, "\"%s\",", "WEP");
 					else 
 						fprintf(fp, "\"%s\",", "UNKNOWN");
 
