@@ -1,4 +1,4 @@
-/* dnsmasq is Copyright (c) 2000-2020 Simon Kelley
+/* dnsmasq is Copyright (c) 2000-2021 Simon Kelley
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -164,15 +164,13 @@ static int check_name(char *in)
    so check for legal char a-z A-Z 0-9 - _ 
    Note that this may receive a FQDN, so only check the first label 
    for the tighter criteria. */
-static int check_hostname(char *name)
+int legal_hostname(char *name)
 {
-  char c, *at, *src = name;
+  char c;
   int first;
 
   if (!check_name(name))
-    return -1;
-
-  at = strchr(name, '@');
+    return 0;
 
   for (first = 1; (c = *name); name++, first = 0)
     /* check for legal char a-z A-Z 0-9 - _ . */
@@ -184,49 +182,14 @@ static int check_hostname(char *name)
 
       if (!first && (c == '-' || c == '_'))
 	continue;
-
-      /* relax name part */
-      if (at && (name <= at) && (c >= 33) && (c < 127))
-	continue;
       
       /* end of hostname part */
       if (c == '.')
-	break;
+	return 1;
       
-      return -1;
+      return 0;
     }
   
-  return name - src;
-}
-
-int legal_hostname(char *name)
-{
-  return check_hostname(name) >= 0;
-}
-
-int valid_hostname(char *name)
-{
-  static const char *reserved[] = {
-    "localhost",
-    "ip6-localhost",
-    "ip6-loopback",
-    "wpad",
-    "isatap",
-    NULL
-  };
-  const char **next;
-  int len;
-
-  len = check_hostname(name);
-  if (len < 0)
-    return 0;
-
-  for (next = reserved; *next; next++)
-    {
-      if (strncasecmp(name, *next, len) == 0 && len == strlen(*next))
-	return 0;
-    }
-
   return 1;
 }
   
