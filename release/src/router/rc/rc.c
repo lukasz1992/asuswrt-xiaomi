@@ -26,6 +26,11 @@ int check_wrs_switch()
 }
 #endif
 
+int IS_ATE_FACTORY_MODE(void)
+{
+	return 0;
+}
+
 #ifdef RTCONFIG_RALINK
 #include <ralink.h>
 #endif
@@ -288,12 +293,14 @@ static int rctest_main(int argc, char *argv[])
 		setup_passwd();
 	}
 #endif
+#if 0
 	else if (strcmp(argv[1], "GetPhyStatus")==0) {
 		printf("Get Phy status:%d\n", GetPhyStatus(0));
 	}
 	else if (strcmp(argv[1], "GetExtPhyStatus")==0) {
 		printf("Get Ext Phy status:%d\n", GetPhyStatus(atoi(argv[2])));
 	}
+#endif
 #ifdef HND_ROTUER
 	else if (strcmp(argv[1], "memdw")==0) {
 		const char *dws[]={"dw", argv[2]};
@@ -1627,7 +1634,7 @@ int main(int argc, char **argv)
 #endif
 #endif
 
-#if defined(CONFIG_BCMWL5) || defined(RTCONFIG_RALINK) || defined(RTCONFIG_QCA) || defined(RTCONFIG_REALTEK)
+#if 0
 	else if (!strcmp(base, "set_factory_mode")) {
 		set_factory_mode();
 		return 0;

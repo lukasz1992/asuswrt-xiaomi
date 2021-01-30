@@ -8892,7 +8892,7 @@ again:
 		kill(1, SIGTERM);
 #endif
 	}
-	else if(strcmp(script, "upgrade_ate") == 0) {
+	else if(/*strcmp(script, "upgrade_ate") == */0) {
 		FILE *fp;
 		int ate_upgrade_reboot;
 		int ate_upgrade_reset;

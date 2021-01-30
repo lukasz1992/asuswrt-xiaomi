@@ -2119,7 +2119,7 @@ static void shutdn(int rb)
 	sync();
 
 	// TODO LED Status for LED
-	setAllLedOff();
+	//setAllLedOff();
 
 	sync(); sync(); sync();
 #ifdef HND_ROUTER

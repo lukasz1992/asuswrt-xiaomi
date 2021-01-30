@@ -271,7 +271,7 @@ endif
 else ifeq ($(RTCONFIG_REALTEK),y)
 OBJS += init-realtek.o wps-realtek.o realtek.o rtk_wifi_drvmib.o ate-realtek.o
 else ifeq ($(RTCONFIG_RALINK),y)
-OBJS += init-ralink.o wps-ralink.o ralink.o ate-ralink.o
+OBJS += init-ralink.o wps-ralink.o ralink.o
 ifeq ($(RTCONFIG_CONCURRENTREPEATER),y)
 OBJS += air_monitor.o
 endif
@@ -847,27 +847,10 @@ endif
 ifeq ($(RTCONFIG_ERPTEST),y)
 	@cd $(INSTALLDIR)/sbin && ln -sf rc restart_usb
 endif
-	@cd $(INSTALLDIR)/sbin && ln -sf rc ATE
 ifeq ($(RTCONFIG_DSL),y)
 	@cd $(INSTALLDIR)/sbin && ln -sf rc asustest
 endif
-ifeq ($(or $(RTCONFIG_RALINK),$(RTCONFIG_QCA)),y)
-	@cd $(INSTALLDIR)/sbin && ln -sf rc FWRITE
-	@cd $(INSTALLDIR)/sbin && ln -sf rc FREAD
-endif
-ifeq ($(RTCONFIG_RALINK),y)
-	@cd $(INSTALLDIR)/sbin && ln -sf rc asuscfe_2g
-	@cd $(INSTALLDIR)/sbin && ln -sf rc asuscfe_5g
-	@cd $(INSTALLDIR)/sbin && ln -sf rc stainfo_2g
-	@cd $(INSTALLDIR)/sbin && ln -sf rc stainfo_5g
-ifeq ($(RTCONFIG_DSL),y)
-	@cd $(INSTALLDIR)/sbin && ln -sf rc gen_ralink_config
-endif
-endif
 
-ifeq ($(or $(CONFIG_BCMWL5),$(RTCONFIG_RALINK),$(RTCONFIG_QCA),$(RTCONFIG_REALTEK)),y)
-	@cd $(INSTALLDIR)/sbin && ln -sf rc set_factory_mode
-endif
 ifeq ($(or $(RTCONFIG_OPENPLUS_TFAT),$(RTCONFIG_OPENPLUSPARAGON_NTFS),$(RTCONFIG_OPENPLUSTUXERA_NTFS),$(RTCONFIG_OPENPLUSPARAGON_HFS),$(RTCONFIG_OPENPLUSTUXERA_HFS)),y)
 	@cd $(INSTALLDIR)/sbin && ln -sf rc set_fs_coexist
 endif
@@ -894,9 +877,6 @@ endif
 	@cd $(INSTALLDIR)/sbin && ln -sf rc add_multi_routes
 
 	@cd $(INSTALLDIR)/sbin && ln -sf rc free_caches
-	@cd $(INSTALLDIR)/sbin && ln -sf rc get_phy_status
-	@cd $(INSTALLDIR)/sbin && ln -sf rc get_phy_speed
-	@cd $(INSTALLDIR)/sbin && ln -sf rc GetPhyStatus
 ifeq ($(HND_ROUTER),y)
 	@cd $(INSTALLDIR)/sbin && ln -sf rc set_ex53134_ctrl
 	@cd $(INSTALLDIR)/sbin && ln -sf rc set_phy_ctrl
