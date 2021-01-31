@@ -19,7 +19,9 @@
 #define CHILD_LIFETIME 150 /* secs 'till terminated (RFC1035 suggests > 120s) */
 #define TCP_MAX_QUERIES 100 /* Maximum number of queries per incoming TCP connection */
 #define TCP_BACKLOG 32  /* kernel backlog limit for TCP connections */
+#ifndef EDNS_PKTSZ
 #define EDNS_PKTSZ 4096 /* default max EDNS.0 UDP packet from RFC5625 */
+#endif
 #define SAFE_PKTSZ 1280 /* "go anywhere" UDP packet size */
 #define KEYBLOCK_LEN 40 /* choose to minimise fragmentation when storing DNSSEC keys */
 #define DNSSEC_WORK 50 /* Max number of queries to validate one question */
@@ -76,6 +78,12 @@ HAVE_BROKEN_RTC
    it viable to keep the lease file on a flash filesystem.
    NOTE: when enabling or disabling this, be sure to delete any old
    leases file, otherwise dnsmasq may get very confused.
+
+HAVE_LEASEFILE_EXPIRE
+   define this if you want to enable lease file update with expire
+   timeouts instead of expiry times or lease lengths, if HAVE_BROKEN_RTC
+   is also enabled. Lease file will be rewritten upon SIGUSR2 signal
+   reception and/or dnsmasq termination.
 
 HAVE_TFTP
    define this to get dnsmasq's built-in TFTP server.
@@ -165,6 +173,7 @@ RESOLVFILE
 */
 
 /* #define HAVE_BROKEN_RTC */
+/* #define HAVE_LEASEFILE_EXPIRE */
 
 /* The default set of options to build. Built with these options, dnsmasq
    has no library dependencies other than libc */

@@ -118,12 +118,14 @@ static int read_leases(time_t now, FILE *leasestream)
 
 	ei = atol(daemon->dhcp_buff3);
 
-#ifdef HAVE_BROKEN_RTC
+#if defined(HAVE_BROKEN_RTC) || defined(HAVE_LEASEFILE_EXPIRE)
 	if (ei != 0)
 	  lease->expires = (time_t)ei + now;
 	else
 	  lease->expires = (time_t)0;
+#ifdef HAVE_BROKEN_RTC
 	lease->length = ei;
+#endif
 #else
 	/* strictly time_t is opaque, but this hack should work on all sane systems,
 	   even when sizeof(time_t) == 8 */
@@ -248,6 +250,22 @@ static void ourprintf(int *errp, char *format, ...)
   va_end(ap);
 }
 
+#ifdef HAVE_LEASEFILE_EXPIRE
+void lease_flush_file(time_t now)
+{
+  static time_t flush_time = 0;
+
+  if (difftime(flush_time, now) < 0)
+    file_dirty = 1;
+
+  lease_prune(NULL, now);
+  lease_update_file(now);
+
+  if (file_dirty == 0)
+    flush_time = now;
+}
+#endif
+
 void lease_update_file(time_t now)
 {
   struct dhcp_lease *lease;
@@ -269,7 +287,15 @@ void lease_update_file(time_t now)
 	    continue;
 #endif
 
+#ifdef HAVE_LEASEFILE_EXPIRE
+	  ourprintf(&err, "%u ",
 #ifdef HAVE_BROKEN_RTC
+		    (lease->length == 0) ? 0 :
+#else
+		    (lease->expires == 0) ? 0 :
+#endif
+		    (unsigned int)difftime(lease->expires, now));
+#elif defined(HAVE_BROKEN_RTC)
 	  ourprintf(&err, "%u ", lease->length);
 #else
 	  ourprintf(&err, "%lu ", (unsigned long)lease->expires);
@@ -313,7 +339,15 @@ void lease_update_file(time_t now)
 	      if (!(lease->flags & (LEASE_TA | LEASE_NA)))
 		continue;
 
+#ifdef HAVE_LEASEFILE_EXPIRE
+	      ourprintf(&err, "%u ",
 #ifdef HAVE_BROKEN_RTC
+			(lease->length == 0) ? 0 :
+#else
+			(lease->expires == 0) ? 0 :
+#endif
+			(unsigned int)difftime(lease->expires, now));
+#elif defined(HAVE_BROKEN_RTC)
 	      ourprintf(&err, "%u ", lease->length);
 #else
 	      ourprintf(&err, "%lu ", (unsigned long)lease->expires);
@@ -952,7 +986,7 @@ void lease_set_hostname(struct dhcp_lease *lease, const char *name, int auth, ch
   char *new_name = NULL, *new_fqdn = NULL;
 
   if (config_domain && (!domain || !hostname_isequal(domain, config_domain)))
-    my_syslog(MS_DHCP | LOG_WARNING, _("Ignoring domain %s for DHCP host name %s"), config_domain, name);
+    my_syslog(MS_DHCP | LOG_INFO, _("Ignoring domain %s for DHCP host name %s"), config_domain, name);
   
   if (lease->hostname && name && hostname_isequal(lease->hostname, name))
     {

@@ -169,7 +169,8 @@ static int dhcp6_maybe_relay(struct state *state, void *inbuff, size_t sz,
 	  if (!state->context)
 	    {
 	      inet_ntop(AF_INET6, state->link_address, daemon->addrbuff, ADDRSTRLEN); 
-	      my_syslog(MS_DHCP | LOG_WARNING, 
+	      if (option_bool(OPT_LOG_OPTS))
+		my_syslog(MS_DHCP | LOG_WARNING, 
 			_("no address range available for DHCPv6 request from relay at %s"),
 			daemon->addrbuff);
 	      return 0;
@@ -178,7 +179,8 @@ static int dhcp6_maybe_relay(struct state *state, void *inbuff, size_t sz,
 	  
       if (!state->context)
 	{
-	  my_syslog(MS_DHCP | LOG_WARNING, 
+	  if (option_bool(OPT_LOG_OPTS))
+	    my_syslog(MS_DHCP | LOG_WARNING, 
 		    _("no address range available for DHCPv6 request via %s"), state->iface_name);
 	  return 0;
 	}
@@ -488,7 +490,7 @@ static int dhcp6_no_relay(struct state *state, int msg_type, void *inbuff, size_
 	     pq--;
 	   *pq = 0;
 	   
-	   if (legal_hostname(daemon->dhcp_buff))
+	   if (valid_hostname(daemon->dhcp_buff))
 	     {
 	       struct dhcp_match_name *m;
 	       size_t nl = strlen(daemon->dhcp_buff);
@@ -1094,7 +1096,8 @@ static int dhcp6_no_relay(struct state *state, int msg_type, void *inbuff, size_
 	else
 	  state->send_domain = get_domain6(NULL);
 
-	log6_quiet(state, "DHCPINFORMATION-REQUEST", NULL, ignore ? _("ignored") : state->hostname);
+	if (ignore || option_bool(OPT_LOG_OPTS))
+	  log6_quiet(state, "DHCPINFORMATION-REQUEST", NULL, ignore ? _("ignored") : state->hostname);
 	if (ignore)
 	  return 0;
 	*outmsgtypep = DHCP6REPLY;
