@@ -241,13 +241,8 @@ config RT2880_DRAM_128M
 config RT2880_DRAM_256M
        bool "256M"
 
-config RT2880_DRAM_512M
-       bool "512M"
-       depends on  RALINK_MT7621
-       select HIGHMEM
-
-config RT2880_DRAM_1024M
-       bool "1024M"
+config RT2880_DRAM_448M
+       bool "448M"
        depends on  RALINK_MT7621
 
 endchoice
@@ -327,8 +322,7 @@ config  RALINK_RAM_SIZE
 	default 64 if RT2880_DRAM_64M
 	default 128 if RT2880_DRAM_128M
 	default 256 if RT2880_DRAM_256M
-	default 512 if RT2880_DRAM_512M
-	default 1024 if RT2880_DRAM_1024M
+	default 448 if RT2880_DRAM_448M
 
 config MTD_PHYSMAP_START
        hex 

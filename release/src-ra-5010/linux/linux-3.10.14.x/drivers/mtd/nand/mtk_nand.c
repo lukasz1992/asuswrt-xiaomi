@@ -5050,6 +5050,10 @@ int mtk_nand_probe()
 	g_pasStatic_Partition[3].offset = 0x120000;
 	g_pasStatic_Partition[6].offset = 0x3800000;
 	g_pasStatic_Partition[6].size = 0x2800000;
+#if defined CONFIG_MODEL_RTMIR3P
+	g_pasStatic_Partition[2].offset = 0xc0000;
+	g_pasStatic_Partition[6].size = 0xa000000;
+#endif
 // Xiaomi
 	err = add_mtd_partitions(mtd, g_pasStatic_Partition, part_num);
 	//err = mtd_device_register(mtd, g_pasStatic_Partition, part_num);
