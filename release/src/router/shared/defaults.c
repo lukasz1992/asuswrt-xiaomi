@@ -266,7 +266,7 @@ struct nvram_tuple router_defaults[] = {
 #else
 	{ "wl_gmode", "XSTR(GMODE_AUTO)", CKN_STR_DEFAULT, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* 54g mode */
 #endif
-	{ "wl_gmode_protection", "auto", CKN_STR4, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* 802.11g RTS/CTS protection (off|auto) */
+	{ "wl_gmode_protection", "off", CKN_STR4, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* 802.11g RTS/CTS protection (off|auto) */
 
 #ifdef RTCONFIG_OPTIMIZE_XBOX
 	{ "wl_optimizexbox", "0", CKN_STR1, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },	/* Optimize WiFi packet for Xbox */
