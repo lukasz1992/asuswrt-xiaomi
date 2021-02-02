@@ -184,7 +184,11 @@ void start_ubifs(void)
 
 			/* make ubi volume */
 			_dprintf("*** ubifs: create jffs2 volume\n");
-			eval("ubimkvol", UBI_DEV_PATH, "-s", vol_size_s, "-N", UBIFS_VOL_NAME);
+			while ((vol_size > 1024) && eval("ubimkvol", UBI_DEV_PATH, "-s", vol_size_s, "-N", UBIFS_VOL_NAME)) {
+				vol_size -= 1024;
+				snprintf(vol_size_s, sizeof(vol_size_s), "%dKiB", vol_size);
+				_dprintf("*** ubifs: create failed, decreasing size...\n");
+			}
 		}
 	}
 #endif
