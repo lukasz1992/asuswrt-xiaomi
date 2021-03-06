@@ -455,6 +455,7 @@ ifneq ($(RTCONFIG_ADBLOCK),y)
 endif
 
 ifeq ($(or $(RTMIR3G),$(RTMIR3P),$(RTMIR4A),$(RTRM2100),$(RTR2100)),y)
+	rm -rf $(INSTALLDIR)/www/Advanced_WMode_Content.asp
 	rm -rf $(INSTALLDIR)/www/AiProtection_HomeSecurity.asp
 	rm -rf $(INSTALLDIR)/www/AiProtection_Group.asp
 	rm -rf $(INSTALLDIR)/www/AiProtection_HomeProtection.asp

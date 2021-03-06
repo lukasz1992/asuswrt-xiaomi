@@ -169,7 +169,6 @@ define(function(){
 				tab: [
 					{url: "Advanced_Wireless_Content.asp", tabName: "<#menu5_1_1#>"},
 					{url: "Advanced_WWPS_Content.asp", tabName: "<#menu5_1_2#>"},
-					{url: "Advanced_WMode_Content.asp", tabName: "WDS"},
 					{url: "Advanced_ACL_Content.asp", tabName: "<#menu5_1_4#>"},
 					{url: "Advanced_WSecurity_Content.asp", tabName: "<#menu5_1_5#>"},
 					{url: "Advanced_WAdvanced_Content.asp", tabName: "<#menu5_1_6#>"},
