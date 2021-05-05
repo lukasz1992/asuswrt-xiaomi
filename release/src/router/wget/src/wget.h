@@ -409,4 +409,7 @@ void exit_wget(int status);
 #  define fopen_wgetrc(fp, mode) fopen(fp, mode)
 #endif /* FUZZING && TESTING */
 
+#undef HAVE_ICONV
+#undef HAVE_ICONV_H
+
 #endif /* WGET_H */
