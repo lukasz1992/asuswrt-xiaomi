@@ -4972,7 +4972,7 @@ int mtk_nand_probe()
 //+++++  asus add
     MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
 
-    for(i = 0; i < TRX_FW_NUM; i++) {
+    for(i = 0; i < 2; i++) {
     	int len = 0, shift = 0, trx_firmware_size = 0;
 
 	loff_t offs;
@@ -4990,15 +4990,8 @@ int mtk_nand_probe()
 		uint8_t p[4];
 	} u;
     
-	shift = i * 2;	/* for partition index shift */
-
-        if (i)
-	    trx_firmware_size = TRX_FIRMWARE_SIZE * i;
-
-        offs = LARGE_MTD_BOOT_PART_SIZE + LARGE_MTD_CONFIG_PART_SIZE + (LARGE_MTD_FACTORY_PART_SIZE*2) + trx_firmware_size;
 // Xiaomi
-        offs = 0x600000;
-// Xiaomi
+        offs = 0x600000 - 0x400000 * i;
 
         len =  ranand_read((u_char *)(&hdr), offs, sizeof(hdr));
    
@@ -5039,6 +5032,7 @@ int mtk_nand_probe()
             MSG(INIT, "[mtk_nand] Line = %d!\n", __LINE__);
             MSG(INIT, "partition %d: %x %x\n", 4 + shift, (unsigned int)g_pasStatic_Partition[4 + shift].offset, (unsigned int)g_pasStatic_Partition[4 + shift].size);
             MSG(INIT, "partition %d: %x %x\n", 5 + shift, (unsigned int)g_pasStatic_Partition[5 + shift].offset, (unsigned int)g_pasStatic_Partition[5 + shift].size);
+            i = 1;
         }
         MSG(INIT, "[mtk_nand] end find root file system!\n");
     }
