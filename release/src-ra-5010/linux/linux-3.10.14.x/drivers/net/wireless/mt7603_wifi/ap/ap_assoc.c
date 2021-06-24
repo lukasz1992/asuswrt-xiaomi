@@ -360,7 +360,7 @@ static USHORT update_associated_mac_entry(
 			}
 
 
-DBGPRINT(RT_DEBUG_OFF, ("%s(): Peer's PhyCap=>Mode:%s, BW:%s\n", 
+DBGPRINT(RT_DEBUG_INFO, ("%s(): Peer's PhyCap=>Mode:%s, BW:%s\n",
 				__FUNCTION__,
 				get_phymode_str(pEntry->MaxHTPhyMode.field.MODE),
 				get_bw_str(pEntry->MaxHTPhyMode.field.BW)));
@@ -3036,6 +3036,7 @@ VOID APPeerDisassocReqAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 	UINT16 SeqNum;		
 	MAC_TABLE_ENTRY *pEntry;
 	struct wifi_dev *wdev;
+	STA_TR_ENTRY *tr_entry;
 
 	DBGPRINT(RT_DEBUG_TRACE, ("ASSOC - 1 receive DIS-ASSOC request \n"));
 	if (! PeerDisassocReqSanity(pAd, Elem->Msg, Elem->MsgLen, Addr2, &SeqNum, &Reason))
@@ -3095,7 +3096,17 @@ VOID APPeerDisassocReqAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 				pEntry->Addr,
 				REASON_DEAUTH_STA_LEAVING);
 #endif
-
+		/*when received peer disassoc req. AP need firstly stop sw enq & deq*/
+		if ((pEntry->wcid < MAX_LEN_OF_TR_TABLE) && (pEntry->wcid != MCAST_WCID)) {
+			tr_entry = &pAd->MacTab.tr_entry[pEntry->wcid];
+			if (tr_entry != NULL) {
+				tr_entry->enq_cap = FALSE;
+				tr_entry->deq_cap = FALSE;
+				DBGPRINT(RT_DEBUG_ERROR,
+					("%s:(wcid=%d), Stop SW enq and deq to solve KR00K\n",
+				__FUNCTION__, pEntry->wcid));
+			}
+		}
 		MacTableDeleteEntry(pAd, pEntry->wcid, Addr2);
 
 #ifdef MAC_REPEATER_SUPPORT
