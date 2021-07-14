@@ -229,6 +229,8 @@ function open_AiMesh_node_fw_upgrade() {
 <input type="hidden" name="action_wait" value="">
 <input type="hidden" name="preferred_lang" id="preferred_lang" value="<% nvram_get("preferred_lang"); %>">
 <input type="hidden" name="firmver" value="<% nvram_get("firmver"); %>">
+<input type="hidden" name="update" disabled>
+<input type="hidden" name="upload" disabled>
 <div class='AiMesh_fw_loading' style='width:80%;height:90%;'>
 	<div class="icon_logo">
 	</div>

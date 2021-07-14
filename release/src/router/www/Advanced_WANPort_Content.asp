@@ -238,7 +238,7 @@ function form_show(v){
 		appendLANoption1(document.form.wans_primary);
 		appendLANoption2(document.form.wans_second);
 
-		var replace_html = '<input type="text" name="wandog_interval" class="input_3_table" maxlength="1" value="<% nvram_get("wandog_interval"); %>" onblur="update_consume_bytes();" onKeyPress="return validator.isNumber(this, event);" placeholder="5" autocorrect="off" autocapitalize="off">';
+		var replace_html = '<input type="text" name="wandog_interval" class="input_3_table" maxlength="2" value="<% nvram_get("wandog_interval"); %>" onblur="update_consume_bytes();" onKeyPress="return validator.isNumber(this, event);" placeholder="5" autocorrect="off" autocapitalize="off">';
 		var new_html_str = document.getElementById("retry_intervale_setting").innerHTML.replace("$INPUT_INTERVAL", replace_html);
 		document.getElementById("retry_intervale_setting").innerHTML = new_html_str;
 
@@ -368,8 +368,9 @@ function applyRule(){
 			else
 				document.form.dns_probe.value = "0";
 
-			if(!validator.range(document.form.wandog_interval, 1, 9))
+			if(!validator.range(document.form.wandog_interval, 1, 99))
 				return false;
+
 		}
 	}
 	else{

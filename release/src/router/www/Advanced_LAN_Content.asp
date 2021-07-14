@@ -52,12 +52,21 @@ function initial(){
 		display_lan_dns(<% nvram_get("lan_dnsenable_x"); %>);
 		change_ip_setting('<% nvram_get("lan_proto"); %>');
 	}	
+
+	if(redirect_dname_support)
+		document.getElementById("redirect_dname_tr").style.display = "";
 }
 
 function applyRule(){
 	if(validForm()){
 		if(based_modelid == "MAP-AC1300" || based_modelid == "MAP-AC2200" || based_modelid == "VZW-AC1300" || based_modelid == "MAP-AC1750")
 			alert("By applying new LAN settings, please reboot all Lyras connected to main Lyra manually.");
+
+		if(document.form.redirect_dname.value != "<% nvram_get("redirect_dname"); %>"){
+			document.form.action_wait.value = "<% get_default_reboot_time(); %>";
+			document.form.action_script.value = "reboot";
+		}
+
 		showLoading();
 		document.form.submit();
 	}
@@ -431,6 +440,13 @@ function check_vpn(){		//true: lAN ip & VPN client ip conflict
 				<input type="text" maxlength="15" class="input_15_table" name="lan_dns2_x" value="<% nvram_get("lan_dns2_x"); %>" onkeypress="return validator.isIPAddr(this, event)" autocorrect="off" autocapitalize="off" >
 			</td>
       </tr>  
+      <tr id="redirect_dname_tr" style="display:none;">
+      <th>Redirect DNS</th>
+      <td>
+				<input type="radio" name="redirect_dname" value="1" <% nvram_match("redirect_dname", "1", "checked"); %>><#checkbox_Yes#>
+				<input type="radio" name="redirect_dname" value="0" <% nvram_match("redirect_dname", "0", "checked"); %>><#checkbox_No#>
+			</td>
+      </tr>
 
 		</table>	
 		

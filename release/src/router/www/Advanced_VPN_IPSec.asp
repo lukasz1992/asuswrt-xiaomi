@@ -307,10 +307,10 @@ function showipsec_clientlist() {
 				if(j == 0) {
 					if(ipsec_client_list_col[0].length > 28) {
 						ipsec_user_name = ipsec_client_list_col[0].substring(0, 26) + "...";
-						code +='<td width="45%" title="' + ipsec_client_list_col[0] + '">'+ ipsec_user_name +'</td>';
+						code +='<td width="45%" title="' + htmlEnDeCode.htmlEncode(ipsec_client_list_col[0]) + '">'+ htmlEnDeCode.htmlEncode(ipsec_user_name) +'</td>';
 					}
 					else
-						code +='<td width="45%" title="' + ipsec_client_list_col[0] + '">' + ipsec_client_list_col[0] + '</td>';
+						code +='<td width="45%" title="' + htmlEnDeCode.htmlEncode(ipsec_client_list_col[0]) + '">' + htmlEnDeCode.htmlEncode(ipsec_client_list_col[0]) + '</td>';
 				}
 				else if(j == 1) {
 					if(ipsec_client_list_col[1].length > 28) {

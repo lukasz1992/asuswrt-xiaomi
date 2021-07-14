@@ -70,7 +70,7 @@ function initial(){
 	showbootTime();
 	showDST();
 	document.getElementById('textarea').scrollTop = 9999999;//make Scroll_y bottom
-	setTimeout("get_log_data();", 5000);
+	setTimeout("get_log_data();", 100);
 }
 
 function applySettings(){
@@ -89,7 +89,7 @@ function get_log_data(){
     	success: function(response){
     		h = $("#textarea").scrollTop();
 			if(!(height > 0 && h < height)){
-				document.getElementById("textarea").innerHTML = logString;
+				document.getElementById("textarea").innerHTML = htmlEnDeCode.htmlEncode(logString);
 				$("#textarea").animate({ scrollTop: 9999999 }, "slow");
 				setTimeout('height = $("#textarea").scrollTop();', 500);
 			}
@@ -165,7 +165,7 @@ function get_log_data(){
 										</tr>
 									</table>
 									<div style="margin-top:8px">
-										<textarea cols="63" rows="27" wrap="off" readonly="readonly" id="textarea" class="textarea_ssh_table" style="width:99%; font-family:'Courier New', Courier, mono; font-size:11px;"><% nvram_dump("syslog.log",""); %></textarea>
+										<textarea cols="63" rows="27" wrap="off" readonly="readonly" id="textarea" class="textarea_ssh_table" style="width:99%; font-family:'Courier New', Courier, mono; font-size:11px;"></textarea>
 									</div>
 									<div>
 									<table class="apply_gen">

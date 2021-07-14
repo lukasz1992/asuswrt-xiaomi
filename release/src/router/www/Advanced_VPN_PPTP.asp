@@ -521,7 +521,7 @@ function del_Row(rowdata){
 			else
 				pptpd_clientlist_value += ">";
 				
-			pptpd_clientlist_value += document.getElementById("pptpd_clientlist_table").rows[k].cells[j].innerHTML;
+			pptpd_clientlist_value += document.getElementById("pptpd_clientlist_table").rows[k].cells[j].title;
 		}
 	}
 
@@ -564,9 +564,9 @@ function showpptpd_clientlist(){
 					if(pptpd_clientlist_col[0].length >28){
 						overlib_str0[i] += pptpd_clientlist_col[0];
 						pptpd_clientlist_col[0]=pptpd_clientlist_col[0].substring(0, 26)+"...";
-						code +='<td width="30%" title="'+overlib_str0[i]+'">'+ pptpd_clientlist_col[0] +'</td>';
+						code +='<td width="30%" title="'+htmlEnDeCode.htmlEncode(overlib_str0[i])+'">'+ htmlEnDeCode.htmlEncode(pptpd_clientlist_col[0]) +'</td>';
 					}else
-						code +='<td width="30%" title="'+pptpd_clientlist_col[0]+'">'+ pptpd_clientlist_col[0] +'</td>';
+						code +='<td width="30%" title="'+htmlEnDeCode.htmlEncode(pptpd_clientlist_col[0])+'">'+ htmlEnDeCode.htmlEncode(pptpd_clientlist_col[0]) +'</td>';
 				}
 				else if(j == 1){
 					overlib_str1[i] += pptpd_clientlist_col[1];

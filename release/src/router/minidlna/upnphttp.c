@@ -811,6 +811,27 @@ ProcessHTTPPOST_upnphttp(struct upnphttp * h)
 }
 
 static int
+is_vaild_ip(struct upnphttp *h) {
+	int i = 0, ret = 0;
+	const char *p;
+	char addrstr[16];
+	unsigned char ip[4];
+
+	memset(addrstr, 0, sizeof(addrstr));
+	p = h->req_Callback;
+	p += 7;	/* http:// */
+	while(*p != '/' && *p != ':' && i < (sizeof(addrstr)-1) && i < h->req_CallbackLen-7)
+		addrstr[i++] = *(p++);
+	addrstr[i] = '\0';
+
+	ret = inet_aton(addrstr, (struct in_addr *)ip);
+
+	if(ret && ((ip[0] == 10) || (ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31) || (ip[0] == 192 && ip[1] == 168)))
+		return 1;// intranet ip
+
+	return 0;
+}
+static int
 check_event(struct upnphttp *h)
 {
 	enum event_type type;
@@ -824,12 +845,18 @@ check_event(struct upnphttp *h)
 			type = E_INVALID;
 		}
 		else if (strncmp(h->req_Callback, "http://", 7) != 0 ||
-		         strncmp(h->req_NT, "upnp:event", h->req_NTLen) != 0)
+		         strncmp(h->req_NT, "upnp:event", h->req_NTLen) != 0 || h->req_CallbackLen > 256)
 		{
 			/* Missing or invalid CALLBACK : 412 Precondition Failed.
 			 * If CALLBACK header is missing or does not contain a valid HTTP URL,
 			 * the publisher must respond with HTTP error 412 Precondition Failed*/
 			BuildResp2_upnphttp(h, 412, "Precondition Failed", 0, 0);
+			type = E_INVALID;
+		}
+		else if(!is_vaild_ip(h))
+		{
+			BuildResp2_upnphttp(h, 400, "Bad Request",
+							"<html><body>Bad request</body></html>", 37);
 			type = E_INVALID;
 		}
 		else
@@ -856,70 +883,6 @@ check_event(struct upnphttp *h)
 	return type;
 }
 
-/**
- * returns 0 if the callback header value is not valid
- * 1 if it is valid.
- */
-static int
-checkCallbackURL(struct upnphttp * h)
-{
-	char addrstr[48];
-	int ipv6;
-	const char * p;
-	int i;
-
-	if(!h->req_Callback || h->req_CallbackLen < 8)
-		return 0;
-	if(memcmp(h->req_Callback, "http://", 7) != 0)
-		return 0;
-	ipv6 = 0;
-	i = 0;
-	p = h->req_Callback + 7;
-	if(*p == '[') {
-		p++;
-		ipv6 = 1;
-		while(*p != ']' && i < (sizeof(addrstr)-1)
-		      && p < (h->req_Callback + h->req_CallbackLen))
-			addrstr[i++] = *(p++);
-	} else {
-		while(*p != '/' && *p != ':' && i < (sizeof(addrstr)-1)
-		      && p < (h->req_Callback + h->req_CallbackLen))
-			addrstr[i++] = *(p++);
-	}
-	addrstr[i] = '\0';
-	if(ipv6) {
-		struct in6_addr addr;
-		if(inet_pton(AF_INET6, addrstr, &addr) <= 0)
-			return 0;
-#ifdef ENABLE_IPV6
-		if(!h->ipv6
-		  || (0!=memcmp(&addr, &(h->clientaddr_v6), sizeof(struct in6_addr))))
-			return 0;
-#else
-		return 0;
-#endif
-	} else {
-		struct in_addr addr;
-		if(inet_pton(AF_INET, addrstr, &addr) <= 0)
-			return 0;
-#ifdef ENABLE_IPV6
-		if(h->ipv6) {
-			if(!IN6_IS_ADDR_V4MAPPED(&(h->clientaddr_v6)))
-				return 0;
-			if(0!=memcmp(&addr, ((const char *)&(h->clientaddr_v6) + 12), 4))
-				return 0;
-		} else {
-			if(0!=memcmp(&addr, &(h->clientaddr), sizeof(struct in_addr)))
-				return 0;
-		}
-#else
-		if(0!=memcmp(&addr, &(h->clientaddr), sizeof(struct in_addr)))
-			return 0;
-#endif
-	}
-	return 1;
-}
-
 static void
 ProcessHTTPSubscribe_upnphttp(struct upnphttp * h, const char * path)
 {
@@ -937,25 +900,17 @@ ProcessHTTPSubscribe_upnphttp(struct upnphttp * h, const char * path)
 		 * - respond HTTP/x.x 200 OK 
 		 * - Send the initial event message */
 		/* Server:, SID:; Timeout: Second-(xx|infinite) */
-		/* Check that the callback URL is on the same IP as
-		 * the request, and not on the internet, nor on ourself (DOS attack ?) */
-		if(checkCallbackURL(h)) {
-			sid = upnpevents_addSubscriber(path, h->req_Callback,
-				                       h->req_CallbackLen, h->req_Timeout);
-			h->respflags = FLAG_TIMEOUT;
-			if (sid)
-			{
-				DPRINTF(E_DEBUG, L_HTTP, "generated sid=%s\n", sid);
-				h->respflags |= FLAG_SID;
-				h->req_SID = sid;
-				h->req_SIDLen = strlen(sid);
-			}
-			BuildResp_upnphttp(h, 0, 0);
-		} else {
-			DPRINTF(E_WARN, L_HTTP, "Invalid Callback in SUBSCRIBE %.*s",
-	       		       h->req_CallbackLen, h->req_Callback);
-			BuildResp2_upnphttp(h, 412, "Precondition Failed", 0, 0);
+		sid = upnpevents_addSubscriber(path, h->req_Callback,
+		                               h->req_CallbackLen, h->req_Timeout);
+		h->respflags = FLAG_TIMEOUT;
+		if (sid)
+		{
+			DPRINTF(E_DEBUG, L_HTTP, "generated sid=%s\n", sid);
+			h->respflags |= FLAG_SID;
+			h->req_SID = sid;
+			h->req_SIDLen = strlen(sid);
 		}
+		BuildResp_upnphttp(h, 0, 0);
 	}
 	else if (type == E_RENEW)
 	{
