@@ -89,16 +89,17 @@ config MT7603E_DFS_SUPPORT
 config MT7603E_DOT11R_FT_SUPPORT
 	bool "802.11r Fast BSS Transition"
 	depends on MT7603E_RLT_AP_SUPPORT
+	default y
 
 config MT7603E_DOT11K_RRM_SUPPORT
 	bool "802.11k Radio Resource Management"
 	depends on MT7603E_RLT_AP_SUPPORT
-	default n
+	default y
 
 config MT7603E_WNM_SUPPORT
 	bool "802.11v Wireless Network Management Support"
 	depends on MT7603E_RLT_AP_SUPPORT
-	default n
+	default y
 
 config MT7603E_INTERWORKING
 	bool "802.11u Interworking/Gas Support"

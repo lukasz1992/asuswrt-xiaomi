@@ -106,11 +106,12 @@ config CON_WPS_SUPPORT
 config DOT11R_FT_SUPPORT
        bool "802.11r Fast BSS Transition"
        depends on RLT_AP_SUPPORT
+       default y
 
 config DOT11K_RRM_SUPPORT
        bool "802.11k Radio Resource Management"
        depends on RLT_AP_SUPPORT
-       default n
+       default y
 
 #config RT2860V2_SNMP
 #	bool "Net-SNMP Support"
