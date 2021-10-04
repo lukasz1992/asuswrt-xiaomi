@@ -95,8 +95,10 @@ static int get_mtd_info(const char *mtd_name, struct mtd_info *mi)
 		if ((r = open(mtd_dev, O_RDONLY)) < 0)
 			continue;
 
-		if (ioctl(r, MEMGETINFO, &m) < 0)
+		if (ioctl(r, MEMGETINFO, &m) < 0) {
+			close(r);
 			continue;
+		}
 
 		sprintf(mi->dev, "mtd%d", i);
 		mi->size = sz;
@@ -105,6 +107,7 @@ static int get_mtd_info(const char *mtd_name, struct mtd_info *mi)
 		mi->type = m.type;
 		mi->writesize = m.writesize;
 		ret = i;
+		close(r);
 	}
 	fclose(fp);
 
@@ -665,6 +668,7 @@ int MTDPartitionWrite(const char *mtd_name, const unsigned char *buf, int offset
 		MTDPartitionRead(mtd_name, tmp, offset, count);
 		free(tmp);
 	}
+	close(fd);
 
 	return ret;
 }

@@ -846,7 +846,7 @@ wl_format_ssid(char* ssid_buf, uint8* ssid, int ssid_len)
 		} else if (isprint((uchar)c)) {
 			*p++ = (char)c;
 		} else {
-			p += sprintf(p, "\\x%02X", c);
+			p += snprintf(p, ssid_len, "\\x%02X", c);
 		}
 	}
 	*p = '\0';
@@ -996,25 +996,25 @@ dump_rtk_bss_info(int band,int eid, webs_t wp, int argc, char_t **argv, bss_info
 	switch(bss->state) 
 		{
 		case STATE_DISABLED:
-			strcpy(statebuf,"Disabled");
+			strlcpy(statebuf,"Disabled", sizeof(statebuf));
 			break;
 		case STATE_IDLE:
-			strcpy(statebuf,"Idle");
+			strlcpy(statebuf,"Idle", sizeof(statebuf));
 			break;
 		case STATE_STARTED:
-			strcpy(statebuf,"Started");
+			strlcpy(statebuf,"Started", sizeof(statebuf));
 			break;
 		case STATE_CONNECTED:
-			strcpy(statebuf,"Connected");
+			strlcpy(statebuf,"Connected", sizeof(statebuf));
 			break;
 		case STATE_WAITFORKEY:
-			strcpy(statebuf,"Waiting for keys");
+			strlcpy(statebuf,"Waiting for keys", sizeof(statebuf));
 			break;
 		case STATE_SCANNING:
-			strcpy(statebuf,"Scanning");
+			strlcpy(statebuf,"Scanning", sizeof(statebuf));
 			break;
 		default:
-			strcpy(statebuf,"unknown");
+			strlcpy(statebuf,"unknown", sizeof(statebuf));
 		}
 	retval += websWrite(wp, "STATE: \"%s\"\t", statebuf);
 	retval += websWrite(wp, "Channel: \"%d\"\t", bss->channel);
@@ -1355,7 +1355,7 @@ def RTCONFIG_WIRELESSREPEATER
 #endif
 
 
-	strcpy((char*)staInfoList,"rtk_sta_info");
+	strlcpy((char*)staInfoList,"rtk_sta_info", MAX_STA_NUM+1);
 	if (wl_ioctl(name, WLC_GET_VAR, staInfoList, sizeof(staInfoList)))
 			goto exit;
 
@@ -1375,17 +1375,17 @@ def RTCONFIG_WIRELESSREPEATER
 		if (staInfoList[i].aid && (staInfoList[i].flag & STA_INFO_FLAG_ASOC))
 		{
 			if(staInfoList[i].network& BAND_5G_11AC)
-				sprintf(mode_buf, "%s", (" 11ac"));
+				snprintf(mode_buf, sizeof(mode_buf), "%s", (" 11ac"));
 			else if(staInfoList[i].network & BAND_11N)
-				sprintf(mode_buf, "%s", (" 11n"));
+				snprintf(mode_buf, sizeof(mode_buf), "%s", (" 11n"));
 			else if (staInfoList[i].network & BAND_11G)
-				sprintf(mode_buf,"%s",  (" 11g"));	
+				snprintf(mode_buf, sizeof(mode_buf),"%s",  (" 11g"));
 			else if (staInfoList[i].network & BAND_11B)
-				sprintf(mode_buf, "%s", (" 11b"));
+				snprintf(mode_buf, sizeof(mode_buf), "%s", (" 11b"));
 			else if (staInfoList[i].network& BAND_11A)
-				sprintf(mode_buf, "%s", (" 11a"));	
+				snprintf(mode_buf, sizeof(mode_buf), "%s", (" 11a"));
 			else
-				sprintf(mode_buf, "%s", (" ---"));
+				snprintf(mode_buf, sizeof(mode_buf), "%s", (" ---"));
 			hr = staInfoList[i].link_time / 3600;
 			min = (staInfoList[i].link_time % 3600) / 60;
 			sec = staInfoList[i].link_time - hr * 3600 - min * 60;
@@ -1407,13 +1407,13 @@ def RTCONFIG_WIRELESSREPEATER
 			&& (unit == nvram_get_int("wlc_band")) && (i == 1))
 			break;
 #endif
-		sprintf(prefix, "wl%d.%d_", unit, i);
+		snprintf(prefix, sizeof(prefix), "wl%d.%d_", unit, i);
 		if (nvram_match(strcat_r(prefix, "bss_enabled", tmp), "1"))
 		{
-			sprintf(name_vif, "wl%d.%d", unit, i);
+			snprintf(name_vif, sizeof(name_vif), "wl%d.%d", unit, i);
 
 
-			strcpy((char*)staInfoList,"rtk_sta_info");
+			strlcpy((char*)staInfoList,"rtk_sta_info", MAX_STA_NUM+1);
 			if (wl_ioctl(name_vif, WLC_GET_VAR, staInfoList, sizeof(staInfoList)))
 					goto exit;
 
@@ -1423,17 +1423,17 @@ def RTCONFIG_WIRELESSREPEATER
 				if (staInfoList[ii].aid && (staInfoList[ii].flag & STA_INFO_FLAG_ASOC))
 				{
 					if(staInfoList[ii].network& BAND_5G_11AC)
-						sprintf(mode_buf, "%s", (" 11ac"));
+						snprintf(mode_buf, sizeof(mode_buf), "%s", (" 11ac"));
 					else if(staInfoList[ii].network & BAND_11N)
-						sprintf(mode_buf, "%s", (" 11n"));
+						snprintf(mode_buf, sizeof(mode_buf), "%s", (" 11n"));
 					else if (staInfoList[ii].network & BAND_11G)
-						sprintf(mode_buf,"%s",  (" 11g"));	
+						snprintf(mode_buf, sizeof(mode_buf),"%s",  (" 11g"));
 					else if (staInfoList[ii].network & BAND_11B)
-						sprintf(mode_buf, "%s", (" 11b"));
+						snprintf(mode_buf, sizeof(mode_buf), "%s", (" 11b"));
 					else if (staInfoList[ii].network& BAND_11A)
-						sprintf(mode_buf, "%s", (" 11a"));	
+						snprintf(mode_buf, sizeof(mode_buf), "%s", (" 11a"));
 					else
-						sprintf(mode_buf, "%s", (" ---"));
+						snprintf(mode_buf, sizeof(mode_buf), "%s", (" ---"));
 					hr = staInfoList[ii].link_time / 3600;
 					min = (staInfoList[ii].link_time % 3600) / 60;
 					sec = staInfoList[ii].link_time - hr * 3600 - min * 60;
@@ -1466,7 +1466,7 @@ ej_wl_status_2g(int eid, webs_t wp, int argc, char_t **argv)
 	char *temp;
 
 	for (ii = 0; ii < DEV_NUMIFS; ii++) {
-		sprintf(nv_param, "wl%d_unit", ii);
+		snprintf(nv_param, sizeof(nv_param), "wl%d_unit", ii);
 		temp = nvram_get(nv_param);
 
 		if (temp && strlen(temp) > 0)
@@ -1554,13 +1554,13 @@ static int ej_wl_channel_list(int eid, webs_t wp, int argc, char_t **argv, int u
 	int i, retval = 0;
 	int channels[MAXCHANNEL+1];
 	wl_uint32_list_t *list = (wl_uint32_list_t *) channels;
-	char tmp[256], tmp1[256], tmp2[256], prefix[] = "wlXXXXXXXXXX_";
+	char tmp[256], tmp1[256], tmp1_t[256], tmp2[256], tmp2_t[256], prefix[] = "wlXXXXXXXXXX_";
 	char *name;
 	uint ch;
 	char word[256], *next;
 	int unit_max = 0, count = 0;
 
-	sprintf(tmp1, "[\"%d\"]", 0);
+	snprintf(tmp1, sizeof(tmp1), "[\"%d\"]", 0);
 
 	foreach (word, nvram_safe_get("wl_ifnames"), next)
 		unit_max++;
@@ -1583,15 +1583,17 @@ static int ej_wl_channel_list(int eid, webs_t wp, int argc, char_t **argv, int u
 		foreach (word, nvram_safe_get(strcat_r(prefix, "chlist", tmp)), next) {
 			if (i == 0)
 			{
-				sprintf(tmp1, "[\"%s\",", word);
+				snprintf(tmp1, sizeof(tmp1), "[\"%s\",", word);
 			}
 			else if (i == (count - 1))
 			{
-				sprintf(tmp1,  "%s \"%s\"]", tmp1, word);
+				snprintf(tmp1_t, sizeof(tmp1_t),  "%s \"%s\"]", tmp1, word);
+				strlcpy(tmp1, tmp1_t, sizeof(tmp1));
 			}
 			else
 			{
-				sprintf(tmp1,  "%s \"%s\",", tmp1, word);
+				snprintf(tmp1_t, sizeof(tmp1_t),  "%s \"%s\",", tmp1, word);
+				strlcpy(tmp1, tmp1_t, sizeof(tmp1));
 			}
 
 			i++;
@@ -1604,13 +1606,13 @@ static int ej_wl_channel_list(int eid, webs_t wp, int argc, char_t **argv, int u
 	if (wl_ioctl(name, WLC_GET_VALID_CHANNELS , channels, sizeof(channels)) < 0)
 	{
 		dbg("error doing WLC_GET_VALID_CHANNELS\n");
-		sprintf(tmp1, "[\"%d\"]", 0);
+		snprintf(tmp1, sizeof(tmp1), "[\"%d\"]", 0);
 		goto ERROR;
 	}
 
 	if (dtoh32(list->count) == 0)
 	{
-		sprintf(tmp1, "[\"%d\"]", 0);
+		snprintf(tmp1, sizeof(tmp1), "[\"%d\"]", 0);
 		goto ERROR;
 	}
 
@@ -1619,18 +1621,22 @@ static int ej_wl_channel_list(int eid, webs_t wp, int argc, char_t **argv, int u
 
 		if (i == 0)
 		{
-			sprintf(tmp1, "[\"%d\",", ch);
-			sprintf(tmp2, "%d", ch);
+			snprintf(tmp1, sizeof(tmp1), "[\"%d\",", ch);
+			snprintf(tmp2, sizeof(tmp2), "%d", ch);
 		}
 		else if (i == (dtoh32(list->count) - 1))
 		{
-			sprintf(tmp1,  "%s \"%d\"]", tmp1, ch);
-			sprintf(tmp2,  "%s %d", tmp2, ch);
+			snprintf(tmp1_t, sizeof(tmp1_t),  "%s \"%d\"]", tmp1, ch);
+			strlcpy(tmp1, tmp1_t, sizeof(tmp1));
+			snprintf(tmp2_t, sizeof(tmp2_t),  "%s %d", tmp2, ch);
+			strlcpy(tmp2, tmp2_t, sizeof(tmp2));
 		}
 		else
 		{
-			sprintf(tmp1,  "%s \"%d\",", tmp1, ch);
-			sprintf(tmp2,  "%s %d", tmp2, ch);
+			snprintf(tmp1_t, sizeof(tmp1_t),  "%s \"%d\",", tmp1, ch);
+			strlcpy(tmp1, tmp1_t, sizeof(tmp1));
+			snprintf(tmp2_t, sizeof(tmp2_t),  "%s %d", tmp2, ch);
+			strlcpy(tmp2, tmp2_t, sizeof(tmp2));
 		}
 
 		if (strlen(tmp2))
@@ -1695,7 +1701,7 @@ static int ej_wl_rssi(int eid, webs_t wp, int argc, char_t **argv, int unit)
  
  	memset(mac_list, 0, mac_list_size);
 	/* query wl for authenticated sta list */
-	strcpy((char*) mac_list, "authe_sta_list");
+	strlcpy((char*) mac_list, "authe_sta_list", mac_list_size);
 	if (wl_ioctl(name, WLC_GET_VAR, mac_list, mac_list_size))
 		goto ERROR;
 
@@ -1711,7 +1717,7 @@ static int ej_wl_rssi(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	if (scb_val.val-100 > rssi)
 		rssi = scb_val.val-100;
 
-	sprintf(rssi_buf, "%d dBm", rssi);
+	snprintf(rssi_buf, sizeof(rssi_buf), "%d dBm", rssi);
 ERROR:
 	if (mac_list)
 		free(mac_list);
@@ -1752,7 +1758,7 @@ static int ej_wl_rate(int eid, webs_t wp, int argc, char_t **argv, int unit)
 
 	from_app = check_user_agent(user_agent);
 
-	sprintf(rate_buf, "0 Mbps");
+	snprintf(rate_buf, sizeof(rate_buf), "0 Mbps");
 	//cprintf("%s:%d \n",__FUNCTION__,__LINE__);
 
 
@@ -1794,12 +1800,12 @@ static int ej_wl_rate(int eid, webs_t wp, int argc, char_t **argv, int unit)
 		//cprintf("%s:%d \n",__FUNCTION__,__LINE__);
 		rate = dtoh32(rate);
 		if ((rate == -1) || (rate == 0))
-			sprintf(rate_buf, "auto");
+			snprintf(rate_buf, sizeof(rate_buf), "auto");
 		else {
 			if(rate % 10)
-				sprintf(rate_buf, "%d.%d Mbps", (rate / 10), (rate % 10));
+				snprintf(rate_buf, sizeof(rate_buf), "%d.%d Mbps", (rate / 10), (rate % 10));
 			else
-				sprintf(rate_buf, "%d Mbps", (rate / 10));
+				snprintf(rate_buf, sizeof(rate_buf), "%d Mbps", (rate / 10));
 		}
 		
 	}
@@ -1978,33 +1984,33 @@ wps_is_oob()
 	return 1;
 }
 
-void getWPSAuthMode(int unit, char *ret_str)
+void getWPSAuthMode(int unit, char *ret_str, int len)
 {
 	char tmp[128], prefix[]="wlXXXXXXX_";
 
 	snprintf(prefix, sizeof(prefix), "wl%d_", unit);
 
 	if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "shared"))
-		strcpy(ret_str, "Shared Key");
+		strlcpy(ret_str, "Shared Key", len);
 	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk"))
-		strcpy(ret_str, "WPA-Personal");
+		strlcpy(ret_str, "WPA-Personal", len);
 	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2"))
-		strcpy(ret_str, "WPA2-Personal");
+		strlcpy(ret_str, "WPA2-Personal", len);
 	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "pskpsk2"))
-		strcpy(ret_str, "WPA-Auto-Personal");
+		strlcpy(ret_str, "WPA-Auto-Personal", len);
 	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "wpa"))
-		strcpy(ret_str, "WPA-Enterprise");
+		strlcpy(ret_str, "WPA-Enterprise", len);
 	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "wpa2"))
-		strcpy(ret_str, "WPA2-Enterprise");
+		strlcpy(ret_str, "WPA2-Enterprise", len);
 	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "wpawpa2"))
-		strcpy(ret_str, "WPA-Auto-Enterprise");
+		strlcpy(ret_str, "WPA-Auto-Enterprise", len);
 	else if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "radius"))
-		strcpy(ret_str, "802.1X");
+		strlcpy(ret_str, "802.1X", len);
 	else
-		strcpy(ret_str, "Open System");
+		strlcpy(ret_str, "Open System", len);
 }
 
-void getWPSEncrypType(int unit, char *ret_str)
+void getWPSEncrypType(int unit, char *ret_str, int len)
 {
 	char tmp[128], prefix[]="wlXXXXXXX_";
 
@@ -2012,18 +2018,18 @@ void getWPSEncrypType(int unit, char *ret_str)
 
 	if (nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "open") &&
 		nvram_match(strcat_r(prefix, "wep_x", tmp), "0"))
-		strcpy(ret_str, "None");
+		strlcpy(ret_str, "None", len);
 	else if ((nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "open") && !nvram_match(strcat_r(prefix, "wep_x", tmp), "0")) ||
 		nvram_match("wl_auth_mode", "shared") ||
 		nvram_match("wl_auth_mode", "radius"))
-		strcpy(ret_str, "WEP");
+		strlcpy(ret_str, "WEP", len);
 
 	if (nvram_match(strcat_r(prefix, "crypto", tmp), "tkip"))
-		strcpy(ret_str, "TKIP");
+		strlcpy(ret_str, "TKIP", len);
 	else if (nvram_match(strcat_r(prefix, "crypto", tmp), "aes"))
-		strcpy(ret_str, "AES");
+		strlcpy(ret_str, "AES", len);
 	else if (nvram_match(strcat_r(prefix, "crypto", tmp), "tkip+aes"))
-		strcpy(ret_str, "TKIP+AES");
+		strlcpy(ret_str, "TKIP+AES", len);
 }
 
 int wl_wps_info(int eid, webs_t wp, int argc, char_t **argv, int unit)
@@ -2062,21 +2068,21 @@ int wl_wps_info(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	//3. WPSAuthMode
 	{
 		memset(tmpstr, 0, sizeof(tmpstr));
-		getWPSAuthMode(unit, tmpstr);
+		getWPSAuthMode(unit, tmpstr, sizeof(tmpstr));
 		retval += websWrite(wp, "<wps_info>%s</wps_info>\n", tmpstr);
 	}
 
 	//4. EncrypType
 	{
 		memset(tmpstr, 0, sizeof(tmpstr));
-		getWPSEncrypType(unit, tmpstr);
+		getWPSEncrypType(unit, tmpstr, sizeof(tmpstr));
 		retval += websWrite(wp, "<wps_info>%s</wps_info>\n", tmpstr);
 	}
 
 	//5. DefaultKeyIdx
 	{
 		memset(tmpstr, 0, sizeof(tmpstr));
-		sprintf(tmpstr, "%s", nvram_safe_get(strcat_r(prefix, "key", tmp)));
+		snprintf(tmpstr, sizeof(tmpstr), "%s", nvram_safe_get(strcat_r(prefix, "key", tmp)));
 		retval += websWrite(wp, "<wps_info>%s</wps_info>\n", tmpstr);
 	}
 
@@ -2096,7 +2102,7 @@ int wl_wps_info(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	//7. AP PIN Code
 	{
 		memset(tmpstr, 0, sizeof(tmpstr));
-		sprintf(tmpstr, "%s", nvram_safe_get("secret_code"));
+		snprintf(tmpstr, sizeof(tmpstr), "%s", nvram_safe_get("secret_code"));
 		retval += websWrite(wp, "<wps_info>%s</wps_info>\n", tmpstr);
 	}
 
@@ -2160,7 +2166,7 @@ ej_nat_table(int eid, webs_t wp, int argc, char_t **argv)
 	int needlen = 0, listlen, i
 	netconf_nat_t *nat_list = 0;
 	netconf_nat_t **plist, *cur;
-	char line[256], tstr[32];
+	char line[256], line_t[256], tstr[32];
 #endif
 	ret += websWrite(wp, "Destination     Proto.  Port Range  Redirect to\n");
 
@@ -2186,34 +2192,46 @@ ej_nat_table(int eid, webs_t wp, int argc, char_t **argv)
 				{
 					if (nat_list[i].match.dst.ipaddr.s_addr==0)
 					{
-						sprintf(line, "%-15s", "all");
+						snprintf(line, sizeof(line), "%-15s", "all");
 					}
 					else
 					{
-						sprintf(line, "%-15s", inet_ntoa(nat_list[i].match.dst.ipaddr));
+						snprintf(line, sizeof(line), "%-15s", inet_ntoa(nat_list[i].match.dst.ipaddr));
 					}
 
-
-					if (ntohs(nat_list[i].match.dst.ports[0])==0)
-						sprintf(line, "%s %-7s", line, "ALL");
-					else if (nat_list[i].match.ipproto==IPPROTO_TCP)
-						sprintf(line, "%s %-7s", line, "TCP");
-					else sprintf(line, "%s %-7s", line, "UDP");
+					if (ntohs(nat_list[i].match.dst.ports[0])==0){
+						snprintf(line_t, sizeof(line_t), "%s %-7s", line, "ALL");
+						strlcpy(line, line_t, sizeof(line));
+					}
+					else if (nat_list[i].match.ipproto==IPPROTO_TCP){
+						snprintf(line_t, sizeof(line_t), "%s %-7s", line, "TCP");
+						strlcpy(line, line_t, sizeof(line));
+					}
+					else{
+						snprintf(line_t, sizeof(line_t), "%s %-7s", line, "UDP");
+						strlcpy(line, line_t, sizeof(line));
+					}
 
 					if (nat_list[i].match.dst.ports[0] == nat_list[i].match.dst.ports[1])
 					{
-						if (ntohs(nat_list[i].match.dst.ports[0])==0)
-						sprintf(line, "%s %-11s", line, "ALL");
-						else
-						sprintf(line, "%s %-11d", line, ntohs(nat_list[i].match.dst.ports[0]));
+						if (ntohs(nat_list[i].match.dst.ports[0])==0){
+							snprintf(line_t, sizeof(line_t), "%s %-11s", line, "ALL");
+							strlcpy(line, line_t, sizeof(line));
+						}
+						else{
+							snprintf(line_t, sizeof(line_t), "%s %-11d", line, ntohs(nat_list[i].match.dst.ports[0]));
+							strlcpy(line, line_t, sizeof(line));
+						}
 					}
 					else 
 					{
-						sprintf(tstr, "%d:%d", ntohs(nat_list[i].match.dst.ports[0]),
+						snprintf(tstr, sizeof(tstr), "%d:%d", ntohs(nat_list[i].match.dst.ports[0]),
 						ntohs(nat_list[i].match.dst.ports[1]));
-						sprintf(line, "%s %-11s", line, tstr);
+						snprintf(line_t, sizeof(line_t), "%s %-11s", line, tstr);
+						strlcpy(line, line_t, sizeof(line));
 					}
-					sprintf(line, "%s %s\n", line, inet_ntoa(nat_list[i].ipaddr));
+					snprintf(line_t, sizeof(line_t), "%s %s\n", line, inet_ntoa(nat_list[i].ipaddr));
+					strlcpy(line, line_t, sizeof(line));
 					ret += websWrite(wp, line);
 				}
 				}
@@ -2700,7 +2718,7 @@ ej_SiteSurvey(int eid, webs_t wp, int argc, char_t **argv)
 	{
 		if ( !(!bssid[0] && !bssid[1] && !bssid[2] && !bssid[3] && !bssid[4] && !bssid[5]) )
 		{
-			sprintf(ure_mac, "%02X:%02X:%02X:%02X:%02X:%02X", (unsigned char)bssid[0],
+			snprintf(ure_mac, sizeof(ure_mac), "%02X:%02X:%02X:%02X:%02X:%02X", (unsigned char)bssid[0],
 									    (unsigned char)bssid[1],
 									    (unsigned char)bssid[2],
 									    (unsigned char)bssid[3],
@@ -2715,7 +2733,7 @@ ej_SiteSurvey(int eid, webs_t wp, int argc, char_t **argv)
 		authorized = malloc(maclist_size);
 
 		// query wl for authorized sta list
-		strcpy((char*)authorized, "autho_sta_list");
+		strlcpy((char*)authorized, "autho_sta_list", maclist_size);
 		if (!wl_ioctl(WIF, WLC_GET_VAR, authorized, maclist_size))
 		{
 			if (authorized->count > 0) wl_authorized = 1;
@@ -2931,7 +2949,7 @@ static int wl_sta_list(int eid, webs_t wp, int argc, char_t **argv, int unit) {
 	memset(authorized, 0, maclist_size);
 
 	/* query wl for authenticated sta list */
-	strcpy((char*)auth, "authe_sta_list");
+	strlcpy((char*)auth, "authe_sta_list", maclist_size);
 	if (wl_ioctl(name, WLC_GET_VAR, auth, maclist_size))
 		goto exit;
 
@@ -2941,7 +2959,7 @@ static int wl_sta_list(int eid, webs_t wp, int argc, char_t **argv, int unit) {
 		goto exit;
 
 	/* query wl for authorized sta list */
-	strcpy((char*)authorized, "autho_sta_list");
+	strlcpy((char*)authorized, "autho_sta_list", maclist_size);
 	if (wl_ioctl(name, WLC_GET_VAR, authorized, maclist_size))
 		goto exit;
 
@@ -3002,13 +3020,13 @@ static int wl_sta_list(int eid, webs_t wp, int argc, char_t **argv, int unit) {
 			&& (unit == nvram_get_int("wlc_band")) && (i == 1))
 			break;
 #endif
-		sprintf(prefix, "wl%d.%d_", unit, i);
+		snprintf(prefix, sizeof(prefix), "wl%d.%d_", unit, i);
 		if (nvram_match(strcat_r(prefix, "bss_enabled", tmp), "1"))
 		{
-			sprintf(name_vif, "wl%d.%d", unit, i);
+			snprintf(name_vif, sizeof(name_vif), "wl%d.%d", unit, i);
 
 			/* query wl for authenticated sta list */
-			strcpy((char*)auth, "authe_sta_list");
+			strlcpy((char*)auth, "authe_sta_list", maclist_size);
 			if (wl_ioctl(name_vif, WLC_GET_VAR, auth, maclist_size))
 				goto exit;
 
@@ -3018,7 +3036,7 @@ static int wl_sta_list(int eid, webs_t wp, int argc, char_t **argv, int unit) {
 				goto exit;
 
 			/* query wl for authorized sta list */
-			strcpy((char*)authorized, "autho_sta_list");
+			strlcpy((char*)authorized, "autho_sta_list", maclist_size);
 			if (wl_ioctl(name_vif, WLC_GET_VAR, authorized, maclist_size))
 				goto exit;
 
@@ -3143,7 +3161,7 @@ int ej_wl_auth_list(int eid, webs_t wp, int argc, char_t **argv) {
 		//memset(wme, 0, maclist_size);
 
 		/* query wl for authenticated sta list */
-		strcpy((char*)auth, "authe_sta_list");
+		strlcpy((char*)auth, "authe_sta_list", maclist_size);
 		if (wl_ioctl(name, WLC_GET_VAR, auth, maclist_size))
 			goto exit;
 
@@ -3153,12 +3171,12 @@ int ej_wl_auth_list(int eid, webs_t wp, int argc, char_t **argv) {
 			goto exit;
 
 		/* query wl for authorized sta list */
-		strcpy((char*)authorized, "autho_sta_list");
+		strlcpy((char*)authorized, "autho_sta_list", maclist_size);
 		if (wl_ioctl(name, WLC_GET_VAR, authorized, maclist_size))
 			goto exit;
 
 		/* query wl for WME sta list */
-		/*strcpy((char*)wme, "wme_sta_list");
+		/*strlcpy((char*)wme, "wme_sta_list", maclist_size);
 		if (wl_ioctl(name, WLC_GET_VAR, wme, maclist_size))
 			goto exit;*/
 
@@ -3191,13 +3209,13 @@ int ej_wl_auth_list(int eid, webs_t wp, int argc, char_t **argv) {
 				&& (unit == nvram_get_int("wlc_band")) && (i == 1))
 				break;
 #endif
-			sprintf(prefix, "wl%d.%d_", unit, i);
+			snprintf(prefix, sizeof(prefix), "wl%d.%d_", unit, i);
 			if (nvram_match(strcat_r(prefix, "bss_enabled", tmp), "1"))
 			{
-				sprintf(name_vif, "wl%d.%d", unit, i);
+				snprintf(name_vif, sizeof(name_vif), "wl%d.%d", unit, i);
 
 				/* query wl for authenticated sta list */
-				strcpy((char*)auth, "authe_sta_list");
+				strlcpy((char*)auth, "authe_sta_list", maclist_size);
 				if (wl_ioctl(name_vif, WLC_GET_VAR, auth, maclist_size))
 					goto exit;
 
@@ -3207,7 +3225,7 @@ int ej_wl_auth_list(int eid, webs_t wp, int argc, char_t **argv) {
 					goto exit;
 
 				/* query wl for authorized sta list */
-				strcpy((char*)authorized, "autho_sta_list");
+				strlcpy((char*)authorized, "autho_sta_list", maclist_size);
 				if (wl_ioctl(name_vif, WLC_GET_VAR, authorized, maclist_size))
 					goto exit;
 
@@ -3387,7 +3405,7 @@ wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	if (wl_get_scan_results(name) == NULL)
 		return 0;
 
-	sprintf(tmp, "%-4s%-33s%-18s\n", "Ch", "SSID", "BSSID");
+	snprintf(tmp, sizeof(tmp), "%-4s%-33s%-18s\n", "Ch", "SSID", "BSSID");
 	dbg("\n%s", tmp);	
 	if (apinfo_count)
 	{
@@ -3405,7 +3423,7 @@ wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 				(unsigned char)bssidp[3],
 				(unsigned char)bssidp[4],
 				(unsigned char)bssidp[5]);*/
-			strcpy(macstr,apinfos[i].BSSID);
+			strlcpy(macstr,apinfos[i].BSSID, sizeof(macstr));
 
 			dbg("%-4d%-33s%-18s\n",
 				apinfos[i].channel,
@@ -3480,7 +3498,7 @@ wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 		bi = (wl_bss_info_t*)((int8*)bi + bi->length);
 	}
 
-	sprintf(tmp, "%-4s%-33s%-18s\n", "Ch", "SSID", "BSSID");
+	snprintf(tmp, sizeof(tmp), "%-4s%-33s%-18s\n", "Ch", "SSID", "BSSID");
 	dbg("\n%s", tmp);
 	if (ap_count)
 	{
@@ -3491,7 +3509,7 @@ wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 			char_to_ascii(ssid_str, trim_r((char *)ap_list[i].ssid));
 
 			bssidp = (unsigned char *)&ap_list[i].BSSID;
-			sprintf(macstr, "%02X:%02X:%02X:%02X:%02X:%02X",
+			snprintf(macstr, sizeof(macstr), "%02X:%02X:%02X:%02X:%02X:%02X",
 				(unsigned char)bssidp[0],
 				(unsigned char)bssidp[1],
 				(unsigned char)bssidp[2],

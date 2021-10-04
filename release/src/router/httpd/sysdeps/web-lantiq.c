@@ -605,7 +605,7 @@ show_wliface_info(webs_t wp, int unit, char *ifname, char *op_mode)
 	ret += websWrite(wp, "=======================================================================================\n"); // separator
 	ret += websWrite(wp, "OP Mode		: %s\n", op_mode);
 	ret += websWrite(wp, "SSID		: %s\n", getSSIDbyIFace(ifname));
-	sprintf(cmd, "iwconfig %s", ifname);
+	snprintf(cmd, sizeof(cmd), "iwconfig %s", ifname);
 	if ((fp = popen(cmd, "r")) != NULL && fread(tmpstr, 1, sizeof(tmpstr), fp) > 1) {
 		pclose(fp);
 		*(tmpstr + sizeof(tmpstr) - 1) = '\0';
@@ -847,9 +847,9 @@ static int wl_stainfo_list(int unit, webs_t wp)
 		if (s < 0 || s > 7)
 			s = 0;
 		if (!s)
-			strcpy(idx_str, "main");
+			strlcpy(idx_str, "main", sizeof(idx_str));
 		else
-			sprintf(idx_str, "GN%d", s);
+			snprintf(idx_str, sizeof(idx_str), "GN%d", s);
 		websWrite(wp, ", \"%s\"", idx_str);
 		websWrite(wp, "]");
 	}
@@ -882,48 +882,48 @@ int getWscStatusStr(int unit, char *buf, int buf_size){
 	return retVal;
 }
 
-void getWPSAuthMode(int unit, char *ret_str){
+void getWPSAuthMode(int unit, char *ret_str, int len){
 	char tmp[128], prefix[]="wlXXXXXXX_";
 
 	snprintf(prefix, sizeof(prefix), "wl%d_", unit);
 
 	if(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "shared"))
-		strcpy(ret_str, "Shared Key");
+		strlcpy(ret_str, "Shared Key", len);
 	else if(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk"))
-		strcpy(ret_str, "WPA-Personal");
+		strlcpy(ret_str, "WPA-Personal", len);
 	else if(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "psk2"))
-		strcpy(ret_str, "WPA2-Personal");
+		strlcpy(ret_str, "WPA2-Personal", len);
 	else if(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "pskpsk2"))
-		strcpy(ret_str, "WPA-Auto-Personal");
+		strlcpy(ret_str, "WPA-Auto-Personal", len);
 	else if(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "wpa"))
-		strcpy(ret_str, "WPA-Enterprise");
+		strlcpy(ret_str, "WPA-Enterprise", len);
 	else if(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "wpa2"))
-		strcpy(ret_str, "WPA2-Enterprise");
+		strlcpy(ret_str, "WPA2-Enterprise", len);
 	else if(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "wpawpa2"))
-		strcpy(ret_str, "WPA-Auto-Enterprise");
+		strlcpy(ret_str, "WPA-Auto-Enterprise", len);
 	else if(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "radius"))
-		strcpy(ret_str, "802.1X");
+		strlcpy(ret_str, "802.1X", len);
 	else
-		strcpy(ret_str, "Open System");
+		strlcpy(ret_str, "Open System", len);
 }
 
-void getWPSEncrypType(int unit, char *ret_str){
+void getWPSEncrypType(int unit, char *ret_str, int len){
 	char tmp[128], prefix[]="wlXXXXXXX_";
 
 	snprintf(prefix, sizeof(prefix), "wl%d_", unit);
 
 	if(nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "open") && nvram_match(strcat_r(prefix, "wep_x", tmp), "0"))
-		strcpy(ret_str, "None");
+		strlcpy(ret_str, "None", len);
 	else if((nvram_match(strcat_r(prefix, "auth_mode_x", tmp), "open") && !nvram_match(strcat_r(prefix, "wep_x", tmp), "0"))
 			|| nvram_match("wl_auth_mode", "shared") || nvram_match("wl_auth_mode", "radius"))
-		strcpy(ret_str, "WEP");
+		strlcpy(ret_str, "WEP", len);
 
 	if(nvram_match(strcat_r(prefix, "crypto", tmp), "tkip"))
-		strcpy(ret_str, "TKIP");
+		strlcpy(ret_str, "TKIP", len);
 	else if(nvram_match(strcat_r(prefix, "crypto", tmp), "aes"))
-		strcpy(ret_str, "AES");
+		strlcpy(ret_str, "AES", len);
 	else if(nvram_match(strcat_r(prefix, "crypto", tmp), "tkip+aes"))
-		strcpy(ret_str, "TKIP+AES");
+		strlcpy(ret_str, "TKIP+AES", len);
 }
 
 int wl_wps_info(int eid, webs_t wp, int argc, char_t **argv, int unit)
@@ -965,12 +965,12 @@ int wl_wps_info(int eid, webs_t wp, int argc, char_t **argv, int unit)
 
 	//3. WPSAuthMode
 	memset(tmpstr, 0, sizeof(tmpstr));
-	getWPSAuthMode(unit, tmpstr);
+	getWPSAuthMode(unit, tmpstr, sizeof(tmpstr));
 	retval += websWrite(wp, "<wps_info>%s</wps_info>\n", tmpstr);
 
 	//4. EncrypType
 	memset(tmpstr, 0, sizeof(tmpstr));
-	getWPSEncrypType(unit, tmpstr);
+	getWPSEncrypType(unit, tmpstr, sizeof(tmpstr));
 	retval += websWrite(wp, "<wps_info>%s</wps_info>\n", tmpstr);
 
 	//5. DefaultKeyIdx
@@ -1158,7 +1158,7 @@ static int wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	lock = file_lock("nvramcommit");
 	system("rm -f /tmp/wlist");
 	snprintf(prefix, sizeof(prefix), "wl%d_", unit);
-	sprintf(cmd,"iwlist %s scanning >> /tmp/wlist",nvram_safe_get(strcat_r(prefix, "ifname", tmp)));
+	snprintf(cmd, sizeof(cmd),"iwlist %s scanning >> /tmp/wlist",nvram_safe_get(strcat_r(prefix, "ifname", tmp)));
 	system(cmd);
 	file_unlock(lock);
 	
@@ -1166,7 +1166,7 @@ static int wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	   return -1;
 	
 	memset(header, 0, sizeof(header));
-	sprintf(header, "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode");
+	snprintf(header, sizeof(header), "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode");
 
 	dbg("\n%s", header);
 
@@ -1241,16 +1241,16 @@ static int wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 		{   
 			if(strstr(pt1+strlen("Encryption key:"),"on"))
 			{  	
-				sprintf(enc,"ENC");
+				snprintf(enc, sizeof(enc), "ENC");
 		
 			} 
 			else
-				sprintf(enc,"NONE");
+				snprintf(enc, sizeof(enc), "NONE");
 		}
 
 		//auth
 		memset(auth,0,sizeof(auth));
-		sprintf(auth,"N/A");    
+		snprintf(auth, sizeof(auth), "N/A");
 
 		//sig
 	        pt1 = strstr(buf[2], "Quality=");	
@@ -1262,12 +1262,12 @@ static int wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 			memset(a2,0,sizeof(a2));
 			strncpy(a1,pt1+strlen("Quality="),pt2-pt1-strlen("Quality="));
 			strncpy(a2,pt2+1,strstr(pt2," ")-(pt2+1));
-			sprintf(sig,"%d",atoi(a1)/atoi(a2));
+			snprintf(sig, sizeof(sig),"%d",atoi(a1)/atoi(a2));
 		}   
 
 		//wmode
 		memset(wmode,0,sizeof(wmode));
-		sprintf(wmode,"11b/g/n");   
+		snprintf(wmode, sizeof(wmode),"11b/g/n");
 
 
 #if 1
@@ -1302,7 +1302,7 @@ static int wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 
 	snprintf(prefix, sizeof(prefix), "wl%d_", unit);
 	memset(data, 0x00, 255);
-	strcpy(data, "SiteSurvey=1"); 
+	strlcpy(data, "SiteSurvey=1", sizeof(data));
 	wrq.u.data.length = strlen(data)+1; 
 	wrq.u.data.pointer = data; 
 	wrq.u.data.flags = 0; 
@@ -1325,7 +1325,7 @@ static int wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	sleep(1);
 	dbg(".\n\n");
 	memset(data, 0, 8192);
-	strcpy(data, "");
+	strlcpy(data, "", sizeof(data));
 	wrq.u.data.length = 8192;
 	wrq.u.data.pointer = data;
 	wrq.u.data.flags = 0;
@@ -1335,11 +1335,11 @@ static int wl_scan(int eid, webs_t wp, int argc, char_t **argv, int unit)
 		return 0;
 	}
 	memset(header, 0, sizeof(header));
-	//sprintf(header, "%-3s%-33s%-18s%-8s%-15s%-9s%-8s%-2s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode", "NT");
+	//snprintf(header, sizeof(header), "%-3s%-33s%-18s%-8s%-15s%-9s%-8s%-2s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode", "NT");
 #if 0// defined(RTN14U)
-	sprintf(header, "%-4s%-33s%-18s%-9s%-16s%-9s%-8s%-4s%-5s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode"," WPS", " DPID");
+	snprintf(header, sizeof(header), "%-4s%-33s%-18s%-9s%-16s%-9s%-8s%-4s%-5s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode"," WPS", " DPID");
 #else
-	sprintf(header, "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode");
+	snprintf(header, sizeof(header), "%-4s%-33s%-18s%-9s%-16s%-9s%-8s\n", "Ch", "SSID", "BSSID", "Enc", "Auth", "Siganl(%)", "W-Mode");
 #endif
 	dbg("\n%s", header);
 	if (wrq.u.data.length > 0)
@@ -1684,7 +1684,7 @@ static int ej_wl_rate(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	int sw_mode = nvram_get_int("sw_mode");
 	int wlc_band = nvram_get_int("wlc_band");
 
-	sprintf(rate_buf, "0 Mbps");
+	snprintf(rate_buf, sizeof(rate_buf), "0 Mbps");
 
 	if (!nvram_match("wlc_state", "2"))
 		goto ERROR;
@@ -1711,9 +1711,9 @@ static int ej_wl_rate(int eid, webs_t wp, int argc, char_t **argv, int unit)
 	}
 
 	if (rate[0] > rate[1])
-		sprintf(rate_buf, "%d Mbps", rate[0]);
+		snprintf(rate_buf, sizeof(rate_buf), "%d Mbps", rate[0]);
 	else
-		sprintf(rate_buf, "%d Mbps", rate[1]);
+		snprintf(rate_buf, sizeof(rate_buf), "%d Mbps", rate[1]);
 
 ERROR:
 	retval += websWrite(wp, "%s", rate_buf);

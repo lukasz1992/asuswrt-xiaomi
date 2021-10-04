@@ -109,6 +109,10 @@
 
 					if(initNvram.isError) setTimeout(arguments.callee, 1000);
 				}, 500);
+				
+				$("#uiLanguage").load("/mobile/pages/uiLanguage.html", function(){
+					$('#selected_lang').html("<#selected_language#>");
+				});
 			});
 		</script>
 	</head>
@@ -130,8 +134,8 @@
 								<div class="icon_logo"></div>
 							</div>
 						</td>
-						<td>
-							<div class="model_welcome"></div>
+						<td style="vertical-align: top;position: absolute;right:250px;">
+							<ul id="uiLanguage" class="navigation" style="color: #fff"></ul>
 						</td>
 					</tr>
 				</table>

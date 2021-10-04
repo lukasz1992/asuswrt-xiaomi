@@ -38,8 +38,10 @@
 
 #define DEFAULT_LOGIN_MAX_NUM	5
 
+#ifdef RTCONFIG_CAPTCHA
 /* Limit of login failure. If the number of login failure excceds this limit, captcha will show. */
 #define CAPTCHA_MAX_LOGIN_NUM   2
+#endif
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
@@ -79,12 +81,10 @@ struct AiMesh_whitelist {
 extern struct AiMesh_whitelist AiMesh_whitelists[];
 #endif
 
-#ifdef RTCONFIG_ODMPID
 struct REPLACE_PRODUCTID_S {
         char *org_name;
         char *replace_name;
 };
-#endif
 
 #define MIME_EXCEPTION_NOAUTH_ALL 	1<<0
 #define MIME_EXCEPTION_NOAUTH_FIRST	1<<1
@@ -441,6 +441,9 @@ extern void do_dfb_log_file(char *url, FILE *stream);
 extern int is_amas_support(void);
 extern void do_set_fw_path_cgi(char *url, FILE *stream);
 #ifdef RTCONFIG_CAPTCHA
+extern unsigned int login_fail_num;
 extern int is_captcha_match(char *catpch);
 #endif
+extern int get_external_ip(void);
+extern int get_rtinfo(void);
 #endif /* _httpd_h_ */
