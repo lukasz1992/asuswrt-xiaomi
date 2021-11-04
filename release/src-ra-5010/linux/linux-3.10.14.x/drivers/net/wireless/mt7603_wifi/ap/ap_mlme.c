@@ -28,15 +28,13 @@
 #include "rt_config.h"
 #include <stdarg.h>
 
+extern UCHAR  ZeroSsid[32];
 #ifdef BTCOEX_CONCURRENT
 extern void MT7662ReceCoexFromOtherCHip(
 	IN UCHAR channel,
 	IN UCHAR centralchannel,
 	IN UCHAR channel_bw
 	);
-#endif
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
-VOID rtmp_deqmode_detect(RTMP_ADAPTER *pAd);
 #endif
 #ifdef DOT11_N_SUPPORT
 
@@ -186,18 +184,23 @@ VOID APMlmePeriodicExec(
 	if (pAd->Mlme.PeriodicRound % MLME_TASK_EXEC_MULTIPLE == 0)
 	{
 #if defined(BAND_STEERING) || defined(CUSTOMER_DCC_FEATURE) || defined(WIFI_DIAG)\
-	|| defined(WAPP_SUPPORT)
-		UINT32 msdr9;
+	|| defined(WAPP_SUPPORT) || defined(OFFCHANNEL_SCAN_FEATURE)
 
-		/* NAV, CCA, or TX active timer in unit of TU, used for Measurement. (channel busy time) */
-		RTMP_IO_READ32(pAd, MIB_MSDR9, &msdr9);
-		msdr9 &= 0xFFFFFF;
-		pAd->OneSecChBusyTime = msdr9;
-#ifdef BAND_STEERING
-		if (pAd->ApCfg.BandSteering)
-			pAd->ApCfg.BndStrgOneSecChBusyTime = (pAd->ApCfg.BndStrgOneSecChBusyTime == 0)? \
-						msdr9 : ((msdr9 + pAd->ApCfg.BndStrgOneSecChBusyTime)>>1);
+#ifdef OFFCHANNEL_SCAN_FEATURE
+		if (pAd->ScanCtrl.state == OFFCHANNEL_SCAN_INVALID)
 #endif
+		{
+			UINT32 ChBusyTime;
+
+			ChBusyTime = AsicGetCCANavTxTime(pAd);
+			pAd->OneSecChBusyTime = (pAd->OneSecChBusyTime == 0) ? \
+				ChBusyTime : ((pAd->OneSecChBusyTime + ChBusyTime * 3)>>2);
+#ifdef BAND_STEERING
+			if (pAd->ApCfg.BandSteering)
+				pAd->ApCfg.BndStrgOneSecChBusyTime = (pAd->ApCfg.BndStrgOneSecChBusyTime == 0) ? \
+					ChBusyTime : ((ChBusyTime + pAd->ApCfg.BndStrgOneSecChBusyTime)>>1);
+#endif
+		}
 #endif
 		/* one second timer */
 	    MacTableMaintenance(pAd);
@@ -293,6 +296,12 @@ VOID APMlmePeriodicExec(
 		for (loop = 0; loop < MAX_APCLI_NUM; loop++)
 		{
 			PAPCLI_STRUCT pApCliEntry = &pAd->ApCfg.ApCliTab[loop];
+			if (pAd->ApCfg.ApCliTab[loop].bBlockAssoc == TRUE
+					&& pAd->ApCfg.ApCliTab[loop].bBlockAssoc
+					&& RTMP_TIME_AFTER(Now32,
+					pAd->ApCfg.ApCliTab[loop].LastMicErrorTime + (60*OS_HZ)))
+				pAd->ApCfg.ApCliTab[loop].bBlockAssoc = FALSE;
+
 			if ((pApCliEntry->Valid == TRUE)
 				&& (pApCliEntry->MacTabWCID < MAX_LEN_OF_MAC_TABLE))
 			{
@@ -339,28 +348,72 @@ VOID APMlmePeriodicExec(
 #ifdef DOT11R_FT_SUPPORT
 	FT_R1KHInfoMaintenance(pAd);
 #endif /* DOT11R_FT_SUPPORT */
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
-	if(pAd->MonitorFlag == TRUE)
-		rtmp_deqmode_detect(pAd); /* 1s detect*/
-#endif
 #ifdef BAND_STEERING
 	BndStrgHeartBeatMonitor(pAd);
 #endif
-#ifdef NEW_IXIA_METHOD
-	if (pAd->Mlme.OneSecPeriodicRound % pAd->chkTmr == 0) {
-		if ((txpktdetect2s < pAd->pktthld)
-			&& (rxpktdetect2s < pAd->pktthld)) {/*Threshold*/
-			pAd->tmrlogctrl++;
-			if (pAd->tmrlogctrl <= 1)
+#ifdef MAX_CONTINUOUS_TX_CNT
+	if (pAd->Mlme.OneSecPeriodicRound % pAd->tr_ststic.chkTmr == 0) {
+		if ((pAd->tr_ststic.txpktdetect2s < pAd->tr_ststic.pktthld)
+			&& (pAd->tr_ststic.rxpktdetect2s < pAd->tr_ststic.pktthld)) {/*Threshold*/
+			pAd->tr_ststic.tmrlogctrl++;
+			if (pAd->tr_ststic.tmrlogctrl <= 1)
 				wifi_txrx_parmtrs_dump(pAd);
 			else
-				pAd->tmrlogctrl = 10;/*prevent pAd->tmrlogctrl overflow*/
+				pAd->tr_ststic.tmrlogctrl = 10;/*prevent pAd->tmrlogctrl overflow*/
 		} else
-			pAd->tmrlogctrl = 0;
-		txpktdetect2s = 0;
-		rxpktdetect2s = 0;
+			pAd->tr_ststic.tmrlogctrl = 0;
+		pAd->tr_ststic.txpktdetect2s = 0;
+		pAd->tr_ststic.rxpktdetect2s = 0;
 	}
 #endif
+#ifdef APCLI_SUPPORT
+#ifdef DOT11_N_SUPPORT
+#ifdef DOT11N_DRAFT3
+#ifdef APCLI_CERT_SUPPORT
+	/* Perform 20/40 BSS COEX scan every Dot11BssWidthTriggerScanInt*/
+	if (APCLI_IF_UP_CHECK(pAd, 0) && (pAd->bApCliCertTest == TRUE)) {
+		USHORT tempScanInt;
+
+		tempScanInt = pAd->Mlme.OneSecPeriodicRound % pAd->CommonCfg.Dot11BssWidthTriggerScanInt;
+		if ((OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_SCAN_2040)) &&
+			(pAd->CommonCfg.Dot11BssWidthTriggerScanInt != 0) &&
+			(tempScanInt == (pAd->CommonCfg.Dot11BssWidthTriggerScanInt - 1))) {
+			DBGPRINT(RT_DEBUG_TRACE,
+				("Dot11BssWidthTriggerScanInt=%d\n", pAd->CommonCfg.Dot11BssWidthTriggerScanInt));
+			DBGPRINT(RT_DEBUG_TRACE, ("MMCHK - LastOneSecTotalTxCount/LastOneSecRxOkDataCnt  = %d/%d\n",
+									pAd->RalinkCounters.LastOneSecTotalTxCount,
+									pAd->RalinkCounters.LastOneSecRxOkDataCnt));
+
+			/* Check last scan time at least 30 seconds from now.*/
+			/* Check traffic is less than about 1.5~2Mbps.*/
+			/* it might cause data lost if we enqueue scanning.*/
+			/* This criteria needs to be considered*/
+			if ((pAd->RalinkCounters.LastOneSecTotalTxCount < 70)
+				&& (pAd->RalinkCounters.LastOneSecRxOkDataCnt < 70)
+				/*&& ((pAd->StaCfg.LastScanTime + 10 * OS_HZ) < pAd->Mlme.Now32) */) {
+				MLME_SCAN_REQ_STRUCT            ScanReq;
+				/* Fill out stuff for scan request and kick to scan*/
+				ScanParmFill(pAd, &ScanReq, ZeroSsid, 0, BSS_ANY, SCAN_2040_BSS_COEXIST);
+				/* Before scan, reset trigger event table. */
+				TriEventInit(pAd);
+				/* Set InfoReq = 1, So after scan , alwats sebd 20/40 Coexistence frame to AP*/
+				pAd->CommonCfg.BSSCoexist2040.field.InfoReq = 1;
+
+				MlmeEnqueue(pAd, AP_SYNC_STATE_MACHINE, APMT2_MLME_SCAN_REQ,
+					sizeof(MLME_SCAN_REQ_STRUCT), &ScanReq, 0);
+
+				RTMP_MLME_HANDLER(pAd);
+			}
+
+			DBGPRINT(RT_DEBUG_TRACE, (" LastOneSecTotalTxCount/LastOneSecRxOkDataCnt  = %d/%d\n",
+					pAd->RalinkCounters.LastOneSecTotalTxCount,
+					pAd->RalinkCounters.LastOneSecRxOkDataCnt));
+		}
+	}
+#endif /* APCLI_CERT_SUPPORT */
+#endif /* DOT11N_DRAFT3 */
+#endif /* DOT11_N_SUPPORT */
+#endif /* APCLI_SUPPORT */
 }
 
 
@@ -701,69 +754,172 @@ VOID	APAsicAntennaAvg(
 		    pAd->RxAnt.RcvPktNum[1] = 0;
 		    *RssiAvg = realavgrssi - 256;
 }
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
-BOOLEAN Rtmp_Max_Continuous_Tx_OnOff(RTMP_ADAPTER *pAd)
+#ifdef MAX_CONTINUOUS_TX_CNT
+BOOLEAN is_expected_stations(RTMP_ADAPTER *pAd, UINT16 onlinestacnt)
+{
+	UINT16 stacnt;
+
+	stacnt = onlinestacnt;
+	if (pAd->ixiaCtrl.OnLineStaCntChk != stacnt) {
+		pAd->ixiaCtrl.OnLineStaCntChk = stacnt;
+		return FALSE;
+	}
+	if ((stacnt == 5) || (stacnt == 10) || (stacnt == 16) || (stacnt == 20) || (stacnt == 40))
+		return TRUE;
+
+	return FALSE;
+}
+VOID periodic_detect_tx_pkts(RTMP_ADAPTER *pAd)
 {
 	PMAC_TABLE_ENTRY pEntry = NULL;
 	INT i;
-	CHAR MaxRssi  = -127,MinRssi  = -127,myAvgRssi = -127; //for RSSI
-	ULONG DataRate=0; //for datarate.
-	for (i=0; i < MAX_LEN_OF_MAC_TABLE; i++)
-	{
+	CHAR MaxRssi  = -127, MinRssi  = -127, myAvgRssi = -127, deltaRSSI = 0;/*for RSSI*/
+	INT maclowbyteMin = 0, maclowbyteMax = 0;
+	UCHAR tempAddr[MAC_ADDR_LEN], pollcnt = 0;
+	INT maclowbyteSum = 0, temsum = 0, tempMax = 0;
+	UINT16 onlinestacnt = pAd->MacTab.Size;
+
+	if ((!is_expected_stations(pAd, onlinestacnt))
+		&& (pAd->ixiaCtrl.iMode == IXIA_NORMAL_MODE)) {
+		pAd->ContinousTxCnt = 1;
+		return;
+	}
+	pAd->ixiaCtrl.iMacflag = FALSE;
+	pAd->ixiaCtrl.iRssiflag = FALSE;
+	NdisZeroMemory(tempAddr, MAC_ADDR_LEN);
+	for (i = 1; i < MAX_LEN_OF_MAC_TABLE; i++) {
 		pEntry = &pAd->MacTab.Content[i];
 		if (!(IS_ENTRY_CLIENT(pEntry) && (pEntry->Sst == SST_ASSOC)))
 			continue;
-		myAvgRssi = RTMPAvgRssi(pAd, &pEntry->RssiSample);// get my rssi average.
-		getRate(pEntry->HTPhyMode, &DataRate);
-		
-		if(DataRate < pAd->RateTh)
-		{
-			DBGPRINT(RT_DEBUG_WARN,("%s(%d)Some sta's rate is low. DataRate = %lu\n",__FUNCTION__,__LINE__,DataRate));
-			return FALSE;
+		if ((maclowbyteMax == 0) && (maclowbyteMin == 0)) {
+			COPY_MAC_ADDR(tempAddr, pEntry->Addr);
+			maclowbyteMin = (INT)pEntry->Addr[5];
+			maclowbyteMax = (INT)pEntry->Addr[5];
+			DBGPRINT(RT_DEBUG_WARN, ("%s:1st MAC %x:%x:%x:%x:%x:%x.\n",
+						__func__, PRINT_MAC(pEntry->Addr)));
 		}
-		if((MaxRssi == -127) && (MinRssi == -127))
-		{
+		if (NdisEqualMemory(tempAddr, pEntry->Addr, (MAC_ADDR_LEN - 1))) {
+			if (maclowbyteMin > (INT)pEntry->Addr[5])
+				maclowbyteMin = (INT)pEntry->Addr[5];
+			if (maclowbyteMax < (INT)pEntry->Addr[5])
+				maclowbyteMax = (INT)pEntry->Addr[5];
+			maclowbyteSum += (INT)pEntry->Addr[5];
+		} else if (NdisEqualMemory(tempAddr, pEntry->Addr, (MAC_ADDR_LEN - 3))
+				&& NdisEqualMemory(&tempAddr[4], &pEntry->Addr[4], 2)) {
+			/*00:41:dd:01:00:00 00:41:dd:02:00:00*/
+			if (maclowbyteMin > (INT)pEntry->Addr[3])
+				maclowbyteMin = (INT)pEntry->Addr[3];
+			if (maclowbyteMax < (INT)pEntry->Addr[3])
+				maclowbyteMax = (INT)pEntry->Addr[3];
+			maclowbyteSum += (INT)pEntry->Addr[3];
+		} else {
+			maclowbyteMin = 0;
+			maclowbyteMax = 0;
+			DBGPRINT(RT_DEBUG_WARN, ("%s:DiffMACDetect %x:%x:%x:%x:%x:%x.\n",
+					__func__, PRINT_MAC(pEntry->Addr)));
+			break;
+		}
+		myAvgRssi = RTMPAvgRssi(pAd, &pEntry->RssiSample);/*get my rssi average*/
+		if ((MaxRssi == -127) && (MinRssi == -127)) {
 			MaxRssi= myAvgRssi;
 			MinRssi = myAvgRssi;
+		} else {
+			MaxRssi = RTMPMaxRssi(pAd, MaxRssi, myAvgRssi, 0);
+			/*find the max rssi in mactable size.*/
+			MinRssi = RTMPMinRssi(pAd, MinRssi, myAvgRssi, 0);
+			/*find the min rssi in mactable size.*/
 		}
-		else
-		{
-			MaxRssi = RTMPMaxRssi(pAd,MaxRssi,myAvgRssi,0);// find the max rssi in mactable size.
-			MinRssi = RTMPMinRssi(pAd,MinRssi,myAvgRssi,0);// find the min rssi in mactable size.
+		/*Veriwave Mode Fix Rate.*/
+		if ((pAd->ixiaCtrl.iMode == VERIWAVE_MODE) && (pEntry->bAutoTxRateSwitch == TRUE)) {
+			if (pEntry->wdev) {
+				pEntry->wdev->DesiredTransmitSetting.field.MCS = 15;
+				SetCommonHT(pAd);
+				pEntry->wdev->bAutoTxRateSwitch = FALSE;
+			}
+			pEntry->HTPhyMode.field.MCS = 15;
+			pEntry->bAutoTxRateSwitch = FALSE;
+			pEntry->HTPhyMode.field.ShortGI = GI_400;
+#ifdef MCS_LUT_SUPPORT
+			asic_mcs_lut_update(pAd, pEntry);
+			pEntry->LastTxRate = (USHORT) (pEntry->HTPhyMode.word);
+#endif /* MCS_LUT_SUPPORT */
+			DBGPRINT(RT_DEBUG_OFF, ("%s:wdev %p Fix Rate.\n", __func__, pEntry->wdev));
 		}
-		
+		pollcnt += 1;
 	}
-		DBGPRINT(RT_DEBUG_WARN,("%s(%d)MaxRssi = %-3d,MinRssi = %-3d\n",__FUNCTION__,__LINE__,MaxRssi,MinRssi));
-		if((MaxRssi - MinRssi) < pAd->DeltaRssiTh) /*pAd->DeltaRssiTh default 10 dBm*/
-		{
-			DBGPRINT(RT_DEBUG_WARN,("%s(%d) in in in in in in \n",__FUNCTION__,__LINE__));
-			return TRUE;
+	deltaRSSI = MaxRssi - MinRssi;
+	/*Arithmetic Sequence Property:Sn = n*(a1 + an)/2, an = a1 + (n -1)*d.*/
+	if (pollcnt > onlinestacnt)
+		onlinestacnt = pollcnt;
+	temsum = ((INT)onlinestacnt)*(maclowbyteMax + maclowbyteMin)/2;
+	tempMax = ((INT)onlinestacnt - 1) + maclowbyteMin;/*Veriwave MAC Address increase by 1.*/
+	if ((temsum != 0) && (maclowbyteSum == temsum) && (maclowbyteMax == tempMax))
+		/*Arithmetic Sequence and diff is 1.*/
+		pAd->ixiaCtrl.iMacflag = TRUE;
+	if ((deltaRSSI < pAd->DeltaRssiTh) && (MinRssi >= pAd->MinRssiTh))
+		pAd->ixiaCtrl.iRssiflag = TRUE;
+	/*FORCE IXIA MODE or auto detect, default auto detect*/
+	if ((pAd->ixiaCtrl.itxCtrl == IXIA_CTL_FORCE_MAX)
+		|| (pAd->ixiaCtrl.iMacflag && pAd->ixiaCtrl.iRssiflag)) {
+		if (pAd->ixiaCtrl.iMode == IXIA_NORMAL_MODE) {
+			pAd->ixiaCtrl.iMode = VERIWAVE_MODE;
+			pAd->tr_ststic.pktthld = 50;
+			/*Not Multi-client MAC to one MAC, force dequeue CONTINUOUS_TX_CNT Pkts*/
+			if (!pAd->ixiaCtrl.iForceMTO)
+				pAd->ContinousTxCnt = CONTINUOUS_TX_CNT;
+			/*Enable EDCCA*/
+			RTMP_CHIP_ASIC_SET_EDCCA(pAd, TRUE);
+			/*Set VGA Gain to L Gain*/
+			#ifdef SMART_CARRIER_SENSE_SUPPORT
+			pAd->SCSCtrl.SCSEnable = SCS_DISABLE;
+			#endif
+			RTMP_IO_WRITE32(pAd, CR_AGC_0, 0x6AF7776F);
+			RTMP_IO_WRITE32(pAd, CR_AGC_0_RX1, 0x6AF7776F);
+			RTMP_IO_WRITE32(pAd, CR_AGC_3, 0x8181D5E3);
+			RTMP_IO_WRITE32(pAd, CR_AGC_3_RX1, 0x8181D5E3);
+			/*Set retry to 30*/
+			/*pAd->shortretry = 30;*/
+			/*Avoid age out*/
+			pAd->ixiaCtrl.iForceAge = 1;
+			pAd->PSEWatchDogEn = FALSE;
+			DBGPRINT(RT_DEBUG_OFF, ("%s:clients(%d) tx %d pkts.\n",
+						__func__, onlinestacnt, pAd->ContinousTxCnt));
 		}
-		else	
-			return FALSE;
+	} else {
+		if (pAd->ixiaCtrl.iMode == VERIWAVE_MODE) {
+			if (onlinestacnt != 0)
+				return;
+			pAd->ixiaCtrl.iMode = IXIA_NORMAL_MODE;
+			pAd->ContinousTxCnt = 1;
+			/*Recover to auto rate*/
+			pAd->tr_ststic.pktthld = 0;
+			for (i = 0; i < pAd->ApCfg.BssidNum; i++) {
+				pAd->ApCfg.MBSSID[i].wdev.bAutoTxRateSwitch = TRUE;
+				pAd->ApCfg.MBSSID[i].wdev.DesiredTransmitSetting.field.MCS = MCS_AUTO;
+			}
+			SetCommonHT(pAd);
+			/* Disable EDCCA*/
+			RTMP_CHIP_ASIC_SET_EDCCA(pAd, FALSE);
+			/*Recover to default Gain*/
+			#ifdef SMART_CARRIER_SENSE_SUPPORT
+			pAd->SCSCtrl.SCSEnable = SCS_ENABLE;
+			#endif
+			RTMP_IO_WRITE32(pAd, CR_AGC_0, pAd->SCSCtrl.CR_AGC_0_default);
+			RTMP_IO_WRITE32(pAd, CR_AGC_0_RX1, pAd->SCSCtrl.CR_AGC_0_default);
+			RTMP_IO_WRITE32(pAd, CR_AGC_3, pAd->SCSCtrl.CR_AGC_3_default);
+			RTMP_IO_WRITE32(pAd, CR_AGC_3_RX1, pAd->SCSCtrl.CR_AGC_3_default);
+			/*Set to default*/
+			/*pAd->shortretry = 0;*/
+			/*Recover age out*/
+			pAd->ixiaCtrl.iForceAge = 0;
+			pAd->PSEWatchDogEn = TRUE;
+			DBGPRINT(RT_DEBUG_OFF,
+				("%s:clients(%d) tx 1 pkts,iMacflag(%d),iRssiflag(%d).\n",
+				__func__, onlinestacnt,
+				pAd->ixiaCtrl.iMacflag, pAd->ixiaCtrl.iRssiflag));
+		}
+	}
 }
 
-VOID rtmp_deqmode_detect(RTMP_ADAPTER *pAd)
-{
-	if(pAd->MacTab.Size >=5)
-	{
-		DBGPRINT(RT_DEBUG_WARN,("%s(%d) MacTab.Size = %d\n",__FUNCTION__,__LINE__,pAd->MacTab.Size));
-		if(Rtmp_Max_Continuous_Tx_OnOff(pAd) == TRUE)
-		{
-			pAd->ContinousTxCnt = CONTINUOUS_TX_CNT;/*set tx 21 packets one time*/
-			DBGPRINT(RT_DEBUG_WARN,("%s(%d)Countinous to Tx %d Packets\n",__FUNCTION__,__LINE__,pAd->ContinousTxCnt));
-		}
-		else
-		{
-			pAd->ContinousTxCnt = 1; /*default tx 1 packet one time*/
-			DBGPRINT(RT_DEBUG_WARN,("%s(%d)tx 1 packet!\n",__FUNCTION__,__LINE__));
-		}
-	}
-	else
-	{
-		DBGPRINT(RT_DEBUG_WARN,("%s(%d)client num = %d\n",__FUNCTION__,__LINE__, pAd->MacTab.Size));
-		pAd->ContinousTxCnt = 1; /*default tx 1 packet one time*/
-	}
-}
 #endif
 

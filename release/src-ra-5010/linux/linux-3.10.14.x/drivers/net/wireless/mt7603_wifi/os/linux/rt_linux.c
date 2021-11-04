@@ -2263,16 +2263,18 @@ Return Value:
 Note:
 ========================================================================
 */
+#ifdef MAX_CONTINUOUS_TX_CNT
+INT rx_pkt_to_os = 1;
+#endif
 VOID RtmpOsPktRcvHandle(PNDIS_PACKET pNetPkt)
 {
 	struct sk_buff *pRxPkt = RTPKT_TO_OSPKT(pNetPkt);
 
-
-	netif_rx(pRxPkt);
-#ifdef NEW_IXIA_METHOD
+#ifdef MAX_CONTINUOUS_TX_CNT
 	if (IS_OSEXPECTED_LENGTH(RTPKT_TO_OSPKT(pRxPkt)->len + 18))
 		rx_pkt_to_os++;
 #endif
+	netif_rx(pRxPkt);
 }
 
 

@@ -92,7 +92,11 @@ DBGPRINT(RT_DEBUG_OFF, ("%s():shiang! PeerProbeReqSanity failed!\n", __FUNCTION_
 		RSNIe = IE_WPA;
 	
 		if ((wdev->if_dev == NULL) || ((wdev->if_dev != NULL) &&
-			!(RTMP_OS_NETDEV_STATE_RUNNING(wdev->if_dev))))
+			(!(RTMP_OS_NETDEV_STATE_RUNNING(wdev->if_dev))
+#ifdef MAP_SUPPORT
+			|| (pAd->ApCfg.MBSSID[apidx].bcn_buf.bBcnSntReq == FALSE)
+#endif
+		)))
 		{
 			/* the interface is down, so we can not send probe response */
 			continue;
@@ -460,6 +464,18 @@ DBGPRINT(RT_DEBUG_OFF, ("%s():shiang! PeerProbeReqSanity failed!\n", __FUNCTION_
 		}
 #endif
 
+#ifdef MAP_SUPPORT
+		if (IS_MAP_ENABLE(pAd) && wdev->MAPCfg.vendor_ie_len) {
+			ULONG	TmpLen = 0;
+
+			/* Vendor IE */
+			MakeOutgoingFrame(pOutBuffer + FrameLen, &TmpLen,
+							  wdev->MAPCfg.vendor_ie_len,
+							  wdev->MAPCfg.vendor_ie_buf, END_OF_ARGS);
+
+			FrameLen += TmpLen;
+		}
+#endif
 
 		/* Extended Capabilities IE */
 		{
@@ -1353,6 +1369,9 @@ VOID APPeerBeaconAction(
 				//printk("%s: ===> beacon FINAL WCID[%d]\n", __FUNCTION__, Elem->Wcid);
 				ApCliIndex = pEntry->func_tb_idx;	
 				pAd->ApCfg.ApCliTab[ApCliIndex].ApCliRcvBeaconTime = pAd->Mlme.Now32;
+#ifdef MAP_SUPPORT
+				ApCliCheckConConnectivity(pAd, &pAd->ApCfg.ApCliTab[pEntry->func_tb_idx], ie_list);
+#endif
 #ifdef WH_EZ_SETUP
 				if (IS_EZ_SETUP_ENABLED(pEntry->wdev)) {
 #ifdef IF_UP_DOWN
@@ -1444,6 +1463,28 @@ VOID APPeerBeaconAction(
 					}
 				}
 			}
+
+
+#ifdef APCLI_CERT_SUPPORT
+#ifdef DOT11N_DRAFT3
+		if (pAd->bApCliCertTest == TRUE) {
+			UCHAR RegClass;
+			OVERLAP_BSS_SCAN_IE	BssScan;
+			BOOLEAN					brc;
+
+			brc = PeerBeaconAndProbeRspSanity2(pAd, Elem->Msg, Elem->MsgLen, &BssScan, &RegClass);
+			if (brc == TRUE) {
+				/*APBssScan.TriggerScanInt[1] * 256 + APBssScan.TriggerScanInt[0];*/
+				pAd->CommonCfg.Dot11BssWidthTriggerScanInt = le2cpu16(BssScan.TriggerScanInt);
+				/* out of range defined in MIB... So fall back to default value.*/
+				if ((pAd->CommonCfg.Dot11BssWidthTriggerScanInt < 10) ||
+					(pAd->CommonCfg.Dot11BssWidthTriggerScanInt > 900))
+					pAd->CommonCfg.Dot11BssWidthTriggerScanInt = 900;
+			}
+		}
+#endif /* APCLI_CERT_SUPPORT */
+#endif/*11nDRAFT3*/
+
 
 			//ApCliWaitProbRsp(pAd, ApCliIndex);
 			if ( /*ApCliWaitProbRsp(pAd, ApCliIndex) && */
@@ -1620,13 +1661,30 @@ VOID APScanTimeoutAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 	BOOLEAN b_internal_force_connect_bssid = FALSE;
 #endif
 
+#ifdef OFFCHANNEL_SCAN_FEATURE
+	if (pAd->ScanCtrl.state ==	OFFCHANNEL_SCAN_START) {
+		MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+			("%s  pAd->ScanCtrl.CurrentGivenChan_Index = %d\n",
+			__func__, pAd->ScanCtrl.CurrentGivenChan_Index));
+		/* Last channel to scan from list */
+		if ((pAd->ScanCtrl.Num_Of_Channels	- pAd->ScanCtrl.CurrentGivenChan_Index) == 1) {
+			MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+			("[%s][%d] Num_of_channel = %d scanning complete\n",
+			__func__, __LINE__, pAd->ScanCtrl.Num_Of_Channels));
+			pAd->ScanCtrl.Channel = 0;
+			pAd->ScanCtrl.state = OFFCHANNEL_SCAN_COMPLETE;
+		}
+	} else
+#endif
+	{
 #ifdef CONFIG_AP_SUPPORT
 #endif
 #ifdef AP_PARTIAL_SCAN_SUPPORT
-	pAd->ScanCtrl.Channel = RTMPFindScanChannel(pAd, pAd->ScanCtrl.Channel);
+		pAd->ScanCtrl.Channel = RTMPFindScanChannel(pAd, pAd->ScanCtrl.Channel);
 #else
-	pAd->ScanCtrl.Channel = NextChannel(pAd, pAd->ScanCtrl.Channel);
+		pAd->ScanCtrl.Channel = NextChannel(pAd, pAd->ScanCtrl.Channel);
 #endif /* AP_PARTIAL_SCAN_SUPPORT */
+	}
 
 #ifdef CONFIG_AP_SUPPORT
 	IF_DEV_CONFIG_OPMODE_ON_AP(pAd)
@@ -1635,13 +1693,35 @@ VOID APScanTimeoutAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 			iwpriv set auto channel selection
 			update the current index of the channel
 		*/
+#if ((!defined(CUSTOMER_DCC_FEATURE)) && (!defined(OFFCHANNEL_SCAN_FEATURE)))
 		if (pAd->ApCfg.bAutoChannelAtBootup == TRUE)
+#endif
 		{
 			/* update current channel info */
 			UpdateChannelInfo(pAd, pAd->ApCfg.current_channel_index, pAd->ApCfg.AutoChannelAlg);
 
+#ifdef OFFCHANNEL_SCAN_FEATURE
+			if (pAd->ScanCtrl.state == OFFCHANNEL_SCAN_START) {
+				wapp_send_offchan_scan_info_notification(pAd, OFFCHANNEL_INFO_RSP);
+				pAd->ScanCtrl.ScanTime[pAd->ScanCtrl.CurrentGivenChan_Index] = 0;
+				/* Scan complete increment index to start the next channel */
+				pAd->ScanCtrl.CurrentGivenChan_Index++;
+				/* Reinitialize the Scan parameters for the next offchannel */
+				pAd->ScanCtrl.ScanType = pAd->ScanCtrl.Offchan_Scan_Type[pAd->ScanCtrl.CurrentGivenChan_Index];
+				pAd->ScanCtrl.Channel  = pAd->ScanCtrl.ScanGivenChannel[pAd->ScanCtrl.CurrentGivenChan_Index];
+				MTWF_LOG(DBG_CAT_PROTO, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+				("[%s][%d]:Next OFFChannel scan for : %d:Scan type =%d from given list\n",
+						__func__, __LINE__, pAd->ScanCtrl.Channel, pAd->ScanCtrl.ScanType));
+				pAd->ChannelInfo.bandidx = 0;
+				pAd->ChannelInfo.ChannelIdx = Channel2Index(pAd, pAd->ScanCtrl.Channel);
+				if (pAd->ScanCtrl.Channel) {
+					pAd->ChannelInfo.ChannelNo = pAd->ScanCtrl.Channel;
+				}
+			}
 			/* move to next channel */
-			pAd->ApCfg.current_channel_index++;
+			if (pAd->ScanCtrl.state == OFFCHANNEL_SCAN_START)
+#endif
+				pAd->ApCfg.current_channel_index++;
 			if (pAd->ApCfg.current_channel_index < pAd->ChannelListNum)
 			{
 				pAd->ApCfg.AutoChannel_Channel = pAd->ChannelList[pAd->ApCfg.current_channel_index].Channel;
@@ -1726,6 +1806,15 @@ VOID APMlmeScanReqAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 		}
 #endif
 		
+#ifdef OFFCHANNEL_SCAN_FEATURE
+		if (pAd->ScanCtrl.ScanGivenChannel[pAd->ScanCtrl.CurrentGivenChan_Index]) {
+				pAd->ScanCtrl.Channel = pAd->ScanCtrl.ScanGivenChannel[pAd->ScanCtrl.CurrentGivenChan_Index];
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("[%s][%d] start offchannel scan on %d : channel list index = %d\n",
+						__func__, __LINE__, pAd->ScanCtrl.Channel, pAd->ScanCtrl.CurrentGivenChan_Index));
+				pAd->ScanCtrl.state = OFFCHANNEL_SCAN_START;
+		} else
+#endif
 		{
 		/* start from the first channel */
 #ifdef AP_PARTIAL_SCAN_SUPPORT
@@ -1943,6 +2032,45 @@ VOID APPeerBeaconAtScanAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 							Snr1
 #endif
 							);
+
+#ifdef APCLI_SUPPORT
+#ifdef APCLI_CERT_SUPPORT
+#ifdef DOT11_N_SUPPORT
+#ifdef DOT11N_DRAFT3
+		/* Check if this scan channel is the effeced channel */
+		if (APCLI_IF_UP_CHECK(pAd, 0) && pAd->bApCliCertTest == TRUE
+			&& (pAd->CommonCfg.bBssCoexEnable == TRUE)
+			&& ((ie_list->Channel > 0) && (ie_list->Channel <= 14))) {
+			int chListIdx;
+
+			/* First we find the channel list idx by the channel number */
+			for (chListIdx = 0; chListIdx < pAd->ChannelListNum; chListIdx++) {
+				if (ie_list->Channel == pAd->ChannelList[chListIdx].Channel)
+					break;
+			}
+
+			if (chListIdx < pAd->ChannelListNum) {
+				/*
+				*	If this channel is effected channel for the 20/40 coex operation.
+				*	Check the related IEs.
+				*/
+				if (pAd->ChannelList[chListIdx].bEffectedChannel == TRUE) {
+					UCHAR RegClass;
+					OVERLAP_BSS_SCAN_IE	BssScan;
+
+					/* Read Beacon's Reg Class IE if any. */
+					PeerBeaconAndProbeRspSanity2(pAd, Elem->Msg, Elem->MsgLen, &BssScan, &RegClass);
+					TriEventTableSetEntry(pAd, &pAd->CommonCfg.TriggerEventTab, ie_list->Bssid,
+						&ie_list->HtCapability, ie_list->HtCapabilityLen,
+						RegClass, ie_list->Channel);
+				}
+			}
+		}
+#endif /* DOT11N_DRAFT3 */
+#endif /* DOT11_N_SUPPORT */
+#endif /* APCLI_CERT_SUPPORT */
+#endif /* APCLI_SUPPORT */
+
 		if (Idx != BSS_NOT_FOUND)
 		{
 			NdisMoveMemory(pAd->ScanTab.BssEntry[Idx].PTSF, &Elem->Msg[24], 4);
@@ -2096,7 +2224,12 @@ VOID ApSiteSurvey(
 	}
     pAd->Mlme.ApSyncMachine.CurrState = AP_SYNC_IDLE;
 
+#ifdef OFFCHANNEL_SCAN_FEATURE
+	ChannelInfoResetNew(pAd);
+	RTMPZeroMemory(&ScanReq, sizeof(ScanReq));
+#else
 	RTMPZeroMemory(ScanReq.Ssid, MAX_LEN_OF_SSID);
+#endif
 	ScanReq.SsidLen = 0;
 	if (pSsid)
 	{
@@ -2117,6 +2250,65 @@ VOID ApSiteSurvey(
 			sizeof(MLME_SCAN_REQ_STRUCT), &ScanReq, (ULONG)wdev);
     RTMP_MLME_HANDLER(pAd);
 }
+
+#ifdef OFFCHANNEL_SCAN_FEATURE
+INT ApSiteSurveyNew_by_wdev(
+	IN	PRTMP_ADAPTER	pAd,
+	IN  UINT 		channel,
+	IN  UINT 		timeout,
+	IN	UCHAR		ScanType,
+	IN	BOOLEAN		ChannelSel,
+	struct wifi_dev 	*wdev)
+{
+			MLME_SCAN_REQ_STRUCT    ScanReq;
+
+	RTMPZeroMemory(&ScanReq, sizeof(ScanReq));;
+	AsicDisableSync(pAd);
+	MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO, ("%s , %u, %u, %u", __func__, channel, timeout, ScanType));
+	BssTableInit(&pAd->ScanTab);
+	ChannelInfoResetNew(pAd);
+	pAd->Mlme.ApSyncMachine.CurrState = AP_SYNC_IDLE;
+	pAd->ScanCtrl.CurrentGivenChan_Index = 0;
+	ScanReq.BssType = BSS_ANY;
+	ScanReq.ScanType = ScanType;
+	/* to make the code compatible with non application/iwpriv  path */
+	if (!pAd->ScanCtrl.ScanTime[0]) {
+		pAd->ScanCtrl.ScanTime[0] = timeout;
+		pAd->ScanCtrl.ScanGivenChannel[0] = channel;
+	}
+	pAd->ApCfg.bAutoChannelAtBootup = ChannelSel;
+	pAd->ChannelInfo.bandidx = 0;
+	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+			("%s : bandidx :%d!! \n", __func__, pAd->ChannelInfo.bandidx));
+	pAd->ChannelInfo.ChannelIdx = Channel2Index(pAd, channel);
+	if (channel) {
+			pAd->ApCfg.current_channel_index = Channel2Index (pAd, channel);
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+				("[%s] ApCfg.current_channel_index = %d\n", __func__, pAd->ApCfg.current_channel_index));
+			pAd->ChannelInfo.ChannelNo = channel;
+	}
+
+	MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+		("%s channel_index:%d channel:%d time:%d\n", __func__, pAd->ApCfg.current_channel_index, channel, pAd->ScanCtrl.ScanTime[0]));
+	MlmeEnqueue(pAd, AP_SYNC_STATE_MACHINE, APMT2_MLME_SCAN_REQ, sizeof(MLME_SCAN_REQ_STRUCT), &ScanReq, (ULONG)wdev);
+	RTMP_MLME_HANDLER(pAd);
+	return CHANNEL_MONITOR_STRG_SUCCESS;
+}
+#endif
+
+#if (defined(CUSTOMER_DCC_FEATURE) || defined(OFFCHANNEL_SCAN_FEATURE))
+UCHAR Channel2Index(
+	IN PRTMP_ADAPTER pAd,
+	IN UCHAR channel)
+{    UCHAR i;
+	 for (i = 0; i < pAd->ChannelListNum; i++)
+	 {        
+	 	if (channel == pAd->ChannelList[i].Channel)
+			return i;    
+	 }    
+	 return -1;
+}
+#endif
 
 
 BOOLEAN ApScanRunning(RTMP_ADAPTER *pAd)
@@ -2173,6 +2365,46 @@ UCHAR FindPartialScanChannel(
 #endif /* AP_PARTIAL_SCAN_SUPPORT */
 #endif /* AP_SCAN_SUPPORT */
 
+
+#ifdef OFFCHANNEL_SCAN_FEATURE
+#define RPI_HIST_NUM	8
+VOID Calculate_NF(RTMP_ADAPTER *pAd)
+{
+	UCHAR idx;
+	INT32 crVal, temp[RPI_HIST_NUM], total;
+	INT16 NF_Power[RPI_HIST_NUM] = {-90, -85, -80, -75, -70, -65, -60, -55};
+	INT32 NF, xNF = 0;
+
+	total = 0;
+	for (idx = 0; idx < RPI_HIST_NUM; idx++) {
+		RTMP_IO_READ32(pAd, CR_RXTD_17 + idx * 4, &crVal);
+		temp[idx] =  crVal & 0x7FFFFF;
+		total += temp[idx];
+		xNF += (NF_Power[idx] * temp[idx]);
+	}
+	NF = xNF/(INT32)total;
+
+	DBGPRINT(RT_DEBUG_TRACE, ("%s NF:%d RPI_CR value: %d %d %d %d %d %d %d %d\n", __func__,\
+						NF, temp[0], temp[1], temp[2], temp[3], temp[4], temp[5], temp[6], temp[7]));
+
+	pAd->ChannelInfo.AvgNF[pAd->ApCfg.current_channel_index] = NF;
+}
+
+
+VOID ResetEnable_NF_Registers(RTMP_ADAPTER *pAd)
+{
+	UINT32 Value = 0;
+
+	RTMP_IO_READ32(pAd,  CR_RXTD_10,  &Value);
+	Value &= ~(1 << 18);
+	RTMP_IO_WRITE32(pAd, CR_RXTD_10,  Value);/* clear */
+	RTMP_IO_WRITE32(pAd, CR_RXTD_11,  0x3B);/* calculation setting */
+	RTMP_IO_READ32(pAd,  CR_PHYMUX_5, &Value);
+	Value &= 0xFFF8FFFF;
+	Value |= (0x5<<16);
+	RTMP_IO_WRITE32(pAd, CR_PHYMUX_5, Value);/* enable rpi report */
+}
+#endif
 
 /*
 	==========================================================================

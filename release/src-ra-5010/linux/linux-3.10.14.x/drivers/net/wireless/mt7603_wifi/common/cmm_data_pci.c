@@ -1874,10 +1874,11 @@ PNDIS_PACKET GetPacketFromRxRing(
 		if (pNewPacket)
 		{
 			RELEASE_NDIS_PACKET(pAd, pNewPacket, NDIS_STATUS_SUCCESS);
-#ifdef NEW_IXIA_METHOD
+#ifdef MAX_CONTINUOUS_TX_CNT
 			/*RX Drop*/
 			pAd->tr_ststic.rx[DROP_NO_BUF]++;
 #endif
+
 		}
 
 		pAd->RxResetDropCount++;

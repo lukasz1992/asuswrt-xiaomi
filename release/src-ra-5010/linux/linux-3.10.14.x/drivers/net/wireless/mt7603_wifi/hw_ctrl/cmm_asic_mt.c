@@ -57,6 +57,16 @@ UINT32 AsicGetChBusyCnt(RTMP_ADAPTER *pAd, UCHAR ch_idx)
 	return msdr16;
 }
 
+UINT32 AsicGetCCANavTxTime(RTMP_ADAPTER *pAd)
+{
+	UINT32 msdr9 = 0;
+
+	/* NAV, CCA, or TX active timer in unit of TU, used for Measurement. (channel busy time) */
+	RTMP_IO_READ32(pAd, MIB_MSDR9, &msdr9);
+	msdr9 &= 0xFFFFFF;
+
+	return msdr9;
+}
 
 
 
@@ -216,7 +226,12 @@ NTSTATUS MtCmdAsicUpdateProtect(RTMP_ADAPTER *pAd, PCmdQElmt CMDQelmt)
 		RTMP_IO_READ32(pAd, AGG_PCR1, &Value);
 		Value &= ~RTS_THRESHOLD_MASK;
 		Value &= ~RTS_PKT_NUM_THRESHOLD_MASK;
-
+#ifdef MAX_CONTINUOUS_TX_CNT
+		if (pAd->ixiaCtrl.iMode == VERIWAVE_MODE) {
+			pAd->bDisableRtsProtect = TRUE;
+			pAd->CommonCfg.RtsThreshold = MAX_RTS_THRESHOLD;
+		}
+#endif
 	if ((
 #ifdef DOT11_N_SUPPORT
 		(pAd->CommonCfg.BACapability.field.AmsduEnable) ||
@@ -227,18 +242,16 @@ NTSTATUS MtCmdAsicUpdateProtect(RTMP_ADAPTER *pAd, PCmdQElmt CMDQelmt)
 		Value |= RTS_PKT_NUM_THRESHOLD(0x7F);
 		tmac_trcr = 0;
 	} else {
+#ifdef APCLI_CERT_SUPPORT
+		if (pAd->bApCliCertForceRTS)
+			Value |= RTS_THRESHOLD(1);
+		else
+#endif/* APCLI_CERT_SUPPORT */
 		Value |= RTS_THRESHOLD(pAd->CommonCfg.RtsThreshold);
 		Value |= RTS_PKT_NUM_THRESHOLD(1);
 		tmac_trcr = I2T_CHK_EN;
         }
 
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
-		/*special for IXIA*/
-		if ((pAd->ContinousTxCnt == CONTINUOUS_TX_CNT) || ((pAd->protectpara & 0x1) == 1)) {
-			Value |= RTS_THRESHOLD(0xFFFFF);
-			Value |= RTS_PKT_NUM_THRESHOLD(0x7F);
-		}
-#endif
 		RTMP_IO_WRITE32(pAd, AGG_PCR1, Value);
 		if(pAd->RalinkCounters.OneSecFalseCCACnt > pAd->Cts2SelfTh) {
 			/*continuous FalseCCA is high within 3 seconds, force cts to self*/
@@ -259,7 +272,7 @@ NTSTATUS MtCmdAsicUpdateProtect(RTMP_ADAPTER *pAd, PCmdQElmt CMDQelmt)
 				RTMP_IO_READ32(pAd, AGG_PCR, &Value);
 				Value |= ERP_PROTECTION_MASK;
 				RTMP_IO_WRITE32(pAd, AGG_PCR, Value);
-
+/*Fix protection Rate to CCK 1M*/
 				RTMP_IO_READ32(pAd, AGG_PCR1, &Value);
 				Value &= ~RTS_THRESHOLD_MASK;
 				Value &= ~RTS_PKT_NUM_THRESHOLD_MASK;
@@ -285,6 +298,7 @@ NTSTATUS MtCmdAsicUpdateProtect(RTMP_ADAPTER *pAd, PCmdQElmt CMDQelmt)
 					Value &= (0<<1);
 					RTMP_IO_WRITE32(pAd, AGG_TEMP, Value);
 				}
+/*recover protection Rate.*/
 			} else {
 				pAd->RtsMonitorCnt++;
 			}

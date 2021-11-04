@@ -947,6 +947,12 @@ GetEncryptType(pAd->ApCfg.ApCliTab[ifIndex].wdev.WepStatus)));
 #endif /* DOT11_N_SUPPORT */
 			)
 			{
+#ifdef APCLI_CERT_SUPPORT
+				if (pAd->bApCliCertTest == TRUE) {
+					AsicSetEdcaParm(pAd, &pApCliEntry->MlmeAux.APEdcaParm);
+					pAd->ApCfg.BssEdcaParm.EdcaUpdateCount++;
+				}
+#endif /* APCLI_CERT_SUPPORT */
 				CLIENT_STATUS_SET_FLAG(pMacEntry, fCLIENT_STATUS_WMM_CAPABLE);
 			}
 			else
@@ -982,6 +988,9 @@ GetEncryptType(pAd->ApCfg.ApCliTab[ifIndex].wdev.WepStatus)));
 			}
 #endif /* WH_EZ_SETUP */
 
+#if defined(MAP_SUPPORT)
+	pMacEntry->DevPeerRole = pApCliEntry->MlmeAux.DevPeerRole;
+#endif
 
 #ifdef MWDS
 			if((CliIdx == 0xff) && (tr_entry->PortSecured == WPA_802_1X_PORT_SECURED))
@@ -1081,6 +1090,47 @@ GetEncryptType(pAd->ApCfg.ApCliTab[ifIndex].wdev.WepStatus)));
     }
 #endif /* WSC_AP_SUPPORT */
 
+#ifdef DOT11_N_SUPPORT
+#ifdef DOT11N_DRAFT3
+#ifdef APCLI_CERT_SUPPORT
+	if (pAd->bApCliCertTest == TRUE) {
+		if ((pAd->CommonCfg.bBssCoexEnable == TRUE)
+		    && (pAd->CommonCfg.Channel <= 14)
+		    && (pApCliEntry->wdev.DesiredHtPhyInfo.bHtEnable == TRUE)
+		    && (pApCliEntry->MlmeAux.ExtCapInfo.BssCoexistMgmtSupport == 1)) {
+			OPSTATUS_SET_FLAG(pAd, fOP_STATUS_SCAN_2040);
+			BuildEffectedChannelList(pAd);
+
+			DBGPRINT(RT_DEBUG_ERROR,
+				 ("LinkUP AP supports 20/40 BSS COEX !!! Dot11BssWidthTriggerScanInt[%d]\n",
+				  pAd->CommonCfg.Dot11BssWidthTriggerScanInt));
+		} else {
+			DBGPRINT(RT_DEBUG_TRACE,
+				 ("not supports 20/40 BSS COEX !!!\n"));
+			DBGPRINT(RT_DEBUG_TRACE,
+				 ("pAd->CommonCfg.bBssCoexEnable %d !!!\n",
+				  pAd->CommonCfg.bBssCoexEnable));
+			DBGPRINT(RT_DEBUG_TRACE,
+				 ("pAd->CommonCfg.Channel %d !!!\n",
+				  pAd->CommonCfg.Channel));
+			DBGPRINT(RT_DEBUG_TRACE,
+				 ("pApCliEntry->wdev.DesiredHtPhyInfo.bHtEnable %d !!!\n",
+				  pApCliEntry->wdev.DesiredHtPhyInfo.bHtEnable));
+			DBGPRINT(RT_DEBUG_TRACE,
+				 ("pAd->ApCliMlmeAux.ExtCapInfo.BssCoexstSup %d !!!\n",
+				  pApCliEntry->MlmeAux.ExtCapInfo.BssCoexistMgmtSupport));
+			DBGPRINT(RT_DEBUG_TRACE,
+				 ("pAd->CommonCfg.CentralChannel %d !!!\n",
+				  pAd->CommonCfg.CentralChannel));
+			DBGPRINT(RT_DEBUG_TRACE,
+				 ("pAd->CommonCfg.PhyMode %d !!!\n",
+				  pAd->CommonCfg.PhyMode));
+		}
+	}
+#endif /* APCLI_CERT_SUPPORT */
+#endif /* DOT11N_DRAFT3 */
+#endif /* DOT11_N_SUPPORT */
+
 /* When root AP is Open WEP, it will cause a fake connection state if user keys in wrong password. */
 	if((result == TRUE) &&
 	   (wdev->AuthMode == Ndis802_11AuthModeOpen) &&
@@ -1143,7 +1193,9 @@ GetEncryptType(pAd->ApCfg.ApCliTab[ifIndex].wdev.WepStatus)));
 VOID ApCliLinkDown(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 {
 	APCLI_STRUCT *pApCliEntry = NULL;
+#ifdef MAC_REPEATER_SUPPORT
 	UCHAR CliIdx = 0xFF;
+#endif
 #if (defined(WH_EVENT_NOTIFIER) && defined(MAC_REPEATER_SUPPORT))
 	REPEATER_CLIENT_ENTRY *pReptEntry = NULL;
 #endif /* MAC_REPEATER_SUPPORT */
@@ -1295,6 +1347,12 @@ VOID ApCliLinkDown(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 #endif
 
 
+#ifdef APCLI_CERT_SUPPORT
+	if (pAd->bApCliCertTest == TRUE) {
+		AsicSetEdcaParm(pAd, &pAd->CommonCfg.APEdcaParm); /* Restore AP's EDCA parameters. */
+		pAd->ApCfg.BssEdcaParm.EdcaUpdateCount++;
+	}
+#endif /* APCLI_CERT_SUPPORT */
 
 	/*for APCLI linkdown*/
 #if defined(MAP_SUPPORT) && defined(WAPP_SUPPORT)
@@ -1898,6 +1956,9 @@ BOOLEAN ApCliPeerAssocRspSanity(
 	PFRAME_802_11 pFrame = (PFRAME_802_11)pMsg;
 	PEID_STRUCT   pEid;
 	ULONG         Length = 0;
+#ifdef MAP_SUPPORT
+	unsigned char map_cap;
+#endif
 #ifdef APCLI_OWE_SUPPORT
 	UCHAR *extension_id;
 	UCHAR *ext_ie_length;
@@ -2018,6 +2079,10 @@ BOOLEAN ApCliPeerAssocRspSanity(
 			/* CCX2, WMM use the same IE value */
 			/* case IE_CCX_V2: */
 			case IE_VENDOR_SPECIFIC:
+#ifdef MAP_SUPPORT
+			if (map_check_cap_ie(pEid, &map_cap) == TRUE)
+				ie_list->MAP_AttriValue = map_cap;
+#endif /* MAP_SUPPORT */
 				/* handle WME PARAMTER ELEMENT */
 				if (NdisEqualMemory(pEid->Octet, WME_PARM_ELEM, 6) && (pEid->Len == 24))
 				{
@@ -2190,8 +2255,10 @@ INT ApCliAllowToSendPacket(
 	UCHAR idx;
 	BOOLEAN	allowed = FALSE;
 	APCLI_STRUCT *apcli_entry;
-	STA_TR_ENTRY *rpt_peer_entry = NULL, *apcli_peer_entry = NULL;
-
+	STA_TR_ENTRY *apcli_peer_entry = NULL;
+#ifdef MAC_REPEATER_SUPPORT
+	STA_TR_ENTRY *rpt_peer_entry = NULL;
+#endif
 
 	for(idx = 0; idx < MAX_APCLI_NUM; idx++)
 	{
@@ -3035,6 +3102,9 @@ VOID APCliInstallPairwiseKey(
 #ifdef MAC_APCLI_SUPPORT
 	BssIdx = APCLI_BSSID_IDX + IfIdx;
 #endif /* MAC_APCLI_SUPPORT */
+#ifdef APCLI_CERT_SUPPORT
+	NdisMoveMemory(pAd->ApCfg.ApCliTab[IfIdx].PTK, pEntry->PTK, LEN_PTK);
+#endif /* APCLI_CERT_SUPPORT */
 
 	WPAInstallPairwiseKey(pAd, BssIdx, pEntry, FALSE);
 }
@@ -3257,6 +3327,43 @@ VOID ApCliUpdateMlmeRate(RTMP_ADAPTER *pAd, USHORT ifIndex)
 				__FUNCTION__, pAd->CommonCfg.MlmeTransmit.word, MinimumRate, ProperMlmeRate));
 }
 
+#ifdef MAP_SUPPORT
+VOID ApCliCheckConConnectivity(RTMP_ADAPTER *pAd, APCLI_STRUCT *pApCliEntry, BCN_IE_LIST *ie_list)
+{
+	struct _vendor_ie_cap *vendor_ie = &ie_list->vendor_ie;
+	UINT32 TotalLen = 0;
+	UCHAR *msg;
+	struct wifi_dev *wdev;
+	struct wapp_event *event;
+
+	wdev = &pApCliEntry->wdev;
+
+	if (!IS_MAP_TURNKEY_ENABLE(pAd))
+		return;
+
+	if (pApCliEntry->last_controller_connectivity != vendor_ie->map_info.connectivity_to_controller) {
+		TotalLen = sizeof(CHAR) * 2 + sizeof(struct map_vendor_ie) + sizeof(UINT32);
+		os_alloc_mem(NULL, (PUCHAR *)&msg, TotalLen);
+		if (msg == NULL) {
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+					("%s:failed to allocated memory\n", __func__));
+			return;
+		}
+		event = (struct wapp_event *)msg;
+		event->event_id = WAPP_MAP_VENDOR_IE;
+		event->ifindex = RtmpOsGetNetIfIndex(wdev->if_dev);
+		NdisCopyMemory(&event->data, &vendor_ie->map_info, sizeof(struct map_vendor_ie));
+		RtmpOSWrielessEventSend(wdev->if_dev, RT_WLAN_EVENT_CUSTOM,
+					OID_WAPP_EVENT, NULL, (PUCHAR)event, TotalLen);
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+					("send connectivity change event to user space %u %u\n",
+					pApCliEntry->last_controller_connectivity,
+					vendor_ie->map_info.connectivity_to_controller));
+		pApCliEntry->last_controller_connectivity = vendor_ie->map_info.connectivity_to_controller;
+		os_free_mem(NULL, (PUCHAR)msg);
+	}
+}
+#endif
 
 extern INT sta_rx_fwd_hnd(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, PNDIS_PACKET pPacket);
 extern INT sta_rx_pkt_allow(RTMP_ADAPTER *pAd, RX_BLK *pRxBlk);
@@ -4335,6 +4442,8 @@ INT Set_ApCliPMFMFPC_Proc(
 
 	pObj = (POS_COOKIE) pAd->OS_Cookie;
 
+	if (pObj == NULL || pObj->ioctl_if_type != INT_APCLI)
+		return FALSE;
 	if (simple_strtol(arg, 0, 10))
 		pAd->ApCfg.ApCliTab[pObj->ioctl_if].PmfCfg.Desired_MFPC = TRUE;
 	else {
@@ -4389,6 +4498,8 @@ INT Set_ApCliPMFMFPR_Proc(
 
 	pObj = (POS_COOKIE) pAd->OS_Cookie;
 
+	if (pObj == NULL || pObj->ioctl_if_type != INT_APCLI)
+		return FALSE;
 	if (simple_strtol(arg, 0, 10))
 		pAd->ApCfg.ApCliTab[pObj->ioctl_if].PmfCfg.Desired_MFPR = TRUE;
 	else {
@@ -4443,6 +4554,8 @@ INT Set_ApCliPMFSHA256_Proc(
 
 	pObj = (POS_COOKIE) pAd->OS_Cookie;
 
+	if (pObj == NULL || pObj->ioctl_if_type != INT_APCLI)
+		return FALSE;
 	if (simple_strtol(arg, 0, 10))
 		pAd->ApCfg.ApCliTab[pObj->ioctl_if].PmfCfg.Desired_PMFSHA256 = TRUE;
 	else
@@ -4469,6 +4582,8 @@ INT set_apcli_sae_group_proc(
 		return FALSE;
 
 	pObj = (POS_COOKIE) pAd->OS_Cookie;
+	if (pObj == NULL || pObj->ioctl_if_type != INT_APCLI)
+		return FALSE;
 	pSaeCfgGroup = &pAd->ApCfg.ApCliTab[pObj->ioctl_if].sae_cfg_group;
 
 
@@ -4505,7 +4620,8 @@ INT set_apcli_owe_group_proc(
 
 	pObj = (POS_COOKIE) pAd->OS_Cookie;
 
-	pObj = (POS_COOKIE) pAd->OS_Cookie;
+	if (pObj == NULL || pObj->ioctl_if_type != INT_APCLI)
+		return FALSE;
 	pcurr_group = &pAd->ApCfg.ApCliTab[pObj->ioctl_if].curr_owe_group;
 
 

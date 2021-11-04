@@ -365,7 +365,10 @@ int rt28xx_init(VOID *pAdSrc, RTMP_STRING *pDefaultMac, RTMP_STRING *pHostName)
 
 	NICInitAsicFromEEPROM(pAd);
 
-
+#ifdef OFFCHANNEL_SCAN_FEATURE
+	OffChanScanCtrlReset(pAd);
+	ResetEnable_NF_Registers(pAd);
+#endif
 	
 #ifdef LED_CONTROL_SUPPORT
 	/* Send LED Setting to MCU */
@@ -1007,6 +1010,9 @@ VOID RTMPDrvClose(VOID *pAdSrc, VOID *net_dev)
 #endif /* CAPTURE_MODE */
 #endif /* CONFIG_FPGA_MODE */
 
+#ifdef OFFCHANNEL_SCAN_FEATURE
+	OffChanScanCtrlReset(pAd);
+#endif
 }
 
 

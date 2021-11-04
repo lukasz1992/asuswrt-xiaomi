@@ -126,7 +126,9 @@ BUILD_TIMER_FUNCTION(ez_wait_for_connection_allow_timeout);
 BUILD_TIMER_FUNCTION(ez_loop_chk_timeout);
 #endif
 #endif /* WH_EZ_SETUP */
-
+#ifdef APCLI_SUPPORT
+BUILD_TIMER_FUNCTION(ApCliWpaDisassocApAndBlockAssoc);
+#endif /* APCLI_SUPPORT */
 #ifdef RTMP_TIMER_TASK_SUPPORT
 static void RtmpTimerQHandle(RTMP_ADAPTER *pAd)
 {

@@ -1279,6 +1279,18 @@ VOID APUpdateBeaconFrame(RTMP_ADAPTER *pAd, INT apidx)
  	}
 #endif
 
+#ifdef MAP_SUPPORT
+	if (IS_MAP_ENABLE(pAd) && wdev->MAPCfg.vendor_ie_len) {
+		ULONG	TmpLen;
+
+		/* Vendor IE */
+		MakeOutgoingFrame(pBeaconFrame + FrameLen, &TmpLen,
+						  wdev->MAPCfg.vendor_ie_len,
+						  wdev->MAPCfg.vendor_ie_buf, END_OF_ARGS);
+
+		FrameLen += TmpLen;
+	}
+#endif
 
 #ifdef DOT11U_INTERWORKING
 	if (pMbss->GASCtrl.b11U_enable) {

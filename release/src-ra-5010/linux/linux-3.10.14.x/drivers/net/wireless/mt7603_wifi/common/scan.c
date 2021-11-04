@@ -27,7 +27,7 @@
 #include "rt_config.h"
 
 #ifdef SCAN_SUPPORT
-static INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
+static INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, UCHAR ScanType, struct wifi_dev *pwdev)
 {
 	INT bw, ch;
 
@@ -143,6 +143,12 @@ static INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwd
 								("[%s] %s AP-Client WPS Partial Scan done!!!\n",
 								__func__, (ch > 14 ? "5G" : "2G")));
 
+#if defined(MAP_SUPPORT)
+						if (IS_MAP_ENABLE(pAd) && IS_MAP_TURNKEY_ENABLE(pAd)) {
+							WscPBCBssTableSort(pAd, pWpsCtrlTemp);
+							wapp_send_wsc_scan_complete_notification(pAd, pwdev);
+						} else
+#endif
 						{
 							if (!pWpsCtrlTemp->WscPBCTimerRunning) {
 								RTMPSetTimer(&pWpsCtrlTemp->WscPBCTimer, 1000);
@@ -151,12 +157,42 @@ static INT scan_ch_restore(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwd
 						}
 					}
 				} else {
+#if defined(MAP_SUPPORT)
+						if (IS_MAP_ENABLE(pAd) && IS_MAP_TURNKEY_ENABLE(pAd)) {
+							WscPBCBssTableSort(pAd, pWpsCtrlTemp);
+							wapp_send_wsc_scan_complete_notification(pAd, pwdev);
+						}
+#endif
 					}
 				}
 			}
 #endif /* WSC_AP_SUPPORT */
 #endif /* APCLI_SUPPORT */
 	}
+#ifdef APCLI_SUPPORT
+#ifdef APCLI_CERT_SUPPORT
+#ifdef DOT11_N_SUPPORT
+#ifdef DOT11N_DRAFT3
+	if (APCLI_IF_UP_CHECK(pAd, 0) && pAd->bApCliCertTest == TRUE && ScanType == SCAN_2040_BSS_COEXIST) {
+		UINT i;
+
+		DBGPRINT(RT_DEBUG_TRACE, ("@(%s)  Scan Done ScanType=%d\n", __func__, ScanType));
+		/* AP sent a 2040Coexistence mgmt frame, then station perform a scan, and then send back the respone. */
+		if ((pAd->CommonCfg.BSSCoexist2040.field.InfoReq == 1)
+			&& OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_SCAN_2040)) {
+			DBGPRINT(RT_DEBUG_TRACE, ("Update2040CoexistFrameAndNotify @%s\n", __func__));
+			for (i = 0; i < MAX_LEN_OF_MAC_TABLE; i++) {
+				if (IS_ENTRY_APCLI(&pAd->MacTab.Content[i])
+					&& (pAd->MacTab.Content[i].func_tb_idx == 0)) {
+					Update2040CoexistFrameAndNotify(pAd, i, TRUE);
+				}
+			}
+		}
+	}
+#endif /* DOT11N_DRAFT3 */
+#endif /* DOT11_N_SUPPORT */
+#endif /* APCLI_CERT_SUPPORT */
+#endif /* APCLI_SUPPORT */
 #endif /* CONFIG_AP_SUPPORT */
 
 
@@ -418,6 +454,10 @@ VOID ScanNextChannel(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 	RALINK_TIMER_STRUCT *sc_timer = NULL;
 	UINT stay_time = 0;
 #ifdef APCLI_SUPPORT
+#ifdef MAP_SUPPORT
+	int index_map = 0;
+	struct wifi_dev *wdev = pwdev;
+#endif
 #endif
 #ifdef WH_EZ_SETUP
 	CHAR apcli_idx = -1;
@@ -461,7 +501,20 @@ VOID ScanNextChannel(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 	}
 	if ((pAd->ScanCtrl.Channel == 0) || ScanPending) 
 	{
-		scan_ch_restore(pAd, OpMode, pwdev);
+#ifdef MAP_SUPPORT
+		wapp_send_scan_complete_notification(pAd, wdev);
+#endif
+		scan_ch_restore(pAd, OpMode, ScanType, pwdev);
+
+#ifdef OFFCHANNEL_SCAN_FEATURE
+		if (pAd->ScanCtrl.state == OFFCHANNEL_SCAN_COMPLETE) {
+			wapp_send_offchan_scan_info_notification(pAd, OFFCHANNEL_INFO_RSP);
+			pAd->ScanCtrl.ScanTime[pAd->ScanCtrl.CurrentGivenChan_Index] = 0;
+			pAd->ScanCtrl.CurrentGivenChan_Index++;
+			pAd->ScanCtrl.state = OFFCHANNEL_SCAN_INVALID;
+		}
+#endif
+
 #ifdef NEIGHBORING_AP_STAT
 		if (!pAd->ApCfg.bPartialScanning) {
 			RtmpOSWrielessEventSend(pAd->net_dev,
@@ -627,8 +680,39 @@ VOID ScanNextChannel(RTMP_ADAPTER *pAd, UCHAR OpMode, struct wifi_dev *pwdev)
 #ifdef CONFIG_AP_SUPPORT					
 #endif			
 		}
+
+#ifdef OFFCHANNEL_SCAN_FEATURE
+	if (pAd->ScanCtrl.state == OFFCHANNEL_SCAN_START) {
+		stay_time = pAd->ScanCtrl.ScanTime[pAd->ScanCtrl.CurrentGivenChan_Index];
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+			("[%s][%d] stay time configured of channel index = %d time = %d\n",
+			__func__, __LINE__, pAd->ScanCtrl.CurrentGivenChan_Index, stay_time));
+		AsicGetCCANavTxTime(pAd);
+		ResetEnable_NF_Registers(pAd);
+		pAd->ScanCtrl.ScanTimeActualStart = ktime_get();
+	}
+#endif
+
 		RTMPSetTimer(sc_timer, stay_time);
 #ifdef APCLI_SUPPORT
+#ifdef MAP_SUPPORT
+		wdev->MAPCfg.FireProbe_on_DFS = FALSE;
+		if ((IS_MAP_TURNKEY_ENABLE(pAd)) &&
+			(!((pAd->CommonCfg.bIEEE80211H == 1) &&
+				RadarChannelCheck(pAd, pAd->ScanCtrl.Channel)))) {
+			if (pwdev != NULL) {
+				while (index_map < MAX_BH_PROFILE_CNT) {
+					if (pwdev->MAPCfg.scan_bh_ssids.scan_SSID_val[index_map].SsidLen > 0) {
+						FireExtraProbeReq(pAd,	OpMode, SCAN_ACTIVE, pwdev,
+							pwdev->MAPCfg.scan_bh_ssids.scan_SSID_val[index_map].ssid,
+							 pwdev->MAPCfg.scan_bh_ssids.scan_SSID_val[index_map].SsidLen);
+					}
+					index_map++;
+				}
+			} else
+				MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("%s wdev is NULL\n", __func__));
+		}
+#endif
 #endif
 
 		if (SCAN_MODE_ACT(ScanType))

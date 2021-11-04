@@ -1541,5 +1541,83 @@ const CHAR* ether_sprintf(const UINT8 *mac)
 
 
 #ifdef APCLI_SUPPORT
+VOID	ApCliRTMPReportMicError(
+	IN	PRTMP_ADAPTER	pAd,
+	IN	UCHAR unicastKey,
+	IN	INT			ifIndex)
+{
+	ULONG	Now;
+	PAPCLI_STRUCT pApCliEntry = NULL;
+
+	DBGPRINT(RT_DEBUG_TRACE,  (" ApCliRTMPReportMicError <---\n"));
+
+	pApCliEntry = &pAd->ApCfg.ApCliTab[ifIndex];
+	/* Record Last MIC error time and count */
+	NdisGetSystemUpTime(&Now);
+	if (pAd->ApCfg.ApCliTab[ifIndex].MicErrCnt == 0) {
+		pAd->ApCfg.ApCliTab[ifIndex].MicErrCnt++;
+		pAd->ApCfg.ApCliTab[ifIndex].LastMicErrorTime = Now;
+		NdisZeroMemory(pAd->ApCfg.ApCliTab[ifIndex].ReplayCounter, 8);
+	} else if (pAd->ApCfg.ApCliTab[ifIndex].MicErrCnt == 1) {
+		if ((pAd->ApCfg.ApCliTab[ifIndex].LastMicErrorTime + (60 * OS_HZ)) < Now) {
+			/* Update Last MIC error time, this did not violate two MIC errors within 60 seconds */
+			pAd->ApCfg.ApCliTab[ifIndex].LastMicErrorTime = Now;
+		} else {
+			pAd->ApCfg.ApCliTab[ifIndex].LastMicErrorTime = Now;
+			/* Violate MIC error counts, MIC countermeasures kicks in */
+			pAd->ApCfg.ApCliTab[ifIndex].MicErrCnt++;
+			/*
+			*We shall block all reception
+			*We shall clean all Tx ring and disassoicate from AP after next EAPOL frame
+
+			*No necessary to clean all Tx ring,
+			*on RTMPHardTransmit will stop sending non-802.1X EAPOL packets
+			*if pAd->StaCfg.MicErrCnt greater than 2.
+			*/
+		}
+	} else {
+		/* MIC error count >= 2 */
+		/* This should not happen */
+		;
+	}
+	MlmeEnqueue(pAd, APCLI_CTRL_STATE_MACHINE, APCLI_MIC_FAILURE_REPORT_FRAME, 1, &unicastKey, ifIndex);
+
+	if (pAd->ApCfg.ApCliTab[ifIndex].MicErrCnt == 2) {
+		DBGPRINT(RT_DEBUG_TRACE,  (" MIC Error count = 2 Trigger Block timer....\n"));
+		DBGPRINT(RT_DEBUG_TRACE, (" pAd->ApCfg.ApCliTab[%d].LastMicErrorTime = %ld\n", ifIndex,
+			pAd->ApCfg.ApCliTab[ifIndex].LastMicErrorTime));
+
+		RTMPSetTimer(&pApCliEntry->MlmeAux.WpaDisassocAndBlockAssocTimer, 100);
+	}
+	DBGPRINT(RT_DEBUG_TRACE,  ("ApCliRTMPReportMicError --->\n"));
+
+}
+
+VOID ApCliWpaDisassocApAndBlockAssoc(
+	IN PVOID SystemSpecific1,
+	IN PVOID FunctionContext,
+	IN PVOID SystemSpecific2,
+	IN PVOID SystemSpecific3)
+{
+
+	RTMP_ADAPTER                *pAd = (PRTMP_ADAPTER)FunctionContext;
+	MLME_DISASSOC_REQ_STRUCT    DisassocReq;
+
+	PAPCLI_STRUCT pApCliEntry;
+
+	pAd->ApCfg.ApCliTab[0].bBlockAssoc = TRUE;
+	DBGPRINT(RT_DEBUG_TRACE,
+		("(%s) disassociate with current AP after sending second continuous EAPOL frame.\n", __func__));
+
+
+	pApCliEntry = &pAd->ApCfg.ApCliTab[0];
+
+	DisassocParmFill(pAd, &DisassocReq, pApCliEntry->MlmeAux.Bssid, REASON_MIC_FAILURE);
+	MlmeEnqueue(pAd, APCLI_ASSOC_STATE_MACHINE, APCLI_MT2_MLME_DISASSOC_REQ,
+		sizeof(MLME_DISASSOC_REQ_STRUCT), &DisassocReq, 0);
+
+	pApCliEntry->MicErrCnt = 0;
+}
+
 #endif/*APCLI_SUPPORT*/
 

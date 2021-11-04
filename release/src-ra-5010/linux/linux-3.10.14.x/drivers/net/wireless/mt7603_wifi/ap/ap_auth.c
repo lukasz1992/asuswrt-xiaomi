@@ -662,7 +662,11 @@ static VOID APPeerAuthReqAtIdleAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 	ASSERT((wdev->func_idx == apidx));
 
 	if ((wdev->if_dev == NULL) || ((wdev->if_dev != NULL) &&
-		!(RTMP_OS_NETDEV_STATE_RUNNING(wdev->if_dev))))
+		(!(RTMP_OS_NETDEV_STATE_RUNNING(wdev->if_dev))
+#ifdef MAP_SUPPORT
+		|| (pAd->ApCfg.MBSSID[apidx].bcn_buf.bBcnSntReq == FALSE)
+#endif
+	)))
 	{
 		DBGPRINT(RT_DEBUG_TRACE, ("AUTH - Bssid IF didn't up yet.\n"));
 		/*return;*/
@@ -1129,7 +1133,11 @@ static VOID APPeerAuthConfirmAction(
 	}
 
 	if ((pAd->ApCfg.MBSSID[apidx].wdev.if_dev != NULL) &&
-		!(RTMP_OS_NETDEV_STATE_RUNNING(pAd->ApCfg.MBSSID[apidx].wdev.if_dev)))
+		(!(RTMP_OS_NETDEV_STATE_RUNNING(pAd->ApCfg.MBSSID[apidx].wdev.if_dev))
+#ifdef MAP_SUPPORT
+		|| (pAd->ApCfg.MBSSID[apidx].bcn_buf.bBcnSntReq == FALSE)
+#endif
+	))
 	{
     	DBGPRINT(RT_DEBUG_TRACE, ("AUTH - Bssid IF didn't up yet.\n"));
 	   	return;

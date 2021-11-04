@@ -253,6 +253,25 @@ VOID ApSiteSurvey(
 	IN 	struct wifi_dev		*wdev
 );
 
+#ifdef OFFCHANNEL_SCAN_FEATURE
+INT ApSiteSurveyNew_by_wdev(
+	IN	PRTMP_ADAPTER	pAd,
+	IN  UINT 		channel,
+	IN  UINT 		timeout,
+	IN	UCHAR		ScanType,
+	IN	BOOLEAN		ChannelSel,
+	struct wifi_dev 	*wdev);
+INT Channel_Info_MsgHandle(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq, POS_COOKIE pObj);
+VOID Calculate_NF(RTMP_ADAPTER *pAd);
+VOID ResetEnable_NF_Registers(RTMP_ADAPTER *pAd);
+#endif
+
+#if (defined(CUSTOMER_DCC_FEATURE) || defined(OFFCHANNEL_SCAN_FEATURE))
+UCHAR Channel2Index(   
+	IN PRTMP_ADAPTER 	pAd,
+	IN UCHAR 			channel);
+#endif
+
 VOID SupportRate(
 	IN PUCHAR SupRate,
 	IN UCHAR SupRateLen,

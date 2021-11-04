@@ -216,6 +216,8 @@ DECLARE_TIMER_FUNCTION(ez_loop_chk_timeout);
 #ifdef MIXMODE_SUPPORT
 DECLARE_TIMER_FUNCTION(MixModeTimeout);
 #endif
-
+#ifdef APCLI_SUPPORT
+DECLARE_TIMER_FUNCTION(ApCliWpaDisassocApAndBlockAssoc);
+#endif /* APCLI_SUPPORT */
 #endif /* __RTMP_TIMER_H__ */
 

@@ -90,12 +90,20 @@ static VOID ApCliCtrlDeAssocAction(
 	IN PRTMP_ADAPTER pAd, 
 	IN MLME_QUEUE_ELEM *Elem);
 
+static VOID ApCliWpaMicFailureReportFrame(
+	IN PRTMP_ADAPTER pAd,
+	IN MLME_QUEUE_ELEM * Elem);
 #ifndef WH_EZ_SETUP
 static
 #endif
 VOID ApCliCtrlDeAuthAction(
 	IN PRTMP_ADAPTER pAd, 
 	IN MLME_QUEUE_ELEM *Elem);
+#ifdef APCLI_CERT_SUPPORT
+static VOID ApCliCtrlScanDoneAction(
+	IN PRTMP_ADAPTER pAd,
+	IN MLME_QUEUE_ELEM * Elem);
+#endif /* APCLI_CERT_SUPPORT */
 
 /*
     ==========================================================================
@@ -181,6 +189,8 @@ VOID ApCliCtrlStateMachineInit(
 
 	/* connected state */
 	StateMachineSetAction(Sm, APCLI_CTRL_CONNECTED, APCLI_CTRL_DISCONNECT_REQ, (STATE_MACHINE_FUNC)ApCliCtrlDeAuthAction);
+	StateMachineSetAction(Sm, APCLI_CTRL_CONNECTED, APCLI_MIC_FAILURE_REPORT_FRAME,
+		(STATE_MACHINE_FUNC)ApCliWpaMicFailureReportFrame);
 #ifdef MAC_REPEATER_SUPPORT
 	StateMachineSetAction(Sm, APCLI_CTRL_CONNECTED, APCLI_CTRL_DEL_MACREPENTRY,
 			(STATE_MACHINE_FUNC)ApCliCtrlDeAuthAction);
@@ -188,6 +198,10 @@ VOID ApCliCtrlStateMachineInit(
 	StateMachineSetAction(Sm, APCLI_CTRL_CONNECTED, APCLI_CTRL_PEER_DISCONNECT_REQ,
 			(STATE_MACHINE_FUNC)ApCliCtrlPeerDeAssocReqAction);
 	StateMachineSetAction(Sm, APCLI_CTRL_CONNECTED, APCLI_CTRL_MT2_AUTH_REQ, (STATE_MACHINE_FUNC)ApCliCtrlProbeRspAction);
+#ifdef APCLI_CERT_SUPPORT
+	StateMachineSetAction(Sm, APCLI_CTRL_CONNECTED, APCLI_CTRL_SCAN_DONE,
+	(STATE_MACHINE_FUNC)ApCliCtrlScanDoneAction);
+#endif /* APCLI_CERT_SUPPORT */
 #ifdef WH_EZ_SETUP
 	StateMachineSetAction(Sm, APCLI_CTRL_CONNECTED, APCLI_CTRL_JOIN_FAIL, (STATE_MACHINE_FUNC)ez_ApCliCtrlJoinFailAction);
 #endif
@@ -1456,7 +1470,7 @@ static VOID ApCliCtrlAssocRspAction(
 #ifdef MAC_REPEATER_SUPPORT
 			&& (CliIdx == 0xFF)
 #endif /* MAC_REPEATER_SUPPORT */
-			)
+			&& (pApCliEntry->bBlockAssoc == FALSE))
 			ApCliSwitchCandidateAP(pAd);
 #endif /* APCLI_AUTO_CONNECT_SUPPORT */
 
@@ -2101,5 +2115,139 @@ VOID ApCliCtrlDeAuthAction(
 	return;
 }
 
+VOID ApCliWpaMicFailureReportFrame(
+	IN PRTMP_ADAPTER pAd,
+	IN MLME_QUEUE_ELEM * Elem)
+{
+	PUCHAR              pOutBuffer = NULL;
+	UCHAR               Header802_3[14];
+	ULONG               FrameLen = 0;
+	UCHAR		*mpool;
+	PEAPOL_PACKET       pPacket;
+	UCHAR               Mic[16];
+	BOOLEAN             bUnicast;
+	UCHAR			Wcid;
+	PMAC_TABLE_ENTRY pMacEntry = NULL;
+	USHORT ifIndex = (USHORT)(Elem->Priv);
+
+	DBGPRINT(RT_DEBUG_TRACE, ("ApCliWpaMicFailureReportFrame ----->\n"));
+
+	if (ifIndex >= MAX_APCLI_NUM)
+		return;
+	bUnicast = (Elem->Msg[0] == 1 ? TRUE:FALSE);
+	pAd->Sequence = ((pAd->Sequence) + 1) & (MAX_SEQ_NUMBER);
+	/* init 802.3 header and Fill Packet */
+	pMacEntry = &pAd->MacTab.Content[pAd->ApCfg.ApCliTab[ifIndex].MacTabWCID];
+	if (!IS_ENTRY_APCLI(pMacEntry)) {
+		DBGPRINT(RT_DEBUG_TRACE, ("%s : !IS_ENTRY_APCLI(pMacEntry)\n", __func__));
+		return;
+	}
+	Wcid =  pAd->ApCfg.ApCliTab[ifIndex].MacTabWCID;
+	MAKE_802_3_HEADER(Header802_3, pAd->MacTab.Content[Wcid].Addr,
+		pAd->ApCfg.ApCliTab[ifIndex].wdev.if_addr, EAPOL);
+
+	/* Allocate memory for output */
+	os_alloc_mem(NULL, (PUCHAR *)&mpool, TX_EAPOL_BUFFER);
+	if (mpool == NULL) {
+		DBGPRINT(RT_DEBUG_TRACE, ("!!!%s : no memory!!!\n", __func__));
+		return;
+	}
+
+	pPacket = (PEAPOL_PACKET)mpool;
+	NdisZeroMemory(pPacket, TX_EAPOL_BUFFER);
+
+	pPacket->ProVer	= EAPOL_VER;
+	pPacket->ProType = EAPOLKey;
+
+	pPacket->KeyDesc.Type = WPA1_KEY_DESC;
+
+	/* Request field presented */
+	pPacket->KeyDesc.KeyInfo.Request = 1;
+
+	if (pAd->ApCfg.ApCliTab[ifIndex].wdev.WepStatus  == Ndis802_11Encryption3Enabled)
+		pPacket->KeyDesc.KeyInfo.KeyDescVer = 2;
+	else
+		pPacket->KeyDesc.KeyInfo.KeyDescVer = 1;/* TKIP */
+
+	pPacket->KeyDesc.KeyInfo.KeyType = (bUnicast ? PAIRWISEKEY : GROUPKEY);
+
+	/* KeyMic field presented */
+	pPacket->KeyDesc.KeyInfo.KeyMic = 1;
+
+	/* Error field presented */
+	pPacket->KeyDesc.KeyInfo.Error  = 1;
+
+	/* Update packet length after decide Key data payload */
+	SET_UINT16_TO_ARRARY(pPacket->Body_Len, MIN_LEN_OF_EAPOL_KEY_MSG)
+
+	/* Key Replay Count */
+	NdisMoveMemory(pPacket->KeyDesc.ReplayCounter, pAd->ApCfg.ApCliTab[ifIndex].ReplayCounter, LEN_KEY_DESC_REPLAY);
+	inc_byte_array(pAd->ApCfg.ApCliTab[ifIndex].ReplayCounter, 8);
+
+	/* Convert to little-endian format. */
+	*((USHORT *)&pPacket->KeyDesc.KeyInfo) = cpu2le16(*((USHORT *)&pPacket->KeyDesc.KeyInfo));
+
+
+	MlmeAllocateMemory(pAd, (PUCHAR *)&pOutBuffer);  /* allocate memory */
+	if (pOutBuffer == NULL) {
+		os_free_mem(NULL, mpool);
+		return;
+	}
+
+	/*
+	*	Prepare EAPOL frame for MIC calculation
+	*	Be careful, only EAPOL frame is counted for MIC calculation
+	*/
+	MakeOutgoingFrame(pOutBuffer, &FrameLen,
+	CONV_ARRARY_TO_UINT16(pPacket->Body_Len) + 4, pPacket, END_OF_ARGS);
+
+	/* Prepare and Fill MIC value */
+	NdisZeroMemory(Mic, sizeof(Mic));
+	if (pAd->ApCfg.ApCliTab[ifIndex].wdev.WepStatus  == Ndis802_11AESEnable) {/* AES */
+		UCHAR digest[20] = {0};
+
+		RT_HMAC_SHA1(pAd->ApCfg.ApCliTab[ifIndex].PTK, LEN_PTK_KCK,
+			pOutBuffer, FrameLen, digest, SHA1_DIGEST_SIZE);
+		NdisMoveMemory(Mic, digest, LEN_KEY_DESC_MIC);
+	} else {/* TKIP */
+		RT_HMAC_MD5(pAd->ApCfg.ApCliTab[ifIndex].PTK, LEN_PTK_KCK, pOutBuffer, FrameLen, Mic, MD5_DIGEST_SIZE);
+	}
+	NdisMoveMemory(pPacket->KeyDesc.KeyMic, Mic, LEN_KEY_DESC_MIC);
+
+	/* copy frame to Tx ring and send MIC failure report frame to authenticator */
+	RTMPToWirelessSta(pAd, &pAd->MacTab.Content[Wcid],
+			Header802_3, LENGTH_802_3,
+			(PUCHAR)pPacket,
+			CONV_ARRARY_TO_UINT16(pPacket->Body_Len) + 4, FALSE);
+
+	MlmeFreeMemory(pAd, (PUCHAR)pOutBuffer);
+
+	os_free_mem(NULL, mpool);
+
+	DBGPRINT(RT_DEBUG_TRACE, ("ApCliWpaMicFailureReportFrame <-----\n"));
+}
+#ifdef APCLI_CERT_SUPPORT
+static VOID ApCliCtrlScanDoneAction(
+	IN PRTMP_ADAPTER pAd,
+	IN MLME_QUEUE_ELEM * Elem)
+{
+
+#ifdef DOT11N_DRAFT3
+	USHORT ifIndex = (USHORT)(Elem->Priv);
+	UCHAR i;
+
+	/* AP sent a 2040Coexistence mgmt frame, then station perform a scan, and then send back the respone. */
+	if ((pAd->CommonCfg.BSSCoexist2040.field.InfoReq == 1)
+		&& OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_SCAN_2040)) {
+		DBGPRINT(RT_DEBUG_TRACE, ("Update2040CoexistFrameAndNotify @%s\n", __func__));
+		for (i = 0; i < MAX_LEN_OF_MAC_TABLE; i++) {
+			if (IS_ENTRY_APCLI(&pAd->MacTab.Content[i]) && (pAd->MacTab.Content[i].func_tb_idx == ifIndex))
+				Update2040CoexistFrameAndNotify(pAd, i, TRUE);
+		}
+	}
+#endif /* DOT11N_DRAFT3 */
+}
+
+#endif /* APCLI_CERT_SUPPORT */
 #endif /* APCLI_SUPPORT */
 

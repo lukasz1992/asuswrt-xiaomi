@@ -489,6 +489,177 @@ VOID SendBSS2040CoexistMgmtAction(
 
 
 
+#if defined(CONFIG_STA_SUPPORT) || defined(APCLI_SUPPORT)
+
+/*
+Description : Build Intolerant Channel Rerpot from Trigger event table.
+return : how many bytes copied. 
+*/
+ULONG BuildIntolerantChannelRep(RTMP_ADAPTER *pAd, UCHAR *pDest) 
+{
+	ULONG			FrameLen = 0;
+	ULONG			ReadOffset = 0;
+	UCHAR			i, j, k, idx = 0;
+	UCHAR			ChannelList[MAX_TRIGGER_EVENT];
+	UCHAR			TmpRegClass;
+	UCHAR			RegClassArray[7] = {0, 11,12, 32, 33, 54,55}; /* Those regulatory class has channel in 2.4GHz. See Annex J.*/
+
+
+	RTMPZeroMemory(ChannelList, MAX_TRIGGER_EVENT);
+
+	/* Find every regulatory class*/
+	for ( k = 0;k < 7;k++)
+	{
+		TmpRegClass = RegClassArray[k];
+		
+		idx = 0;
+		/* Find Channel report with the same regulatory class in 2.4GHz.*/
+		for ( i = 0;i < pAd->CommonCfg.TriggerEventTab.EventANo;i++)
+		{
+			if (pAd->CommonCfg.TriggerEventTab.EventA[i].bValid == TRUE)
+			{
+				if (pAd->CommonCfg.TriggerEventTab.EventA[i].RegClass == TmpRegClass)
+				{				
+					for (j = 0;j < idx;j++)
+					{
+						if (ChannelList[j] == (UCHAR)pAd->CommonCfg.TriggerEventTab.EventA[i].Channel)
+							break;
+					}
+					if ((j == idx))
+					{
+						ChannelList[idx] = (UCHAR)pAd->CommonCfg.TriggerEventTab.EventA[i].Channel;
+						idx++;
+					} 
+					pAd->CommonCfg.TriggerEventTab.EventA[i].bValid = FALSE;
+				}
+				DBGPRINT(RT_DEBUG_ERROR,("ACT - BuildIntolerantChannelRep , Total Channel number = %d \n", idx));
+			}
+		}
+
+		/* idx > 0 means this regulatory class has some channel report and need to copy to the pDest.*/
+		if (idx > 0)
+		{
+			/* For each regaulatory IE report, contains all channels that has the same regulatory class.*/
+			*(pDest + ReadOffset) = IE_2040_BSS_INTOLERANT_REPORT;  /* IE*/
+			*(pDest + ReadOffset + 1) = 1+ idx;	/* Len = RegClass byte + channel byte.*/
+			*(pDest + ReadOffset + 2) = TmpRegClass;	/* Len = RegClass byte + channel byte.*/
+			RTMPMoveMemory(pDest + ReadOffset + 3, ChannelList, idx);
+
+			FrameLen += (3 + idx);
+			ReadOffset += (3 + idx);
+		}
+		
+	}
+
+	DBGPRINT(RT_DEBUG_ERROR,("ACT-BuildIntolerantChannelRep(Size=%ld)\n", FrameLen));
+	hex_dump("ACT-pDestMsg", pDest, FrameLen);
+
+	return FrameLen;
+}
+
+
+/*	
+	==========================================================================
+	Description: 
+	After scan, Update 20/40 BSS Coexistence IE and send out.
+	According to 802.11n D3.03 11.14.10
+		
+	Parameters: 
+	==========================================================================
+ */
+VOID Update2040CoexistFrameAndNotify(
+	IN	PRTMP_ADAPTER	pAd,
+	IN    UCHAR  Wcid,
+	IN	BOOLEAN	bAddIntolerantCha) 
+{
+	BSS_2040_COEXIST_IE		OldValue;
+
+	DBGPRINT(RT_DEBUG_ERROR,("%s(): ACT -BSSCoexist2040 = %x. EventANo = %d. \n",
+				__FUNCTION__, pAd->CommonCfg.BSSCoexist2040.word,
+				pAd->CommonCfg.TriggerEventTab.EventANo));
+
+	OldValue.word = pAd->CommonCfg.BSSCoexist2040.word;
+	/* Reset value.*/
+	pAd->CommonCfg.BSSCoexist2040.word = 0;
+
+	if (pAd->CommonCfg.TriggerEventTab.EventBCountDown > 0)
+		pAd->CommonCfg.BSSCoexist2040.field.BSS20WidthReq = 1;
+
+	/* Need to check !!!!*/
+	/* How STA will set Intolerant40 if implementation dependent. Now we don't set this bit first!!!!!*/
+	/* So Only check BSS20WidthReq change.*/
+	/*if (OldValue.field.BSS20WidthReq != pAd->CommonCfg.BSSCoexist2040.field.BSS20WidthReq)*/
+	{
+		Send2040CoexistAction(pAd, Wcid, bAddIntolerantCha);
+	}
+}
+
+
+/*
+Description : Send 20/40 BSS Coexistence Action frame If one trigger event is triggered.
+*/
+VOID Send2040CoexistAction(
+	IN RTMP_ADAPTER *pAd,
+	IN UCHAR Wcid,
+	IN BOOLEAN bAddIntolerantCha) 
+{
+	UCHAR *pOutBuffer = NULL;
+	NDIS_STATUS NStatus;
+	FRAME_ACTION_HDR Frame;
+	ULONG FrameLen;
+	UINT32 IntolerantChaRepLen;
+	UCHAR HtLen = 1;
+
+	IntolerantChaRepLen = 0;
+	NStatus = MlmeAllocateMemory(pAd, &pOutBuffer);  /*Get an unused nonpaged memory*/
+	if(NStatus != NDIS_STATUS_SUCCESS) 
+	{
+		DBGPRINT(RT_DEBUG_ERROR,("ACT - Send2040CoexistAction() allocate memory failed \n"));
+		return;
+	}
+
+#ifdef DOT11V_WNM_SUPPORT
+	/* Not complete yet. Ignore for compliing successfully.*/
+#else
+#ifdef APCLI_SUPPORT
+	if (IS_ENTRY_APCLI(&pAd->MacTab.Content[Wcid])) {
+		PMAC_TABLE_ENTRY pEntry = NULL;
+		struct wifi_dev *wdev;
+
+		pEntry = &pAd->MacTab.Content[Wcid];
+		wdev = pEntry->wdev;
+		ActHeaderInit(pAd, &Frame.Hdr, pAd->MacTab.Content[Wcid].Addr, wdev->if_addr, pAd->CommonCfg.Bssid);
+	} else
+#endif /* APCLI_SUPPORT */
+	ActHeaderInit(pAd, &Frame.Hdr, pAd->MacTab.Content[Wcid].Addr, pAd->CurrentAddress, pAd->CommonCfg.Bssid);	
+#endif /* DOT11V_WNM_SUPPORT */
+
+	Frame.Category = CATEGORY_PUBLIC;
+	Frame.Action = ACTION_BSS_2040_COEXIST; /*COEXIST_2040_ACTION;*/
+	
+	MakeOutgoingFrame(pOutBuffer,				&FrameLen,
+				  sizeof(FRAME_ACTION_HDR),	  &Frame,
+				  1,                                &BssCoexistIe,
+				  1,                                &HtLen,
+				  1,                                &pAd->CommonCfg.BSSCoexist2040.word,
+				  END_OF_ARGS);
+	
+	if (bAddIntolerantCha == TRUE)
+		IntolerantChaRepLen = BuildIntolerantChannelRep(pAd, pOutBuffer + FrameLen);
+
+	/*2009 PF#3: IOT issue with Motorola AP. It will not check the field of BSSCoexist2040.*/
+	/*11.14.12 Switching between 40 MHz and 20 MHz*/
+	DBGPRINT(RT_DEBUG_TRACE, ("IntolerantChaRepLen=%d, BSSCoexist2040=0x%x!\n", 
+								IntolerantChaRepLen, pAd->CommonCfg.BSSCoexist2040.word));
+	if (!((IntolerantChaRepLen == 0) && (pAd->CommonCfg.BSSCoexist2040.word == 0)))
+		MiniportMMRequest(pAd, QID_AC_BE, pOutBuffer, FrameLen + IntolerantChaRepLen);
+		
+	MlmeFreeMemory(pAd, pOutBuffer);
+	
+	DBGPRINT(RT_DEBUG_TRACE,("ACT - Send2040CoexistAction( BSSCoexist2040 = 0x%x )  \n", pAd->CommonCfg.BSSCoexist2040.word));
+}
+#endif /* defined(CONFIG_STA_SUPPORT) || defined(APCLI_SUPPORT) */
+
 
 BOOLEAN ChannelSwitchSanityCheck(
 	IN	PRTMP_ADAPTER	pAd,
@@ -636,6 +807,12 @@ VOID PeerPublicAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 #ifdef CONFIG_AP_SUPPORT
 				IF_DEV_CONFIG_OPMODE_ON_AP(pAd)
 				{
+
+#ifdef APCLI_SUPPORT
+#ifdef APCLI_CERT_SUPPORT
+					if (!IS_ENTRY_APCLI(&pAd->MacTab.Content[Elem->Wcid])) {
+#endif /* APCLI_CERT_SUPPORT */
+#endif /* APCLI_SUPPORT */
 					BOOLEAN		bNeedFallBack = FALSE;
 									
 					/*ApPublicAction(pAd, Elem);*/
@@ -726,7 +903,12 @@ VOID PeerPublicAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 						for (apidx = 0; apidx < pAd->ApCfg.BssidNum; apidx++)
 							SendBSS2040CoexistMgmtAction(pAd, MCAST_WCID, apidx, 0);
 					}
-						
+
+#ifdef APCLI_SUPPORT
+#ifdef APCLI_CERT_SUPPORT
+					}
+#endif /* APCLI_CERT_SUPPORT */
+#endif /* APCLI_SUPPORT */
 				}
 #endif /* CONFIG_AP_SUPPORT */
 

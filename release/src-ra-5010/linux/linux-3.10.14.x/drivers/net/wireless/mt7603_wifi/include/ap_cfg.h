@@ -252,6 +252,24 @@ INT _Set_AP_VENDOR_SPECIFIC_IE(
 	IN RTMP_STRING *IE,
 	IN UINT32 IELen);
 
+#ifdef MAP_SUPPORT
+INT Set_Bh_Bss_Proc(
+	PRTMP_ADAPTER pAd,
+	char *arg);
+INT Set_Fh_Bss_Proc(
+	PRTMP_ADAPTER pAd,
+	char *arg);
+INT Set_Bh_Sta_Proc(
+	PRTMP_ADAPTER pAd,
+	char *arg);
+INT Set_Map_Channel_Proc(
+	PRTMP_ADAPTER pAd,
+	char *arg);
+INT Set_Map_Channel_En_Proc(
+	RTMP_ADAPTER *pAd,
+	RTMP_STRING *arg);
+
+#endif /* MAP_SUPPORT */
 
 #ifdef APCLI_SUPPORT
 #endif /* APCLI_SUPPORT */

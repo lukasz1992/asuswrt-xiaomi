@@ -1467,11 +1467,6 @@ VOID APStopBssOnly(RTMP_ADAPTER *pAd, BSS_STRUCT *pMbss)
 {
 	BOOLEAN Cancelled;
 	struct wifi_dev *wdev_bss;
-#ifdef WH_EZ_SETUP
-	POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
-	struct wifi_dev *wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
-#endif
-
 	wdev_bss = &pMbss->wdev;
 
 	if (!wdev_bss) {
@@ -1484,69 +1479,11 @@ VOID APStopBssOnly(RTMP_ADAPTER *pAd, BSS_STRUCT *pMbss)
 	RTMP_ASIC_INTERRUPT_DISABLE(pAd);
 #endif
 
-#ifdef DFS_SUPPORT
-		NewRadarDetectionStop(pAd);
-#endif /* DFS_SUPPORT */
-
-#ifdef CONFIG_AP_SUPPORT
-#ifdef CARRIER_DETECTION_SUPPORT
-		if (pAd->CommonCfg.CarrierDetect.Enable == TRUE) {
-			/* make sure CarrierDetect wont send CTS */
-			CarrierDetectionStop(pAd);
-		}
-#endif /* CARRIER_DETECTION_SUPPORT */
-#endif /* CONFIG_AP_SUPPORT */
-
-
-#ifdef WDS_SUPPORT
-	WdsDown(pAd);
-#endif /* WDS_SUPPORT */
-
-#if defined(APCLI_SUPPORT) && defined(MAP_SUPPORT) && defined(A4_CONN)
-	{
-		for (idx = 0; idx < MAX_APCLI_NUM; idx++) {
-			wdev_apcli = &pAd->ApCfg.ApCliTab[idx].wdev;
-
-			/* WPS cli will disconnect and connect again */
-			pWscControl = &pAd->ApCfg.ApCliTab[idx].WscControl;
-			if (pWscControl->bWscTrigger == TRUE)
-				continue;
-
-			if (wdev_apcli->channel == wdev_bss->channel) {
-				UINT8 enable = pAd->ApCfg.ApCliTab[idx].Enable;
-
-				if (enable) {
-					pAd->ApCfg.ApCliTab[idx].Enable = FALSE;
-					ApCliIfDown(pAd);
-					pAd->ApCfg.ApCliTab[idx].Enable = enable;
-				}
-			}
-		}
-	}
-#endif /* APCLI_SUPPORT */
-
 	MacTableResetWdev(pAd, wdev_bss);
 
-	/*RTMP_SET_FLAG(pAd, fRTMP_ADAPTER_HALT_IN_PROGRESS); */
-
-	/* Disable pre-tbtt interrupt */
-	/*CMDHandler(pAd); */
-	AsicSetPreTbtt(pAd, FALSE);
-
-	/* Disable piggyback */
-	RTMPSetPiggyBack(pAd, FALSE);
-
-	AsicUpdateProtect(pAd, 0,  (ALLN_SETPROTECT|CCKSETPROTECT|OFDMSETPROTECT), TRUE, FALSE);
-
-	if (!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_NIC_NOT_EXIST)) {
-		AsicDisableSync(pAd);
-
-#ifdef LED_CONTROL_SUPPORT
-		/* Set LED */
-		RTMPSetLED(pAd, LED_LINK_DOWN);
-#endif /* LED_CONTROL_SUPPORT */
-	}
-
+	pAd->ApCfg.MBSSID[pMbss->mbss_idx].bcn_buf.bBcnSntReq = FALSE;
+	APMakeAllBssBeacon(pAd);
+	APUpdateAllBeaconFrame(pAd);
 
 
 	if (pMbss->REKEYTimerRunning == TRUE) {
@@ -1565,23 +1502,7 @@ VOID APStopBssOnly(RTMP_ADAPTER *pAd, BSS_STRUCT *pMbss)
 	if (wdev_bss->if_dev && pAd->net_dev)
 		wapp_send_bss_state_change(pAd, wdev_bss, WAPP_BSS_STOP);
 #endif /*WAPP_SUPPORT*/
-#if defined(CONFIG_WIFI_PKT_FWD) || defined(CONFIG_WIFI_PKT_FWD_MODULE)
-#if (MT7615_MT7603_COMBO_FORWARDING == 1)
-	{
-		if (wf_fwd_entry_delete_hook)
-			wf_fwd_entry_delete_hook(pAd->net_dev, pMbss->wdev.if_dev, 0);
-
-		if (wf_fwd_check_device_hook)
-			wf_fwd_check_device_hook(pMbss->wdev.if_dev, INT_MBSSID,
-									pMbss->mbss_idx, pMbss->wdev.channel, 0);
-	}
-#endif /* CONFIG_WIFI_PKT_FWD */
-#endif
 	pMbss->bcn_buf.bcn_state = BCN_TX_IDLE;
-#ifdef WH_EZ_SETUP
-	if (IS_CONF_EZ_SETUP_ENABLED(&pMbss->wdev))
-		ez_stop(&pMbss->wdev);
-#endif /* WH_EZ_SETUP */
 
 #ifdef BAND_STEERING
 	if (pAd->ApCfg.BandSteering) {
@@ -1594,37 +1515,6 @@ VOID APStopBssOnly(RTMP_ADAPTER *pAd, BSS_STRUCT *pMbss)
 		}
 	}
 #endif /* BAND_STEERING */
-
-	if (pAd->ApCfg.CMTimerRunning == TRUE) {
-		RTMPCancelTimer(&pAd->ApCfg.CounterMeasureTimer, &Cancelled);
-		pAd->ApCfg.CMTimerRunning = FALSE;
-		pAd->ApCfg.BANClass3Data = FALSE;
-	}
-
-#ifdef WAPI_SUPPORT
-	RTMPCancelWapiRekeyTimerAction(pAd, NULL);
-#endif /* WAPI_SUPPORT */
-
-	/* */
-	/* Cancel the Timer, to make sure the timer was not queued. */
-	/* */
-	/* OPSTATUS_CLEAR_FLAG(pAd, fOP_AP_STATUS_MEDIA_STATE_CONNECTED); */
-	RTMP_IndicateMediaState(pAd, NdisMediaStateDisconnected);
-
-#ifdef IDS_SUPPORT
-	/* if necessary, cancel IDS timer */
-	RTMPIdsStop(pAd);
-#endif /* IDS_SUPPORT */
-
-#ifdef DOT11R_FT_SUPPORT
-	FT_Release(pAd);
-#endif /* DOT11R_FT_SUPPORT */
-
-#ifdef DOT11V_WNM_SUPPORT
-	DMSTable_Release(pAd);
-#endif /* DOT11V_WNM_SUPPORT */
-
-
 }
 
 /*
@@ -2112,8 +2002,8 @@ VOID MacTableMaintenance(RTMP_ADAPTER *pAd)
 #endif /* MAC_REPEATER_SUPPORT */
 		/* detect the station alive status */
 		/* detect the station alive status */
-#ifdef NEW_IXIA_METHOD
-		if (force_connect == 1)
+#ifdef MAX_CONTINUOUS_TX_CNT
+		if (pAd->ixiaCtrl.iForceAge == 1)
 			pEntry->NoDataIdleCount = 0;
 #endif
 		if ((pMbss->StationKeepAliveTime > 0) &&

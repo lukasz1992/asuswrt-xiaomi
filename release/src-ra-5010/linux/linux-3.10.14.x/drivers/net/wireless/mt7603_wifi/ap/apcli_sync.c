@@ -700,6 +700,23 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 			NdisMoveMemory(pApCliEntry->MlmeAux.ExtRate, ie_list->ExtRate, ie_list->ExtRateLen);
 			RTMPCheckRates(pAd, pApCliEntry->MlmeAux.ExtRate, &pApCliEntry->MlmeAux.ExtRateLen);
 
+#ifdef APCLI_CERT_SUPPORT
+			/*  Get the ext capability info element */
+			if (pAd->bApCliCertTest == TRUE) {
+				NdisMoveMemory(&pApCliEntry->MlmeAux.ExtCapInfo,
+					&ie_list->ExtCapInfo, sizeof(ie_list->ExtCapInfo));
+#ifdef DOT11_N_SUPPORT
+#ifdef DOT11N_DRAFT3
+				DBGPRINT(RT_DEBUG_TRACE,
+				("\x1b[31m ApCliMlmeAux.ExtCapInfo=%d \x1b[m\n",
+				pApCliEntry->MlmeAux.ExtCapInfo.BssCoexistMgmtSupport));
+				if (pAd->CommonCfg.bBssCoexEnable == TRUE)
+					pAd->CommonCfg.ExtCapIE.BssCoexistMgmtSupport = 1;
+#endif /* DOT11N_DRAFT3 */
+#endif /* DOT11_N_SUPPORT */
+			}
+#endif /* APCLI_CERT_SUPPORT */
+
 #ifdef DOT11_N_SUPPORT
 			NdisZeroMemory(pApCliEntry->RxMcsSet,sizeof(pApCliEntry->RxMcsSet));
 			/* filter out un-supported ht rates */

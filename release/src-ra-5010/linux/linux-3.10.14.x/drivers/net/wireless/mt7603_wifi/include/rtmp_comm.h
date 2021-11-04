@@ -443,15 +443,13 @@ typedef struct  _PACKET_INFO    {
 
 BOOLEAN ascii2int(RTMP_STRING *in, UINT32 *out);
 #endif
-#ifdef NEW_IXIA_METHOD
+#ifdef MAX_CONTINUOUS_TX_CNT
 extern unsigned short dectlen_l;
 extern unsigned short dectlen_m;
 extern unsigned short dectlen_h;
 #define IS_OSEXPECTED_LENGTH(len) (((len >= (dectlen_l - 4)) && (len <= dectlen_l))\
 		|| ((len >= (dectlen_m - 8)) && (len <= (dectlen_m + 8)))\
 		|| ((len >= (dectlen_h - 8)) && (len <= (dectlen_h + 8))))
-extern int rx_pkt_len;
-extern int rx_pkt_to_os;
 #endif
 #endif /* __RT_COMM_H__ */
 

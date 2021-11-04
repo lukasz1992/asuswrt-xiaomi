@@ -40,9 +40,7 @@
 #ifdef LINUX
 /* Put platform dependent declaration here */
 /* For example, linux type definition */
-#if defined(DOT11_SAE_SUPPORT) || defined(CONFIG_OWE_SUPPORT)
 typedef char INT8;
-#endif
 typedef unsigned char UINT8;
 typedef unsigned short UINT16;
 typedef unsigned int UINT32;

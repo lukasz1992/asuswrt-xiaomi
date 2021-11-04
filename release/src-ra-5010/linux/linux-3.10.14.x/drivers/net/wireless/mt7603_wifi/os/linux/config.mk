@@ -11,7 +11,7 @@ HAS_RSSI_FEEDBACK=n
 
 # Support XLINK mode
 HAS_XLINK=n
-
+HAS_FLASH_SUPPORT=y
 #tx ring size memory slim support
 HAS_MEMORY_SLIM_SUPPORT=n
 
@@ -35,7 +35,7 @@ HAS_LLTD=y
 HAS_WDS=n
 
 # Support AP-Client function
-HAS_APCLI=n
+HAS_APCLI=y
 
 # Support MULTI AP-Client function
 HAS_MULTI_APCLI=n
@@ -328,7 +328,7 @@ HAS_LIMIT_GLOBAL_SW_QUEUE=n
 HAS_PREVENT_ARP_SPOOFING=n
 
 #Add Beacon not Tx WD, an watch dog on some platform
-HAS_DMA_RESET_SUPPORT=n
+HAS_DMA_RESET_SUPPORT=y
 
 #################################################
 
@@ -475,8 +475,9 @@ endif
 ifeq ($(HAS_USB_IOT_WORKAROUND2),y)
 WFLAGS += -DUSB_IOT_WORKAROUND2
 endif
-
-
+ifeq ($(HAS_FLASH_SUPPORT),y)
+WFLAGS += -DRTMP_FLASH_SUPPORT
+endif
 ###############################################################################
 #
 # config for AP mode
@@ -485,7 +486,7 @@ endif
 
 
 ifeq ($(RT28xx_MODE),AP)
-WFLAGS += -DCONFIG_AP_SUPPORT -DMBSS_SUPPORT -DIAPP_SUPPORT  -DDOT1X_SUPPORT -DAP_SCAN_SUPPORT -DSCAN_SUPPORT -Werror
+WFLAGS += -DCONFIG_AP_SUPPORT -DMBSS_SUPPORT -DIAPP_SUPPORT  -DDOT1X_SUPPORT -DAP_SCAN_SUPPORT -DSCAN_SUPPORT #-Werror
 WFLAGS += -DDBG
 ifeq ($(HAS_APCLI_WPA_SUPPLICANT),y)
 WFLAGS += -DApCli_WPA_SUPPLICANT_SUPPORT

@@ -2866,9 +2866,9 @@ INT rtmp_enq_req(RTMP_ADAPTER *pAd, PNDIS_PACKET pkt, UCHAR qidx, STA_TR_ENTRY *
     	     occupied_wcid = fifo_swq->swq[enq_idx];
 #endif /* DBG */
              enq_done = FALSE;
-#ifdef NEW_IXIA_METHOD
-			if (IS_EXPECTED_LENGTH(RTPKT_TO_OSPKT(pkt)->len))
-				pAd->tr_ststic.txfl[0]++;
+#ifdef MAX_CONTINUOUS_TX_CNT
+		if (IS_EXPECTED_LENGTH(RTPKT_TO_OSPKT(pkt)->len))
+			pAd->tr_ststic.txfl[0]++;
 #endif
              goto enq_end;
          }
@@ -2882,7 +2882,7 @@ INT rtmp_enq_req(RTMP_ADAPTER *pAd, PNDIS_PACKET pkt, UCHAR qidx, STA_TR_ENTRY *
         	occupied_wcid = fifo_swq->swq[enq_idx];
 #endif /* DBG */
             enq_done = FALSE;
-#ifdef NEW_IXIA_METHOD
+#ifdef MAX_CONTINUOUS_TX_CNT
 			if (IS_EXPECTED_LENGTH(RTPKT_TO_OSPKT(pkt)->len))
 				pAd->tr_ststic.txfl[0]++;
 #endif
@@ -2910,7 +2910,7 @@ INT rtmp_enq_req(RTMP_ADAPTER *pAd, PNDIS_PACKET pkt, UCHAR qidx, STA_TR_ENTRY *
 					|| RTMP_GET_PACKET_ICMP(pkt)))
 			{
 				if (capCount < FIFO_RSV_FOR_HIGH_PRIORITY) {
-#ifdef NEW_IXIA_METHOD
+#ifdef MAX_CONTINUOUS_TX_CNT
 					if (IS_EXPECTED_LENGTH(RTPKT_TO_OSPKT(pkt)->len))
 						pAd->tr_ststic.txfl[1]++;
 #endif
@@ -2954,10 +2954,6 @@ INT rtmp_enq_req(RTMP_ADAPTER *pAd, PNDIS_PACKET pkt, UCHAR qidx, STA_TR_ENTRY *
 		
 #ifdef MAX_CONTINUOUS_TX_CNT
 		Rtmp_Set_Packet_EnqIdx(pkt,enq_idx);
-		if(pAd->TxSwqCtrl == 1)
-		{
-			DBGPRINT(RT_DEBUG_OFF,("%s(%d)enqIdx = %d,tr_entry->wcid = %d\n",__FUNCTION__,__LINE__,fifo_swq->enqIdx,tr_entry->wcid));
-		}
 #endif
 		INC_RING_INDEX(fifo_swq->enqIdx, TX_SWQ_FIFO_LEN);
 #ifdef LIMIT_GLOBAL_SW_QUEUE
@@ -2979,7 +2975,7 @@ INT rtmp_enq_req(RTMP_ADAPTER *pAd, PNDIS_PACKET pkt, UCHAR qidx, STA_TR_ENTRY *
 				tr_entry->high_pkt_drop_cnt ++;
 			}
 #endif /* DATA_QUEUE_RESERVE */
-#ifdef NEW_IXIA_METHOD
+#ifdef MAX_CONTINUOUS_TX_CNT
 			if (IS_EXPECTED_LENGTH(RTPKT_TO_OSPKT(pkt)->len))
 				pAd->tr_ststic.txfl[1]++;
 #endif
@@ -3266,8 +3262,6 @@ INT rtmp_deq_report(RTMP_ADAPTER *pAd, struct dequeue_info *info)
 
 					if(fifo_swq->swq[info->CurSwqIdx] == info->cur_wcid)
 						fifo_swq->swq[info->CurSwqIdx] = 0;
-					if((pAd->TxSwqCtrl == 3) && (tr_entry->tx_queue[info->cur_q].AlreadyDeqCnt %5 ==0))
-						DBGPRINT(RT_DEBUG_OFF,("%s(%d)deqidx(%d),curswq(%d),deqcnt(%d),wcid(%d).\n",__FUNCTION__,__LINE__,fifo_swq->deqIdx,info->CurSwqIdx,tr_entry->tx_queue[info->cur_q].AlreadyDeqCnt,info->cur_wcid));
 				}
 				pQueue = &tr_entry->tx_queue[qidx];
 				if ((pQueue->Head == NULL) || (tr_entry->tx_queue[info->cur_q].AlreadyDeqCnt >= pAd->ContinousTxCnt))//already TX 21 PKTS, stop and go to next WCID.
@@ -3275,9 +3269,6 @@ INT rtmp_deq_report(RTMP_ADAPTER *pAd, struct dequeue_info *info)
 					tr_entry->tx_queue[info->cur_q].AlreadyDeqCnt = 0;//clear current swq[deq_idx] and deq_idx move.
 					fifo_swq->swq[fifo_swq->deqIdx] = 0;
 					INC_RING_INDEX(fifo_swq->deqIdx, TX_SWQ_FIFO_LEN);
-
-					if((pAd->TxSwqCtrl == 3)&&(tr_entry->tx_queue[info->cur_q].AlreadyDeqCnt == pAd->ContinousTxCnt))
-						DBGPRINT(RT_DEBUG_OFF,("%s(%d)AlreadyDeqCnt = %d DataQueue %s.\n",__FUNCTION__,__LINE__,tr_entry->tx_queue[info->cur_q].AlreadyDeqCnt,(pQueue->Head == NULL?"NULL":"MORE")));
 				}
 #else
 				fifo_swq->swq[fifo_swq->deqIdx] = 0;
@@ -3433,8 +3424,6 @@ dequeue:
 			if(SwqIdx != AP_MAX_SWQIDX){
 				deq_info->CurSwqIdx = SwqIdx;
 			}
-			if(pAd->TxSwqCtrl == 1)
-				DBGPRINT(RT_DEBUG_OFF,("%s(%d)deq_info->CurSwqIdx = %d\n",__FUNCTION__,__LINE__,deq_info->CurSwqIdx));
 #endif
 			DBGPRINT(RT_DEBUG_INFO | DBG_FUNC_TXQ,
 						("-->%s(): GetPacket, wcid=%d, deq_pkt_cnt=%d, TotalFrameNum=%d\n",
@@ -3457,7 +3446,7 @@ dequeue:
 				RELEASE_NDIS_PACKET(pAd, pPacket, NDIS_STATUS_FAILURE);
 
 				deq_info->deq_pkt_cnt++;
-#ifdef NEW_IXIA_METHOD
+#ifdef MAX_CONTINUOUS_TX_CNT
 				if (IS_EXPECTED_LENGTH(RTPKT_TO_OSPKT(pPacket)->len))
 					pAd->tr_ststic.tx[DROP_TX_JAM]++;
 #endif
@@ -5248,16 +5237,46 @@ INT DynamicWMMDetectAction(RTMP_ADAPTER *pAd)
 	return TRUE;
 }
 #endif /* DYNAMIC_WMM */
-#ifdef NEW_IXIA_METHOD
+#ifdef MAX_CONTINUOUS_TX_CNT
+char *tdrop_reason[MAX_TDROP_RESON] = {
+	"NULL",
+	"INVALID_PKT_LEN",
+	"INVALID_TR_WCID",
+	"INVALID_TR_ENTRY",
+	"INVALID_WDEV",
+	"INVALID_ETH_TYPE",
+	"DROP_PORT_SECURE",
+	"DROP_PSQ_FULL",
+	"DROP_TXQ_FULL",
+	"DROP_TX_JAM",
+	"DROP_TXQ_ENQ_FAIL",
+	"DROP_TXQ_ENQ_PS ",
+	"DROP_HW_RESET",
+	"DROP_80211H_MODE",
+	"DROP_BLK_INFO_ERROR",
+};
+char *rdrop_reason[MAX_RDROP_RESON] = {
+	"RPKT_SUCCESS",
+	"ALREADY_IN_ORDER",
+	"DUP_SEQ_PKT",
+	"DROP_OLD_PKT",
+	"DROP_NO_BUF",
+	"DROP_DUP_FRAME",
+	"DROP_NOT_ALLOW",
+	"DROP_RING_FULL",
+	"DROP_DATA_SIZE",
+	"DROP_INFO_NULL",
+	"DROP_RXD_ERROR",
+};
 void wifi_txrx_parmtrs_dump(RTMP_ADAPTER *pAd)
 {
 	UINT8 idx = 0;
 
-	if (tx_pkt_from_os >= 500) {
+	if (pAd->tr_ststic.tx_pkt_from_os >= 500) {
 		DBGPRINT(RT_DEBUG_OFF, ("************ TX ************\n"));
-		DBGPRINT(RT_DEBUG_OFF, ("tx_pkt_len    : %d .\n", tx_pkt_len));
-		DBGPRINT(RT_DEBUG_OFF, ("tx_pkt_from_os: %d .\n", tx_pkt_from_os));
-		DBGPRINT(RT_DEBUG_OFF, ("tx_pkt_to_hw  : %d .\n", tx_pkt_to_hw));
+		DBGPRINT(RT_DEBUG_OFF, ("tx_pkt_len    : %d .\n", pAd->tr_ststic.tx_pkt_len));
+		DBGPRINT(RT_DEBUG_OFF, ("tx_pkt_from_os: %d .\n", pAd->tr_ststic.tx_pkt_from_os));
+		DBGPRINT(RT_DEBUG_OFF, ("tx_pkt_to_hw  : %d .\n", pAd->tr_ststic.tx_pkt_to_hw));
 		for (idx = 1; idx < MAX_TDROP_RESON; idx++) {
 			if (pAd->tr_ststic.tx[idx] == 0)
 				continue;
@@ -5267,27 +5286,31 @@ void wifi_txrx_parmtrs_dump(RTMP_ADAPTER *pAd)
 				DBGPRINT(RT_DEBUG_OFF, ("perQ-drop = %d,fifoQ-drop = %d\n",
 					pAd->tr_ststic.txfl[0], pAd->tr_ststic.txfl[1]));
 			}
+			pAd->tr_ststic.tx[idx] = 0;
+			pAd->tr_ststic.txfl[0] = 0;
+			pAd->tr_ststic.txfl[1] = 0;
 		}
-		tx_pkt_len = 0;
-		tx_pkt_from_os = 0;
-		tx_pkt_to_hw = 0;
+		pAd->tr_ststic.tx_pkt_len = 0;
+		pAd->tr_ststic.tx_pkt_from_os = 0;
+		pAd->tr_ststic.tx_pkt_to_hw = 0;
 	}
-	if (rx_pkt_from_hw >= 500) {
+	if (pAd->tr_ststic.rx_pkt_from_hw >= 500) {
 		DBGPRINT(RT_DEBUG_OFF, ("************ RX ************\n"));
-		DBGPRINT(RT_DEBUG_OFF, ("rx_pkt_len    : %d .\n", rx_pkt_len));
-		DBGPRINT(RT_DEBUG_OFF, ("rx_pkt_from_hw: %d .\n", rx_pkt_from_hw));
+		DBGPRINT(RT_DEBUG_OFF, ("rx_pkt_len    : %d .\n", pAd->tr_ststic.rx_pkt_len));
+		DBGPRINT(RT_DEBUG_OFF, ("rx_pkt_from_hw: %d .\n", pAd->tr_ststic.rx_pkt_from_hw));
 		DBGPRINT(RT_DEBUG_OFF, ("rx_pkt_to_os  : %d .\n", rx_pkt_to_os));
 		for (idx = 1; idx < MAX_RDROP_RESON; idx++) {
 			if (pAd->tr_ststic.rx[idx] == 0)
 				continue;
 			DBGPRINT(RT_DEBUG_OFF, ("RX Drop Reason:%s,Drop Cnt:%d\n",
 				rdrop_reason[idx], pAd->tr_ststic.rx[idx]));
+			pAd->tr_ststic.rx[idx] = 0;
 		}
-		rx_pkt_len = 0;
-		rx_pkt_from_hw = 0;
+		pAd->tr_ststic.rx_pkt_len = 0;
+		pAd->tr_ststic.rx_pkt_from_hw = 0;
 		rx_pkt_to_os = 0;
 	}
-	NdisZeroMemory(&pAd->tr_ststic, sizeof(WTRC));
 	/*DBGPRINT(RT_DEBUG_OFF, ("txpktdetect2s: %d, rxpktdetect2s: %d .\n", txpktdetect2s, rxpktdetect2s));*/
 }
 #endif
+

@@ -25,38 +25,6 @@
  
 #include	"rt_config.h"
 #include "ap.h"
-#ifdef NEW_IXIA_METHOD
-char *tdrop_reason[MAX_TDROP_RESON] = {
-	"NULL",
-	"INVALID_PKT_LEN",
-	"INVALID_TR_WCID",
-	"INVALID_TR_ENTRY",
-	"INVALID_WDEV",
-	"INVALID_ETH_TYPE",
-	"DROP_PORT_SECURE",
-	"DROP_PSQ_FULL",
-	"DROP_TXQ_FULL",
-	"DROP_TX_JAM",
-	"DROP_TXQ_ENQ_FAIL",
-	"DROP_TXQ_ENQ_PS ",
-	"DROP_HW_RESET",
-	"DROP_80211H_MODE",
-	"DROP_BLK_INFO_ERROR",
-};
-char *rdrop_reason[MAX_RDROP_RESON] = {
-	"RPKT_SUCCESS",
-	"ALREADY_IN_ORDER",
-	"DUP_SEQ_PKT",
-	"DROP_OLD_PKT",
-	"DROP_NO_BUF",
-	"DROP_DUP_FRAME",
-	"DROP_NOT_ALLOW",
-	"DROP_RING_FULL",
-	"DROP_DATA_SIZE",
-	"DROP_INFO_NULL",
-	"DROP_RXD_ERROR",
-};
-#endif
 
 #ifdef APCLI_OWE_SUPPORT
 #define OWETRANSIE_LINE_LEN	(10)	/*OWETranIe*/
@@ -623,12 +591,12 @@ INT	Set_Channel_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 				if (pAd->Dot11_H.RDMode == RD_SILENCE_MODE)
 				{
 					AsicSwitchChannel(pAd, RFChannel, FALSE);
-#ifdef CONFIG_MAP_SUPPORT
+#ifdef MAP_SUPPORT
 					if (!IS_MAP_ENABLE(pAd) || !pAd->bMAPQuickChChangeEn) {
 #endif
 					APStop(pAd);
 					APStartUp(pAd);
-#ifdef CONFIG_MAP_SUPPORT
+#ifdef MAP_SUPPORT
 					} else {
 for (i = 0; i < WDEV_NUM_MAX; i++) {
 	if (pAd->wdev_list[i] != NULL &&
@@ -650,13 +618,16 @@ ap_phy_rrm_init(pAd);
 			}
 			else
 			{
-#ifdef CONFIG_MAP_SUPPORT
+#ifdef MAP_SUPPORT
 				if (!IS_MAP_ENABLE(pAd) || !pAd->bMAPQuickChChangeEn) {
 #endif
 				AsicSwitchChannel(pAd, RFChannel, FALSE);
 				APStop(pAd);
+#ifdef OFFCHANNEL_SCAN_FEATURE
+				wapp_send_offchan_scan_info_notification(pAd, DRIVER_CHANNEL_SWITCH_SUCCESSFUL);
+#endif
 				APStartUp(pAd);
-#ifdef CONFIG_MAP_SUPPORT
+#ifdef MAP_SUPPORT
 				} else {
 for (i = 0; i < WDEV_NUM_MAX; i++) {
 	if (pAd->wdev_list[i] != NULL && pAd->wdev_list[i]->wdev_type == WDEV_TYPE_AP)
@@ -684,7 +655,7 @@ ap_phy_rrm_init(pAd);
 	return Success;
 }
 
-#ifdef CONFIG_MAP_SUPPORT
+#ifdef MAP_SUPPORT
 /*
 *    ==========================================================================
 *    Description:
@@ -2163,33 +2134,6 @@ INT Set_FlagFastDetectStaOff_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 }
 #endif
 
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
-INT	Set_Rssi_Threshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
-{
-	UINT rssithval;
-	rssithval = simple_strtol(arg, 0, 10);
-	pAd->DeltaRssiTh = rssithval;
-	DBGPRINT_S(("==>%s(): pAd->DeltaRssiTh = %d\n", __FUNCTION__, pAd->DeltaRssiTh));
-	return TRUE;
-}
-INT	Set_ContinousTxCnt_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
-{
-	UINT txcnt;
-	txcnt = simple_strtol(arg, 0, 10);
-	pAd->ContinousTxCnt = txcnt;
-	pAd->MonitorFlag = FALSE;
-	DBGPRINT_S(("==>%s(): pAd->ContinousTxCnt = %d\n", __FUNCTION__, pAd->ContinousTxCnt));
-	return TRUE;
-}
-INT	Set_Rate_Threshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
-{
-	UINT ratethval;
-	ratethval = simple_strtol(arg, 0, 10);
-	pAd->RateTh = ratethval;
-	DBGPRINT_S(("==>%s(): pAd->RateTh = %d\n", __FUNCTION__, pAd->RateTh));
-	return TRUE;
-}
-#endif
 /* 
     ==========================================================================
     Description:
@@ -7499,31 +7443,6 @@ INT Show_sta_tr_proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 
 	return TRUE;
 }
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
-INT Show_TxSwqInfo_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
-{
-	UCHAR Qindex;
-	
-	Qindex = (UCHAR)simple_strtol(arg, 0, 10);
-	if(Qindex < 0 || Qindex >=4 ){
-		DBGPRINT(RT_DEBUG_OFF, ("Invlaid Qindex,should be 0-3!\n"));
-		return FALSE;
-	}
-	rtmp_tx_swq_dump(pAd,Qindex);
-	DBGPRINT(RT_DEBUG_OFF, ("Dump tx_swq[%d] infor success!\n",Qindex));
-	return TRUE;
-}
-INT Set_TxSwqCtrl_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
-{
-	UCHAR Ctrl;
-	Ctrl = (UCHAR)simple_strtol(arg, 0, 10);
-	pAd->TxSwqCtrl = Ctrl; 
-	DBGPRINT(RT_DEBUG_OFF, ("1:enq/deq swqidx check.2:deq_req() queue NULL check.3:deq_report() status check.4: drop and ps event statistic.\n"));
-	DBGPRINT(RT_DEBUG_OFF, ("pAd->TxSwqCtrl  = %d!\n",pAd->TxSwqCtrl ));
-	return TRUE;
-}
-
-#endif
 INT show_stainfo_proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 {
 	INT i;
@@ -9594,26 +9513,127 @@ INT32 ShowSCSInfo(RTMP_ADAPTER *pAd, RTMP_STRING *Arg)
 }
 #endif /* SMART_CARRIER_SENSE_SUPPORT */
 
-#ifdef NEW_IXIA_METHOD
-UCHAR force_connect = 0xF;
-INT force_connect_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+#ifdef MAX_CONTINUOUS_TX_CNT
+INT	Set_Rssi_Threshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 {
-	int dbg;
+	UINT rssithval;
 
-	dbg = (int)simple_strtol(arg, 0, 10);
-	force_connect = (UCHAR)dbg;
-	DBGPRINT_S(("<==%s(force_connect = %d)\n", __func__, force_connect));
+	rssithval = simple_strtol(arg, 0, 10);
+	pAd->DeltaRssiTh = rssithval;
+	DBGPRINT_S(("==>%s(): pAd->DeltaRssiTh = %d\n", __func__, pAd->DeltaRssiTh));
+	return TRUE;
+}
+INT	Set_IXIA_TX_MODE_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	UINT Mode;
+
+	Mode = simple_strtol(arg, 0, 10);
+	/*Force max tx cnt*/
+	if (Mode == 1) {
+		pAd->ContinousTxCnt = CONTINUOUS_TX_CNT;
+		pAd->ixiaCtrl.iForceMTO = 0;
+	}
+	/*force Multi-client MAC to One MAC*/
+	if (Mode == 2) {
+		pAd->ContinousTxCnt = 1;
+		pAd->ixiaCtrl.iForceMTO = 1;
+	}
+	DBGPRINT_S(("==>%s(%d): ContinousTxCnt(%d), iForceMTO(%d)\n", __func__, Mode,
+		pAd->ContinousTxCnt, pAd->ixiaCtrl.iForceMTO));
+	return TRUE;
+}
+INT	Set_MinRssi_Threshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	CHAR rssithval;
+
+	rssithval = (CHAR)simple_strtol(arg, 0, 10);
+	pAd->MinRssiTh = rssithval;
+	DBGPRINT_S(("==>%s(): pAd->MinRssiTh = %d\n", __func__, pAd->MinRssiTh));
+	return TRUE;
+}
+INT Show_TxSwqInfo_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	UCHAR Qindex = 5;
+	UINT32 mac_val = 0;
+
+	if (arg)
+		Qindex = (UCHAR)simple_strtol(arg, 0, 10);
+	if (Qindex == 5) {
+		DBGPRINT(RT_DEBUG_OFF, ("pAd->TxSwQMaxLen: %d(%d)\n",
+					pAd->TxSwQMaxLen, MAX_PACKETS_IN_QUEUE));
+		DBGPRINT(RT_DEBUG_OFF, ("STAQ(%d), FIFOQ(%d)\n",
+					SQ_ENQ_NORMAL_MAX, TX_SWQ_FIFO_LEN));
+		DBGPRINT(RT_DEBUG_OFF, ("* TX-RingSize = %d   *\n", TX_RING_SIZE));
+		DBGPRINT(RT_DEBUG_OFF, ("* RX-RingSize = %d   *\n", RX_RING_SIZE));
+		DBGPRINT(RT_DEBUG_OFF, ("* MAX_RX_CNT  = %d   *\n", MAX_RX_PROCESS_CNT));
+		DBGPRINT(RT_DEBUG_OFF, ("* MAX_REORDERING_MPDU_NUM	= %d   *\n",
+						MAX_REORDERING_MPDU_NUM));
+		DBGPRINT(RT_DEBUG_OFF, ("* RX_BUFFER_AGGRESIZE	= %d   *\n", RX_BUFFER_AGGRESIZE));
+		DBGPRINT(RT_DEBUG_OFF,
+			("* TxPkts(%d), iMacflag(%d), iRssiflag(%d), iMode(%d), itxCtrl(%d) *\n",
+			pAd->ContinousTxCnt, pAd->ixiaCtrl.iMacflag, pAd->ixiaCtrl.iRssiflag,
+			pAd->ixiaCtrl.iMode, pAd->ixiaCtrl.itxCtrl));
+		DBGPRINT(RT_DEBUG_OFF, ("* MinRssiTh(%d), DeltaRssiTh(%d) *\n",
+					pAd->MinRssiTh, pAd->DeltaRssiTh));
+		DBGPRINT(RT_DEBUG_OFF, ("* iForceMTO(%d)*\n", pAd->ixiaCtrl.iForceMTO));
+		RTMP_IO_READ32(pAd, AGG_AALCR, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* AGGCR	   = 0x%x *\n", mac_val));
+		RTMP_IO_READ32(pAd, WF_PHY_BASE + 0x0618, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* EDCCA	   = 0x%x *\n", mac_val));
+		RTMP_IO_READ32(pAd, WF_PHY_BASE + 0x0620, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* PD		= 0x%x *\n", mac_val));
+		RTMP_IO_READ32(pAd, TMAC_TRCR, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* I2T		 = 0x%x *\n", mac_val));
+		RTMP_IO_READ32(pAd, AGG_PCR, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* CTS		 = 0x%x *\n", mac_val));
+		RTMP_IO_READ32(pAd, AGG_PCR1, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* RTS		 = 0x%x *\n", mac_val));
+		RTMP_IO_READ32(pAd, TMAC_PCR, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* CTS-CCK	 = 0x%x *\n", mac_val));
+		RTMP_IO_READ32(pAd, CR_AGC_0, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* VGA(0x%x)	   = 0x%x *\n", CR_AGC_0, mac_val));
+		RTMP_IO_READ32(pAd, CR_AGC_0_RX1, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* VGA(0x%x)	   = 0x%x *\n", CR_AGC_0_RX1, mac_val));
+		RTMP_IO_READ32(pAd, CR_AGC_3, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* VGA(0x%x)	   = 0x%x *\n", CR_AGC_3, mac_val));
+		RTMP_IO_READ32(pAd, CR_AGC_3_RX1, &mac_val);
+		DBGPRINT(RT_DEBUG_OFF, ("* VGA(0x%x)	   = 0x%x *\n", CR_AGC_3_RX1, mac_val));
+		DBGPRINT(RT_DEBUG_OFF, ("* detcect length:%d - %d - %d *\n",
+					dectlen_l, dectlen_m, dectlen_h));
+		DBGPRINT(RT_DEBUG_OFF, ("pAd->BATable.ba_reordering_packet_timeout: %d\n",
+			pAd->BATable.ba_reordering_packet_timeout));
+	return TRUE;
+	}
+	if (Qindex < 0 || Qindex >= 4) {
+		DBGPRINT(RT_DEBUG_OFF, ("Invlaid Qindex,should be 0-3!\n"));
+		return FALSE;
+	}
+	rtmp_tx_swq_dump(pAd, Qindex);
+	DBGPRINT(RT_DEBUG_OFF, ("Dump tx_swq[%d] infor success!\n", Qindex));
 	return TRUE;
 }
 
+INT Set_TxSwqCtrl_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	UCHAR Ctrl;
+
+	Ctrl = (UCHAR)simple_strtol(arg, 0, 10);
+	if (Ctrl > 7) {
+		DBGPRINT(RT_DEBUG_OFF, ("Value out of range(%d).\n", Ctrl));
+		return TRUE;
+	}
+	pAd->ixiaCtrl.itxCtrl = Ctrl;
+	DBGPRINT(RT_DEBUG_OFF, ("cmd(%d), ixiatxCtrl(%d).\n", Ctrl, pAd->ixiaCtrl.itxCtrl));
+	return TRUE;
+}
 INT Set_chkT_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 {
 	int dbg;
 
 	DBGPRINT_S(("==>%s()\n", __func__));
 	dbg = (int)simple_strtol(arg, 0, 10);
-	pAd->chkTmr = dbg;
-	DBGPRINT_S(("<==%s(pAd->chkTmr = %d)\n", __func__, pAd->chkTmr));
+	pAd->tr_ststic.chkTmr = dbg;
+	DBGPRINT_S(("<==%s(pAd->chkTmr = %d)\n", __func__, pAd->tr_ststic.chkTmr));
 	return TRUE;
 }
 INT Set_pkt_threshld_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
@@ -9622,7 +9642,7 @@ INT Set_pkt_threshld_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 
 	DBGPRINT_S(("==>%s()\n", __func__));
 	dbg = (int)simple_strtol(arg, 0, 10);
-	pAd->pktthld = dbg;
+	pAd->tr_ststic.pktthld = dbg;
 	if (dbg == 0) {
 		dectlen_l = 8;
 		dectlen_m = 8;
@@ -9632,7 +9652,7 @@ INT Set_pkt_threshld_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 		dectlen_m = 512;
 		dectlen_h = 1518;
 	}
-	DBGPRINT_S(("<==%s(pAd->pktthld = %d)\n", __func__, pAd->pktthld));
+	DBGPRINT_S(("<==%s(pAd->pktthld = %d)\n", __func__, pAd->tr_ststic.pktthld));
 	return TRUE;
 }
 
@@ -9654,6 +9674,12 @@ INT Set_statistic_pktlen_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 	return TRUE;
 }
 
+INT set_cts2self_Threshold_proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
+{
+	pAd->Cts2SelfTh = (UINT32)simple_strtol(arg, 0, 10);
+	DBGPRINT_S(("<==%s(pAd->Cts2SelfTh= %d)\n", __func__, pAd->Cts2SelfTh));
+	return TRUE;
+}
 
 INT set_Protection_Parameter_Set_proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 {

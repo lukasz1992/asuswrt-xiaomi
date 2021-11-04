@@ -1097,6 +1097,11 @@ BOOLEAN MacTableDeleteEntry(RTMP_ADAPTER *pAd, USHORT wcid, UCHAR *pAddr)
 			COPY_MAC_ADDR(TmpAddrForIndicate, pEntry->Addr);
 			bIndicateSendEvent = TRUE;
 #endif/* defined(RT_CFG80211_SUPPORT) || defined(MBO_SUPPORT) */
+#ifdef WAPP_SUPPORT
+			if ((wdev != NULL) && IS_ENTRY_CLIENT(pEntry))
+				wapp_send_cli_leave_event(pAd, RtmpOsGetNetIfIndex(wdev->if_dev), pAddr);
+#endif/* WAPP_SUPPORT */
+
 #ifdef WH_EZ_SETUP	// Fix to avoid transmitting frames with an all-zero MAC address
 			if (!IS_EZ_SETUP_ENABLED(pEntry->wdev))
 			{
@@ -1109,11 +1114,6 @@ BOOLEAN MacTableDeleteEntry(RTMP_ADAPTER *pAd, USHORT wcid, UCHAR *pAddr)
 #ifdef FAST_DETECT_STA_OFF
 			NdisZeroMemory(&pEntry->ConCounters, sizeof(struct _COUNTER_CON));
 #endif
-#ifdef WAPP_SUPPORT
-			if ((wdev != NULL) && IS_ENTRY_CLIENT(pEntry))
-				wapp_send_cli_leave_event(pAd, RtmpOsGetNetIfIndex(wdev->if_dev), pAddr);
-#endif/* WAPP_SUPPORT */
-
 			/* invalidate the entry */
 			tr_entry->PortSecured = WPA_802_1X_PORT_NOT_SECURED;			
 			SET_ENTRY_NONE(pEntry);

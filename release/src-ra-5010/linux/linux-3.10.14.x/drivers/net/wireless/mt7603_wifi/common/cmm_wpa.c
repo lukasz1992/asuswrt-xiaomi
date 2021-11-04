@@ -1574,13 +1574,14 @@ VOID PeerPairMsg2Action(
 
 		wdev = &pAd->ApCfg.MBSSID[apidx].wdev;
 		pBssid = wdev->bssid;
-		if (FALSE
 #if defined(DOT11_SAE_SUPPORT) || defined(CONFIG_OWE_SUPPORT)
+		if (FALSE
 			|| (pEntry->AuthMode == Ndis802_11AuthModeOWE) || (pEntry->AuthMode == Ndis802_11AuthModeWPA3PSK)
-#endif
+
 			)
 			pmk_ptr = pEntry->PMK;
 		else
+#endif
 			pmk_ptr = pAd->ApCfg.MBSSID[apidx].PMK;
 		gtk_ptr = pAd->ApCfg.MBSSID[apidx].GTK;
 		group_cipher = wdev->GroupKeyWepStatus;
@@ -2222,6 +2223,13 @@ VOID PeerPairMsg3Action(
 #ifdef MWDS
 					MWDSAPCliPeerEnable(pAd, pApCliEntry, pEntry);
 #endif
+#ifdef MAP_SUPPORT
+					DBGPRINT(RT_DEBUG_TRACE, ("APCLIENT MAP_ENABLE\n"));
+#ifdef A4_CONN
+					map_a4_peer_enable(pAd, pEntry, FALSE);
+#endif
+					map_send_bh_sta_wps_done_event(pAd, pEntry, FALSE);
+#endif
 				}
 			}
 #endif /* defined(MWDS) || defined(MAP_SUPPORT) */
@@ -2594,6 +2602,13 @@ VOID PeerPairMsg4Action(
 #ifdef MWDS
 			MWDSAPPeerEnable(pAd, pEntry);
 #endif
+#if defined(MAP_SUPPORT)
+			MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("MAP_ENABLE\n"));
+#if defined(A4_CONN)
+			map_a4_peer_enable(pAd, pEntry, TRUE);
+#endif
+			map_send_bh_sta_wps_done_event(pAd, pEntry, TRUE);
+#endif /* MAP_SUPPORT */
 
 #ifdef WAPP_SUPPORT
 			wapp_send_cli_join_event(pAd, pEntry);
@@ -2804,6 +2819,8 @@ VOID	PeerGroupMsg1Action(
 	UCHAR CliIdx = 0xFF;
 #endif /* MAC_REPEATER_SUPPORT */
 	STA_TR_ENTRY *tr_entry;
+	PHEADER_802_11 pHeader;
+	unsigned char hdr_len = LENGTH_802_11;
 	UCHAR idx = 0;
 
 	DBGPRINT(RT_DEBUG_TRACE, ("===> PeerGroupMsg1Action \n"));
@@ -2845,9 +2862,14 @@ VOID	PeerGroupMsg1Action(
 	if (pCurrentAddr == NULL)
 		return;
 
-	/* Process Group Message 1 frame. skip 802.11 header(24) & LLC_SNAP header(8)*/
-	pGroup = (PEAPOL_PACKET) &Elem->Msg[LENGTH_802_11 + LENGTH_802_1_H];
-	MsgLen = Elem->MsgLen - LENGTH_802_11 - LENGTH_802_1_H;
+	pHeader = (PHEADER_802_11)Elem->Msg;
+#ifdef A4_CONN
+	if (pHeader->FC.FrDs == 1 && pHeader->FC.ToDs == 1)
+		hdr_len = LENGTH_802_11_WITH_ADDR4;
+#endif
+	/* Process Group Message 1 frame. skip 802.11 header(24/30) & LLC_SNAP header(8)*/
+	pGroup = (PEAPOL_PACKET)&Elem->Msg[hdr_len + LENGTH_802_1_H];
+	MsgLen = Elem->MsgLen - hdr_len - LENGTH_802_1_H;
 
 	/* Sanity Check peer group message 1 - Replay Counter, MIC, RSNIE*/
 	if (PeerWpaMessageSanity(pAd, pGroup, MsgLen, EAPOL_GROUP_MSG_1, pEntry) == FALSE) {
@@ -6925,6 +6947,27 @@ VOID RTMPSetWcidSecurityInfo(
 
 }
 
+
+/*
+ * inc_byte_array - Increment arbitrary length byte array by one
+ * @counter: Pointer to byte array
+ * @len: Length of the counter in bytes
+ *
+ * This function increments the last byte of the counter by one and continues
+ * rolling over to more significant bytes if the byte was incremented from
+ * 0xff to 0x00.
+ */
+void inc_byte_array(UCHAR *counter, int len)
+{
+	int pos = len - 1;
+
+	while (pos >= 0) {
+		counter[pos]++;
+		if (counter[pos] != 0)
+			break;
+		pos--;
+	}
+}
 
 #ifdef CONFIG_OWE_SUPPORT
 

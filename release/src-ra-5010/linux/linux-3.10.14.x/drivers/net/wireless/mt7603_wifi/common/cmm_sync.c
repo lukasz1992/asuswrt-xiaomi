@@ -632,4 +632,124 @@ VOID Handle_BSS_Width_Trigger_Events(RTMP_ADAPTER *pAd)
 }
 #endif /* DOT11_N_SUPPORT */
 #endif /* CONFIG_AP_SUPPORT */
+#if defined(CONFIG_STA_SUPPORT) || defined(APCLI_SUPPORT)
+
+#ifdef DOT11_N_SUPPORT
+#ifdef DOT11N_DRAFT3
+VOID BuildEffectedChannelList(
+	IN PRTMP_ADAPTER pAd)
+{
+	UCHAR		EChannel[11];
+	UCHAR		i, j, k;
+	UCHAR		UpperChannel = 0, LowerChannel = 0;
+
+	RTMPZeroMemory(EChannel, 11);
+	DBGPRINT(RT_DEBUG_TRACE, ("BuildEffectedChannelList:CtrlCh=%d,CentCh=%d\n",
+								pAd->CommonCfg.Channel, pAd->CommonCfg.CentralChannel));
+
+	/*
+	*	802.11n D4 11.14.3.3: If no secondary channel has been selected,
+	*	all channels in the frequency band shall be scanned.
+	*/
+
+	for (k = 0; k < pAd->ChannelListNum; k++) {
+		if (pAd->ChannelList[k].Channel <= 14)
+			pAd->ChannelList[k].bEffectedChannel = TRUE;
+	}
+	return;
+	i = 0;
+	/* Find upper and lower channel according to 40MHz current operation. */
+	if (pAd->CommonCfg.CentralChannel < pAd->CommonCfg.Channel) {
+		UpperChannel = pAd->CommonCfg.Channel;
+		LowerChannel = pAd->CommonCfg.CentralChannel-2;
+	} else if (pAd->CommonCfg.CentralChannel > pAd->CommonCfg.Channel) {
+		UpperChannel = pAd->CommonCfg.CentralChannel+2;
+		LowerChannel = pAd->CommonCfg.Channel;
+	} else {
+		DBGPRINT(RT_DEBUG_TRACE, ("LinkUP 20MHz . No Effected Channel\n"));
+		/* Now operating in 20MHz, doesn't find 40MHz effected channels */
+		return;
+	}
+
+	DeleteEffectedChannelList(pAd);
+
+	DBGPRINT(RT_DEBUG_TRACE,
+		("BuildEffectedChannelList!LowerChannel ~ UpperChannel; %d ~ %d\n", LowerChannel, UpperChannel));
+
+	/* Find all channels that are below lower channel.. */
+	if (LowerChannel > 1) {
+		EChannel[0] = LowerChannel - 1;
+		i = 1;
+		if (LowerChannel > 2) {
+			EChannel[1] = LowerChannel - 2;
+			i = 2;
+			if (LowerChannel > 3) {
+				EChannel[2] = LowerChannel - 3;
+				i = 3;
+			}
+		}
+	}
+	/* Find all channels that are between  lower channel and upper channel. */
+	for (k = LowerChannel; k <= UpperChannel; k++) {
+		EChannel[i] = k;
+		i++;
+	}
+	/* Find all channels that are above upper channel.. */
+	if (UpperChannel < 14) {
+		EChannel[i] = UpperChannel + 1;
+		i++;
+		if (UpperChannel < 13) {
+			EChannel[i] = UpperChannel + 2;
+			i++;
+			if (UpperChannel < 12) {
+				EChannel[i] = UpperChannel + 3;
+				i++;
+			}
+		}
+	}
+	/*
+	*	Total i channels are effected channels.
+	*	Now find corresponding channel in ChannelList array.  Then set its bEffectedChannel= TRUE
+	*/
+	for (j = 0; j < i; j++) {
+		for (k = 0; k < pAd->ChannelListNum; k++) {
+			if (pAd->ChannelList[k].Channel == EChannel[j]) {
+				pAd->ChannelList[k].bEffectedChannel = TRUE;
+				DBGPRINT(RT_DEBUG_TRACE, (" EffectedChannel[%d]( =%d)\n", k, EChannel[j]));
+				break;
+			}
+		}
+	}
+}
+
+
+VOID DeleteEffectedChannelList(
+	IN PRTMP_ADAPTER pAd)
+{
+	UCHAR i;
+
+	/*Clear all bEffectedChannel in ChannelList array. */
+	for (i = 0; i < pAd->ChannelListNum; i++)
+		pAd->ChannelList[i].bEffectedChannel = FALSE;
+}
+#endif /* DOT11N_DRAFT3 */
+#endif /* DOT11_N_SUPPORT */
+
+VOID ScanParmFill(
+	IN PRTMP_ADAPTER pAd,
+	IN OUT MLME_SCAN_REQ_STRUCT *ScanReq,
+	IN RTMP_STRING Ssid[],
+	IN UCHAR SsidLen,
+	IN UCHAR BssType,
+	IN UCHAR ScanType)
+{
+	NdisZeroMemory(ScanReq->Ssid, MAX_LEN_OF_SSID);
+	ScanReq->SsidLen = SsidLen;
+	NdisMoveMemory(ScanReq->Ssid, Ssid, SsidLen);
+	ScanReq->BssType = BssType;
+	ScanReq->ScanType = ScanType;
+}
+
+#endif /* defined(CONFIG_STA_SUPPORT) || defined(APCLI_SUPPORT) */
+
 

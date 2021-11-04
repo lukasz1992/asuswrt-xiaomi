@@ -883,7 +883,7 @@ static void rtmp_read_ap_client_from_file(
 				if (wdev->AuthMode >= Ndis802_11AuthModeWPA)
 					wdev->WepStatus = Ndis802_11TKIPEnable;                       
             }
-			else if (rtstrcasecmp(macptr, "AES") == TRUE)
+			else if (rtstrcasecmp(macptr, "AES") == TRUE || rtstrcasecmp(macptr, "TKIPAES") == TRUE)
 			{
 				if (wdev->AuthMode >= Ndis802_11AuthModeWPA)
 					wdev->WepStatus = Ndis802_11AESEnable;                            
@@ -903,6 +903,8 @@ static void rtmp_read_ap_client_from_file(
 			pApCliEntry->GroupCipher    = wdev->WepStatus;
 			pApCliEntry->bMixCipher		= FALSE;
 			
+			if (wdev->WepStatus >= Ndis802_11TKIPEnable)
+				wdev->DefaultKeyId = 1;
 			DBGPRINT(RT_DEBUG_TRACE, ("I/F(apcli%d) APCli_EncrypType = %d \n", i, wdev->WepStatus));
 			RTMPMakeRSNIE(pAd, wdev->AuthMode, wdev->WepStatus, (i + MIN_NET_DEVICE_FOR_APCLI));
 		}
@@ -977,27 +979,126 @@ static void rtmp_read_ap_client_from_file(
 #ifdef DOT11W_PMF_SUPPORT
 	/* Protection Management Frame Capable */
 	if (RTMPGetKeyParameter("ApCliPMFMFPC", tmpbuf, 32, buffer, TRUE)) {
+		RTMP_STRING *orig_tmpbuf = tmpbuf;
 		for (i = 0, macptr = rstrtok(tmpbuf, ";");
-			(macptr && i < MAX_APCLI_NUM); macptr = rstrtok(NULL, ";"),
-			i++) {
-			Set_ApCliPMFMFPC_Proc(pAd, macptr);
+			(macptr && i < MAX_APCLI_NUM); macptr = rstrtok(NULL, ";"), i++) {
+			if (i == 0 && orig_tmpbuf != macptr)
+				i = 1;
+			if (i >= MAX_APCLI_NUM) {
+				DBGPRINT(RT_DEBUG_ERROR, (" APCLI index: %d >= %d(MAX_APCLI_NUM) is invalid!",
+					i, MAX_APCLI_NUM));
+				continue;
+			}
+			pApCliEntry = &pAd->ApCfg.ApCliTab[i];
+			if (pApCliEntry == NULL) {
+				DBGPRINT(RT_DEBUG_ERROR, ("pApCliEntry is NULL, invalid!"));
+				continue;
+			}
+			if ((strncmp(macptr, "1", 1) == 0)) {
+				pApCliEntry->PmfCfg.Desired_MFPC = TRUE;
+			} else {
+				pApCliEntry->PmfCfg.Desired_MFPC = FALSE;
+				pApCliEntry->PmfCfg.MFPC = FALSE;
+				pApCliEntry->PmfCfg.MFPR = FALSE;
+			}
+			if ((pApCliEntry->wdev.AuthMode == Ndis802_11AuthModeWPA2
+				|| pApCliEntry->wdev.AuthMode == Ndis802_11AuthModeWPA2PSK
+#ifdef APCLI_SAE_SUPPORT
+				|| pApCliEntry->wdev.AuthMode == Ndis802_11AuthModeWPA3PSK
+#endif
+#ifdef APCLI_OWE_SUPPORT
+				|| pApCliEntry->wdev.AuthMode == Ndis802_11AuthModeOWE
+#endif
+				) && pApCliEntry->wdev.WepStatus == Ndis802_11AESEnable) {
+				pApCliEntry->PmfCfg.PMFSHA256 = pApCliEntry->PmfCfg.Desired_PMFSHA256;
+				if (pApCliEntry->PmfCfg.Desired_MFPC) {
+					pApCliEntry->PmfCfg.MFPC = TRUE;
+					pApCliEntry->PmfCfg.MFPR = pApCliEntry->PmfCfg.Desired_MFPR;
+					if (pApCliEntry->PmfCfg.MFPR == TRUE)
+						pApCliEntry->PmfCfg.PMFSHA256 = TRUE;
+					}
+				} else if (pApCliEntry->PmfCfg.Desired_MFPC)
+					DBGPRINT(RT_DEBUG_WARN, ("[PMF]%s:: Security is not WPA2/WPA2PSK AES\n",
+					__func__));
+			DBGPRINT(RT_DEBUG_OFF,
+				("[PMF]%s (%d):: MFPC=%d, MFPR=%d, SHA256=%d\n",
+				__func__, __LINE__, pApCliEntry->PmfCfg.MFPC,
+				pApCliEntry->PmfCfg.MFPR, pApCliEntry->PmfCfg.PMFSHA256));
 		}
 	}
 
 	/* Protection Management Frame Required */
 	if (RTMPGetKeyParameter("ApCliPMFMFPR", tmpbuf, 32, buffer, TRUE)) {
+		RTMP_STRING *orig_tmpbuf = tmpbuf;
 		for (i = 0, macptr = rstrtok(tmpbuf, ";");
 			(macptr && i < MAX_APCLI_NUM); macptr = rstrtok(NULL, ";"),
 			i++) {
-			Set_ApCliPMFMFPR_Proc(pAd, macptr);
+				if (i == 0 && orig_tmpbuf != macptr)
+					i = 1;
+				if (i >= MAX_APCLI_NUM) {
+					DBGPRINT(RT_DEBUG_ERROR, (" APCLI index: %d >= %d(MAX_APCLI_NUM) is invalid!",
+							i, MAX_APCLI_NUM));
+					continue;
+				}
+				pApCliEntry = &pAd->ApCfg.ApCliTab[i];
+				if (pApCliEntry == NULL) {
+					DBGPRINT(RT_DEBUG_ERROR, ("pApCliEntry is NULL, invalid!"));
+					continue;
+				}
+				if ((strncmp(macptr, "1", 1) == 0)) {
+					pApCliEntry->PmfCfg.Desired_MFPR = TRUE;
+				} else {
+					pApCliEntry->PmfCfg.Desired_MFPR = FALSE;
+					pApCliEntry->PmfCfg.MFPR = FALSE;
+				}
+				if (((pApCliEntry->wdev.AuthMode == Ndis802_11AuthModeWPA2) ||
+				(pApCliEntry->wdev.AuthMode == Ndis802_11AuthModeWPA2PSK)
+#ifdef APCLI_SAE_SUPPORT
+				|| (pApCliEntry->wdev.AuthMode == Ndis802_11AuthModeWPA3PSK)
+#endif
+#ifdef APCLI_OWE_SUPPORT
+				|| (pApCliEntry->wdev.AuthMode == Ndis802_11AuthModeOWE)
+#endif
+				) && (pApCliEntry->wdev.WepStatus == Ndis802_11AESEnable)) {
+					pApCliEntry->PmfCfg.PMFSHA256 = pApCliEntry->PmfCfg.Desired_PMFSHA256;
+				if (pApCliEntry->PmfCfg.Desired_MFPC) {
+					pApCliEntry->PmfCfg.MFPC = TRUE;
+					pApCliEntry->PmfCfg.MFPR = pApCliEntry->PmfCfg.Desired_MFPR;
+					if (pApCliEntry->PmfCfg.MFPR)
+						pApCliEntry->PmfCfg.PMFSHA256 = TRUE;
+				}
+			} else if (pApCliEntry->PmfCfg.Desired_MFPC)
+				DBGPRINT(RT_DEBUG_WARN,
+					("[PMF]%s:: Security is not WPA2/WPA2PSK AES\n", __func__));
+			DBGPRINT(RT_DEBUG_OFF, ("[PMF]%s(%d):: MFPC=%d, MFPR=%d, SHA256=%d\n",
+				__func__, __LINE__, pApCliEntry->PmfCfg.MFPC, pApCliEntry->PmfCfg.MFPR,
+				pApCliEntry->PmfCfg.PMFSHA256));
 		}
 	}
 
 	if (RTMPGetKeyParameter("ApCliPMFSHA256", tmpbuf, 32, buffer, TRUE)) {
+		RTMP_STRING *orig_tmpbuf = tmpbuf;
 		for (i = 0, macptr = rstrtok(tmpbuf, ";");
 			(macptr && i < MAX_APCLI_NUM); macptr = rstrtok(NULL, ";"),
 			i++) {
-			Set_ApCliPMFSHA256_Proc(pAd, macptr);
+			if (i == 0 && orig_tmpbuf != macptr)
+				i = 1;
+			if (i >= MAX_APCLI_NUM) {
+				DBGPRINT(RT_DEBUG_ERROR, (" APCLI index: %d >= %d(MAX_APCLI_NUM) is invalid!",
+					i, MAX_APCLI_NUM));
+				continue;
+			}
+			pApCliEntry = &pAd->ApCfg.ApCliTab[i];
+			if (pApCliEntry == NULL) {
+				DBGPRINT(RT_DEBUG_ERROR, ("pApCliEntry is NULL, invalid!"));
+				continue;
+			}
+			if ((strncmp(macptr, "1", 1) == 0))
+				pApCliEntry->PmfCfg.Desired_PMFSHA256 = TRUE;
+			else
+				pApCliEntry->PmfCfg.Desired_PMFSHA256 = FALSE;
+			DBGPRINT(RT_DEBUG_ERROR, ("[PMF]%s(%d):: Desired PMFSHA256=%d\n",
+					__func__, __LINE__, pApCliEntry->PmfCfg.Desired_PMFSHA256));
 		}
 	}
 #endif /* DOT11W_PMF_SUPPORT */
@@ -1593,7 +1694,7 @@ static void rtmp_read_radius_parms_from_file(RTMP_ADAPTER *pAd, RTMP_STRING *tmp
 	/*if (RTMPGetKeyParameter("RADIUS_Key", tmpbuf, 640, buffer, FALSE))*/
 	offset = 0;
 	memset(&count[0], 0, sizeof(count));
-	while (RTMPGetKeyParameterWithOffset("RADIUS_Key1", tmpbuf, &offset, 640, buffer, FALSE))
+	while (RTMPGetKeyParameterWithOffset("RADIUS_Key", tmpbuf, &offset, 640, buffer, FALSE))
 	{
 		if (strlen(tmpbuf) > 0)
 			bUsePrevFormat = TRUE;
@@ -3294,6 +3395,9 @@ NDIS_STATUS	RTMPSetProfileParameters(
 #ifdef MBO_SUPPORT
 		ReadMboParameterFromFile(pAd, tmpbuf, pBuffer);
 #endif/* MBO_SUPPORT */
+#ifdef MAP_SUPPORT
+		ReadMapParameterFromFile(pAd, tmpbuf, pBuffer);
+#endif /* MAP_SUPPORT */
 
 		/*AuthMode*/
 		if(RTMPGetKeyParameter("AuthMode", tmpbuf, 128, pBuffer, TRUE))

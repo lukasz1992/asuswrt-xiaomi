@@ -1267,6 +1267,9 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 			mbss->StationKeepAliveTime = 60;
 
 			mbss->ProbeRspTimes = 3;
+#ifdef MAP_SUPPORT
+			MAP_Init(pAd, wdev, WDEV_TYPE_AP);
+#endif /* MAP_SUPPORT */
 #ifdef SPECIFIC_TX_POWER_SUPPORT
 			if (IS_RT6352(pAd))
 				mbss->TxPwrAdj = -1;
@@ -1437,11 +1440,18 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 
 #ifdef APCLI_SUPPORT
 		pAd->ApCfg.FlgApCliIsUapsdInfoUpdated = FALSE;
+#ifdef APCLI_CERT_SUPPORT
+		pAd->bApCliCertTest = FALSE;
+		pAd->bApCliCertForceRTS = FALSE;
+#endif /* APCLI_CERT_SUPPORT */
 		pAd->ApCfg.ApCliNum = MAX_APCLI_NUM;
 		for(j = 0; j < MAX_APCLI_NUM; j++)
 		{
 			APCLI_STRUCT *apcli_entry = &pAd->ApCfg.ApCliTab[j];
 			struct wifi_dev *wdev = &apcli_entry->wdev;
+#ifdef MAP_SUPPORT
+			MAP_Init(pAd, wdev, WDEV_TYPE_STA);
+#endif /* MAP_SUPPORT */
 #ifdef APCLI_AUTO_CONNECT_SUPPORT
 			apcli_entry->AutoConnectFlag = FALSE;
 #endif
@@ -1454,6 +1464,8 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 #ifdef WSC_AP_SUPPORT
 			apcli_entry->WscControl.WscApCliScanMode = TRIGGER_FULL_SCAN;
 #endif /* WSC_AP_SUPPORT */
+			pAd->ApCfg.ApCliTab[j].bBlockAssoc = FALSE;
+			pAd->ApCfg.ApCliTab[j].MicErrCnt = 0;
 		}
 #endif /* APCLI_SUPPORT */
 		pAd->ApCfg.EntryClientCount = 0;
@@ -1806,15 +1818,16 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 #ifdef DATA_QUEUE_RESERVE
 	pAd->bQueueRsv = TRUE;
 #endif /* DATA_QUEUE_RESERVE */
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
-	pAd->DeltaRssiTh = 10;/* initial as 10dBm*/
+#ifdef MAX_CONTINUOUS_TX_CNT
+	pAd->DeltaRssiTh = 15;/* initial as 10dBm*/
 	pAd->ContinousTxCnt = 1;
-	pAd->MonitorFlag = TRUE;/*Default monitor*/
-	pAd->RateTh = 104;
-	pAd->chkTmr = 2;
-	pAd->pktthld = 0;/*50.*/
-	pAd->protectpara = 0;
+	pAd->tr_ststic.chkTmr = 2;
+	pAd->tr_ststic.pktthld = 0;/*50.*/
+	pAd->protectpara = 0x1;
+	pAd->MinRssiTh = -65;
+	memset(&pAd->ixiaCtrl, 0, sizeof(IXIA_CTL));
 #endif
+
 #ifdef STA_FORCE_ROAM_SUPPORT
 		load_froam_defaults(pAd);
 #endif

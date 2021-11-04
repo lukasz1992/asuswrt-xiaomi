@@ -139,6 +139,9 @@ VOID ApCliAssocStateMachineInit(
 		RTMPInitTimer(pAd, &pAd->ApCfg.ApCliTab[i].MlmeAux.ApCliAssocTimer,
 						GET_TIMER_FUNCTION(ApCliAssocTimeout), pAd, FALSE);
 
+		RTMPInitTimer(pAd, &pAd->ApCfg.ApCliTab[i].MlmeAux.WpaDisassocAndBlockAssocTimer,
+						GET_TIMER_FUNCTION(ApCliWpaDisassocApAndBlockAssoc), pAd, FALSE);
+
 #ifdef MAC_REPEATER_SUPPORT
 		for (j = 0; j < MAX_EXT_MAC_ADDR_SIZE; j++)
 		{
@@ -416,6 +419,29 @@ static VOID ApCliMlmeAssocReqAction(
 			}
 #endif /* DOT11_VHT_AC */
 		}
+		#ifdef APCLI_CERT_SUPPORT
+		if (pAd->bApCliCertTest == TRUE) {
+			ULONG TmpLen;
+			EXT_CAP_INFO_ELEMENT extCapInfo;
+			UCHAR extInfoLen;
+
+			extInfoLen = sizeof(EXT_CAP_INFO_ELEMENT);
+			NdisZeroMemory(&extCapInfo, extInfoLen);
+
+			if ((pAd->CommonCfg.bBssCoexEnable == TRUE) &&
+				WMODE_CAP_N(pAd->CommonCfg.PhyMode)
+			    && (pAd->CommonCfg.Channel <= 14)) {
+				extCapInfo.BssCoexistMgmtSupport = 1;
+				DBGPRINT(RT_DEBUG_TRACE, ("%s: BssCoexistMgmtSupport = 1\n", __func__));
+			}
+			MakeOutgoingFrame(pOutBuffer + FrameLen, &TmpLen,
+					1, &ExtCapIe,
+					1, &extInfoLen,
+					extInfoLen,	&extCapInfo,
+					END_OF_ARGS);
+			FrameLen += TmpLen;
+		}
+#endif /* APCLI_CERT_SUPPORT */
 #endif /* DOT11_N_SUPPORT */
 
 #ifdef WH_EZ_SETUP
@@ -677,6 +703,10 @@ static VOID ApCliMlmeAssocReqAction(
 
 #endif /*APCLI_OWE_SUPPORT*/
 
+#ifdef MAP_SUPPORT
+		if (IS_MAP_ENABLE(pAd))
+			MAP_InsertMapCapIE(pAd, wdev, pOutBuffer+FrameLen, &FrameLen);
+#endif /* MAP_SUPPORT */
 
 		MiniportMMRequest(pAd, QID_AC_BE, pOutBuffer, FrameLen);
 		MlmeFreeMemory(pAd, pOutBuffer);
@@ -908,6 +938,10 @@ static VOID ApCliPeerAssocRspAction(
 
 			if(Status == MLME_SUCCESS) 
 			{
+#ifdef MAP_SUPPORT
+				if (IS_MAP_ENABLE(pAd))
+					pApCliEntry->MlmeAux.DevPeerRole = ie_list->MAP_AttriValue;
+#endif /* MAP_SUPPORT */
 				/* go to procedure listed on page 376 */
 #ifdef MAC_REPEATER_SUPPORT
 				if (CliIdx == 0xFF)
@@ -1264,6 +1298,11 @@ static VOID ApCliAssocPostProc(
 	pApCliEntry->MlmeAux.BssType = BSS_INFRA;	
 	pApCliEntry->MlmeAux.CapabilityInfo = CapabilityInfo & SUPPORTED_CAPABILITY_INFO;
 	NdisMoveMemory(&pApCliEntry->MlmeAux.APEdcaParm, pEdcaParm, sizeof(EDCA_PARM));
+
+	if (pEdcaParm->bValid == TRUE)
+		pApCliEntry->wdev.bWmmCapable = TRUE;
+	else
+		pApCliEntry->wdev.bWmmCapable = FALSE;
 
 	/* filter out un-supported rates */
 	pApCliEntry->MlmeAux.SupRateLen = SupRateLen;

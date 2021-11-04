@@ -263,19 +263,18 @@ INT32 APAssocRespTxSHandler(RTMP_ADAPTER *pAd, CHAR *Data, UINT32 Priv)
         DBGPRINT(RT_DEBUG_ERROR,("===[%s]ERROR:  txs_d3->wlan_idx(%d) >= MAX_LEN_OF_TR_TABLE\n", __FUNCTION__, txs_d3->wlan_idx));
         return 0;
     }
-	DBGPRINT(RT_DEBUG_WARN, ("===[%s]: (RE=%d, LE=%d, ME=%d), wlan_idx = %d\n", __FUNCTION__,
+	DBGPRINT(RT_DEBUG_WARN, ("===[%s]: (RE=%d, LE=%d, ME=%d), wlan_idx = %d\n", __func__,
 		txs_d0->RE, txs_d0->LE, txs_d0->ME, txs_d3->wlan_idx));
-		if ((txs_d0->RE == 0) && (txs_d0->LE == 0) && (txs_d0->ME == 0))
-    {
-        pEntry = &pAd->MacTab.Content[txs_d3->wlan_idx];
-        if(pEntry) 
-		{
-            pEntry->AuthAssocNotInProgressFlag = 1;
-			DBGPRINT(RT_DEBUG_WARN, ("===[%s]: wlan_idx = %d,AuthAssocNotInProgressFlag = %d pEntry->bssid %02x:%02x:%02x:%02x:%02x:%02x \n",
-				__FUNCTION__, txs_d3->wlan_idx, pEntry->AuthAssocNotInProgressFlag, PRINT_MAC(pEntry->bssid)));
+	if ((txs_d0->RE == 0) && (txs_d0->LE == 0) && (txs_d0->ME == 0)) {
+	pEntry = &pAd->MacTab.Content[txs_d3->wlan_idx];
+	if (pEntry) {
+		pEntry->AuthAssocNotInProgressFlag = 1;
+	DBGPRINT(RT_DEBUG_WARN,
+	("[%s]: wlan_idx= %d,AssocNotInProgress= %d pEntry->bssid %02x:%02x:%02x:%02x:%02x:%02x\n",
+	__func__, txs_d3->wlan_idx, pEntry->AuthAssocNotInProgressFlag, PRINT_MAC(pEntry->bssid)));
         }
     } else {
-			DBGPRINT(RT_DEBUG_WARN, ("===[%s] status  error returned \n", __FUNCTION__));
+		DBGPRINT(RT_DEBUG_WARN, ("===[%s] status  error returned \n", __func__));
 	}
     return 0;
 }

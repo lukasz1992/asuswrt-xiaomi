@@ -128,6 +128,30 @@ static VOID ChannelInfoReset(
 	return;
 }
 
+#if (defined(CUSTOMER_DCC_FEATURE) || defined(OFFCHANNEL_SCAN_FEATURE))
+VOID ChannelInfoResetNew(
+	IN PRTMP_ADAPTER	pAd)
+{
+	
+	NdisZeroMemory(&pAd->ChannelInfo, sizeof(CHANNELINFO));
+	pAd->ApCfg.current_channel_index = 0;
+	return;
+}
+#endif
+
+#ifdef OFFCHANNEL_SCAN_FEATURE
+VOID OffChanScanCtrlReset(
+	IN PRTMP_ADAPTER	pAd)
+{
+	pAd->ScanCtrl.state = OFFCHANNEL_SCAN_INVALID;
+	pAd->ScanCtrl.CurrentGivenChan_Index = 0;
+	pAd->ScanCtrl.Channel = 0;
+	NdisZeroMemory(&pAd->ScanCtrl.ScanGivenChannel[0], sizeof(UCHAR)*MAX_AWAY_CHANNEL);
+	NdisZeroMemory(&pAd->ScanCtrl.ScanTime[0], sizeof(UCHAR)*MAX_AWAY_CHANNEL);
+
+	return;
+}
+#endif
 
 VOID UpdateChannelInfo(
 	IN PRTMP_ADAPTER pAd,
@@ -162,8 +186,23 @@ VOID UpdateChannelInfo(
 		pAd->pChannelInfo->suppChList[ch_index].BusyTime = (BusyTime * 100) / AUTO_CHANNEL_SEL_TIMEOUT;
 		pAd->pChannelInfo->ChannelScore[ch_index].Score = Score;
 		pAd->pChannelInfo->ChannelScore[ch_index].Channel = pAd->ChannelList[ch_index].Channel;
-		DBGPRINT(RT_DEBUG_ERROR, ("channel %d busytime %d\n",
+		DBGPRINT(RT_DEBUG_TRACE, ("channel %d busytime %d\n",
 			pAd->ChannelList[ch_index].Channel, pAd->pChannelInfo->chanbusytime[ch_index]));
+#endif
+
+#ifdef OFFCHANNEL_SCAN_FEATURE
+		if (pAd->ScanCtrl.state != OFFCHANNEL_SCAN_INVALID) {
+			pAd->ChannelInfo.chanbusytime[ch_index] = AsicGetCCANavTxTime(pAd);
+			Calculate_NF(pAd);
+			if ((pAd->ScanCtrl.ScanTime[pAd->ScanCtrl.CurrentGivenChan_Index]) != 0) {
+				pAd->ScanCtrl.ScanTimeActualEnd = ktime_get();
+				/* Calculate the channel busy value precision by using actual scan time */
+				pAd->ScanCtrl.ScanTimeActualDiff = ktime_to_ms(ktime_sub(pAd->ScanCtrl.ScanTimeActualEnd, pAd->ScanCtrl.ScanTimeActualStart)) + 1;
+				MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_WARN, ("time_diff:%d Busytime:%d AvgNF:%d\n",
+					pAd->ScanCtrl.ScanTimeActualDiff, pAd->ChannelInfo.chanbusytime[ch_index],
+					pAd->ChannelInfo.AvgNF[ch_index]));
+			}
+		}
 #endif
 	}
 	else

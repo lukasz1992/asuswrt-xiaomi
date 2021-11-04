@@ -27,6 +27,18 @@
 
 #define RO_AGC_DEBUG_2	    WF_PHY_BASE + 0x05A4
 
+/* IRPI_HIST */
+#define CR_RXTD_10			(WF_PHY_BASE + 0x0628)
+#define CR_RXTD_11			(WF_PHY_BASE + 0x062C)
+#define CR_RXTD_17			(WF_PHY_BASE + 0x0644)
+#define CR_RXTD_18			(WF_PHY_BASE + 0x0648)
+#define CR_RXTD_19			(WF_PHY_BASE + 0x064C)
+#define CR_RXTD_20			(WF_PHY_BASE + 0x0650)
+#define CR_RXTD_21			(WF_PHY_BASE + 0x0654)
+#define CR_RXTD_22			(WF_PHY_BASE + 0x0658)
+#define CR_RXTD_23			(WF_PHY_BASE + 0x065C)
+#define CR_RXTD_24			(WF_PHY_BASE + 0x0660)
+
 #define CR_RXTD_39			WF_PHY_BASE + 0x06F8
 #define CR_FFT_MANU_CTRL    WF_PHY_BASE + 0x0704
 

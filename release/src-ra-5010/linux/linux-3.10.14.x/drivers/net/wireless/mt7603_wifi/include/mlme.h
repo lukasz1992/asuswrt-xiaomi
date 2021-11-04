@@ -864,6 +864,10 @@ struct _vendor_ie_cap {
     UCHAR custom_ie_len;
     UCHAR custom_ie[CUSTOM_IE_TOTAL_LEN];
 #endif /* WH_EVENT_NOTIFIER */
+#ifdef MAP_SUPPORT
+	BOOLEAN map_vendor_ie_found;
+	struct map_vendor_ie map_info;
+#endif
 };
 #endif
 
@@ -1073,6 +1077,10 @@ typedef struct _BSS_ENTRY{
 #ifdef MWDS
 	BOOLEAN		bSupportMWDS; 		/* Determine If own MWDS capability */
 #endif /* DOT11K_RRM_SUPPORT */
+#ifdef MAP_SUPPORT
+	BOOLEAN		map_vendor_ie_found;
+	struct map_vendor_ie map_info;
+#endif
 #ifdef CONFIG_OWE_SUPPORT
 	/* it can find a pairing OWE bss,
 	 * hide this OPEN bss,
@@ -1267,6 +1275,7 @@ typedef struct _MLME_AUX {
     UCHAR               VarIEs[MAX_VIE_LEN];
     LONG				Rssi; /* Record the rssi value when receive Probe Rsp. */
 	RALINK_TIMER_STRUCT ProbeTimer, ApCliAssocTimer, ApCliAuthTimer;
+	RALINK_TIMER_STRUCT WpaDisassocAndBlockAssocTimer;
 #ifdef APCLI_DOT11W_PMF_SUPPORT
 #ifdef DOT11W_PMF_SUPPORT
 	RSN_CAPABILITIES	RsnCap;
@@ -1284,6 +1293,9 @@ typedef struct _MLME_AUX {
 #ifdef MWDS
 	BOOLEAN		bSupportMWDS; 		/* Determine If own MWDS capability */
 #endif /* MWDS */
+#ifdef MAP_SUPPORT
+	UCHAR DevPeerRole;
+#endif
 #ifdef APCLI_OWE_SUPPORT
 	BSS_TABLE           owe_bss_tab;     /* AP list for the same SSID */
 #endif
@@ -1462,6 +1474,9 @@ typedef struct _IE_lists {
 #ifdef DOT11K_RRM_SUPPORT
 	RRM_EN_CAP_IE RrmEnCap;
 #endif /* DOT11K_RRM_SUPPORT */
+#ifdef MAP_SUPPORT
+	UCHAR MAP_AttriValue;
+#endif
 	UCHAR ht_cap_len;
 	HT_CAPABILITY_IE HTCapability;
 #ifdef DOT11_VHT_AC

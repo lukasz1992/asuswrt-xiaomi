@@ -369,6 +369,70 @@ INT Show_ChannelSet_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 	return TRUE;
 }
 
+#ifdef MAP_SUPPORT
+static UCHAR ChannelPreferredSanity(
+	IN PRTMP_ADAPTER pAd,
+	IN UCHAR channel)
+{
+	int i;
+
+	/* Check if channel is in the channellist.*/
+	for (i = 0; i < pAd->ChannelListNum; i++) {
+		if (channel == pAd->ChannelList[i].Channel)
+			return 1;
+	}
+	return 0;
+}
+
+UCHAR map_set_op_class_info(
+	PRTMP_ADAPTER pAd,
+	wdev_op_class_info *op_class,
+	UCHAR PhyMode)
+{
+	UCHAR i = 0, j = 0, idx = 0;
+	UCHAR chnNum = 0;
+	UCHAR reg_table_idx_5g[] = {1, 2, 3, 4, 5, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33};
+	UCHAR reg_table_idx_2g[] = {12, 29, 30};
+	UCHAR *reg_table;
+	UCHAR table_size;
+	UCHAR tbl_idx;
+
+	if (WMODE_CAP_5G(PhyMode)) {
+		table_size = sizeof(reg_table_idx_5g);
+		reg_table = &reg_table_idx_5g[0];
+	} else if (WMODE_CAP_2G(PhyMode)) {
+		table_size = sizeof(reg_table_idx_2g);
+		reg_table = &reg_table_idx_2g[0];
+	} else
+		return 0;
+
+	for (i = 0; i < table_size && idx < MAX_OP_CLASS; i++) {
+		tbl_idx = reg_table[i];
+		for (j = 0; j < idx; j++)
+			if (reg_class_fcc[tbl_idx].global_class == op_class->opClassInfo[j].op_class)
+				break;
+		if (j < idx)
+			continue;
+		op_class->opClassInfo[idx].op_class = reg_class_fcc[tbl_idx].global_class;
+		chnNum = 0;
+		for (j = 0; j <= 11; j++) {
+			if (reg_class_fcc[tbl_idx].channelset[j] != 0) {
+				if (ChannelPreferredSanity(pAd, reg_class_fcc[tbl_idx].channelset[j])) {
+					op_class->opClassInfo[idx].ch_list[chnNum] =\
+						reg_class_fcc[tbl_idx].channelset[j];
+					chnNum++;
+				}
+			} else {
+				break;
+			}
+		}
+		op_class->opClassInfo[idx].num_of_ch = chnNum;
+		idx++;
+	}
+	return idx;
+}
+
+#endif
 
 #endif /* DOT11_N_SUPPORT */
 

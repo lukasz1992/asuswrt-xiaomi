@@ -291,6 +291,9 @@ INT Set_ACLClearAll_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 
 INT Set_RadioOn_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_SiteSurvey_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#ifdef OFFCHANNEL_SCAN_FEATURE
+INT Set_ApOffChanScan_Proc(PRTMP_ADAPTER	pAd, PSTRING arg);
+#endif
 INT Set_AutoChannelSel_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 
 #ifdef AP_PARTIAL_SCAN_SUPPORT
@@ -776,6 +779,9 @@ static struct {
 	{"SiteSurvey",					Set_SiteSurvey_Proc},
 	{"AutoChannelSel",				Set_AutoChannelSel_Proc},
 	{"ACSCheckTime",				Set_AutoChannelSelCheckTime_Proc},
+#ifdef OFFCHANNEL_SCAN_FEATURE
+	{"ApOffChanScan",				Set_ApOffChanScan_Proc},
+#endif
 #ifdef AP_PARTIAL_SCAN_SUPPORT
 	{"PartialScan",				Set_PartialScan_Proc},
 #endif /* AP_PARTIAL_SCAN_SUPPORT */
@@ -967,6 +973,13 @@ static struct {
 	{"MACReptAddEntry",			Set_MACReptAddEntry_Proc},
 	{"MACReptShowAll",			Set_MACReptMACShowAll_Proc},
 #endif /* MAC_REPEATER_SUPPORT */
+#ifdef MAP_SUPPORT
+	{"bhbss",						Set_Bh_Bss_Proc},
+	{"fhbss",						Set_Fh_Bss_Proc},
+	{"bhsta",						Set_Bh_Sta_Proc},
+	{"MapChannel",					Set_Map_Channel_Proc},
+	{"MapChannelEn",				Set_Map_Channel_En_Proc},
+#endif /* MAP_SUPPORT */
 #ifdef MWDS
 	{"ApCliMWDS",				Set_ApCli_MWDS_Proc},
 #endif /* MWDS */
@@ -1360,11 +1373,16 @@ static struct {
 	{"rsv_cnt_clear", set_rsv_cnt_clear_proc},
 #endif /* DATA_QUEUE_RESERVE */
 	{"SendBMToAir",	Set_SendBMToAir_Proc},
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
-	{"TxSwqCtrl",Set_TxSwqCtrl_Proc},
-	{"RssiTh",Set_Rssi_Threshold_Proc},
-	{"ForceTxCnt",Set_ContinousTxCnt_Proc},
-	{"RateTh",Set_Rate_Threshold_Proc},
+#if defined(MAX_CONTINUOUS_TX_CNT)
+	{"TxCtrl", Set_TxSwqCtrl_Proc},
+	{"RssiTh", Set_Rssi_Threshold_Proc},
+	{"ForceTxMd", Set_IXIA_TX_MODE_Proc},
+	{"minRssiTh", Set_MinRssi_Threshold_Proc},
+	{"ctsth", set_cts2self_Threshold_proc},
+	{"chkt", Set_chkT_Proc},
+	{"pkthd", Set_pkt_threshld_Proc},
+	{"pktlendct", Set_statistic_pktlen_Proc},
+	{"protectset", set_Protection_Parameter_Set_proc},
 #endif
     {"set_lower_mcs", set_lower_mcs_proc},
 	{"set_higher_mcs", set_higher_mcs_proc},
@@ -1427,13 +1445,6 @@ static struct {
 	{"froam_sta_good_rssi", Set_FroamStaGoodRssi},
 	{"froam_acl_ageout_time", Set_FroamAclAgeTime},
 	{"froam_acl_hold_time", Set_FroamAclHoldTime},
-#endif
-#ifdef NEW_IXIA_METHOD
-	{"fcont", force_connect_Proc},
-	{"chkt", Set_chkT_Proc},
-	{"pkthd", Set_pkt_threshld_Proc},
-	{"pktlendct", Set_statistic_pktlen_Proc},
-	{"protectset", set_Protection_Parameter_Set_proc},
 #endif
 #ifdef MBO_SUPPORT
 	{"mbo_nr", SetMboNRIndicateProc},
@@ -1773,6 +1784,105 @@ INT RTMPAPSetInformation(
 
 	switch(cmd & 0x7FFF)
 	{
+#ifdef OFFCHANNEL_SCAN_FEATURE
+		case OID_802_11_CHANNELINFO:
+		{
+			int i = 0;
+			struct msg_channel_list Rsp;
+			UCHAR BandIdx = 0;
+			INT32 ifIndex = pObj->ioctl_if;
+			struct wifi_dev *wdev;
+
+			if (pObj->ioctl_if == INT_MBSSID)
+				wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
+			else
+				wdev = &pAd->ApCfg.MBSSID[0].wdev;
+			BandIdx = 0;
+			NdisZeroMemory((void *)&Rsp, sizeof(struct msg_channel_list));
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_INFO,
+				("[%d][%s] : (sync) Msg received !! \n", __LINE__, __func__));
+			for (i = 0; i < pAd->ChannelListNum; i++) {
+				Rsp.CHANNELLIST[i].channel = pAd->ChannelList[i].Channel;
+				pAd->ChannelList[i].Channel = pAd->ChannelList[i].Channel;
+				Rsp.CHANNELLIST[i].channel_idx = i;
+				Rsp.CHANNELLIST[i].dfs_req = pAd->ChannelList[i].DfsReq;
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_INFO,
+					("[%d][%s] : channel : %d channel_id : %d dfs_req : %d	!! \n",
+					__LINE__, __func__, Rsp.CHANNELLIST[i].channel,
+					Rsp.CHANNELLIST[i].channel_idx, Rsp.CHANNELLIST[i].dfs_req));
+			}
+			Status = copy_to_user(wrq->u.data.pointer, &Rsp, wrq->u.data.length);
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+					("[%d][%s] OID_802_11_CHANNELINFO: channel count: %d  IOCTL_Call_Status:%d!! \n",
+					__LINE__, __func__, pAd->ChannelListNum, Status));
+		}
+		break;
+		case OID_802_11_CURRENT_CHANNEL_INFO:
+		{
+			CHANNEL_INFO Rsp;
+			struct wifi_dev *wdev = NULL;
+			INT32 ifIndex = pObj->ioctl_if;
+			UCHAR RfIC = 0;
+
+			if (pObj->ioctl_if == INT_MBSSID)
+				wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
+			else
+				wdev = &pAd->ApCfg.MBSSID[0].wdev;
+			RfIC = (WMODE_CAP_5G(wdev->PhyMode)) ? RFIC_5GHZ : RFIC_24GHZ;
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_INFO,
+					("[%d][%s] : (sync) Msg received for current channel info!! \n", __LINE__, __func__));
+			Rsp.channel = pAd->ScanCtrl.Channel ? pAd->ScanCtrl.Channel:pAd->CommonCfg.Channel;
+			Rsp.channel_idx = Channel2Index(pAd, Rsp.channel);
+			Rsp.dfs_req = pAd->ChannelList[Rsp.channel_idx].DfsReq;
+			Rsp.tx_time = 0;
+			Rsp.rx_time = 0;
+			Rsp.obss_time = 0;
+			Rsp.NF = pAd->ChannelInfo.AvgNF[Rsp.channel_idx];
+			Rsp.channel_busy_time = pAd->ChannelInfo.chanbusytime[Rsp.channel_idx];
+			Rsp.actual_measured_time = pAd->ScanCtrl.ScanTimeActualDiff;/*need change */
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+					("[%d][%s] : Current channel : %d Current channel_id : %d Current ch dfs_req : %d NF : %d Ch_bsy_time : %u!!\n",
+					__LINE__, __func__, Rsp.channel, Rsp.channel_idx, Rsp.dfs_req,
+					Rsp.NF, Rsp.channel_busy_time));
+			Status = copy_to_user(wrq->u.data.pointer, &Rsp, wrq->u.data.length);
+		}
+		break;
+		case OID_OPERATING_INFO:
+		{
+			OPERATING_INFO Info;
+			INT32 ifIndex = pObj->ioctl_if;
+			UCHAR RfIC = 0;
+			struct wifi_dev *wdev;
+
+			if (pObj->ioctl_if == INT_MBSSID)
+				wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
+			else
+				wdev = &pAd->ApCfg.MBSSID[0].wdev;
+			RfIC = (WMODE_CAP_5G(wdev->PhyMode)) ? RFIC_5GHZ : RFIC_24GHZ;
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_INFO,
+					("[%d][%s] : (sync) Msg received for current channel info!! \n", __LINE__, __func__));
+			Info.cfg_ht_bw = (pAd->CommonCfg.BBPCurrentBW == BW_20) ? HT_BW_20 : HT_BW_40;
+			Info.cfg_vht_bw = 0;	/*VHT_BW_2040 */
+			Info.RDDurRegion = pAd->CommonCfg.RDDurRegion;
+			Info.region = pAd->CommonCfg.CountryRegion;
+			Info.channel = pAd->ScanCtrl.Channel ? pAd->ScanCtrl.Channel:pAd->CommonCfg.Channel;
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+					("[%d][%s] : Channel: %d Info.cfg_ht_bw : %d Info.cfg_vht_bw : %d !! \n",
+					 __LINE__, __func__, Info.channel, Info.cfg_ht_bw, Info.cfg_vht_bw));
+			Status = copy_to_user(wrq->u.data.pointer, &Info, wrq->u.data.length);
+		}
+		break;
+		case OID_OFFCHANNEL_INFO:
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_INFO, ("[%d][%s] : Msg received !! \n", __LINE__, __func__));
+			Status = Channel_Info_MsgHandle(pAd, wrq, pObj);
+			if (!Status) {
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+					("%s Channel_Info_MsgHandle return status received = failure changing it to negative for application \n", __func__));
+				Status = -NDIS_STATUS_FAILURE;
+			}
+			break;
+#endif
+
 #ifdef APCLI_SUPPORT
 #endif/*APCLI_SUPPORT*/
 
@@ -3708,6 +3818,141 @@ INT RTMPAPSetInformation(
 	return Status;
 }
 
+#ifdef OFFCHANNEL_SCAN_FEATURE
+INT Channel_Info_MsgHandle(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq, POS_COOKIE pObj)
+{
+	OFFCHANNEL_SCAN_MSG msg;
+	struct wifi_dev *wdev = NULL;
+	INT i = 0;
+	INT32 ifIndex = pObj->ioctl_if;
+	INT Status = CHANNEL_MONITOR_STRG_SUCCESS;
+	char ChStr[5] = {0};
+
+	wdev = &pAd->ApCfg.MBSSID[ifIndex].wdev;
+	if (wrq->u.data.length != sizeof(OFFCHANNEL_SCAN_MSG)) {
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("[%d][%s] error \n", __LINE__, __func__));
+		return CHANNEL_MONITOR_STRG_FAILURE;
+	} else {
+		Status = copy_from_user(&msg, wrq->u.data.pointer, wrq->u.data.length);
+		memcpy(pAd->ScanCtrl.if_name, msg.ifrn_name, IFNAMSIZ);
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+			("%s if_name:%s\n", __func__, pAd->ScanCtrl.if_name));
+		switch (msg.Action) {
+		case GET_OFFCHANNEL_INFO:
+		{
+			if (pAd->ScanCtrl.state != OFFCHANNEL_SCAN_INVALID) {
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("%s:failed because offchannel scan is still ongoing\n",
+					__func__));
+				Status = CHANNEL_MONITOR_STRG_FAILURE;
+			} else {
+				MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("[%s][%d] : num of away channel to scan = %d\n",
+					__func__, __LINE__,
+					msg.data.offchannel_param.Num_of_Away_Channel));
+				pAd->ScanCtrl.Num_Of_Channels =
+					msg.data.offchannel_param.Num_of_Away_Channel;
+				/* Fillup the paramters received for all channels */
+				for (i = 0; i < msg.data.offchannel_param.Num_of_Away_Channel; i++) {
+					pAd->ScanCtrl.ScanGivenChannel[i] = msg.data.offchannel_param.channel[i];
+					pAd->ScanCtrl.Offchan_Scan_Type[i] = msg.data.offchannel_param.scan_type[i];
+					pAd->ScanCtrl.ScanTime[i] = msg.data.offchannel_param.scan_time[i];
+					MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE, ("[%s] channel = %d:scan type = %d:scan time = %d\n",
+						__func__, pAd->ScanCtrl.ScanGivenChannel[i],
+						pAd->ScanCtrl.Offchan_Scan_Type[i], pAd->ScanCtrl.ScanTime[i]));
+				}
+				Status = ApSiteSurveyNew_by_wdev(pAd, msg.data.offchannel_param.channel[0],
+							msg.data.offchannel_param.scan_time[0],
+							msg.data.offchannel_param.scan_type[0], FALSE, wdev);
+			}
+		}
+			break;
+
+		case TRIGGER_DRIVER_CHANNEL_SWITCH:
+			snprintf(ChStr, sizeof(ChStr), "%d", msg.data.channel_data.channel);
+			Set_Channel_Proc(pAd, ChStr);
+			break;
+
+		case UPDATE_DRIVER_SORTED_CHANNEL_LIST:
+			MTWF_LOG(DBG_SUBCAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+				 ("%s num of channels in sorted channel list received from App =%d\n",
+				  __func__, msg.data.sorted_channel_list.size));
+			if (msg.data.sorted_channel_list.size > 0) {
+				pAd->sorted_list.size = msg.data.sorted_channel_list.size;
+				for (i = 0; i < msg.data.sorted_channel_list.size; i++) {
+					pAd->sorted_list.SortedMaxChannelBusyTimeList[i] = msg.data.sorted_channel_list.SortedMaxChannelBusyTimeList[i];
+					MTWF_LOG(DBG_SUBCAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+							("%s channel[%d] = %d\n", __func__, i, pAd->sorted_list.SortedMaxChannelBusyTimeList[i]));
+					pAd->sorted_list.SortedMinChannelBusyTimeList[i] = msg.data.sorted_channel_list.SortedMinChannelBusyTimeList[i];
+				}
+				Status = CHANNEL_MONITOR_STRG_SUCCESS;
+			} else {
+				MTWF_LOG(DBG_SUBCAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s num of channels in sorted channel list received is invalid\n", __func__));
+				Status = CHANNEL_MONITOR_STRG_FAILURE;
+			}
+			break;
+
+		default:
+			MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_WARN,
+					("%s: unknown action code. (%d)\n", __func__, msg.Action));
+			break;
+		}
+	}
+	return Status;
+}
+#endif
+
+#ifdef MAP_SUPPORT
+int Fill_OID_WSC_PROFILE(RTMP_ADAPTER *pAd, UCHAR ifIndex, p_wsc_apcli_config_msg *wsc_config)
+{
+	PWSC_CTRL pWscControl = NULL;
+	PWSC_CREDENTIAL pCredential = NULL;
+	WSC_PROFILE *pWscProfile = NULL;
+	struct wifi_dev *wdev;
+	int  i = 0, TotalLen = 0;
+	wsc_apcli_config_msg *temp_wsc_config = NULL;
+
+	pWscControl = &pAd->ApCfg.ApCliTab[ifIndex].WscControl;
+	pWscProfile = &pWscControl->WscProfile;
+	wdev = &pAd->ApCfg.ApCliTab[ifIndex].wdev;
+	TotalLen =	sizeof(wsc_apcli_config_msg) +
+		sizeof(wsc_apcli_config) * pWscProfile->ProfileCnt;
+	if (TotalLen > 512) {
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				("Total Length is >512 return\n"));
+		return FALSE;
+	}
+	os_alloc_mem(NULL, (PUCHAR *)&temp_wsc_config, TotalLen);
+	if (temp_wsc_config == NULL) {
+		MTWF_LOG(DBG_CAT_ALL, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+				("%s:failed to allocated memory\n", __func__));
+		return FALSE;
+	}
+	NdisZeroMemory(temp_wsc_config, TotalLen);
+	*wsc_config = (wsc_apcli_config_msg *)temp_wsc_config;
+	temp_wsc_config->profile_count = pWscProfile->ProfileCnt;
+	for (i = 0; i < pWscProfile->ProfileCnt; i++) {
+		pCredential = &pWscProfile->Profile[i];
+		NdisZeroMemory(temp_wsc_config->apcli_config[i].ssid,
+			sizeof(temp_wsc_config->apcli_config[i].ssid));
+		NdisCopyMemory(temp_wsc_config->apcli_config[i].ssid, pCredential->SSID.Ssid,
+										pCredential->SSID.SsidLength);
+		NdisCopyMemory(temp_wsc_config->apcli_config[i].Key,
+			pCredential->Key, pCredential->KeyLength);
+		NdisCopyMemory(temp_wsc_config->apcli_config[i].bssid,
+			pCredential->MacAddr, MAC_ADDR_LEN);
+		temp_wsc_config->apcli_config[i].SsidLen = pCredential->SSID.SsidLength;
+		temp_wsc_config->apcli_config[i].AuthType = pCredential->AuthType;
+		temp_wsc_config->apcli_config[i].EncrType = pCredential->EncrType;
+		temp_wsc_config->apcli_config[i].KeyLength = pCredential->KeyLength;
+		temp_wsc_config->apcli_config[i].KeyIndex = pCredential->KeyIndex;
+		temp_wsc_config->apcli_config[i].peer_map_role = pCredential->DevPeerRole;
+		temp_wsc_config->apcli_config[i].own_map_role = wdev->MAPCfg.DevOwnRole;
+	}
+	return TotalLen;
+}
+#endif
 
 #define OID_EZ_MAN_STATUS	 					 0x2012
 
@@ -3772,7 +4017,7 @@ INT RTMPAPQueryInformation(
 #endif
 	INT IEEE8021X = 0, mBss_staCount = 0;
 	NDIS_802_11_AUTHENTICATION_MODE AuthMode = Ndis802_11AuthModeMax;
-#if defined(RTMP_RBUS_SUPPORT) || defined(WH_EZ_SETUP) || defined(CONFIG_MAP_SUPPORT)
+#if defined(RTMP_RBUS_SUPPORT) || defined(WH_EZ_SETUP) || defined(MAP_SUPPORT)
 	struct wifi_dev *wdev = NULL;
 #endif /* RTMP_RBUS_SUPPORT */
 #ifdef WH_EZ_SETUP
@@ -5579,6 +5824,180 @@ INT RTMPAPQueryInformation(
 		break;
 #endif /* MIXMODE_SUPPORT */
 
+#ifdef MAP_SUPPORT
+		case OID_GET_WSC_PROFILES:
+			{
+				int TotalLen = 0;
+				wsc_apcli_config_msg *wsc_config = NULL;
+
+				ifIndex = pObj->ioctl_if;
+				TotalLen = Fill_OID_WSC_PROFILE(pAd, ifIndex, &wsc_config);
+				if (!wsc_config) {
+					MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("wsc_config is NULL return FALSE\n"));
+					return FALSE;
+				}
+				wrq->u.data.length = TotalLen;
+				Status = copy_to_user(wrq->u.data.pointer, wsc_config, wrq->u.data.length);
+				if (wsc_config)
+					os_free_mem(NULL, (PUCHAR)wsc_config);
+				break;
+			}
+		case OID_GET_MISC_CAP:
+			{
+				wdev_misc_cap misc_cap;
+
+				NdisZeroMemory(&misc_cap, sizeof(wdev_misc_cap));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+				misc_cap.max_num_of_cli = 64;
+				misc_cap.max_num_of_bss = HW_BEACON_MAX_NUM;
+				misc_cap.num_of_bss = pAd->ApCfg.BssidNum;
+#ifdef MAP_SUPPORT
+				misc_cap.max_num_of_block_cli = BLOCK_LIST_NUM;
+#endif
+				wrq->u.data.length = sizeof(wdev_misc_cap);
+				Status = copy_to_user(wrq->u.data.pointer, &misc_cap, wrq->u.data.length);
+				break;
+			}
+		case OID_GET_HT_CAP:
+			{
+				wdev_ht_cap ht_cap;
+
+				NdisZeroMemory(&ht_cap, sizeof(wdev_ht_cap));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+				ht_cap.tx_stream = pAd->CommonCfg.TxStream;
+				ht_cap.rx_stream = pAd->CommonCfg.RxStream;
+				ht_cap.sgi_20 = (pAd->CommonCfg.RegTransmitSetting.field.ShortGI == GI_400) ?
+								 1:0;
+				ht_cap.sgi_40 = (pAd->CommonCfg.RegTransmitSetting.field.ShortGI == GI_400) ?
+								 1:0;
+				ht_cap.ht_40 = (pAd->CommonCfg.AddHTInfo.AddHtInfo.RecomWidth == BW_40) ?
+								 1:0;
+
+				wrq->u.data.length = sizeof(wdev_ht_cap);
+				Status = copy_to_user(wrq->u.data.pointer, &ht_cap, wrq->u.data.length);
+				break;
+			}
+		case OID_GET_CHAN_LIST:
+			{
+				wdev_chn_info chn_list;
+
+				NdisZeroMemory(&chn_list, sizeof(wdev_chn_info));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+				if (wdev->wdev_type != WDEV_TYPE_AP) {
+					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():wdev is not an AP\n", __func__));
+					break;
+				}
+				chn_list.band = wdev->PhyMode;
+				chn_list.op_ch = pAd->CommonCfg.Channel;/*wlan_operate_get_prim_ch(wdev);*/
+				/*chn_list->op_class = get_regulatory_class(pAd, wdev->channel, wdev->PhyMode, wdev);*/
+				chn_list.op_class = get_regulatory_class(pAd, wdev->channel);
+				chn_list.ch_list_num = pAd->ChannelListNum;
+				chn_list.dl_mcs = wdev->HTPhyMode.field.MCS;
+				setChannelList(pAd, wdev, &chn_list);
+#ifdef MAP_SUPPORT /* TODO: move to MAP */
+				chn_list.non_op_chn_num = getNonOpChnNum(pAd, wdev, chn_list.op_class);
+				setNonOpChnList(pAd,
+								wdev,
+								chn_list.non_op_ch_list,
+								chn_list.non_op_chn_num,
+								chn_list.op_class);
+#endif /* MAP_SUPPORT */
+
+				wrq->u.data.length = sizeof(wdev_chn_info);
+				Status = copy_to_user(wrq->u.data.pointer, &chn_list, wrq->u.data.length);
+
+				break;
+			}
+		case OID_GET_OP_CLASS:
+			{
+				wdev_op_class_info op_class;
+
+				NdisZeroMemory(&op_class, sizeof(wdev_op_class_info));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+				if (wdev->wdev_type != WDEV_TYPE_AP) {
+					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():wdev is not an AP\n", __func__));
+					break;
+				}
+
+#ifdef MAP_SUPPORT
+				op_class.num_of_op_class = map_set_op_class_info(pAd, &op_class, wdev->PhyMode);
+#endif /* MAP_SUPPORT */
+				wrq->u.data.length = sizeof(wdev_op_class_info);
+				Status = copy_to_user(wrq->u.data.pointer, &op_class, wrq->u.data.length);
+				break;
+			}
+		case OID_GET_BSS_INFO:
+			{
+				wdev_bss_info bss_info;
+
+				NdisZeroMemory(&bss_info, sizeof(wdev_bss_info));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+				if (wdev->wdev_type != WDEV_TYPE_AP) {
+					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():wdev is not an AP\n", __func__));
+					break;
+				}
+				bss_info.SsidLen = pAd->ApCfg.MBSSID[pObj->ioctl_if].SsidLen;
+				NdisMoveMemory(bss_info.ssid,
+						pAd->ApCfg.MBSSID[pObj->ioctl_if].Ssid,
+						(MAX_LEN_OF_SSID+1));
+				NdisMoveMemory(bss_info.bssid, wdev->bssid, MAC_ADDR_LEN);
+				NdisMoveMemory(bss_info.if_addr, wdev->if_addr, MAC_ADDR_LEN);
+#ifdef MAP_SUPPORT
+				bss_info.map_role = wdev->MAPCfg.DevOwnRole;
+				bss_info.auth_mode = pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev.AuthMode;
+				bss_info.enc_type = pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev.WepStatus;
+#ifdef WSC_AP_SUPPORT
+				bss_info.key_len = strlen(pAd->ApCfg.MBSSID[pObj->ioctl_if].WscControl.WpaPsk);
+				NdisMoveMemory(bss_info.key,
+					pAd->ApCfg.MBSSID[pObj->ioctl_if].WscControl.WpaPsk, bss_info.key_len);
+#else
+				bss_info.key_len = strlen(pAd->ApCfg.MBSSID[pObj->ioctl_if].PSK);
+				NdisMoveMemory(bss_info->key, pAd->ApCfg.MBSSID[pObj->ioctl_if].PSK, bss_info.key_len);
+#endif
+				bss_info.hidden_ssid = pAd->ApCfg.MBSSID[pObj->ioctl_if].bHideSsid;
+#endif
+				wrq->u.data.length = sizeof(wdev_bss_info);
+				Status = copy_to_user(wrq->u.data.pointer, &bss_info, wrq->u.data.length);
+
+				break;
+			}
+		case OID_GET_AP_METRICS:
+			{
+				wdev_ap_metric ap_metric;
+				BSS_STRUCT *mbss;
+
+				NdisZeroMemory(&ap_metric, sizeof(wdev_ap_metric));
+				wdev = &pAd->ApCfg.MBSSID[pObj->ioctl_if].wdev;
+
+				if (wdev->wdev_type != WDEV_TYPE_AP) {
+					MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+						("%s():wdev is not an AP\n", __func__));
+					break;
+				}
+
+				mbss = &pAd->ApCfg.MBSSID[wdev->func_idx];
+				NdisMoveMemory(ap_metric.bssid, wdev->bssid, MAC_ADDR_LEN);
+
+				ap_metric.cu = get_channel_utilization(pAd, RtmpOsGetNetIfIndex(wdev->if_dev));
+				NdisCopyMemory(ap_metric.ESPI_AC_BE, mbss->ESPI_AC_BE, sizeof(mbss->ESPI_AC_BE));
+				NdisCopyMemory(ap_metric.ESPI_AC_BK, mbss->ESPI_AC_BK, sizeof(mbss->ESPI_AC_BK));
+				NdisCopyMemory(ap_metric.ESPI_AC_VO, mbss->ESPI_AC_VO, sizeof(mbss->ESPI_AC_VO));
+				NdisCopyMemory(ap_metric.ESPI_AC_VI, mbss->ESPI_AC_VI, sizeof(mbss->ESPI_AC_VI));
+				wrq->u.data.length = sizeof(wdev_ap_metric);
+				Status = copy_to_user(wrq->u.data.pointer, &ap_metric, wrq->u.data.length);
+
+					break;
+			}
+#endif
 
    		default:
 #ifdef WH_EZ_SETUP
@@ -6362,7 +6781,10 @@ INT	Set_AP_AuthMode_Proc(
 	{
 		if (IS_ENTRY_CLIENT(&pAd->MacTab.Content[i]))
 		{
-			pAd->MacTab.tr_entry[i].PortSecured  = WPA_802_1X_PORT_NOT_SECURED;
+#ifdef MAP_SUPPORT
+			if (IS_MAP_ENABLE(pAd) && pAd->MacTab.tr_entry[i].wdev == &pAd->ApCfg.MBSSID[apidx].wdev)
+#endif
+				pAd->MacTab.tr_entry[i].PortSecured  = WPA_802_1X_PORT_NOT_SECURED;
 		}
 	}
 
@@ -11127,6 +11549,18 @@ INT Set_ApCli_Ssid_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 		NdisZeroMemory(apcli_entry->CfgSsid, MAX_LEN_OF_SSID);
 		NdisMoveMemory(apcli_entry->CfgSsid, arg, strlen(arg));
 		apcli_entry->CfgSsidLen = (UCHAR)strlen(arg);
+#ifdef APCLI_CERT_SUPPORT/* APCLI TGn 5.2.39 Sigma Workaound  to force turn on RTS to protect traffic */
+		if (pAd->bApCliCertTest == TRUE) {
+		/*AP1-5.2.39 (set by UCC)*/
+			if (apcli_entry->CfgSsidLen) {
+				if (!strcmp(arg, "AP1-5.2.39"))
+					pAd->bApCliCertForceRTS = TRUE;
+				else
+					pAd->bApCliCertForceRTS = FALSE;
+			} else
+				pAd->bApCliCertForceRTS = FALSE;
+		}
+#endif/* APCLI_CERT_SUPPORT */
 		success = TRUE;
 		if (strlen(arg) == 0)
 			NdisZeroMemory(apcli_entry->CfgApCliBssid, MAC_ADDR_LEN);
@@ -11780,10 +12214,16 @@ INT Set_ApCli_Cert_Enable_Proc(
 	ifIndex = pObj->ioctl_if;
 	Enable = simple_strtol(arg, 0, 16);
 
-	pAd->ApCfg.ApCliTab[ifIndex].ApCliCertTest = (Enable > 0) ? TRUE : FALSE;
-
-	if (pAd->ApCfg.ApCliTab[ifIndex].ApCliCertTest)
+	pAd->bApCliCertTest = (Enable > 0) ? TRUE : FALSE;
+	pAd->bApCliCertForceRTS = (pAd->bApCliCertTest == FALSE) ? FALSE : pAd->bApCliCertForceRTS;
+	if (pAd->bApCliCertTest) {
 		PingFixRate = 0;
+		pAd->CommonCfg.bEnableTxBurst = FALSE;
+		AsicSetWmmParam(pAd, WMM_PARAM_AC_1, WMM_PARAM_TXOP, 0x0);
+		pAd->CommonCfg.BACapability.field.AutoBA = FALSE;
+		pAd->CommonCfg.BACapability.field.Policy = BA_NOTUSE;
+		pAd->CommonCfg.bBADecline = FALSE;
+	}
 	else
 		PingFixRate = 1;
 
@@ -12367,7 +12807,7 @@ INT	Set_AP_WscGetConf_Proc(
     UCHAR	            apidx = pObj->ioctl_if, mac_addr[MAC_ADDR_LEN];
     BOOLEAN             bFromApCli = FALSE;
 #ifdef APCLI_SUPPORT
-	BOOLEAN 			apcliEn = pAd->ApCfg.ApCliTab[apidx].Enable;
+	BOOLEAN 			apcliEn = FALSE;
 #endif /* APCLI_SUPPORT */
 #ifdef WSC_V2_SUPPORT
 	PWSC_V2_INFO		pWscV2Info = NULL;
@@ -12387,6 +12827,7 @@ INT	Set_AP_WscGetConf_Proc(
 #ifdef APCLI_SUPPORT
     if (pObj->ioctl_if_type == INT_APCLI)
     {
+	apcliEn = pAd->ApCfg.ApCliTab[apidx].Enable;
     	if (apcliEn == FALSE)
     	{
     		DBGPRINT(RT_DEBUG_TRACE, ("IF(apcli%d) Set_AP_WscGetConf_Proc:: ApCli is disabled.\n", apidx));
@@ -13711,6 +14152,11 @@ INT	Set_DisConnectSta_Proc(
 
 		AtoH(value, (UCHAR *)&macAddr[i++], 1);
 	}
+
+	if (NdisEqualMemory(&macAddr[0], &BROADCAST_ADDR[0], MAC_ADDR_LEN)) {
+			Set_DisConnectAllSta_Proc(pAd, "2");
+			return TRUE;
+		}
 
 	pEntry = MacTableLookup(pAd, macAddr);
 	if (pEntry)
@@ -17754,5 +18200,89 @@ INT Set_FroamAclHoldTime(
 }
 
 #endif
+#ifdef MAP_SUPPORT
+INT Set_Bh_Bss_Proc(
+	PRTMP_ADAPTER pAd,
+	char *arg)
+{
+	UCHAR enable = simple_strtol(arg, 0, 10);
+	struct wifi_dev *wdev = NULL;
+	POS_COOKIE pObj = (POS_COOKIE)pAd->OS_Cookie;
+
+	/* only do this for AP MBSS, ignore other inf type */
+	if ((pObj->ioctl_if_type == INT_MBSSID) || (pObj->ioctl_if_type == INT_MAIN)) {
+		UINT8	IfIdx = pObj->ioctl_if;
+
+		wdev = &pAd->ApCfg.MBSSID[IfIdx].wdev;
+	} else
+		return FALSE;
+
+	wdev->MAPCfg.DevOwnRole = 0;
+
+	if (enable) {
+		wdev->MAPCfg.DevOwnRole |= BIT(MAP_ROLE_BACKHAUL_BSS);
+		pAd->bh_bss_wdev = wdev;
+	} else
+		wdev->MAPCfg.DevOwnRole &= ~BIT(MAP_ROLE_BACKHAUL_BSS);
+
+	DBGPRINT(RT_DEBUG_OFF, ("[%s]: %s DevOwnRole 0x%x\n", __func__,
+			wdev->if_dev->name, wdev->MAPCfg.DevOwnRole));
+	return TRUE;
+}
+
+INT Set_Fh_Bss_Proc(
+	PRTMP_ADAPTER pAd,
+	char *arg)
+{
+	UCHAR enable = simple_strtol(arg, 0, 10);
+	struct wifi_dev *wdev = NULL;
+	POS_COOKIE pObj = (POS_COOKIE)pAd->OS_Cookie;
+
+	/* only do this for AP MBSS, ignore other inf type */
+	if ((pObj->ioctl_if_type == INT_MBSSID) || (pObj->ioctl_if_type == INT_MAIN)) {
+		UINT8	IfIdx = pObj->ioctl_if;
+
+		wdev = &pAd->ApCfg.MBSSID[IfIdx].wdev;
+	} else
+		return FALSE;
+
+	if (enable)
+		wdev->MAPCfg.DevOwnRole |= BIT(MAP_ROLE_FRONTHAUL_BSS);
+	else
+		wdev->MAPCfg.DevOwnRole &= ~(BIT(MAP_ROLE_FRONTHAUL_BSS));
+
+	DBGPRINT(RT_DEBUG_OFF, ("[%s]: %s DevOwnRole 0x%x\n", __func__,
+			wdev->if_dev->name, wdev->MAPCfg.DevOwnRole));
+
+	return TRUE;
+}
+
+INT Set_Bh_Sta_Proc(
+	PRTMP_ADAPTER pAd,
+	char *arg)
+{
+	UCHAR enable = simple_strtol(arg, 0, 10);
+	struct wifi_dev *wdev = NULL;
+	POS_COOKIE pObj = (POS_COOKIE)pAd->OS_Cookie;
+
+	/* only do this for AP MBSS, ignore other inf type */
+	if (pObj->ioctl_if_type == INT_APCLI) {
+		UINT8	IfIdx = pObj->ioctl_if;
+
+		wdev = &pAd->ApCfg.ApCliTab[IfIdx].wdev;
+	} else
+		return FALSE;
+
+	if (enable)
+		wdev->MAPCfg.DevOwnRole |= BIT(MAP_ROLE_BACKHAUL_STA);
+	else
+		wdev->MAPCfg.DevOwnRole &= ~(BIT(MAP_ROLE_BACKHAUL_STA));
+	DBGPRINT(RT_DEBUG_OFF, ("[%s]: %s DevOwnRole 0x%x\n", __func__,
+			wdev->if_dev->name, wdev->MAPCfg.DevOwnRole));
+
+	return TRUE;
+}
+
+#endif /* MAP_SUPPORT */
 
 

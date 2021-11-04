@@ -469,6 +469,9 @@ typedef struct	_WSC_DEV_INFO
     UCHAR	NewKey[64 + 1]; /* not sure sprintf would add '\0' or not, add one byte for \0' */
     INT     NewKeyLen;
     UCHAR   NewKeyIndex;
+#ifdef MAP_SUPPORT
+	UCHAR	map_DevPeerRole;
+#endif
 }	WSC_DEV_INFO, *PWSC_DEV_INFO;
 
 /* data structure to store info of the instance of Registration protocol */

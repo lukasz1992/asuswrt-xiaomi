@@ -317,6 +317,8 @@ static ssize_t diag_enable_proc_write(struct file *file, const char __user *buff
 			/* when enable, flush diag_log_queue & /var/.../diag_log file here */
 			DBGPRINT(RT_DEBUG_ERROR, ("Flush diag_log file\n"));
 			memset(diag_ctrl_db->diag_log_entry, 0, DIAG_LOG_ENTRY_NUM*sizeof(struct diag_log_entry));
+			diag_ctrl_db->diag_log_read_idx = 0;
+			diag_ctrl_db->diag_log_write_idx = 0;
 
 			RtmpOSFSInfoChange(&osFSInfo, TRUE);
 			fd = RtmpOSFileOpen(DIAG_VAR_LOG_PATH, O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);

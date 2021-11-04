@@ -576,6 +576,10 @@ VOID WscEAPOLStartAction(
 		/* Send EAP-Request/Id to station */
         WscSendEapReqId(pAd, pEntry, CurOpMode);
 
+#if defined(MAP_SUPPORT)
+		if (IS_MAP_TURNKEY_ENABLE(pAd))
+			wapp_send_wsc_eapol_start_notification(pAd, wdev);
+#endif
 
         if (!pWpsCtrl->EapolTimerRunning)
         {
@@ -814,7 +818,7 @@ VOID WscEAPAction(
 				/* PBC session overlap */
 				pWscControl->WscStatus = STATUS_WSC_PBC_SESSION_OVERLAP;
 				RTMPSendWirelessEvent(pAdapter, IW_WSC_PBC_SESSION_OVERLAP, NULL, (pWscControl->EntryIfIdx & 0x0F), 0); 
-				DBGPRINT(RT_DEBUG_TRACE, ("WscEAPAction: PBC Session Overlap!\n"));
+				DBGPRINT(RT_DEBUG_OFF, ("WscEAPAction: PBC Session Overlap!\n"));
 			}
 			else 
 #endif /* CONFIG_AP_SUPPORT */
@@ -936,6 +940,9 @@ VOID WscEAPAction(
 					pAdapter->ApCfg.ApCliTab[pEntry->func_tb_idx].Enable = FALSE;
 					ApCliIfDown(pAdapter);
 
+#if  defined(MAP_SUPPORT)
+					if (!IS_MAP_TURNKEY_ENABLE(pAdapter))
+#endif
 					pAdapter->ApCfg.ApCliTab[pEntry->func_tb_idx].Enable = TRUE;
 				}
 			}
@@ -1344,6 +1351,48 @@ out:
 }
 
 
+#ifdef MAP_SUPPORT
+void wsc_send_config_event_to_wapp(IN  PRTMP_ADAPTER pAdapter,
+		IN PWSC_CTRL pWscControl, IN WSC_PROFILE * pWscProfile,
+		IN MAC_TABLE_ENTRY *pEntry)
+{
+	UCHAR *msg;
+	struct wifi_dev *wdev;
+	struct wapp_event *event;
+	int TotalLen = 0, i = 0;
+	APCLI_STRUCT *pApCliTab;
+	UCHAR CurApIdx = (pWscControl->EntryIfIdx & 0x0F);
+	PWSC_CREDENTIAL pCredential;
+
+	DBGPRINT(RT_DEBUG_TRACE,
+			("%s:SEND Event to WAPP for WSC profile currAPIndex %d\n", __func__, CurApIdx));
+
+	if (CurApIdx >= MAX_APCLI_NUM)
+		return;
+
+	pApCliTab = &pAdapter->ApCfg.ApCliTab[CurApIdx];
+	TotalLen = sizeof(struct wapp_event);
+	os_alloc_mem(NULL, (PUCHAR *)&msg, TotalLen);
+	if (msg == NULL) {
+		DBGPRINT(RT_DEBUG_ERROR,
+			("%s:failed to allocated memory\n", __func__));
+		return;
+	}
+	NdisZeroMemory(msg, TotalLen);
+	event = (struct wapp_event *)msg;
+	event->event_id = WAPP_MAP_WSC_CONFIG;
+	wdev = &pApCliTab->wdev;
+	event->ifindex = RtmpOsGetNetIfIndex(wdev->if_dev);
+	for (i = 0; i < pWscProfile->ProfileCnt; i++) {
+		pCredential = &pWscProfile->Profile[i];
+		pCredential->DevPeerRole = pEntry->DevPeerRole;
+	}
+
+	RtmpOSWrielessEventSend(wdev->if_dev, RT_WLAN_EVENT_CUSTOM,
+			OID_WAPP_EVENT, NULL, (PUCHAR)event, TotalLen);
+	os_free_mem(NULL, (PUCHAR)msg);
+}
+#endif
 
 /*
 	============================================================================
@@ -1931,6 +1980,10 @@ Done:
 					pObj->ioctl_if_type = INT_APCLI;
 					WscWriteConfToApCliCfg(pAdapter, pWscControl, &pWscControl->WscProfile.Profile[0], TRUE);
 					pObj->ioctl_if_type = old_if_type;
+#ifdef MAP_SUPPORT
+					wsc_send_config_event_to_wapp(pAdapter, pWscControl,
+						&pWscControl->WscProfile, pEntry);
+#endif
 /*#ifdef KTHREAD_SUPPORT */
 /*					WAKE_UP(&(pAdapter->wscTask)); */
 /*#else */
@@ -2237,6 +2290,10 @@ VOID WscEapRegistrarAction(
 				{
 					BOOLEAN	bSendM2D = TRUE;
 
+#ifdef MAP_SUPPORT
+					if (IS_MAP_ENABLE(pAdapter))
+						pEntry->DevPeerRole = pWscControl->RegData.PeerInfo.map_DevPeerRole;
+#endif /* MAP_SUPPORT */
 
 
 					if (pWscControl->bWscTrigger && (!pWscControl->bWscAutoTigeer))
@@ -2350,6 +2407,11 @@ VOID WscEapRegistrarAction(
 						pWscControl->WscStatus = STATUS_WSC_EAP_M8_SENT;
 						/* Change the state to next one */
 						pWscControl->WscState = WSC_STATE_WAIT_DONE;
+#if defined(MAP_SUPPORT)
+						if (IS_MAP_TURNKEY_ENABLE(pAdapter) && pEntry && (pEntry->wdev)) {
+							wapp_send_wsc_eapol_complete_notif(pAdapter, pEntry->wdev);
+						}
+#endif
 		 				RTMPSendWirelessEvent(pAdapter, IW_WSC_SEND_M8, NULL, (pWscControl->EntryIfIdx & 0x0F), 0);
 #ifdef CONFIG_AP_SUPPORT
 #ifdef WSC_V2_SUPPORT
@@ -5462,6 +5524,9 @@ VOID WscScanTimeOutAction(
 				if (pWscControl->WscApCliScanMode != TRIGGER_PARTIAL_SCAN)
 #endif /* APCLI_SUPPORT */
 				{
+#if defined(MAP_SUPPORT)
+					if (!IS_MAP_TURNKEY_ENABLE(pAd))
+#endif
 					{
 						RTMPSetTimer(&pWscControl->WscPBCTimer, 10000);
 						pWscControl->WscPBCTimerRunning = TRUE;
@@ -6584,6 +6649,9 @@ VOID	WscPushPBCAction(
 	if (pWscControl->WscApCliScanMode != TRIGGER_PARTIAL_SCAN)
 #endif /* APCLI_SUPPORT */
 	{
+#if defined(MAP_SUPPORT)
+		if (!IS_MAP_TURNKEY_ENABLE(pAd))
+#endif
 		{
 			RTMPSetTimer(&pWscControl->WscPBCTimer, 10000);
 			pWscControl->WscPBCTimerRunning = TRUE;
@@ -7686,7 +7754,7 @@ VOID   WpsSmProcess(
 	
     pHeader = (PHEADER_802_11)Elem->Msg;
 #ifdef A4_CONN
-	if (pHeader->FC.FrDs == 1 && pHeader->FC.ToDs == 1)
+	if (pHeader->FC.FrDs == 1 && pHeader->FC.ToDs == 1 && Elem->MsgType != WSC_EAPOL_UPNP_MSG)
 		HeaderLen = LENGTH_802_11_WITH_ADDR4;
 #endif
 	HeaderLen += LENGTH_802_1_H + sizeof(IEEE8021X_FRAME) + sizeof(EAP_FRAME);

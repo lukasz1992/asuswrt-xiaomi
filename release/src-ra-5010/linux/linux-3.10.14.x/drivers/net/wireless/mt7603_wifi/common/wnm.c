@@ -1648,11 +1648,19 @@ static VOID ReceiveBTMRsp(IN PRTMP_ADAPTER pAd,
 	/* Send BTM confirm to daemon */
 	VarLen = Elem->MsgLen -
 		(sizeof(HEADER_802_11) + 1 + sizeof(WNMFrame->u.BTM_RSP)) + 1;
+#ifdef WAPP_SUPPORT
+	SendBTMConfirmEvent(NetDev,
+					WNMFrame->Hdr.Addr2,
+					(PUCHAR)&(WNMFrame->u.BTM_RSP.Variable),
+					VarLen,
+					RA_WEXT);
+#else
 	SendBTMConfirmEvent(NetDev,
 					WNMFrame->Hdr.Addr2,
 					(PUCHAR)&(WNMFrame->u.BTM_RSP.DialogToken),
 					VarLen,
 					RA_WEXT);
+#endif
 }
 
 
@@ -1780,6 +1788,7 @@ static VOID SendBTMReq(
 	PWNM_CTRL pWNMCtrl = &pAd->ApCfg.MBSSID[Event->ControlIndex].WNMCtrl;
 	UINT32 FrameLen = 0, VarLen = Event->u.BTM_REQ_DATA.BTMReqLen;
 	INT32 Ret;
+	BOOLEAN Cancelled;
 
 	RTMP_SEM_EVENT_WAIT(&pWNMCtrl->BTMPeerListLock, Ret);
 	if(Ret != 0)
@@ -1826,9 +1835,11 @@ static VOID SendBTMReq(
 	FrameLen += Event->u.BTM_REQ_DATA.BTMReqLen;
 
 	BTMSetPeerCurrentState(pAd, Elem, WAIT_PEER_BTM_RSP);
-	
+
 	MiniportMMRequest(pAd, (MGMT_USE_QUEUE_FLAG | QID_AC_BE), Buf, FrameLen);
 
+	RTMPCancelTimer(&BTMPeerEntry->WaitPeerBTMReqTimer, &Cancelled);
+	RTMPReleaseTimer(&BTMPeerEntry->WaitPeerBTMReqTimer, &Cancelled);
 	RTMPSetTimer(&BTMPeerEntry->WaitPeerBTMRspTimer, WaitPeerBTMRspTimeoutVale);
 
 #if (defined(CONFIG_HOTSPOT_R2) || defined(CONFIG_DOT11V_WNM))
@@ -2418,7 +2429,8 @@ VOID WNMCtrlExit(IN PRTMP_ADAPTER pAd)
 #endif /* CONFIG_AP_SUPPORT */
 #ifdef CONFIG_HOTSPOT_R2
 	WNM_NOTIFY_PEER_ENTRY *WNMNotifyPeerEntry, *WNMNotifyPeerEntryTmp;
-#endif	
+#endif
+	BOOLEAN Cancelled;
 
 #ifdef CONFIG_AP_SUPPORT
 	for (APIndex = 0; APIndex < MAX_MBSSID_NUM(pAd); APIndex++)
@@ -2433,6 +2445,10 @@ VOID WNMCtrlExit(IN PRTMP_ADAPTER pAd)
 		DlListForEachSafe(BTMPeerEntry, BTMPeerEntryTmp,
 							&pWNMCtrl->BTMPeerList, BTM_PEER_ENTRY, List)
 		{
+			RTMPCancelTimer(&BTMPeerEntry->WaitPeerBTMReqTimer, &Cancelled);
+			RTMPReleaseTimer(&BTMPeerEntry->WaitPeerBTMReqTimer, &Cancelled);
+			RTMPCancelTimer(&BTMPeerEntry->WaitPeerBTMRspTimer, &Cancelled);
+			RTMPReleaseTimer(&BTMPeerEntry->WaitPeerBTMRspTimer, &Cancelled);
 			DlListDel(&BTMPeerEntry->List);
 			os_free_mem(NULL, BTMPeerEntry);
 		}

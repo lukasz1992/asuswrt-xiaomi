@@ -1031,7 +1031,7 @@ VOID RRM_PeerMeasureRepAction(
 #endif
 							);
 #if defined(WAPP_SUPPORT)
-						wapp_send_bcn_report(pAd, pEntry, eid_ptr->Octet + 3, BcnRepLen);
+						wapp_send_bcn_report(pAd, pEntry, eid_ptr->Octet, BcnRepLen);
 #endif
 					} else {
 						if (ReportMode.field.Refused) {

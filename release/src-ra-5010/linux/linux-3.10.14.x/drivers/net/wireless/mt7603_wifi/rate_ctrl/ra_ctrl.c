@@ -2315,6 +2315,10 @@ VOID MlmeRAInit(RTMP_ADAPTER *pAd, MAC_TABLE_ENTRY *pEntry)
 	pEntry->LastSecTxRateChangeAction = RATE_NO_CHANGE;
 	pEntry->CurrTxRateIndex = 0;
 	pEntry->TxRateUpPenalty = 0;
+	pEntry->SwiftTrainThrd = 10;
+#if (SWIFT_TRAIN_UP >= 1)
+	ra_swift_train_up_table_reset(pEntry);
+#endif
 
 	MlmeClearAllTxQuality(pEntry);
 }

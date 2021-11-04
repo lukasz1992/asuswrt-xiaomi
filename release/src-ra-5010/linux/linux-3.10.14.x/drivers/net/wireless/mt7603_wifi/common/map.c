@@ -299,6 +299,31 @@ INT ReadMapParameterFromFile(
 	INT i;
 	RTMP_STRING *macptr;
 
+#ifdef MAP_SUPPORT
+
+	if (RTMPGetKeyParameter("MapEnable", tmpbuf, 25, pBuffer, TRUE)) {
+		pAd->bMAPEnable = (UCHAR) simple_strtol(tmpbuf, 0, 10);
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+			("MapEnable=%d\n", pAd->bMAPEnable));
+	}
+
+	if (RTMPGetKeyParameter("MAP_Turnkey", tmpbuf, 25, pBuffer, TRUE)) {
+		pAd->bMAPTurnKeyEnable = (UCHAR) simple_strtol(tmpbuf, 0, 10);
+		MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
+			("MAP_Turnkey=%d\n", pAd->bMAPTurnKeyEnable));
+	}
+	if (RTMPGetKeyParameter("MAP_Ext", tmpbuf, 25, pBuffer, TRUE)) {
+		for (i = 0, macptr = rstrtok(tmpbuf, ";");
+			(macptr && i < MAX_MBSSID_NUM(pAd));
+			macptr = rstrtok(NULL, ";"), i++) {
+			pAd->ApCfg.MBSSID[i].wdev.MAPCfg.DevOwnRole = (UCHAR)simple_strtol(macptr, 0, 10);
+			MTWF_LOG(DBG_CAT_SEC, DBG_SUBCAT_ALL, DBG_LVL_TRACE,
+					("IF(%s%d) ==> MAP_Ext=%u\n",
+					INF_MBSSID_DEV_NAME, i,
+					pAd->ApCfg.MBSSID[i].wdev.MAPCfg.DevOwnRole));
+		}
+	}
+#endif /* MAP_SUPPORT */
 	return TRUE;
 }
 

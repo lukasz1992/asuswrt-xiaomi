@@ -693,10 +693,11 @@ enum _REPEATER_MLME_ENQ_IDX_CHK_TBL {
 #define MAX_REORDERING_MPDU_NUM			 512
 #endif
 
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
+#ifdef MAX_CONTINUOUS_TX_CNT
 #undef MAX_REORDERING_MPDU_NUM
 #define MAX_REORDERING_MPDU_NUM 2048
 #endif
+
 /* key related definitions */
 #define SHARE_KEY_NUM                   4
 #define MAX_LEN_OF_SHARE_KEY            16	/* byte count */
@@ -1530,7 +1531,8 @@ enum nl_msg_id {
 #define APCLI_CTRL_TRIAL_RETRY_TIMEOUT	  17
 #define APCLI_MAX_CTRL_MSG				  18
 #endif /* APCLI_CONNECTION_TRIAL */
-
+#define APCLI_MIC_FAILURE_REPORT_FRAME		19
+#define APCLI_CTRL_SCAN_DONE				20
 #define APCLI_CTRL_FUNC_SIZE              (APCLI_MAX_CTRL_STATE * APCLI_MAX_CTRL_MSG)
 
 #ifdef WH_EZ_SETUP

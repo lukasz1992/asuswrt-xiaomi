@@ -236,7 +236,21 @@ BOOLEAN APCliInstallSharedKey(
 
 VOID ApCliUpdateMlmeRate(RTMP_ADAPTER *pAd, USHORT ifIndex);
 
+#ifdef MAP_SUPPORT
+VOID ApCliCheckConConnectivity(RTMP_ADAPTER *pAd, APCLI_STRUCT *pApCliEntry, BCN_IE_LIST *ie_list);
+#endif
+#ifdef APCLI_SUPPORT
+VOID	ApCliRTMPReportMicError(
+	IN	PRTMP_ADAPTER	pAd,
+	IN UCHAR unicastKey,
+	IN	INT		ifIndex);
 
+VOID   ApCliWpaDisassocApAndBlockAssoc(
+	IN  PVOID SystemSpecific1,
+	IN  PVOID FunctionContext,
+	IN  PVOID SystemSpecific2,
+	IN  PVOID SystemSpecific3);
+#endif/*APCLI_SUPPORT*/
 VOID APCli_Init(
 	IN RTMP_ADAPTER *pAd,
 	IN RTMP_OS_NETDEV_OP_HOOK *pNetDevOps);

@@ -716,6 +716,32 @@ end:
 	return vendor_ie_len;
 }
 
+#ifdef MAP_SUPPORT
+void map_parse_vendor_ie(struct _RTMP_ADAPTER *pAd, struct _vendor_ie_cap *vendor_ie, PEID_STRUCT info_elem)
+{
+	short *rate;
+	char *ptr = &info_elem->Octet[7];
+
+	vendor_ie->map_info.type = *ptr;
+	ptr++;
+	vendor_ie->map_info.subtype = *ptr;
+	ptr++;
+	vendor_ie->map_info.root_distance = *ptr;
+	ptr++;
+	vendor_ie->map_info.connectivity_to_controller = *ptr;
+	ptr++;
+	rate = (short *)ptr;
+	vendor_ie->map_info.uplink_rate = *rate;
+	ptr += 2;
+	vendor_ie->map_info.uplink_rate = be2cpu16(vendor_ie->map_info.uplink_rate);
+	NdisCopyMemory(vendor_ie->map_info.uplink_bssid, ptr, MAC_ADDR_LEN);
+	ptr += MAC_ADDR_LEN;
+	NdisCopyMemory(vendor_ie->map_info.bssid_5g, ptr, MAC_ADDR_LEN);
+	ptr += MAC_ADDR_LEN;
+	NdisCopyMemory(vendor_ie->map_info.bssid_2g, ptr, MAC_ADDR_LEN);
+	ptr += MAC_ADDR_LEN;
+}
+#endif
 
 #if defined(MWDS) || defined(MAP_SUPPORT)
 VOID check_vendor_ie(struct _RTMP_ADAPTER *pAd,
@@ -744,6 +770,12 @@ VOID check_vendor_ie(struct _RTMP_ADAPTER *pAd,
 		vendor_ie->is_mtk = TRUE;
 
 #define MAP_TURNKEY_IE(B1)            ((B1)&0x01)
+#ifdef MAP_SUPPORT
+		if (MAP_TURNKEY_IE(info_elem->Octet[4])) {
+			vendor_ie->map_vendor_ie_found = TRUE;
+			map_parse_vendor_ie(pAd, vendor_ie, info_elem);
+		}
+#endif
 
 #ifdef WH_EZ_SETUP        // Rakesh: Parse Easy setup IE only if easy enabled on own, acceptable??
 	    if ((IS_ADPTR_EZ_SETUP_ENABLED(pAd)) && (info_elem->Octet[3] & MEDIATEK_EASY_SETUP)) {

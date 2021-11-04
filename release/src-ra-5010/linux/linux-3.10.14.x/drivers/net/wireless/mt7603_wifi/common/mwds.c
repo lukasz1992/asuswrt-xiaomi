@@ -41,6 +41,19 @@ VOID MWDSAPPeerEnable(
 	if (pEntry->bSupportMWDS && pEntry->wdev && pEntry->wdev->bSupportMWDS)
 		mwds_enable = TRUE;
 
+#ifdef MAP_SUPPORT
+/*	MAP have higher priority,
+*	If MAP is enabled and peer have MAP capability as well,
+*	use MAP connection and disable MWDS
+*/
+
+	if (IS_MAP_ENABLE(pAd) &&
+		(pEntry->DevPeerRole & BIT(MAP_ROLE_BACKHAUL_STA))) {
+		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+			("%s fail due to map ie\n", __func__));
+		mwds_enable = FALSE;
+	}
+#endif
 
 	if (mwds_enable)
 		Ret = a4_ap_peer_enable(pAd, pEntry, A4_TYPE_MWDS);
@@ -74,6 +87,19 @@ VOID MWDSAPCliPeerEnable(
 	if (pApCliEntry->MlmeAux.bSupportMWDS && pApCliEntry->wdev.bSupportMWDS)
 		mwds_enable = TRUE;
 
+#ifdef MAP_SUPPORT
+/*	MAP have higher priority
+*	If MAP is enabled and peer have MAP capability as well,
+*	use MAP connection and disable MWDS
+*/
+	if (IS_MAP_ENABLE(pAd) &&
+		(pEntry->DevPeerRole &
+			(BIT(MAP_ROLE_FRONTHAUL_BSS) | BIT(MAP_ROLE_BACKHAUL_BSS)))) {
+		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+			("%s fail due to map ie\n", __func__));
+		mwds_enable = FALSE;
+	}
+#endif
 
 	if (mwds_enable)
 		Ret = a4_apcli_peer_enable(pAd, pApCliEntry, pEntry, A4_TYPE_MWDS);

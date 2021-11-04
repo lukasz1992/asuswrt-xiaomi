@@ -165,7 +165,7 @@ typedef struct usb_ctrlrequest devctrlrequest;
 #endif
 
 
-#define AP_DRIVER_VERSION			"4.0.1.0rev2.P3"
+#define AP_DRIVER_VERSION			"4.1.2.1"
 #ifdef MULTIPLE_CARD_SUPPORT
 #define CARD_INFO_PATH			"/etc/Wireless/RT2860AP/RT2860APCard.dat"
 #endif /* MULTIPLE_CARD_SUPPORT */
@@ -321,6 +321,10 @@ struct iw_statistics *rt28xx_get_wireless_stats(
 #endif
 #endif /* DOT11_VHT_AC */
 #endif /* !LIMIT_GLOBAL_SW_QUEUE */
+#ifdef MAX_CONTINUOUS_TX_CNT
+#undef MAX_PACKETS_IN_QUEUE
+#define MAX_PACKETS_IN_QUEUE				8192/*1024*/
+#endif
 
 /***********************************************************************************
  *	OS signaling related constant definitions

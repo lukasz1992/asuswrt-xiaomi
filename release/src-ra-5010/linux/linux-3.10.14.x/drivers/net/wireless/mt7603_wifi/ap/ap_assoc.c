@@ -868,6 +868,9 @@ BOOLEAN PeerAssocReqCmmSanity(
 #ifdef MBO_SUPPORT
 	UCHAR MBO_OCE_OUI_BYTE[4] = {0x50, 0x6f, 0x9a, 0x16};
 #endif/* MBO_SUPPORT */
+#ifdef MAP_SUPPORT
+	unsigned char map_cap;
+#endif
     MAC_TABLE_ENTRY *pEntry = (MAC_TABLE_ENTRY *)NULL;
 #ifdef DOT11R_FT_SUPPORT
 	FT_INFO *pFtInfo = &ie_lists->FtInfo;
@@ -1045,6 +1048,10 @@ BOOLEAN PeerAssocReqCmmSanity(
 					break;
 				}
 #endif/* MBO_SUPPORT */
+#ifdef MAP_SUPPORT
+				if (map_check_cap_ie(eid_ptr, &map_cap) == TRUE)
+					ie_lists->MAP_AttriValue = map_cap;
+#endif /* MAP_SUPPORT */
 #ifdef MWDS
 				if(NdisEqualMemory(MTK_OUI, eid_ptr->Octet, 3))
 				{
@@ -1405,6 +1412,17 @@ BOOLEAN PeerAssocReqCmmSanity(
 	}
 }
 
+#ifdef MAP_SUPPORT
+static BOOLEAN is_controller_found(struct wifi_dev *wdev)
+{
+	struct map_vendor_ie *ie = (struct map_vendor_ie *)wdev->MAPCfg.vendor_ie_buf;
+
+	if (ie->connectivity_to_controller)
+		return TRUE;
+
+	return FALSE;
+}
+#endif
 
 VOID ap_cmm_peer_assoc_req_action(
     IN PRTMP_ADAPTER pAd,
@@ -1508,6 +1526,8 @@ VOID ap_cmm_peer_assoc_req_action(
 		goto LabelOK;
 	}
 
+	DBGPRINT(RT_DEBUG_OFF, ("%s(): Receive Assoc Req from MAC - %02x:%02x:%02x:%02x:%02x:%02x\n",
+					__func__, PRINT_MAC(pEntry->Addr)));
 	DBGPRINT(RT_DEBUG_TRACE, ("%s():pEntry->func_tb_idx=%d\n", __FUNCTION__, pEntry->func_tb_idx));
 	pMbss = &pAd->ApCfg.MBSSID[pEntry->func_tb_idx];
 	wdev = &pMbss->wdev;
@@ -1590,6 +1610,20 @@ VOID ap_cmm_peer_assoc_req_action(
 			break;
 		}
 	}
+#ifdef MAP_SUPPORT
+	MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO,
+			("%s():IS_MAP_ENABLE(pAd)=%d\n", __func__, IS_MAP_ENABLE(pAd)));
+	if (IS_MAP_ENABLE(pAd)) {
+		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_INFO,
+				("%s():Assoc Req Len=%ld, ASSOC_REQ_LEN = %d\n",
+					__func__, Elem->MsgLen, ASSOC_REQ_LEN));
+		if ((Elem->MsgLen - LENGTH_802_11) > ASSOC_REQ_LEN)
+			pEntry->assoc_req_len = ASSOC_REQ_LEN;
+		else
+			pEntry->assoc_req_len = (Elem->MsgLen - LENGTH_802_11);
+		NdisMoveMemory(pEntry->assoc_req_frame, (Elem->Msg + LENGTH_802_11), pEntry->assoc_req_len);
+	}
+#endif
 #ifdef MBO_SUPPORT
 	if (!MBO_AP_ALLOW_ASSOC(wdev)) {
 		StatusCode = MLME_ASSOC_REJ_UNABLE_HANDLE_STA;
@@ -2139,6 +2173,22 @@ SendAssocResponse:
 		}
 	}
 #endif /* DOT11R_FT_SUPPORT */
+#ifdef MAP_SUPPORT
+	if (IS_MAP_ENABLE(pAd)) {
+		pEntry->DevPeerRole = ie_list->MAP_AttriValue;
+		if ((IS_MAP_TURNKEY_ENABLE(pAd)) &&
+		    ((pEntry->DevPeerRole & BIT(MAP_ROLE_BACKHAUL_STA)) &&
+		    (wdev->MAPCfg.DevOwnRole & BIT(MAP_ROLE_BACKHAUL_BSS)) &&
+		    !(is_controller_found(wdev)))) {
+			MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF,
+				("disallowing connection, DevOwnRole=%u,DevPeerRole=%u,controller=%d\n",
+				wdev->MAPCfg.DevOwnRole, pEntry->DevPeerRole, is_controller_found(wdev)));
+				MlmeDeAuthAction(pAd, pEntry, REASON_DECLINED, FALSE);
+				goto LabelOK;
+		} else
+			MAP_InsertMapCapIE(pAd, wdev, pOutBuffer+FrameLen, &FrameLen);
+	}
+#endif
 #ifdef DOT11K_RRM_SUPPORT
 	if (IS_RRM_ENABLE(pAd, pEntry->func_tb_idx))
 		RRM_InsertRRMEnCapIE(pAd, pOutBuffer+FrameLen, &FrameLen, pEntry->func_tb_idx);

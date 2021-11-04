@@ -1319,6 +1319,10 @@ void mt7603_set_ed_cca(RTMP_ADAPTER *pAd, BOOLEAN enable)
 			pAd->ed_on = FALSE;
 			DBGPRINT(RT_DEBUG_OFF, ("%s: NON-CE Region,60200618=%x,ed_th=%x\n", __FUNCTION__, macVal,ed_th));
 		}
+#ifdef MAX_CONTINUOUS_TX_CNT
+		if (pAd->ixiaCtrl.iMode == VERIWAVE_MODE)
+			macVal = 0xD7E87D10;
+#endif
 		RTMP_IO_WRITE32(pAd, WF_PHY_BASE + 0x0618, macVal);
 
 		macVal2 |= 0x1;
@@ -1340,7 +1344,7 @@ void mt7603_set_ed_cca(RTMP_ADAPTER *pAd, BOOLEAN enable)
 		set ED threshold to -65dBm;
 		Disable PSE reset;
 		*/
-		macVal = 0xD7e87d10;
+		macVal = 0xd7e81b10;
 		pAd->ed_on = TRUE;
 		RTMP_IO_WRITE32(pAd, WF_PHY_BASE + 0x0618, macVal);
 
@@ -1382,7 +1386,11 @@ void mt7603_set_ed_cca(RTMP_ADAPTER *pAd, BOOLEAN enable)
 	/*Init Lower_signal_level to -65dBm*/
 	RTMP_IO_READ32(pAd, WF_PHY_BASE + 0x0620, &macVal2);
 	macVal2 &= 0xFFFFFFC0;
-	macVal2 |= 0x00000023;	
+	macVal2 |= 0x00000023;
+#ifdef MAX_CONTINUOUS_TX_CNT
+	if (pAd->ixiaCtrl.iMode == VERIWAVE_MODE)
+		macVal2 = 0x8564263C;
+#endif
 	RTMP_IO_WRITE32(pAd, WF_PHY_BASE + 0x0620, macVal2);	
 			
 }

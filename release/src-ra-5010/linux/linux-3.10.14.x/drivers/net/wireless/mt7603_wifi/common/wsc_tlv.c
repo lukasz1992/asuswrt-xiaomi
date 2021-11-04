@@ -623,6 +623,14 @@ int BuildMessageM1(
 	PWSC_TLV			pWscTLV = &pWscControl->WscV2Info.ExtraTlv;
 #endif /* WSC_V2_SUPPORT */
 	UCHAR				CurOpMode = 0xFF;
+#ifdef MAP_SUPPORT
+	PAPCLI_STRUCT pApCliEntry = NULL;
+	UCHAR apidx = (pWscControl->EntryIfIdx & 0x0F);
+	struct wifi_dev *wdev = NULL;
+
+	pApCliEntry = &pAdapter->ApCfg.ApCliTab[apidx];
+	wdev = &pApCliEntry->wdev;
+#endif /* MAP_SUPPORT */
 
 
 #ifdef CONFIG_AP_SUPPORT
@@ -828,6 +836,14 @@ int BuildMessageM1(
 #endif /* WSC_V2_SUPPORT */
 
 
+#ifdef MAP_SUPPORT
+	if (IS_MAP_ENABLE(pAdapter) && (wdev->MAPCfg.DevOwnRole == BIT(MAP_ROLE_BACKHAUL_STA))) {
+		templen = MAP_InsertMapWscAttr(pAdapter, wdev, pData);
+
+		pData += templen;
+		Len   += templen;
+	}
+#endif /* MAP_SUPPORT */
 
 
 #ifdef WSC_V2_SUPPORT
@@ -1343,7 +1359,7 @@ int BuildMessageM2D(
 #endif /* WSC_V2_SUPPORT */	
 
     pWscControl->WscRetryCount = 0;
-    DBGPRINT(RT_DEBUG_TRACE, ("BuildMessageM2D.\n"));
+    DBGPRINT(RT_DEBUG_OFF, ("BuildMessageM2D.\n"));
 	return Len;
 }
 
@@ -2203,6 +2219,9 @@ int BuildMessageM8(
 	PWSC_TLV			pWscTLV = &pWscControl->WscV2Info.ExtraTlv;
 #endif /* WSC_V2_SUPPORT */
 	UCHAR				CurOpMode = 0xFF;
+#ifdef MAP_SUPPORT
+	struct wifi_dev *wdev = &pAdapter->ApCfg.MBSSID[apidx].wdev;
+#endif /* MAP_SUPPORT */
 
 	os_alloc_mem(NULL, (UCHAR **)&IV_EncrData, IV_ENCR_DATA_LEN_512);
 	if(NULL == IV_EncrData)
@@ -2246,6 +2265,41 @@ int BuildMessageM8(
 #ifdef CONFIG_AP_SUPPORT
 
 	if (CurOpMode == AP_MODE) {
+#ifdef MAP_SUPPORT
+		if (pReg->PeerInfo.map_DevPeerRole & BIT(MAP_ROLE_BACKHAUL_STA)) {
+			PWSC_CTRL			pBhWscControl = NULL;
+			struct wifi_dev		*bh_wdev = NULL;
+			UCHAR				i;
+
+			bh_wdev = pAdapter->bh_bss_wdev;
+			if (bh_wdev) {
+				for (i = 0; i < HW_BEACON_MAX_NUM; i++) {
+					if (bh_wdev == &pAdapter->ApCfg.MBSSID[i].wdev)
+						break;
+				}
+
+				if (i == HW_BEACON_MAX_NUM) {
+					DBGPRINT(RT_DEBUG_ERROR, ("[%s]:Error! bh_bss_wdev(%s) unmatch!\n",
+							__func__, bh_wdev->if_dev->name));
+					goto LabelErr;
+				} else {
+					DBGPRINT(RT_DEBUG_OFF, ("[%s]: bh_bss_wdev is %s\n",
+							__func__, bh_wdev->if_dev->name));
+					pBhWscControl = &pAdapter->ApCfg.MBSSID[i].WscControl;
+					pBhWscControl->WscConfStatus = WSC_SCSTATE_CONFIGURED;
+					COPY_MAC_ADDR(pBhWscControl->EntryAddr, pWscControl->EntryAddr);
+					WscCreateProfileFromCfg(pAdapter,
+											REGISTRAR_ACTION | AP_MODE,
+											pBhWscControl,
+											&pBhWscControl->WscProfile);
+					pCredential = &pBhWscControl->WscProfile.Profile[0];
+				}
+			} else {
+				DBGPRINT(RT_DEBUG_ERROR, ("[%s]: Error!bh_bss_wdev is null!\n", __func__));
+				goto LabelErr;
+			}
+		} else
+#endif /* MAP_SUPPORT */
 
 		{
 			WscCreateProfileFromCfg(pAdapter,
@@ -2257,6 +2311,62 @@ int BuildMessageM8(
 	}
 #endif /* CONFIG_AP_SUPPORT */
 
+#ifdef MAP_SUPPORT
+	if ((IS_MAP_TURNKEY_ENABLE(pAdapter)) && (pReg->PeerInfo.map_DevPeerRole & BIT(MAP_ROLE_BACKHAUL_STA))) {
+		int i = 0;
+		unsigned char profile_count = 0;
+
+		for (i = 0; i < pWscControl->WscBhProfiles.ProfileCnt; i++) {
+			pCredential = &pWscControl->WscBhProfiles.Profile[i];
+
+			if (pWscControl->WscBhProfiles.Profile[i].bss_role & BIT(MAP_ROLE_BACKHAUL_BSS)) {
+				if (same_band_profile(pWscControl, i, wdev) && profile_count == 0) {
+					i = -1;
+					profile_count++;
+				} else if (same_band_profile(pWscControl, i, wdev)) {
+					continue;
+				} else if (profile_count == 0) {
+					continue;
+				} else {
+					profile_count++;
+				}
+			} else {
+				continue;
+			}
+			if (profile_count == 1)
+				CerLen += AppendWSCTLV(WSC_ID_NW_INDEX, &TB[0], (PUCHAR)"1", 0);
+			else if (profile_count == 2)
+				CerLen += AppendWSCTLV(WSC_ID_NW_INDEX, &TB[CerLen], (PUCHAR)"2", 0);
+			else if (profile_count == 3)
+				CerLen += AppendWSCTLV(WSC_ID_NW_INDEX, &TB[CerLen], (PUCHAR)"3", 0);
+			if (pCredential == NULL) {
+				DBGPRINT(RT_DEBUG_ERROR,
+					("%s: pWscControl == NULL!\n", __func__));
+				goto LabelErr;
+			}
+			AuthType = pCredential->AuthType;
+			EncrType = pCredential->EncrType;
+			if (AuthType == (WSC_AUTHTYPE_WPAPSK | WSC_AUTHTYPE_WPA2PSK))
+				AuthType = WSC_AUTHTYPE_WPA2PSK;
+			if (EncrType == (WSC_ENCRTYPE_TKIP | WSC_ENCRTYPE_AES))
+				EncrType = WSC_ENCRTYPE_AES;
+			AuthType = cpu2be16(AuthType);
+			EncrType = cpu2be16(EncrType);
+			CerLen += AppendWSCTLV(WSC_ID_SSID, &TB[CerLen],
+				pCredential->SSID.Ssid, pCredential->SSID.SsidLength);
+			CerLen += AppendWSCTLV(WSC_ID_AUTH_TYPE, &TB[CerLen],
+				(UINT8 *)&AuthType, 0);
+			CerLen += AppendWSCTLV(WSC_ID_ENCR_TYPE, &TB[CerLen],
+				(UINT8 *)&EncrType, 0);
+			CerLen += AppendWSCTLV(WSC_ID_NW_KEY_INDEX, &TB[CerLen],
+				&pCredential->KeyIndex, 0);
+			CerLen += AppendWSCTLV(WSC_ID_NW_KEY, &TB[CerLen],
+				pCredential->Key, pCredential->KeyLength);
+			CerLen += AppendWSCTLV(WSC_ID_MAC_ADDR, &TB[CerLen], pCredential->MacAddr, 0);
+			/*	  Prepare plain text */
+		}
+	} else
+#endif
 	{
 	/* 4a. Encrypted R-S1 */
 	CerLen += AppendWSCTLV(WSC_ID_NW_INDEX, &TB[0], (PUCHAR)"1", 0);
@@ -2827,6 +2937,19 @@ int ProcessMessageM1(
 					DBGPRINT(RT_DEBUG_TRACE, ("ProcessMessageM1 --> Version2 = %x\n", pReg->PeerInfo.Version2));
 				}
 #endif // WSC_V2_SUPPORT //
+#ifdef MAP_SUPPORT
+				if (IS_MAP_ENABLE(pAdapter)) {
+					UCHAR tmp_data_len = 0;
+
+					WscParseV2SubItem(WFA_EXT_ID_MAP_EXT_ATTRIBUTE,
+									pData, WscLen,
+									&pReg->PeerInfo.map_DevPeerRole,
+									&tmp_data_len);
+					MTWF_LOG(DBG_CAT_SEC, CATSEC_WPS, DBG_LVL_OFF,
+						("ProcessMessageM1 --> MAP PeerRole = %x\n",
+						pReg->PeerInfo.map_DevPeerRole));
+				}
+#endif /* MAP_SUPPORT */
 				break;
 
 			default:
@@ -3367,7 +3490,7 @@ int ProcessMessageM2D(
 		Length -= WscLen;
 	}					
 	
-	DBGPRINT(RT_DEBUG_TRACE, ("ProcessMessageM2D : \n"));
+	DBGPRINT(RT_DEBUG_OFF, ("ProcessMessageM2D : \n"));
 	return ret;
 }
 

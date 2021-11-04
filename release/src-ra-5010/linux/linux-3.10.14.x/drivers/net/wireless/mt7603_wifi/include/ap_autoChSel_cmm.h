@@ -63,6 +63,15 @@ typedef struct {
 	ULONG ApCnt[MAX_NUM_OF_CHANNELS+1];
 	UINT32 FalseCCA[MAX_NUM_OF_CHANNELS+1];
     BOOLEAN SkipList[MAX_NUM_OF_CHANNELS+1];
+#ifdef OFFCHANNEL_SCAN_FEATURE
+	UINT32	ChannelNo;
+	UINT8	ChannelIdx;
+	BOOLEAN GetChannelInfo;
+	INT32 AvgNF[MAX_NUM_OF_CHANNELS+1];
+	UCHAR bandidx;
+	UINT32 diff_time;
+#endif
+
 //#ifdef AP_QLOAD_SUPPORT
 	UINT32 chanbusytime[MAX_NUM_OF_CHANNELS+1]; /* QLOAD ALARM */
 //#endif /* AP_QLOAD_SUPPORT */

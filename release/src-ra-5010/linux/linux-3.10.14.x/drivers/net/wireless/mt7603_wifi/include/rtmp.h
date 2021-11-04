@@ -168,6 +168,9 @@ typedef struct _RTMP_CHIP_CAP RTMP_CHIP_CAP;
 #endif /* DOT11_OWE_SUPPORT */
 
 
+#ifdef MAP_SUPPORT
+#include "map.h"
+#endif
 
 // TODO: shiang-6590, remove it after ATE fully re-organized! copy from rtmp_bbp.h
 #ifndef MAX_BBP_ID
@@ -1850,6 +1853,9 @@ struct wifi_dev{
 #ifdef MBO_SUPPORT
 	MBO_CTRL MboCtrl;
 #endif/* MBO_SUPPORT */
+#ifdef MAP_SUPPORT
+	MAP_CONFIG MAPCfg;
+#endif
 #ifdef CONFIG_OWE_SUPPORT
 	VIE_CTRL vie_ctrl[VIE_FRM_TYPE_MAX];
 #endif
@@ -3268,6 +3274,15 @@ typedef struct _MAC_TABLE_ENTRY {
 #endif /* CONFIG_AP_SUPPORT */
 #endif /* DOT11V_WNM_SUPPORT */
 
+#ifdef MAP_SUPPORT
+	UCHAR assoc_req_frame[ASSOC_REQ_LEN];
+	UCHAR assoc_req_len;
+	UCHAR DevPeerRole;
+	UCHAR cur_rssi_status;
+	UCHAR pre_rssi_status;
+	BOOLEAN isTriggerSteering;
+	UCHAR pre_traffic_mode;
+#endif
 
 #ifdef CONFIG_AP_SUPPORT
 	LARGE_INTEGER TxPackets;
@@ -3682,6 +3697,7 @@ typedef struct _APCLI_STRUCT {
 	UCHAR PSK[100];		/* reserve PSK key material */
 	UCHAR PSKLen;
 	UCHAR PMK[32];		/* WPA PSK mode PMK */
+	UCHAR PTK[64];                /* WPA PSK mode PTK */
 	UCHAR GTK[32];		/* GTK from authenticator */
 
 	/*CIPHER_KEY            PairwiseKey; */
@@ -3693,7 +3709,9 @@ typedef struct _APCLI_STRUCT {
 
 	/* For WPA countermeasures */
 	ULONG LastMicErrorTime;	/* record last MIC error time */
+	ULONG       MicErrCnt;          /* Should be 0, 1, 2, then reset to zero (after disassoiciation). */
 	BOOLEAN bBlockAssoc;	/* Block associate attempt for 60 seconds after counter measure occurred. */
+	UCHAR         ReplayCounter[8];
 
 	/* For WPA-PSK supplicant state */
 	UCHAR SNonce[32];	/* SNonce for WPA-PSK */
@@ -3757,6 +3775,9 @@ typedef struct _APCLI_STRUCT {
 #endif
 	RTMP_OS_COMPLETION ifdown_complete;
 	RTMP_OS_COMPLETION linkdown_complete;
+#ifdef MAP_SUPPORT
+	UCHAR last_controller_connectivity;
+#endif
 #ifdef MWDS
 	BOOLEAN 	bSupportMWDS; 	/* Determine If own MWDS capability */
 	/* BOOLEAN		bEnableMWDS; Determine If do 3-address to 4-address; not need anymore*/
@@ -3962,6 +3983,9 @@ typedef struct _AP_ADMIN_CONFIG {
 #endif /* WH_EVENT_NOTIFIER */
 #ifdef DOT11K_RRM_SUPPORT
 	BOOLEAN HandleNRReqbyUplayer;
+#endif
+#ifdef MAP_SUPPORT
+	struct map_policy_setting SteerPolicy;
 #endif
 } AP_ADMIN_CONFIG;
 
@@ -4447,6 +4471,15 @@ struct scan_req {
 };
 #endif
 
+#ifdef OFFCHANNEL_SCAN_FEATURE
+typedef enum {
+	OFFCHANNEL_SCAN_INVALID = 0,
+	OFFCHANNEL_SCAN_START,
+	OFFCHANNEL_SCAN_COMPLETE,
+	OFFCHANNEL_SCAN_MAX
+} RTMP_OFFCHANNEL_SCAN_STAGE;
+#endif
+
 typedef struct _SCAN_CTRL_{
 	UCHAR ScanType;
 	UCHAR BssType;
@@ -4454,6 +4487,18 @@ typedef struct _SCAN_CTRL_{
 	UCHAR SsidLen;
 	CHAR Ssid[MAX_LEN_OF_SSID];
 	UCHAR Bssid[MAC_ADDR_LEN];
+#ifdef OFFCHANNEL_SCAN_FEATURE
+	UCHAR			if_name[32];
+	UCHAR			ScanGivenChannel[MAX_AWAY_CHANNEL];
+	UCHAR			ScanTime[MAX_AWAY_CHANNEL];
+	UCHAR			CurrentGivenChan_Index;
+	UCHAR			Num_Of_Channels;
+	UCHAR			Offchan_Scan_Type[MAX_AWAY_CHANNEL];
+	RTMP_OFFCHANNEL_SCAN_STAGE					 state;
+	ktime_t 		ScanTimeActualStart;
+	ktime_t 		ScanTimeActualEnd;
+	UCHAR 			ScanTimeActualDiff;
+#endif
 
 #ifdef CONFIG_AP_SUPPORT
 	RALINK_TIMER_STRUCT APScanTimer;
@@ -4472,6 +4517,79 @@ typedef struct _SCAN_CTRL_{
 #define TX_SWQ_FIFO_LEN 4096
 #define CONTINUOUS_TX_CNT	24/* Add Max continuous Tx count*/
 #define AP_MAX_SWQIDX 0xffff
+#ifdef SQ_ENQ_NORMAL_MAX
+#undef  SQ_ENQ_NORMAL_MAX
+#define SQ_ENQ_NORMAL_MAX	8192 /* Per STA queue */
+#endif
+#define VERIWAVE_MODE 1
+#define IXIA_NORMAL_MODE 0
+typedef enum {
+	IXIA_CTL_ENQ_DBG = 1,
+	IXIA_CTL_DEQ_DBG,
+	IXIA_CTL_MDDCT_DBG,
+	IXIA_CTL_FORCE_MAX = 7,/*Force veriwave Mode.*/
+} IXIA_CTL_MODE;
+#define IXIA_FORCE_MTO 1
+#define IXIA_FORCE_VO 1
+
+typedef enum DROP_REASON {
+	PKT_SUCCESS = 0,
+	INVALID_PKT_LEN = 1,
+	INVALID_TR_WCID = 2,
+	INVALID_TR_ENTRY = 3,
+	INVALID_WDEV = 4,
+	INVALID_ETH_TYPE = 5,
+	DROP_PORT_SECURE = 6,
+	DROP_PSQ_FULL = 7,
+	DROP_TXQ_FULL = 8,
+	DROP_TX_JAM = 9,
+	DROP_TXQ_ENQ_FAIL = 10,
+	DROP_TXQ_ENQ_PS = 11,
+	DROP_HW_RESET = 12,
+	DROP_80211H_MODE = 13,
+	DROP_BLK_INFO_ERROR = 14,
+	MAX_TDROP_RESON
+} T_DROP_RESON;
+typedef enum _R_DROP_REASON_ {
+	RPKT_SUCCESS = 0,
+	ALREADY_IN_ORDER = 1,
+	DUP_SEQ_PKT = 2,
+	DROP_OLD_PKT = 3,
+	DROP_NO_BUF = 4,
+	DROP_DUP_FRAME = 5,
+	DROP_NOT_ALLOW = 6,
+	DROP_RING_FULL = 7,
+	DROP_DATA_SIZE = 8,
+	DROP_INFO_NULL = 9,
+	DROP_RXD_ERROR = 10,
+	MAX_RDROP_RESON
+} R_DROP_RESON;
+
+typedef struct WIFI_TR_COUNT {
+	INT txfl[2];
+	INT tx[MAX_TDROP_RESON];
+	INT rx[MAX_RDROP_RESON];
+	INT tx_pkt_from_os;
+	INT tx_pkt_len;
+	INT tx_pkt_to_hw;
+	INT rx_pkt_len;
+	INT rx_pkt_from_hw;
+	UINT txpktdetect2s;
+	UINT rxpktdetect2s;
+	UCHAR chkTmr;
+	UCHAR tmrlogctrl;
+	UINT16 pktthld;
+} WTRC, *pWTRC;
+typedef struct IXIA_CTL {
+	UCHAR iMode:1;
+	UCHAR iRssiflag:1;
+	UCHAR iMacflag:1;
+	UCHAR iForceMTO:1;/*force multi-client MAC to one Mac.*/
+	UCHAR iForceAge:1;
+	UCHAR itxCtrl:3;
+	UCHAR OnLineStaCntChk;
+} IXIA_CTL;
+
 #endif
 typedef struct tx_swq_fifo{
 	UCHAR swq[TX_SWQ_FIFO_LEN]; // value 0 is used to indicate free to insert, value 1~127 used to incidate the WCID entry
@@ -5158,7 +5276,13 @@ MONITOR_STRUCT monitor_ctrl;
 	SCAN_CTRL ScanCtrl;
 	BSS_TABLE ScanTab;	/* store the latest SCAN result */
 #endif /* defined(AP_SCAN_SUPPORT) || defined(CONFIG_STA_SUPPORT) */
+#ifdef OFFCHANNEL_SCAN_FEATURE
+	SORTED_CHANNEL_LIST  sorted_list;
+#endif
 #ifdef CONFIG_AP_SUPPORT
+#if defined(CUSTOMER_DCC_FEATURE) || defined(OFFCHANNEL_SCAN_FEATURE)
+	CHANNELINFO ChannelInfo;
+#endif
 #endif
 
 	/*About MacTab, the sta driver will use #0 and #1 for multicast and AP. */
@@ -5201,18 +5325,12 @@ MONITOR_STRUCT monitor_ctrl;
 
 	ULONG ExtraInfo;	/* Extra information for displaying status of UI */
 	ULONG SystemErrorBitmap;	/* b0: E2PROM version error */
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
+#ifdef MAX_CONTINUOUS_TX_CNT
 	UINT8 DeltaRssiTh;
 	UINT8 ContinousTxCnt;
-	UINT8 MonitorFlag;
-	UINT8 RateTh;/*default 104 for 2.4G 20M*/
-	UCHAR TxSwqCtrl;
-	UCHAR chkTmr;
-	UCHAR tmrlogctrl;
-	UINT16 pktthld;
+	IXIA_CTL ixiaCtrl;
 	UINT8 protectpara;
-#endif
-#ifdef NEW_IXIA_METHOD
+	CHAR MinRssiTh;
 	WTRC tr_ststic;
 #endif
 #ifdef SYSTEM_LOG_SUPPORT
@@ -5383,10 +5501,14 @@ MONITOR_STRUCT monitor_ctrl;
 
 	TXWI_STRUC NullTxWI;
 	USHORT NullBufOffset[2];
+#ifdef APCLI_CERT_SUPPORT
+	BOOLEAN bApCliCertTest;
+	BOOLEAN bApCliCertForceRTS;/*APCLI TGn 5.2.39 workaround to Force Turn on RTS to protect traffic*/
+#endif/* APCLI_CERT_SUPPORT */
 
 #ifdef MULTI_MAC_ADDR_EXT_SUPPORT
 	BOOLEAN bUseMultiMacAddrExt;
-#endif /* MULTI_MAC_ADDR_EXT_SUPPORT */
+#endif/* MULTI_MAC_ADDR_EXT_SUPPORT */
 
 #ifdef HW_TX_RATE_LOOKUP_SUPPORT
 	BOOLEAN bUseHwTxLURate;
@@ -5664,6 +5786,12 @@ MONITOR_STRUCT monitor_ctrl;
 	struct BSS_LOAD_INFO bss_load_info;
 	struct scan_req last_scan_req;
 #endif /* WAPP_SUPPORT */
+#ifdef MAP_SUPPORT
+	struct wifi_dev *bh_bss_wdev;
+	UCHAR bMAPTurnKeyEnable;
+	UCHAR bMAPEnable;
+	UCHAR bMAPQuickChChangeEn;
+#endif /* MAP_SUPPORT */
 	UCHAR reg_domain;
 	NDIS_SPIN_LOCK PSRetrieveLock;
 };
@@ -6616,6 +6744,7 @@ NTSTATUS MtCmdWtblTxpsUpdate(RTMP_ADAPTER *pAd, PCmdQElmt CMDQelmt);
 UINT32 AsicGetCrcErrCnt(RTMP_ADAPTER *pAd);
 UINT32 AsicGetCCACnt(RTMP_ADAPTER *pAd);
 UINT32 AsicGetChBusyCnt(RTMP_ADAPTER *pAd, UCHAR ch_idx);
+UINT32 AsicGetCCANavTxTime(RTMP_ADAPTER *pAd);
 
 #if defined(RTMP_MAC) || defined(RLT_MAC)
 #ifdef FIFO_EXT_SUPPORT
@@ -6809,21 +6938,14 @@ INT wdev_init(RTMP_ADAPTER *pAd, struct wifi_dev *wdev, UINT wdev_type);
 INT wdev_tx_pkts(NDIS_HANDLE dev_hnd, PPNDIS_PACKET pkt_list, UINT pkt_cnt, struct wifi_dev *wdev);
 struct wifi_dev *WdevSearchByAddress(RTMP_ADAPTER *pAd, UCHAR *Address);
 struct wifi_dev *wdev_search_by_address(RTMP_ADAPTER *pAd, UCHAR *Address);
+#ifdef MAC_REPEATER_SUPPORT
 REPEATER_CLIENT_ENTRY *lookup_rept_entry(RTMP_ADAPTER *pAd, PUCHAR address);
-
+#endif
 
 VOID rtmp_ps_init(RTMP_ADAPTER *pAd);
 INT rtmp_psDeq_report(RTMP_ADAPTER *pAd,struct dequeue_info *info);
 INT rtmp_psDeq_req(RTMP_ADAPTER *pAd);
 INT rtmp_ps_enq(RTMP_ADAPTER *pAd, STA_TR_ENTRY *tr_entry);
-#if defined(MAX_CONTINUOUS_TX_CNT) || defined(NEW_IXIA_METHOD)
-BOOLEAN Rtmp_Set_Packet_EnqIdx(PNDIS_PACKET pkt,INT enq_idx);
-INT	Set_Rssi_Threshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
-INT	Set_ContinousTxCnt_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
-INT	Set_Rate_Threshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
-INT Show_TxSwqInfo_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
-INT Set_TxSwqCtrl_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
-#endif
 #ifdef IP_ASSEMBLY
 
 typedef union ip_flags_frag_offset {
@@ -10758,25 +10880,16 @@ VOID APScanCnclAction(
 	RTMP_ADAPTER *pAd, 
 	MLME_QUEUE_ELEM *Elem);
 #endif
-#ifdef NEW_IXIA_METHOD
-extern UCHAR force_connect;
-INT force_connect_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+#ifdef MAX_CONTINUOUS_TX_CNT
 INT Set_pkt_threshld_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_chkT_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 INT Set_statistic_pktlen_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 void wifi_txrx_parmtrs_dump(RTMP_ADAPTER *pAd);
-
-extern int tx_pkt_from_os;
-extern int tx_pkt_len;
-extern int tx_pkt_to_hw;
-extern int rx_pkt_len;
-extern int rx_pkt_to_os;
-extern int rx_pkt_from_hw;
-extern unsigned char ixiatestmode;
+INT set_cts2self_Threshold_proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+VOID periodic_detect_tx_pkts(RTMP_ADAPTER *pAd);
 extern char *tdrop_reason[MAX_TDROP_RESON];
 extern char *rdrop_reason[MAX_RDROP_RESON];
-extern UINT txpktdetect2s;
-extern UINT rxpktdetect2s;
+extern INT rx_pkt_to_os;
 extern unsigned short dectlen_l;
 extern unsigned short dectlen_m;
 extern unsigned short dectlen_h;
@@ -10785,6 +10898,13 @@ extern UCHAR debuglvl;
 		|| ((len >= (dectlen_m - 8)) && (len <= (dectlen_m + 8)))\
 		|| ((len >= (dectlen_h - 8)) && (len <= (dectlen_h + 8))))
 INT set_Protection_Parameter_Set_proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+BOOLEAN Rtmp_Set_Packet_EnqIdx(PNDIS_PACKET pkt, INT enq_idx);
+INT	Set_Rssi_Threshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT	Set_MinRssi_Threshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Show_TxSwqInfo_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT Set_TxSwqCtrl_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT	Set_Rssi_Threshold_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
+INT	Set_IXIA_TX_MODE_Proc(RTMP_ADAPTER *pAd, RTMP_STRING *arg);
 #endif
 struct wifi_dev *get_wdev_by_ioctl_idx_and_iftype(RTMP_ADAPTER *pAd, INT idx, INT if_type);
 PUCHAR get_channelset_by_reg_class(RTMP_ADAPTER *pAd, UINT8 OperatingClass);

@@ -40,6 +40,14 @@ VOID UpdateChannelInfo(
 	IN int ch,
 	IN ChannelSel_Alg Alg);
 
+#if (defined(CUSTOMER_DCC_FEATURE) || defined(OFFCHANNEL_SCAN_FEATURE))
+VOID ChannelInfoResetNew(
+	IN PRTMP_ADAPTER pAd);
+#endif
+#ifdef OFFCHANNEL_SCAN_FEATURE
+VOID OffChanScanCtrlReset(
+	IN PRTMP_ADAPTER	pAd);
+#endif
 
 ULONG AutoChBssInsertEntry(
 	IN PRTMP_ADAPTER pAd,
