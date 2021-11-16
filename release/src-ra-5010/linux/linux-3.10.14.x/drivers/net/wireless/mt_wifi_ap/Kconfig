@@ -68,12 +68,12 @@ config MU_RA_SUPPORT
 config DOT11R_FT_SUPPORT
 	bool "802.11r Fast BSS Transition"
 	depends on MT_AP_SUPPORT
-	default y
+	default n
 
 config DOT11K_RRM_SUPPORT
 	bool "802.11k Radio Resource Management"
 	depends on MT_AP_SUPPORT
-	default y
+	default n
 
 config INTERWORKING
 	bool "802.11u Interworking/Gas Support"
@@ -278,7 +278,7 @@ config AIR_MONITOR
 config WNM_SUPPORT
         bool "802.11v WNM Support"
         depends on MT_AP_SUPPORT
-        default y
+        default n
 
 config WIFI_MSI_SUPPORT
         bool "MSI support"
