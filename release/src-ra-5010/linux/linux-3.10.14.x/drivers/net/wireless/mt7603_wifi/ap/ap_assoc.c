@@ -1526,7 +1526,7 @@ VOID ap_cmm_peer_assoc_req_action(
 		goto LabelOK;
 	}
 
-	DBGPRINT(RT_DEBUG_OFF, ("%s(): Receive Assoc Req from MAC - %02x:%02x:%02x:%02x:%02x:%02x\n",
+	DBGPRINT(RT_DEBUG_INFO, ("%s(): Receive Assoc Req from MAC - %02x:%02x:%02x:%02x:%02x:%02x\n",
 					__func__, PRINT_MAC(pEntry->Addr)));
 	DBGPRINT(RT_DEBUG_TRACE, ("%s():pEntry->func_tb_idx=%d\n", __FUNCTION__, pEntry->func_tb_idx));
 	pMbss = &pAd->ApCfg.MBSSID[pEntry->func_tb_idx];
