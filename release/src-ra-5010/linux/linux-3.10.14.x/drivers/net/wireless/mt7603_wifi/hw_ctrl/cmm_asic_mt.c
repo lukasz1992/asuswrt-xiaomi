@@ -3493,7 +3493,7 @@ VOID AsicDelWcidTab(RTMP_ADAPTER *pAd, UCHAR wcid_idx)
     UCHAR cnt, cnt_s, cnt_e;
     struct wtbl_entry tb_entry;
     UCHAR WaitCnt = 0;
-	UINT32 Value;
+    UINT32 Index = 0, Value;
     union WTBL_1_DW0 *dw0 = (union WTBL_1_DW0 *)&tb_entry.wtbl_1.wtbl_1_d0.word;
     union WTBL_1_DW3 *dw3 = (union WTBL_1_DW3 *)&tb_entry.wtbl_1.wtbl_1_d3.word;
     union WTBL_1_DW4 *dw4 = (union WTBL_1_DW4 *)&tb_entry.wtbl_1.wtbl_1_d4.word;
@@ -3517,19 +3517,13 @@ VOID AsicDelWcidTab(RTMP_ADAPTER *pAd, UCHAR wcid_idx)
                         __FUNCTION__, cnt));
             return;
         }
-		dw0->field.wm = 0;
+
+        dw0->field.wm = 0;
         dw0->field.rc_a2 = 1;
         dw0->field.rv = 1;
         RTMP_IO_WRITE32(pAd, tb_entry.wtbl_addr[0], tb_entry.wtbl_1.wtbl_1_d0.word);
         RTMP_IO_WRITE32(pAd, tb_entry.wtbl_addr[0] + 4, tb_entry.wtbl_1.wtbl_1_d1.word);
-		/*Don't clear cipher suite for kr00k attack*/
-		RTMP_IO_READ32(pAd, tb_entry.wtbl_addr[0] + 8, &Value);
-#ifdef RT_BIG_ENDIAN
-		Value = Value & 0xF << 25;
-#else
-		Value = Value & 0xF << 3;
-#endif
-		RTMP_IO_WRITE32(pAd, tb_entry.wtbl_addr[0] + 8, Value);
+        RTMP_IO_WRITE32(pAd, tb_entry.wtbl_addr[0] + 8, tb_entry.wtbl_1.wtbl_1_d2.word);
 
         RTMP_IO_READ32(pAd, WTBL1OR, &Value);
         Value |= PSM_W_FLAG;
@@ -3562,7 +3556,12 @@ VOID AsicDelWcidTab(RTMP_ADAPTER *pAd, UCHAR wcid_idx)
 
         /* Clear BA Information */
         RTMP_IO_WRITE32(pAd, tb_entry.wtbl_addr[1] + (15 * 4), tb_entry.wtbl_2.wtbl_2_d15.word);
-
+	/*Clear PN */
+	tb_entry.wtbl_2.wtbl_2_d0.pn_0=0;
+	tb_entry.wtbl_2.wtbl_2_d1.field.pn_32=0;
+	RTMP_IO_WRITE32(pAd, tb_entry.wtbl_addr[1] + (0 * 4), tb_entry.wtbl_2.wtbl_2_d0.word);
+	RTMP_IO_WRITE32(pAd, tb_entry.wtbl_addr[1] + (1 * 4), tb_entry.wtbl_2.wtbl_2_d1.word);		
+		
 
 #ifdef RTMP_PCI_SUPPORT
 		NdisAcquireSpinLock(&pAd->IndirectUpdateLock);
@@ -3621,6 +3620,10 @@ VOID AsicDelWcidTab(RTMP_ADAPTER *pAd, UCHAR wcid_idx)
 #endif
             return;
         }
+
+        /* Clear Cipher Key */
+        for (Index = 0; Index < 8; Index++)
+            RTMP_IO_WRITE32(pAd, tb_entry.wtbl_addr[2] + (4 * Index), 0x0);
 
         /* Admission Control Counter Clear */
         RTMP_IO_READ32(pAd, WTBL_OFF_WIUCR, &Value);

@@ -2626,14 +2626,7 @@ VOID MtAsicDelWcidTabByDriver(RTMP_ADAPTER *pAd, UCHAR wcid_idx)
 		dw0->field.rv = 1;
 		HW_IO_WRITE32(pAd, tb_entry.wtbl_addr[0], tb_entry.wtbl_1.wtbl_1_d0.word);
 		HW_IO_WRITE32(pAd, tb_entry.wtbl_addr[0] + 4, tb_entry.wtbl_1.wtbl_1_d1.word);
-		/*Don't clear cipher suite for kr00k attack*/
-		HW_IO_READ32(pAd, tb_entry.wtbl_addr[0] + 8, &Value);
-#ifdef RT_BIG_ENDIAN
-		Value = Value & 0xF << 25;
-#else
-		Value = Value & 0xF << 3;
-#endif
-		HW_IO_WRITE32(pAd, tb_entry.wtbl_addr[0] + 8, Value);
+		HW_IO_WRITE32(pAd, tb_entry.wtbl_addr[0] + 8, tb_entry.wtbl_1.wtbl_1_d2.word);
 		MAC_IO_READ32(pAd, WTBL1OR, &Value);
 		Value |= PSM_W_FLAG;
 		MAC_IO_WRITE32(pAd, WTBL1OR, Value);

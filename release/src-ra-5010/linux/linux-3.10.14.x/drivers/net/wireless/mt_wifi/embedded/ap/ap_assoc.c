@@ -2766,7 +2766,6 @@ VOID APPeerDisassocReqAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 	UINT16 SeqNum;
 	MAC_TABLE_ENTRY *pEntry;
 	struct wifi_dev *wdev;
-	STA_TR_ENTRY *tr_entry;
 
 	MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_OFF, ("ASSOC - 1 receive DIS-ASSOC request\n"));
 
@@ -2828,17 +2827,6 @@ VOID APPeerDisassocReqAction(RTMP_ADAPTER *pAd, MLME_QUEUE_ELEM *Elem)
 			DiagConnError(pAd, pEntry->func_tb_idx, pEntry->Addr,
 				DIAG_CONN_DEAUTH, REASON_DEAUTH_STA_LEAVING);
 #endif
-		/*when received peer disassoc req. AP need firstly stop sw enq & deq*/
-		if ((pEntry->wcid < MAX_LEN_OF_TR_TABLE) && (pEntry->wcid != MCAST_WCID)) {
-			tr_entry = &pAd->MacTab.tr_entry[pEntry->wcid];
-			if (tr_entry != NULL) {
-				tr_entry->enq_cap = FALSE;
-				tr_entry->deq_cap = FALSE;
-				MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR,
-					("%s:(wcid=%d), Stop SW enq and deq to solve KR00K\n",
-				__FUNCTION__, pEntry->wcid));
-			}
-		}
 		MacTableDeleteEntry(pAd, Elem->Wcid, Addr2);
 #ifdef MAC_REPEATER_SUPPORT
 

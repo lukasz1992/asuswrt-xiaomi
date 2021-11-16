@@ -249,7 +249,6 @@ static VOID APPeerDeauthReqAction(
 	UCHAR Addr2[MAC_ADDR_LEN];
 	UINT16 Reason, SeqNum;
 	MAC_TABLE_ENTRY *pEntry;
-	STA_TR_ENTRY *tr_entry;
 #if (defined(WH_EZ_SETUP) || defined(WH_EVENT_NOTIFIER))
 	struct wifi_dev *wdev;
 #endif
@@ -346,17 +345,6 @@ static VOID APPeerDeauthReqAction(
 				pEntry->Addr,
 				REASON_DEAUTH_STA_LEAVING);
 #endif
-		/*when received peer deauth req. AP need firstly stop sw enq & deq*/
-		if ((Elem->Wcid < MAX_LEN_OF_TR_TABLE) && (Elem->Wcid != MCAST_WCID)) {
-			tr_entry = &pAd->MacTab.tr_entry[Elem->Wcid];
-			if (tr_entry != NULL) {
-				tr_entry->enq_cap = FALSE;
-				tr_entry->deq_cap = FALSE;
-				DBGPRINT(RT_DEBUG_ERROR,
-					("%s:(wcid=%d),Stop SW enq and deq to solve KR00K\n",
-				__FUNCTION__, Elem->Wcid));
-			}
-		}
 		MacTableDeleteEntry(pAd, Elem->Wcid, Addr2);
 
 		DBGPRINT(RT_DEBUG_TRACE,
