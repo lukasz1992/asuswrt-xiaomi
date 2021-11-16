@@ -664,11 +664,11 @@ BOOLEAN PeerWpaMessageSanity(
 
 		if (MsgType < EAPOL_GROUP_MSG_1)
 		{
-           	DBGPRINT(RT_DEBUG_ERROR, ("Replay Counter Different in pairwise msg %d of 4-way handshake!\n", MsgType));
+           	DBGPRINT(RT_DEBUG_INFO, ("Replay Counter Different in pairwise msg %d of 4-way handshake!\n", MsgType));
 		}
 		else
 		{
-			DBGPRINT(RT_DEBUG_ERROR, ("Replay Counter Different in group msg %d of 2-way handshake!\n", (MsgType - EAPOL_PAIR_MSG_4)));
+			DBGPRINT(RT_DEBUG_INFO, ("Replay Counter Different in group msg %d of 2-way handshake!\n", (MsgType - EAPOL_PAIR_MSG_4)));
 		}
 		
 		hex_dump("Receive replay counter ", pMsg->KeyDesc.ReplayCounter, LEN_KEY_DESC_REPLAY);

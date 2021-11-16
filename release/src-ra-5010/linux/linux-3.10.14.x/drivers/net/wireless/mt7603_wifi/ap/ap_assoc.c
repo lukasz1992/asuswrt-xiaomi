@@ -360,7 +360,7 @@ static USHORT update_associated_mac_entry(
 			}
 
 
-DBGPRINT(RT_DEBUG_OFF, ("%s(): Peer's PhyCap=>Mode:%s, BW:%s\n", 
+DBGPRINT(RT_DEBUG_INFO, ("%s(): Peer's PhyCap=>Mode:%s, BW:%s\n", 
 				__FUNCTION__,
 				get_phymode_str(pEntry->MaxHTPhyMode.field.MODE),
 				get_bw_str(pEntry->MaxHTPhyMode.field.BW)));
