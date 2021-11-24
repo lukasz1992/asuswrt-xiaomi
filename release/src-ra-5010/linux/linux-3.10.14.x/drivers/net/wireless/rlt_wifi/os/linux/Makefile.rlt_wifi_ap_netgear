@@ -91,6 +91,14 @@ spec_objs += $(RT_WIFI_DIR)/common/ps.o\
 ifeq ($(CONFIG_WSC_INCLUDED),y)
     EXTRA_CFLAGS += -DWSC_INCLUDED
 
+	ifneq ($(CONFIG_USER_GOAHEAD_HTTPD),)
+        EXTRA_CFLAGS += -DSDK_GOAHEAD_HTTPD
+    endif
+    
+    ifneq ($(CONFIG_USER_LIGHTY),)
+        EXTRA_CFLAGS += -DSDK_USER_LIGHTY
+    endif
+
     ifneq ($(CONFIG_RLT_AP_SUPPORT),)
         EXTRA_CFLAGS += -DWSC_AP_SUPPORT
     endif

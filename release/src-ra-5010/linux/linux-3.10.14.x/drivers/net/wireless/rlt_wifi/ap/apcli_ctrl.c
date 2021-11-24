@@ -707,6 +707,56 @@ static VOID ApCliCtrlProbeRspAction(
 		DBGPRINT(RT_DEBUG_TRACE, ("%s():ProbeResp success. SSID=%s, Bssid=%02x:%02x:%02x:%02x:%02x:%02x\n",
 					__FUNCTION__, pApCliEntry->Ssid, PRINT_MAC(pApCliEntry->MlmeAux.Bssid)));
 
+		if ((pAd->CommonCfg.Channel <= 14)
+#ifdef MAC_REPEATER_SUPPORT
+			&& (CliIdx == 0xFF)
+#endif /* MAC_REPEATER_SUPPORT */
+			)
+		{
+			ADD_HTINFO RootApHtInfo = pAd->ApCfg.ApCliTab[ifIndex].MlmeAux.AddHtInfo.AddHtInfo;
+
+			if (RootApHtInfo.RecomWidth) {
+				pAd->CommonCfg.RegTransmitSetting.field.BW = BW_40;
+
+				if (RootApHtInfo.ExtChanOffset == EXTCHA_ABOVE) {
+					Set_HtExtcha_Proc(pAd, "1");
+					pApCliEntry->MlmeAux.CentralChannel = pApCliEntry->MlmeAux.Channel + 2;
+				} else {
+					Set_HtExtcha_Proc(pAd, "0");
+					pApCliEntry->MlmeAux.CentralChannel = pApCliEntry->MlmeAux.Channel - 2;
+				}
+
+				pAd->CommonCfg.HtCapability.HtCapInfo.ChannelWidth = BW_40;
+				pAd->CommonCfg.Bss2040NeedFallBack = 0;
+				pAd->CommonCfg.LastBSSCoexist2040.field.BSS20WidthReq = 0;
+			} else {
+				pAd->CommonCfg.RegTransmitSetting.field.BW	= BW_20;
+				pAd->CommonCfg.RegTransmitSetting.field.EXTCHA = EXTCHA_NONE;
+				pAd->CommonCfg.HtCapability.HtCapInfo.ChannelWidth = BW_20;
+				pApCliEntry->MlmeAux.CentralChannel = pApCliEntry->MlmeAux.Channel;
+			}
+
+			pAd->CommonCfg.Channel = pApCliEntry->MlmeAux.Channel;
+			pAd->CommonCfg.CentralChannel = pApCliEntry->MlmeAux.CentralChannel;
+
+			SetCommonHT(pAd);
+			AsicBBPAdjust(pAd);
+
+			pAd->hw_cfg.cent_ch = pAd->CommonCfg.CentralChannel;
+			AsicSwitchChannel(pAd, pAd->hw_cfg.cent_ch, FALSE);
+			AsicLockChannel(pAd, pAd->hw_cfg.cent_ch);
+
+			DBGPRINT(RT_DEBUG_ERROR, ("%s(): driver ch_width(%d), extcha(%d), bbp bw(%d)\n",
+							__FUNCTION__,
+							pAd->CommonCfg.HtCapability.HtCapInfo.ChannelWidth,
+							pAd->CommonCfg.RegTransmitSetting.field.EXTCHA,
+							pAd->CommonCfg.BBPCurrentBW));
+
+			DBGPRINT(RT_DEBUG_ERROR, ("%s(): hw_cfg.cent_ch = %d\n", __FUNCTION__, pAd->hw_cfg.cent_ch));
+
+			pAd->CommonCfg.Bss2040CoexistFlag |= BSS_2040_COEXIST_INFO_SYNC;
+		}
+
 		*pCurrState = APCLI_CTRL_AUTH;
 
 #ifdef MAC_REPEATER_SUPPORT
@@ -1497,7 +1547,6 @@ static VOID ApCliCtrlPeerDeAssocReqAction(
 	if (CliIdx == 0xFF)
 	{
 		UCHAR index;
-		BOOLEAN Cancelled;
 
 		for(index = 0; index < MAX_EXT_MAC_ADDR_SIZE; index++)
 		{
@@ -1752,13 +1801,13 @@ VOID ApCliWpaMicFailureReportFrame(
 	PEAPOL_PACKET       pPacket;
 	UCHAR               Mic[16];
 	BOOLEAN             bUnicast;
-	UCHAR			Wcid, i;
+	UCHAR			Wcid;
 	PMAC_TABLE_ENTRY pMacEntry = NULL;
 	USHORT ifIndex = (USHORT)(Elem->Priv);
 	APCLI_STRUCT *apcli_entry;
 	struct wifi_dev *wdev;
 	
-	DBGPRINT(RT_DEBUG_TRACE, ("\ApCliWpaMicFailureReportFrame ----->\n"));
+	DBGPRINT(RT_DEBUG_TRACE, ("ApCliWpaMicFailureReportFrame ----->\n"));
 	
 	apcli_entry = &pAd->ApCfg.ApCliTab[ifIndex];
 	wdev = &apcli_entry->wdev;
@@ -1774,7 +1823,7 @@ VOID ApCliWpaMicFailureReportFrame(
 	pMacEntry = &pAd->MacTab.Content[apcli_entry->MacTabWCID];
 	if (!IS_ENTRY_APCLI(pMacEntry))
 	{
-		DBGPRINT(RT_DEBUG_ERROR, ("!IS_ENTRY_APCLI(pMacEntry)\n", __FUNCTION__));
+		DBGPRINT(RT_DEBUG_ERROR, ("!IS_ENTRY_APCLI(pMacEntry)\n"));
 		return;
 	}
 	

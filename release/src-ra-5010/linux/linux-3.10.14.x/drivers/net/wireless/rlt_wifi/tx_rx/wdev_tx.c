@@ -288,7 +288,12 @@ VOID wdev_tx_pkts(NDIS_HANDLE dev_hnd, PPNDIS_PACKET pkt_list, UINT pkt_cnt, str
 #ifdef DELAYED_TCP_ACK
 			if(!delay_tcp_ack(pAd, wcid, pPacket))
 #endif /* DELAYED_TCP_ACK */
+#ifdef REDUCE_TCP_ACK_SUPPORT
+            if (ReduceTcpAck(pAd,pPacket) == FALSE)
+#endif /* REDUCE_TCP_ACK_SUPPORT */
+			{
 				APSendPacket(pAd, pPacket);
+			}		
 		}		
 #endif /* CONFIG_AP_SUPPORT */
 

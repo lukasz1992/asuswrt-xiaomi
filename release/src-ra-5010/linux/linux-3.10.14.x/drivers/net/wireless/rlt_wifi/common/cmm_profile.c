@@ -376,10 +376,8 @@ INT RTMPGetKeyParameter(
 	PSTRING start_ptr, end_ptr;
 	PSTRING ptr;
 	PSTRING offset = NULL;
-	INT  len, keyLen;
+	INT  len;
 
-
-	keyLen = strlen(key);
 	os_alloc_mem(NULL, (PUCHAR *)&pMemBuf, MAX_PARAM_BUFFER_SIZE  * 2);
 	if (pMemBuf == NULL)
 		return (FALSE);
@@ -752,6 +750,45 @@ static void rtmp_read_ap_client_from_file(
 		
 	}
 #endif /* APCLI_CONNECTION_TRIAL */
+
+#ifdef APCLI_AUTO_BW_SUPPORT
+        /* ApCliBw */
+        if(RTMPGetKeyParameter("ApCliBw", tmpbuf, MAX_PARAM_BUFFER_SIZE, buffer, FALSE))
+        {
+                for (i=0, macptr = rstrtok(tmpbuf,";"); (macptr && i < MAX_APCLI_NUM); macptr = rstrtok(NULL,";"), i++)
+                {
+                        pApCliEntry = &pAd->ApCfg.ApCliTab[i];
+			wdev = &pApCliEntry->wdev;
+
+                        wdev->bw = (UCHAR)simple_strtol(macptr, 0, 10);
+			if ((wdev->bw != BW_20) && (wdev->bw != BW_40) && (wdev->bw != BW_80))
+			{
+				DBGPRINT(RT_DEBUG_OFF, ("AUTOBW(%s): unknown ApCliEntry[%d].BW=%d recover to BW_20\n", __FUNCTION__, i, wdev->bw));
+				wdev->bw = BW_20;
+			}
+                        DBGPRINT(RT_DEBUG_OFF, ("AUTOBW(%s): New ApCliEntry[%d].BW=%d \n", __FUNCTION__, i, wdev->bw));
+                }
+        }
+
+        /* ApCliPhyMode */
+        if(RTMPGetKeyParameter("ApCliPhyMode", tmpbuf, MAX_PARAM_BUFFER_SIZE, buffer, FALSE))
+        {
+		UINT wmode = 0;
+                for (i=0, macptr = rstrtok(tmpbuf,";"); (macptr && i < MAX_APCLI_NUM); macptr = rstrtok(NULL,";"), i++)
+                {
+                        wmode = simple_strtol(macptr, 0, 10);
+
+			if (!ApCliSetPhyMode(pAd, i, wmode))	
+                        {
+                                DBGPRINT(RT_DEBUG_OFF, ("AUTOBW(%s): skip unknown ApCliEntry[%d].WMODE=%d\n", __FUNCTION__, i, wmode));
+                                continue;
+                        }
+
+                        DBGPRINT(RT_DEBUG_OFF, ("AUTOBW(%s): New ApCliEntry[%d].WMODE=%d \n", __FUNCTION__, i, wmode));
+                }
+        }
+#endif /* APCLI_AUTO_BW_SUPPORT */	
+
 
 	/*ApCliSsid*/
 	if(RTMPGetKeyParameter("ApCliSsid", tmpbuf, MAX_PARAM_BUFFER_SIZE, buffer, FALSE))
@@ -1986,6 +2023,13 @@ static void HTParametersHook(
 		else
 			pAd->CommonCfg.RegTransmitSetting.field.BW = BW_20;
 
+#ifdef DOT11N_DRAFT3
+		if (Value == BW_40)
+			pAd->CommonCfg.ori_bw_before_2040_coex = BW_40;
+		else
+			pAd->CommonCfg.ori_bw_before_2040_coex = BW_20;
+#endif /* DOT11N_DRAFT3 */
+
 #ifdef MCAST_RATE_SPECIFIC
 		pAd->CommonCfg.MCastPhyMode.field.BW = pAd->CommonCfg.RegTransmitSetting.field.BW;
 #endif /* MCAST_RATE_SPECIFIC */
@@ -2001,6 +2045,13 @@ static void HTParametersHook(
 			pAd->CommonCfg.RegTransmitSetting.field.EXTCHA  = EXTCHA_BELOW;
 		else
 			pAd->CommonCfg.RegTransmitSetting.field.EXTCHA = EXTCHA_ABOVE;
+
+#ifdef DOT11N_DRAFT3
+		if (Value == 0)
+			pAd->CommonCfg.ori_ext_channel_before_2040_coex = EXTCHA_BELOW;
+		else
+			pAd->CommonCfg.ori_ext_channel_before_2040_coex = EXTCHA_ABOVE;
+#endif /* DOT11N_DRAFT3 */
 
 		DBGPRINT(RT_DEBUG_TRACE, ("HT: Ext Channel = %s\n", (Value==0) ? "BELOW" : "ABOVE" ));
 	}
@@ -3102,6 +3153,13 @@ NDIS_STATUS	RTMPSetProfileParameters(
 				rtmp_asic_set_bf(pAd);
 			}
 
+			/* ITxBfCalibMode*/
+			if(RTMPGetKeyParameter("ITxBfCalibMode", tmpbuf, 32, pBuffer, TRUE))
+			{
+				pAd->CommonCfg.ITxBfCalibMode = simple_strtol(tmpbuf, 0, 10);
+				DBGPRINT(RT_DEBUG_TRACE, ("ITxBfCalibMode = %ld\n", pAd->CommonCfg.ITxBfCalibMode));
+			}
+
 			/* ETxBfeeEn*/
 			if(RTMPGetKeyParameter("ETxBfeeEn", tmpbuf, 32, pBuffer, TRUE))
 			{
@@ -3208,9 +3266,6 @@ NDIS_STATUS	RTMPSetProfileParameters(
 		
 #ifdef DFS_SUPPORT
 	{
-#ifdef RTMP_RBUS_SUPPORT	
-		PRADAR_DETECT_STRUCT pRadarDetect = &pAd->CommonCfg.RadarDetect;
-#endif /* RTMP_RBUS_SUPPORT */
 		/*CSPeriod*/
 		if(RTMPGetKeyParameter("CSPeriod", tmpbuf, 10, pBuffer, TRUE))
 		{
@@ -4065,6 +4120,28 @@ NDIS_STATUS	RTMPSetProfileParameters(
 #endif /* VIDEO_TURBINE_SUPPORT */
 #endif /* RTMP_RBUS_SUPPORT */
 
+#ifdef CONFIG_AP_SUPPORT
+				IF_DEV_CONFIG_OPMODE_ON_AP(pAd)
+				{
+					/* WiFi Mcast Test */
+					if (RTMPGetKeyParameter("WiFiMcastTest", tmpbuf, 128, pBuffer, TRUE))
+					{
+						if (strncmp(tmpbuf, "0", 1) == 0)
+							pAd->CommonCfg.bMcastTest = FALSE;
+						else if (strncmp(tmpbuf, "1", 1) == 0)
+							pAd->CommonCfg.bMcastTest = TRUE;
+						else
+							pAd->CommonCfg.bMcastTest = FALSE;
+						DBGPRINT(RT_DEBUG_TRACE, ("WiFi Mcast Enable=%d\n", pAd->CommonCfg.bMcastTest));
+					}
+					else
+					{
+						pAd->CommonCfg.bMcastTest = FALSE;
+						DBGPRINT(RT_DEBUG_ERROR, ("WiFi Mcast disabled=%d\n", pAd->CommonCfg.bMcastTest));
+					}
+				}
+#endif /* CONFIG_AP_SUPPORT */
+
 #ifdef SINGLE_SKU
 				if(RTMPGetKeyParameter("AntGain", tmpbuf, 10, pBuffer, TRUE))
 				{
@@ -4877,9 +4954,12 @@ UINT32 RalinkRate_VHT_1NSS[Rate_BW_MAX][Rate_GI_MAX][Rate_MCS] =
 	},
 };
 
-UINT8 newRateGetAntenna(UINT8 MCS)
+UINT8 newRateGetAntenna(UINT8 MCS, UINT8 PhyMode)
 {
-	return ((MCS>>4) + 1);
+	if(PhyMode >= MODE_VHT)    
+	    return ((MCS>>4) + 1);
+    else
+        return ((MCS>>3) + 1);
 }
 
 

@@ -220,6 +220,32 @@ int rt28xx_init(VOID *pAdSrc, PSTRING pDefaultMac, PSTRING pHostName)
 	}
 	DBGPRINT(RT_DEBUG_OFF, ("1. Phy Mode = %d\n", pAd->CommonCfg.PhyMode));
 
+	if (pAd->CommonCfg.bMcastTest == TRUE)
+	{
+		UINT32 macValue;
+#ifdef RLT_MAC
+		if (pAd->chipCap.hif_type == HIF_RLT) 
+		{
+			RTMP_IO_READ32(pAd, RLT_PBF_CFG, &macValue);
+			macValue = (macValue | 0x2);
+			RTMP_IO_WRITE32(pAd, RLT_PBF_CFG, macValue);
+		}
+		else
+		{
+#endif /* RLT_MAC */
+#ifdef RTMP_MAC
+			if (pAd->chipCap.hif_type == HIF_RTMP)
+			{
+				RTMP_IO_READ32(pAd, PBF_CFG, &macValue);
+				macValue = (macValue | 0x8);
+				RTMP_IO_WRITE32(pAd, PBF_CFG, macValue);
+			}
+#endif /* RTMP_MAC */
+#ifdef RLT_MAC
+		}
+#endif /* RLT_MAC */
+	}
+
 	/* We should read EEPROM for all cases */
 	NICReadEEPROMParameters(pAd, (PSTRING)pDefaultMac);
 	DBGPRINT(RT_DEBUG_OFF, ("2. Phy Mode = %d\n", pAd->CommonCfg.PhyMode));
@@ -653,6 +679,10 @@ int rt28xx_init(VOID *pAdSrc, PSTRING pDefaultMac, PSTRING pHostName)
 	pAd->ChannelInfo.GetChannelInfo = FALSE;
 #endif
 
+#ifdef REDUCE_TCP_ACK_SUPPORT
+	ReduceAckInit(pAd);
+#endif /* REDUCE_TCP_ACK_SUPPORT */
+	
 	DBGPRINT_S(Status, ("<==== rt28xx_init, Status=%x\n", Status));
 
 	return TRUE;
@@ -1122,6 +1152,9 @@ VOID RTMPDrvClose(VOID *pAdSrc, VOID *net_dev)
 #endif /* CAPTURE_MODE */
 #endif /* CONFIG_FPGA_MODE */
 
+#ifdef REDUCE_TCP_ACK_SUPPORT
+	ReduceAckExit(pAd);
+#endif /* REDUCE_TCP_ACK_SUPPORT */
 }
 
 

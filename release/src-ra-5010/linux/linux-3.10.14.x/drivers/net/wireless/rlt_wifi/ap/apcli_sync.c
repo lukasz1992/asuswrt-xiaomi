@@ -159,6 +159,8 @@ static VOID ApCliMlmeProbeReqAction(
 	USHORT ifIndex = (USHORT)(Elem->Priv);
 	PULONG pCurrState = &pAd->ApCfg.ApCliTab[ifIndex].SyncCurrState;
 	APCLI_STRUCT *pApCliEntry = NULL;
+	struct wifi_dev *wdev;
+	ULONG bss_idx = BSS_NOT_FOUND;
 
 	DBGPRINT(RT_DEBUG_TRACE, ("ApCli SYNC - ApCliMlmeProbeReqAction(Ssid %s)\n", Info->Ssid));
 
@@ -166,12 +168,12 @@ static VOID ApCliMlmeProbeReqAction(
 		return;
 
 	pApCliEntry = &pAd->ApCfg.ApCliTab[ifIndex];
+	wdev = &pApCliEntry->wdev;
 
 	/* reset all the timers */
 	RTMPCancelTimer(&(pApCliEntry->MlmeAux.ProbeTimer), &Cancelled);
 
 	pApCliEntry->MlmeAux.Rssi = -9999;
-	ULONG bss_idx = BSS_NOT_FOUND;
 	bss_idx = BssSsidTableSearchBySSID(&pAd->ScanTab, (PCHAR)Info->Ssid, Info->SsidLen);
 	if (bss_idx == BSS_NOT_FOUND)
 	{
@@ -207,12 +209,21 @@ static VOID ApCliMlmeProbeReqAction(
 	pApCliEntry->MlmeAux.ExtRateLen = pAd->cfg80211_ctrl.P2pExtRateLen;
 	NdisMoveMemory(pApCliEntry->MlmeAux.ExtRate, pAd->cfg80211_ctrl.P2pExtRate, pAd->cfg80211_ctrl.P2pExtRateLen);
 #else
+#ifdef APCLI_AUTO_BW_SUPPORT
+        pApCliEntry->MlmeAux.SupRateLen = wdev->SupRateLen;
+        NdisMoveMemory(pApCliEntry->MlmeAux.SupRate, wdev->SupRate, wdev->SupRateLen);
+
+        /* Prepare the default value for extended rate */
+        pApCliEntry->MlmeAux.ExtRateLen = wdev->ExtRateLen;
+        NdisMoveMemory(pApCliEntry->MlmeAux.ExtRate, wdev->ExtRate, wdev->ExtRateLen);
+#else
 	pApCliEntry->MlmeAux.SupRateLen = pAd->CommonCfg.SupRateLen;
 	NdisMoveMemory(pApCliEntry->MlmeAux.SupRate, pAd->CommonCfg.SupRate, pAd->CommonCfg.SupRateLen);
 
 	/* Prepare the default value for extended rate */
 	pApCliEntry->MlmeAux.ExtRateLen = pAd->CommonCfg.ExtRateLen;
 	NdisMoveMemory(pApCliEntry->MlmeAux.ExtRate, pAd->CommonCfg.ExtRate, pAd->CommonCfg.ExtRateLen);
+#endif /* APCLI_AUTO_BW_SUPPORT */
 #endif /* RT_CFG80211_P2P_CONCURRENT_DEVICE */
 
 	RTMPSetTimer(&(pApCliEntry->MlmeAux.ProbeTimer), PROBE_TIMEOUT);
@@ -256,6 +267,7 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 	USHORT ifIndex = (USHORT)(Elem->Priv);
 	ULONG *pCurrState;
 	BCN_IE_LIST *ie_list = NULL;
+	UCHAR PhyMode = pAd->CommonCfg.PhyMode;
 
 	if (ifIndex >= MAX_APCLI_NUM)
 		return;
@@ -302,11 +314,13 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 		INT matchFlag = FALSE;
 
 		ULONG   Bssidx;
+#ifdef RT_CFG80211_P2P_CONCURRENT_DEVICE
 		CHAR RealRssi = -127;
 
 		RealRssi = (LONG)(RTMPMaxRssi(pAd, ConvertToRssi(pAd, Elem->Rssi0, RSSI_0), 
 						   ConvertToRssi(pAd, Elem->Rssi1, RSSI_1), 
 						   ConvertToRssi(pAd, Elem->Rssi2, RSSI_2)));		
+#endif /* RT_CFG80211_P2P_CONCURRENT_DEVICE */
 
 		/* Update ScanTab */
 		Bssidx = BssTableSearch(&pAd->ScanTab, ie_list->Bssid, ie_list->Channel);
@@ -447,6 +461,7 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 			pApCliEntry->MlmeAux.BssType = ie_list->BssType;
 			pApCliEntry->MlmeAux.BeaconPeriod = ie_list->BeaconPeriod;
 			pApCliEntry->MlmeAux.Channel = ie_list->Channel;
+			pApCliEntry->MlmeAux.CentralChannel = ie_list->Channel; /* by default */
 			pApCliEntry->MlmeAux.AtimWin = ie_list->AtimWin;
 			pApCliEntry->MlmeAux.CfpPeriod = ie_list->CfParm.CfpPeriod;
 			pApCliEntry->MlmeAux.CfpMaxDuration = ie_list->CfParm.CfpMaxDuration;
@@ -479,10 +494,18 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 #endif /* APCLI_CERT_SUPPORT */
 #ifdef DOT11_N_SUPPORT
 			NdisZeroMemory(pApCliEntry->RxMcsSet,sizeof(pApCliEntry->RxMcsSet));
+		
+#ifdef APCLI_AUTO_BW_SUPPORT
+	        	PhyMode = pApCliEntry->wdev.PhyMode;
+			DBGPRINT(RT_DEBUG_OFF, ("%s: check HT Rule --> %d %d %d %d\n", __FUNCTION__, (ie_list->HtCapabilityLen > 0),  
+				(pApCliEntry->wdev.DesiredHtPhyInfo.bHtEnable), WMODE_CAP_N(pApCliEntry->wdev.PhyMode), 
+				!(pAd->CommonCfg.HT_DisallowTKIP && IS_INVALID_HT_SECURITY(wdev->WepStatus))));	
+#endif /* APCLI_AUTO_BW_SUPPORT */
+
 			/* filter out un-supported ht rates */
 			if ((ie_list->HtCapabilityLen > 0) && 
 				(pApCliEntry->wdev.DesiredHtPhyInfo.bHtEnable) &&
-				WMODE_CAP_N(pAd->CommonCfg.PhyMode) &&
+				WMODE_CAP_N(PhyMode) &&
 				/* For Dissallow TKIP rule on STA */
 				!(pAd->CommonCfg.HT_DisallowTKIP && IS_INVALID_HT_SECURITY(wdev->WepStatus)))
 			{
@@ -497,6 +520,7 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 		 			/* Check again the Bandwidth capability of this AP. */
 					CentralChannel = get_cent_ch_by_htinfo(pAd, &ie_list->AddHtInfo,
 														&ie_list->HtCapability);
+					pApCliEntry->MlmeAux.CentralChannel = CentralChannel;									
 		 			DBGPRINT(RT_DEBUG_TRACE, ("PeerBeaconAtJoinAction HT===>CentralCh = %d, ControlCh = %d\n",
 									CentralChannel, ie_list->AddHtInfo.ControlChan));
 				}
@@ -512,7 +536,7 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 
 #ifdef DOT11_N_SUPPORT
 			/* copy QOS related information */
-			if (WMODE_CAP_N(pAd->CommonCfg.PhyMode))
+			if (WMODE_CAP_N(PhyMode))
 			{
 				NdisMoveMemory(&pApCliEntry->MlmeAux.APEdcaParm, &ie_list->EdcaParm, sizeof(EDCA_PARM));
 				NdisMoveMemory(&pApCliEntry->MlmeAux.APQbssLoad, &ie_list->QbssLoad, sizeof(QBSS_LOAD_PARM));
@@ -537,6 +561,37 @@ static VOID ApCliPeerProbeRspAtJoinAction(
 			else  /* Used the default TX Power Percentage. */
 				pAd->CommonCfg.TxPowerPercentage = pAd->CommonCfg.TxPowerDefault;
 
+#ifdef WSC_AP_SUPPORT
+#ifdef DOT11_N_SUPPORT
+			if ((pApCliEntry->WscControl.WscConfMode != WSC_DISABLE) &&
+		        (pApCliEntry->WscControl.bWscTrigger == TRUE))
+			{
+				ADD_HTINFO RootApHtInfo, ApHtInfo;
+				ApHtInfo = pAd->CommonCfg.AddHTInfo.AddHtInfo;
+				RootApHtInfo = ie_list->AddHtInfo.AddHtInfo;
+				if ((pAd->CommonCfg.HtCapability.HtCapInfo.ChannelWidth  == BW_40) &&
+					(RootApHtInfo.RecomWidth) &&
+					(RootApHtInfo.ExtChanOffset != ApHtInfo.ExtChanOffset))
+				{
+					if (RootApHtInfo.ExtChanOffset == EXTCHA_ABOVE)
+						Set_HtExtcha_Proc(pAd, "1");
+					else
+						Set_HtExtcha_Proc(pAd, "0");
+
+					goto LabelErr;
+				}				
+			}
+#endif /* DOT11_N_SUPPORT */
+#endif /* WSC_AP_SUPPORT */
+	
+#ifdef APCLI_AUTO_BW_SUPPORT
+			if ((ie_list->HtCapabilityLen > 0) &&
+			    (ie_list->HtCapability.HtCapInfo.ChannelWidth == BW_40))
+			{
+				ApCliAutoBwAction(pAd, ifIndex);
+			}
+#endif /* APCLI_AUTO_BW_SUPPORT */	
+			
 			if(bssidEqualFlag == TRUE)
 			{
 				*pCurrState = APCLI_SYNC_IDLE;
@@ -654,13 +709,17 @@ static VOID ApCliEnqueueProbeRequest(
 	CHAR ssid[MAX_LEN_OF_SSID];
 	APCLI_STRUCT *pApCliEntry = NULL;
 	BOOLEAN bHasWscIe = FALSE;
-
+	UCHAR   PhyMode = pAd->CommonCfg.PhyMode;
+	
 	DBGPRINT(RT_DEBUG_TRACE, ("force out a ProbeRequest ...\n"));
 
 	if (ifIndex >= MAX_APCLI_NUM)
 		return;
 
 	pApCliEntry = &pAd->ApCfg.ApCliTab[ifIndex];
+#ifdef APCLI_AUTO_BW_SUPPORT
+    PhyMode = pApCliEntry->wdev.PhyMode;
+#endif /* APCLI_AUTO_BW_SUPPORT */	
 	
 	NState = MlmeAllocateMemory(pAd, &pOutBuffer);  /* Get an unused nonpaged memory */
 	if(NState != NDIS_STATUS_SUCCESS)
@@ -706,34 +765,14 @@ static VOID ApCliEnqueueProbeRequest(
 		}
 
 #ifdef DOT11_VHT_AC
-		if (WMODE_CAP_AC(pAd->CommonCfg.PhyMode) &&
+		if (WMODE_CAP_AC(PhyMode) &&
 			(pAd->CommonCfg.Channel > 14))
 		{
-			BOOLEAN fgBfeeCapSu;
-			    
+
 			build_vht_cap_ie(pAd, (UCHAR *)&pApCliEntry->MlmeAux.vht_cap);
 			pApCliEntry->MlmeAux.vht_cap_len = sizeof(VHT_CAP_IE);
 
-#ifdef VHT_TXBF_SUPPORT
-            fgBfeeCapSu = pAd->CommonCfg.vht_cap_ie.vht_cap.bfee_cap_su;
-
-            //Disable beamform capability in Associate Request with 3x3 AP to avoid throughput drop issue
-            // MT76x2 only supports up to 2x2 sounding feedback 
-            pAd->BeaconSndDimensionFlag = 0;
-            if (pApCliEntry->MlmeAux.vht_cap.vht_cap.num_snd_dimension >=2 )
-            {
-                pAd->BeaconSndDimensionFlag = 1;
-            }
-            else
-            {
-                pAd->CommonCfg.vht_cap_ie.vht_cap.bfee_cap_su = TRUE;
-            }
-
             FrameLen += build_vht_ies(pAd, (UCHAR *)(pOutBuffer + FrameLen), SUBTYPE_PROBE_REQ);
-            pAd->CommonCfg.vht_cap_ie.vht_cap.bfee_cap_su = fgBfeeCapSu;
-#else
-            FrameLen += build_vht_ies(pAd, (UCHAR *)(pOutBuffer + FrameLen), SUBTYPE_PROBE_REQ);
-#endif /* VHT_TXBF_SUPPORT */			
 		}
 #endif /* DOT11_VHT_AC */
 #ifdef WSC_AP_SUPPORT

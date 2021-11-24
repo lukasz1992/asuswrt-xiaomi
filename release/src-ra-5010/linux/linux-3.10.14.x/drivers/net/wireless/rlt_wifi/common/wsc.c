@@ -285,7 +285,12 @@ INT WscGenerateUUID(
 	NdisMoveMemory(&uuidHexStr[9], &uuid_t.clockSeqLow, 1);
 	NdisMoveMemory(&uuidHexStr[10], &uuid_t.node[0], 6);
 
+#ifdef MULTI_INF_SUPPORT
+#ifdef CON_WPS_AP_SAME_UUID
 show:
+#endif /* CON_WPS_AP_SAME_UUID */
+#endif /* MULTI_INF_SUPPORT */
+
 	DBGPRINT(RT_DEBUG_TRACE, ("The UUID Hex string is:"));
 	for (i=0; i< 16; i++)
 	{
@@ -1003,7 +1008,6 @@ VOID WscEAPAction(
 	}
 	else if (MsgType == WSC_MSG_M1)
 	{
-		UINT32 rv = 0;
 		/*
 			If Buffalo WPS STA doesn't receive M2D from AP, Buffalo WPS STA will stop to do WPS.
 			Therefore we need to receive M1 and send M2D without trigger.
@@ -1019,7 +1023,6 @@ VOID WscEAPAction(
 			}
 			else
 				WscEapRegistrarAction(pAdapter, Elem, MsgType, pEntry, pWscControl);
-			rv = 1;
 		}
 #ifdef CONFIG_AP_SUPPORT
 		if (((pWscControl->WscConfMode & WSC_PROXY) != 0) && (!bUPnPMsg) && (CurOpMode == AP_MODE))
@@ -1358,7 +1361,7 @@ VOID WscEapEnrolleeAction(
 	IN  PWSC_CTRL       pWscControl)
 {
     INT     DataLen = 0, rv = 0, DH_Len = 0;
-	UCHAR   OpCode, bssIdx;
+	UCHAR   OpCode/*, bssIdx = 0*/;
     PUCHAR  WscData = NULL;
     BOOLEAN bUPnPMsg, bUPnPStatus = FALSE, Cancelled;
 	WSC_UPNP_NODE_INFO *pWscUPnPInfo = &pWscControl->WscUPnPNodeInfo;
@@ -1369,7 +1372,6 @@ VOID WscEapEnrolleeAction(
 
 	bUPnPMsg = Elem->MsgType == WSC_EAPOL_UPNP_MSG ? TRUE : FALSE;
 	OpCode = bUPnPMsg ? WSC_OPCODE_UPNP_MASK : 0;
-	bssIdx = 0;
 
 #ifdef CONFIG_AP_SUPPORT
 	IF_DEV_CONFIG_OPMODE_ON_AP(pAdapter)
@@ -1389,7 +1391,7 @@ VOID WscEapEnrolleeAction(
 						pWscControl->WscActionMode, pWscControl->WscConfStatus, pWscControl->WscUseUPnP, pEntry));
 			goto Fail;
 		}
-		bssIdx = (pWscControl->EntryIfIdx & 0x0F);
+		/* bssIdx = (pWscControl->EntryIfIdx & 0x0F);*/
 	}
 #endif /* CONFIG_AP_SUPPORT */
 	DBGPRINT(RT_DEBUG_TRACE, ("MsgType=0x%x, WscState=%d, bUPnPMsg=%d!\n", MsgType, pWscControl->WscState, bUPnPMsg));
@@ -1499,28 +1501,13 @@ VOID WscEapEnrolleeAction(
 					/* Enrollee 192 random bytes for DH key generation */
 					for (idx = 0; idx < 192; idx++)
 						pWscControl->RegData.EnrolleeRandom[idx] = RandomByte(pAdapter);
-            		NdisZeroMemory(pWscControl->RegData.Pke, sizeof(pWscControl->RegData.Pke));
-			RT_DH_PublicKey_Generate (
+            		RT_DH_PublicKey_Generate (
                     	WPS_DH_G_VALUE, sizeof(WPS_DH_G_VALUE),
             	    	WPS_DH_P_VALUE, sizeof(WPS_DH_P_VALUE),
             	    	pWscControl->RegData.EnrolleeRandom, sizeof(pWscControl->RegData.EnrolleeRandom),
             	    	pWscControl->RegData.Pke, (UINT *) &DH_Len);
-			
-			/* Need to prefix zero padding */
-			if((DH_Len != sizeof(pWscControl->RegData.Pke)) &&
-					(DH_Len < sizeof(pWscControl->RegData.Pke)))
-			{
-				UCHAR TempKey[192];
-				INT DiffCnt;
-				DiffCnt = sizeof(pWscControl->RegData.Pke) - DH_Len;
-
-				NdisFillMemory(&TempKey, DiffCnt, 0);
-				NdisCopyMemory(&TempKey[DiffCnt], pWscControl->RegData.Pke, DH_Len);
-				NdisCopyMemory(pWscControl->RegData.Pke, TempKey, sizeof(TempKey));
-				DH_Len += DiffCnt;
-				DBGPRINT(RT_DEBUG_TRACE, ("%s: Do zero padding!\n", __func__));
-			}
-			pWscControl->RegData.ReComputePke = 0;
+				
+					pWscControl->RegData.ReComputePke = 0;
 				}
 			}
 			OpCode |= WSC_OPCODE_MSG;
@@ -4023,7 +4010,7 @@ int WscSendUPnPMessage(
 	RTMP_WSC_MSG_HDR *pWscMsgHdr;
 	
 	UCHAR hdrBuf[42]; /*RTMP_WSC_NLMSG_HDR_LEN + RTMP_WSC_MSG_HDR_LEN */
-	int totalLen, leftLen, copyLen;
+	int leftLen = 0, copyLen;
 	PUCHAR pBuf = NULL, pBufPtr = NULL, pPos = NULL;
 	PUCHAR	pDevAddr = NULL;
 #ifdef CONFIG_AP_SUPPORT
@@ -4107,7 +4094,6 @@ int WscSendUPnPMessage(
 	}
 	
 	/*Allocate memory and copy the msg. */
-	totalLen = leftLen = pNLMsgHdr->msgLen;
 	pPos = pData;
 	os_alloc_mem(NULL, (UCHAR **)&pBuf, IWEVCUSTOM_MSG_MAX_LEN);
 	if (pBuf != NULL)
@@ -4885,8 +4871,8 @@ VOID WscSelectedRegistrar(
 	IN  UCHAR	apidx)
 {
 	PUCHAR	pData;
-	INT		IsAPConfigured;
-	UCHAR   wsc_version, wsc_sel_reg = 0;
+	/*INT		IsAPConfigured;*/
+	UCHAR   /*wsc_version, */wsc_sel_reg = 0;
 	USHORT	wsc_dev_pass_id = 0, wsc_sel_reg_conf_mthd = 0;
 	USHORT	WscType, WscLen;
 	PUCHAR	pAuthorizedMACs = NULL;
@@ -4913,7 +4899,7 @@ VOID WscSelectedRegistrar(
 		switch (ntohs(WscType))
 		{
 			case WSC_ID_VERSION:
-				wsc_version = *pData;
+				/*wsc_version = *pData;*/
 				break;
 
 			case WSC_ID_SEL_REGISTRAR:
@@ -4957,7 +4943,7 @@ VOID WscSelectedRegistrar(
 		Length -= WscLen;
 	}
 
-	IsAPConfigured = pWscCtrl->WscConfStatus;
+	/*IsAPConfigured = pWscCtrl->WscConfStatus;*/
 
 	if (wsc_sel_reg == 0x01)
 	{
@@ -5628,7 +5614,7 @@ VOID WscStop(
 
 #ifdef CONFIG_AP_SUPPORT	
 	MAC_TABLE_ENTRY  *pEntry;
-	UCHAR	apidx = (pWscControl->EntryIfIdx & 0x0F);
+	/*UCHAR	apidx = (pWscControl->EntryIfIdx & 0x0F);*/
 #endif /* CONFIG_AP_SUPPORT */
 	UCHAR	CurOpMode = 0xff;
 
@@ -5672,11 +5658,6 @@ VOID WscStop(
 	RTMPCancelTimer(&pWscControl->EapolTimer, &Cancelled);
 	pWscControl->EapolTimerRunning = FALSE;
 #ifdef CONFIG_AP_SUPPORT
-	if (pWscControl->WscSetupLockTimerRunning)
-	{
-		pWscControl->WscSetupLockTimerRunning = FALSE;
-		RTMPCancelTimer(&pWscControl->WscSetupLockTimer, &Cancelled);
-	}
 	if ((pWscControl->EntryIfIdx & 0x0F)< pAd->ApCfg.BssidNum)
 	{
 	    pEntry = MacTableLookup(pAd, pWscControl->EntryAddr);
@@ -7928,6 +7909,19 @@ VOID   WpsSmProcess(
 }
 
 #ifdef CONFIG_AP_SUPPORT
+
+#define WSC_SINGLE_TRIGGER_APPNAME  "unknown"
+
+#ifdef SDK_GOAHEAD_HTTPD
+#undef WSC_SINGLE_TRIGGER_APPNAME
+#define WSC_SINGLE_TRIGGER_APPNAME  "goahead"
+#endif /* SDK_GOAHEAD_HTTPD */
+
+#ifdef SDK_USER_LIGHTY
+#undef WSC_SINGLE_TRIGGER_APPNAME
+#define WSC_SINGLE_TRIGGER_APPNAME  "nvram_daemon"
+#endif /* SDK_USER_LIGHTY */
+
 INT	WscGetConfWithoutTrigger(
 	IN	PRTMP_ADAPTER	pAd,
 	IN  PWSC_CTRL       pWscControl,
@@ -7935,7 +7929,6 @@ INT	WscGetConfWithoutTrigger(
 {
 	INT                 WscMode;
 	INT                 IsAPConfigured;
-	PWSC_UPNP_NODE_INFO pWscUPnPNodeInfo;
 	UCHAR		apIdx;
 
 #ifdef LINUX
@@ -7943,22 +7936,32 @@ INT	WscGetConfWithoutTrigger(
 /* +++  added by YYHuang@Ralink, 08/03/12 */
 /*
  Notify user space application that WPS procedure will begin.
+ Signal
+    ra0: SIGXFSZ
+    rai0: SIGWINCH
 */
     {
-#define WSC_SINGLE_TRIGGER_APPNAME  "goahead"
-
         struct task_struct *p;
-        read_lock(&tasklist_lock);
+        
+        DBGPRINT(RT_DEBUG_TRACE, ("%s - WSC_SINGLE_TRIGGER_APPNAME: %s\n", 
+        		__FUNCTION__, WSC_SINGLE_TRIGGER_APPNAME));
+        
+        rcu_read_lock();
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,21)
-	for_each_process(p)
+		for_each_process(p)
 #else
-	for_each_task(p)
+		for_each_task(p)
 #endif
-	{
+		{
             if(!strcmp(p->comm, WSC_SINGLE_TRIGGER_APPNAME))
-                send_sig(SIGXFSZ, p, 0);
+            {
+            	if (pAd->dev_idx == 0)
+                	send_sig(SIGXFSZ, p, 0);
+                else
+                	send_sig(SIGWINCH, p, 0);
+            }
         }
-        read_unlock(&tasklist_lock);
+        rcu_read_unlock();
     }
 /* ---  added by YYHuang@Ralink, 08/03/12 */
 #endif /* RTMP_RBUS_SUPPORT */
@@ -7969,7 +7972,6 @@ INT	WscGetConfWithoutTrigger(
 	apIdx = (pWscControl->EntryIfIdx & 0x0F);
 
     IsAPConfigured = pWscControl->WscConfStatus;
-    pWscUPnPNodeInfo = &pWscControl->WscUPnPNodeInfo;
 
     if (pWscControl->WscConfMode == WSC_DISABLE)
     {
@@ -8949,6 +8951,12 @@ BOOLEAN WscThreadExit(RTMP_ADAPTER *pAd)
 				pWpsCtrl->pWscTxBuf = NULL;
 			}
 #ifdef WSC_V2_SUPPORT
+			if (pWpsCtrl->WscSetupLockTimerRunning)
+			{
+				BOOLEAN Cancelled;
+				pWpsCtrl->WscSetupLockTimerRunning = FALSE;
+				RTMPCancelTimer(&pWpsCtrl->WscSetupLockTimer, &Cancelled);
+			}
 			if (pWpsCtrl->WscV2Info.ExtraTlv.pTlvData)
 			{
 				os_free_mem(NULL, pWpsCtrl->WscV2Info.ExtraTlv.pTlvData);
@@ -9359,7 +9367,7 @@ VOID WscUpdatePortCfgTimeout(
 	pMbss = &pAd->ApCfg.MBSSID[pWscControl->EntryIfIdx & 0x0F];
 	if (WscGetAuthMode(pCredential->AuthType) == pMbss->wdev.AuthMode &&
 		WscGetWepStatus(pCredential->EncrType) == pMbss->wdev.WepStatus &&
-		NdisEqualMemory(pMbss->Ssid, pCredential->SSID.Ssid, pMbss->SsidLen) &&
+		NdisEqualMemory(pMbss->Ssid, pCredential->SSID.Ssid, pCredential->SSID.SsidLength) &&
 		NdisEqualMemory(pWscControl->WpaPsk, pCredential->Key, pCredential->KeyLength))
 	{
 		return;

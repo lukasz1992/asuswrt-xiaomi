@@ -404,7 +404,8 @@ BOOLEAN PeerBeaconAndProbeRspSanity_Old(
                 }
                 else
                 {
-                    DBGPRINT(RT_DEBUG_TRACE, ("%s() - wrong IE_SSID (len=%d)\n", __FUNCTION__, pEid->Len));
+                    DBGPRINT(RT_DEBUG_TRACE, ("%s() - wrong IE_SSID (len=%d), SubType = %u\n",
+						__FUNCTION__, pEid->Len, SubType));
                     goto SanityCheck;
                 }
                 break;
@@ -931,7 +932,8 @@ BOOLEAN PeerBeaconAndProbeRspSanity(
 			}
 			else
 			{
-				DBGPRINT(RT_DEBUG_TRACE, ("%s() - wrong IE_SSID (len=%d)\n",__FUNCTION__,pEid->Len));
+				DBGPRINT(RT_DEBUG_TRACE, ("%s() - wrong IE_SSID (len=%d), SubType = %u\n",
+							__FUNCTION__,pEid->Len, SubType));
 				goto SanityCheck;
 			}
 			break;

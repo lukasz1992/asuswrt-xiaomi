@@ -65,6 +65,7 @@ NDIS_STATUS RtmpNetTaskInit(IN RTMP_ADAPTER *pAd)
 	RTMP_OS_TASKLET_INIT(pAd, &pObj->ac3_dma_done_task, ac3_dma_done_tasklet, (unsigned long)pAd);
 	RTMP_OS_TASKLET_INIT(pAd, &pObj->hcca_dma_done_task, hcca_dma_done_tasklet, (unsigned long)pAd);
 	RTMP_OS_TASKLET_INIT(pAd, &pObj->tbtt_task, tbtt_tasklet, (unsigned long)pAd);
+	RTMP_OS_TASKLET_INIT(pAd, &pObj->pretbtt_task, pretbtt_tasklet, (unsigned long)pAd);
 	RTMP_OS_TASKLET_INIT(pAd, &pObj->fifo_statistic_full_task, fifo_statistic_full_tasklet, (unsigned long)pAd);
 #ifdef UAPSD_SUPPORT	
 		RTMP_OS_TASKLET_INIT(pAd, &pObj->uapsd_eosp_sent_task, uapsd_eosp_sent_tasklet, (unsigned long)pAd);
@@ -191,12 +192,17 @@ VOID RtmpMgmtTaskExit(
 
 static inline void rt2860_int_enable(PRTMP_ADAPTER pAd, unsigned int mode)
 {
-	u32 regValue;
+	u32 regValue = 0;
 
 	pAd->int_disable_mask &= ~(mode);
 #ifdef RLT_MAC
 	if (pAd->chipCap.hif_type == HIF_RLT)
-		regValue = pAd->int_enable_reg & ~(pAd->int_disable_mask | RLT_INT_AC0_DLY);
+	{
+		if(IS_MT76x2(pAd))
+			regValue = pAd->int_enable_reg & ~(pAd->int_disable_mask | RLT_INT_AC0_DLY);
+		else
+			regValue = pAd->int_enable_reg & ~(pAd->int_disable_mask);
+	}
 #endif /* RLT_MAC */
 #ifdef RTMP_MAC
 	if (pAd->chipCap.hif_type == HIF_RTMP)
@@ -303,9 +309,8 @@ static void rx_done_tasklet(unsigned long data)
 	POS_COOKIE pObj;
 #endif /* WORKQUEUE_BH */
 	UINT32 INT_RX = 0;
-	ULONG time1, time2, diff;
 
-		pAd->rx_tasklet_counter++;
+	pAd->rx_tasklet_counter++;
 
 #ifdef RLT_MAC
 	if (pAd->chipCap.hif_type == HIF_RLT)
@@ -701,18 +706,8 @@ static void ac0_dma_done_tasklet(unsigned long data)
 	PRTMP_ADAPTER pAd = (PRTMP_ADAPTER) data;
 	POS_COOKIE pObj;
 #endif /* WORKQUEUE_BH */
-	UINT32 INT_AC0_DLY = 0;
 
 	pAd->tx_tasklet_counter++;
-
-#ifdef RLT_MAC
-	if (pAd->chipCap.hif_type == HIF_RLT)
-		INT_AC0_DLY = RLT_INT_AC0_DLY;
-#endif /* RLT_MAC*/
-#ifdef RTMP_MAC
-	if (pAd->chipCap.hif_type == HIF_RTMP)
-		INT_AC0_DLY = RTMP_INT_AC0_DLY;
-#endif /* RTMP_MAC */
 
 	/* Do nothing if the driver is starting halt state. */
 	/* This might happen when timer already been fired before cancel timer with mlmehalt */
@@ -721,7 +716,12 @@ static void ac0_dma_done_tasklet(unsigned long data)
 		RTMP_INT_LOCK(&pAd->LockInterrupt, flags);
 #ifdef RLT_MAC
 		if (pAd->chipCap.hif_type == HIF_RLT)
-		pAd->int_disable_mask &= ~(INT_TX_DLY); 
+		{
+			if(IS_MT76x2(pAd))
+				pAd->int_disable_mask &= ~(INT_TX_DLY);
+			else
+				pAd->int_disable_mask &= ~(RLT_INT_AC0_DLY);
+		}			
 #endif /* RLT_MAC*/
 #ifdef RTMP_MAC
 		if (pAd->chipCap.hif_type == HIF_RTMP)
@@ -735,8 +735,11 @@ static void ac0_dma_done_tasklet(unsigned long data)
 
 	RTMP_INT_LOCK(&pAd->LockInterrupt, flags);
 #ifdef RLT_MAC
-	if (pAd->chipCap.hif_type == HIF_RLT)
-	pAd->int_pending &= ~INT_TX_DLY;
+	if (pAd->chipCap.hif_type == HIF_RLT && IS_MT76x2(pAd))
+		pAd->int_pending &= ~(INT_TX_DLY);
+	else
+		pAd->int_pending &= ~(RLT_INT_AC0_DLY); 
+	/* 76x2 uses INT_TX_DLY, 76x0 uses RLT_INT_AC0_DLY */
 #endif /* RLT_MAC*/
 #ifdef RTMP_MAC
 	if (pAd->chipCap.hif_type == HIF_RTMP)
@@ -751,13 +754,25 @@ static void ac0_dma_done_tasklet(unsigned long data)
 #ifdef RLT_MAC
 	if (pAd->chipCap.hif_type == HIF_RLT)
 	{
-	if ((pAd->int_pending & INT_TX_DLY) || bReschedule)
-	{
-		RTMP_OS_TASKLET_SCHE(&pObj->ac0_dma_done_task);
-		RTMP_INT_UNLOCK(&pAd->LockInterrupt, flags);    
-		return;
-	}
-	}
+		if(IS_MT76x2(pAd))
+		{
+			if ((pAd->int_pending & INT_TX_DLY) || bReschedule)
+			{
+				RTMP_OS_TASKLET_SCHE(&pObj->ac0_dma_done_task);
+				RTMP_INT_UNLOCK(&pAd->LockInterrupt, flags);    
+				return;
+			}
+		}
+		else
+		{
+			if ((pAd->int_pending & RLT_INT_AC0_DLY) || bReschedule)
+			{
+				RTMP_OS_TASKLET_SCHE(&pObj->ac0_dma_done_task);
+				RTMP_INT_UNLOCK(&pAd->LockInterrupt, flags);	
+				return;
+			}	
+		}
+	}	
 #endif /* RLT_MAC*/
 #ifdef RTMP_MAC
 	if (pAd->chipCap.hif_type == HIF_RTMP)
@@ -773,7 +788,12 @@ static void ac0_dma_done_tasklet(unsigned long data)
 
 #ifdef RLT_MAC
 	if (pAd->chipCap.hif_type == HIF_RLT)
-	rt2860_int_enable(pAd, INT_TX_DLY);
+	{
+		if(IS_MT76x2(pAd))
+			rt2860_int_enable(pAd, INT_TX_DLY);
+		else
+			rt2860_int_enable(pAd, RLT_INT_AC0_DLY);
+	}
 #endif /* RLT_MAC*/
 #ifdef RTMP_MAC
 	if (pAd->chipCap.hif_type == HIF_RTMP)
@@ -894,7 +914,10 @@ VOID RTMPHandleInterrupt(VOID *pAdSrc)
 	unsigned long flags=0;
 	UINT32 INT_RX_DATA = 0, INT_RX_CMD=0, TxCoherent = 0, RxCoherent = 0, FifoStaFullInt = 0;
 	UINT32 INT_MGMT_DLY = 0, INT_HCCA_DLY = 0, INT_AC3_DLY = 0, INT_AC2_DLY = 0, INT_AC1_DLY = 0, INT_AC0_DLY = 0;
-	UINT32 PreTBTTInt = 0, TBTTInt = 0, GPTimeOutInt = 0, RadarInt = 0, AutoWakeupInt = 0;
+	UINT32 PreTBTTInt = 0, TBTTInt = 0, GPTimeOutInt = 0;
+#ifdef CARRIER_DETECTION_SUPPORT
+	UINT32 RadarInt = 0;
+#endif /* CARRIER_DETECTION_SUPPORT */
 
 	pObj = (POS_COOKIE) pAd->OS_Cookie;
 
@@ -960,8 +983,9 @@ VOID RTMPHandleInterrupt(VOID *pAdSrc)
 		PreTBTTInt = RLT_PreTBTTInt;
 		TBTTInt = RLT_TBTTInt;
 		GPTimeOutInt = RLT_GPTimeOutInt;
+#ifdef CARRIER_DETECTION_SUPPORT
 		RadarInt = RLT_RadarInt;
-		AutoWakeupInt = RLT_AutoWakeupInt;
+#endif /* CARRIER_DETECTION_SUPPORT */
 		//McuCommand = RLT_McuCommand;
 	}
 #endif /* RLT_MAC*/
@@ -980,8 +1004,9 @@ VOID RTMPHandleInterrupt(VOID *pAdSrc)
 		PreTBTTInt = RTMP_PreTBTTInt;
 		TBTTInt = RTMP_TBTTInt;
 		GPTimeOutInt = RTMP_GPTimeOutInt;
+#ifdef CARRIER_DETECTION_SUPPORT
 		RadarInt = RTMP_RadarInt;
-		AutoWakeupInt = RTMP_AutoWakeupInt;
+#endif /* CARRIER_DETECTION_SUPPORT */
 		//McuCommand = RTMP_McuCommand;
 	}
 #endif /* RTMP_MAC */

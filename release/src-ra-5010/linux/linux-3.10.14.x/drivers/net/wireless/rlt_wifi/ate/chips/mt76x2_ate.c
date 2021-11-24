@@ -66,13 +66,14 @@ static void mt76x2_ate_switch_channel(RTMP_ADAPTER *ad)
 {
 	PATE_INFO pATEInfo = &(ad->ate);
 	unsigned int latch_band, band, bw, tx_rx_setting;
-	UINT32 ret, i, value, value1, restore_value, loop = 0;
+	UINT32 i, value, value1, restore_value, loop = 0;
 	UCHAR bbp_ch_idx = 0;
 	BOOLEAN band_change = FALSE;
 	u8 channel = 0;
 	CHAR TxAntennaSel = pATEInfo->TxAntennaSel;
 	CHAR RxAntennaSel = pATEInfo->RxAntennaSel;
 	UINT32 eLNA_gain_from_e2p = 0;
+
 
 	SYNC_CHANNEL_WITH_QA(pATEInfo, &channel);
 
@@ -509,8 +510,7 @@ INT mt76x2_ate_tx_pwr_Evaluation(
 	UCHAR channel = pATEInfo->Channel;
 	UCHAR bw = pATEInfo->TxWI.TXWI_N.BW;
 	UINT16 value, value1;
-	INT ret = TRUE;
-
+ 
 	if ( channel > 14 )
 	{
 		/* Get BW PWR DELTA */
@@ -1305,7 +1305,7 @@ VOID mt76x2_ate_set_tx_rx(
 					/* 0x2714[7:0]=0 (default) */
 					RTMP_BBP_IO_READ32(ad, TXBE_R5, &BbpValue);
 					BbpValue &= 0xFFFFFF00;
-					BbpValue |= 0x00000083;
+					BbpValue |= 0x00000003;
 					RTMP_BBP_IO_WRITE32(ad, TXBE_R5, BbpValue);
 					}
 
@@ -1411,11 +1411,8 @@ INT	mt76x2_set_ate_tx_bw_proc(
 {
 	u32 core, core_r1 = 0, core_r4 = 0;
 	u32 agc, agc_r0 = 0;
-	u32 ret;
 	u8 BBPCurrentBW;
-	RTMP_CHIP_CAP *pChipCap = &ad->chipCap;
 
-	
 	BBPCurrentBW = simple_strtol(arg, 0, 10);
 
 	if ((BBPCurrentBW == 0))
@@ -1429,10 +1426,6 @@ INT	mt76x2_set_ate_tx_bw_proc(
 	else if ((BBPCurrentBW == 2))
 	{
 		ad->ate.TxWI.TXWI_N.BW = BW_80;
- 	}
-	else if ((BBPCurrentBW == 4))
-	{
-		ad->ate.TxWI.TXWI_N.BW = BW_10;
  	}
 	else
 	{
@@ -1475,10 +1468,6 @@ INT	mt76x2_set_ate_tx_bw_proc(
 			break;
 		case BW_20:
 			core &= (~0x18);
-			agc |= 0x1000;
-			break;
-		case BW_10:
-			core |= 0x08;
 			agc |= 0x1000;
 			break;
 	}
@@ -1543,7 +1532,14 @@ void mt76x2_ate_temp_tx_alc(RTMP_ADAPTER *ad)
 {
 	RTMP_CHIP_CAP *pChipCap = &ad->chipCap;
 	INT32 temp_diff = 0, dB_diff = 0, tx0_temp_comp = 0, tx1_temp_comp = 0;
+	UCHAR tc_init_val = 0;
 
+#ifdef SINGLE_SKU_V2
+	tc_init_val = ad->tc_init_val;
+
+	if (ad->sku_init_done == FALSE)
+		return;
+#endif /* SINGLE_SKU_V2 */
 	if (pChipCap->temp_tx_alc_enable) {
 		mt76x2_get_current_temp(ad);
 		temp_diff = pChipCap->current_temp - 25;
@@ -1556,6 +1552,9 @@ void mt76x2_ate_temp_tx_alc(RTMP_ADAPTER *ad)
 			else
 				dB_diff = 0;
 			
+			DBGPRINT(RT_DEBUG_TRACE, ("%s::[5G] temp_diff=%d (0x%x), dB_diff=%d (0x%x)\n", 
+				__FUNCTION__, temp_diff, temp_diff, dB_diff, dB_diff)); 			
+			
 			/* temperature compensation boundary check and limit */
 			dB_diff = (dB_diff > pChipCap->tc_upper_bound_a_band) ? pChipCap->tc_upper_bound_a_band : dB_diff;
 			dB_diff = (dB_diff < pChipCap->tc_lower_bound_a_band) ? pChipCap->tc_lower_bound_a_band : dB_diff;
@@ -1567,26 +1566,29 @@ void mt76x2_ate_temp_tx_alc(RTMP_ADAPTER *ad)
 			else
 				dB_diff = 0;
 
+			DBGPRINT(RT_DEBUG_TRACE, ("%s::[2G] temp_diff=%d (0x%x), dB_diff=%d (0x%x)\n", 
+				__FUNCTION__, temp_diff, temp_diff, dB_diff, dB_diff)); 
+			
 			/* temperature compensation boundary check and limit */
 			dB_diff = (dB_diff > pChipCap->tc_upper_bound_g_band) ? pChipCap->tc_upper_bound_g_band : dB_diff;
 			dB_diff = (dB_diff < pChipCap->tc_lower_bound_g_band) ? pChipCap->tc_lower_bound_g_band : dB_diff;
 		}
 
-		DBGPRINT(RT_DEBUG_INFO, ("%s::temp_diff=%d (0x%x), dB_diff=%d (0x%x)\n", 
+		DBGPRINT(RT_DEBUG_TRACE, ("%s::temp_diff=%d (0x%x), dB_diff=%d (0x%x)\n", 
 			__FUNCTION__, temp_diff, temp_diff, dB_diff, dB_diff)); 
 		
 		RTMP_IO_READ32(ad, TX_ALC_CFG_1, &tx0_temp_comp);
 		tx0_temp_comp &= ~TX_ALC_CFG_1_TX0_TEMP_COMP_MASK;
-		tx0_temp_comp |= (dB_diff*2 & TX_ALC_CFG_1_TX0_TEMP_COMP_MASK);
+		tx0_temp_comp |= ((tc_init_val + dB_diff*2) & TX_ALC_CFG_1_TX0_TEMP_COMP_MASK);
 		RTMP_IO_WRITE32(ad, TX_ALC_CFG_1, tx0_temp_comp);
-		DBGPRINT(RT_DEBUG_INFO, ("%s::Tx0 power compensation = 0x%x\n", 
+		DBGPRINT(RT_DEBUG_TRACE, ("%s::Tx0 power compensation = 0x%x\n", 
 			__FUNCTION__, tx0_temp_comp & 0x3f)); 
 		
 		RTMP_IO_READ32(ad, TX_ALC_CFG_2, &tx1_temp_comp);
 		tx1_temp_comp &= ~TX_ALC_CFG_2_TX1_TEMP_COMP_MASK;
-		tx1_temp_comp |= (dB_diff*2 & TX_ALC_CFG_2_TX1_TEMP_COMP_MASK);
+		tx1_temp_comp |= ((tc_init_val + dB_diff*2) & TX_ALC_CFG_2_TX1_TEMP_COMP_MASK);
 		RTMP_IO_WRITE32(ad, TX_ALC_CFG_2, tx1_temp_comp);
-		DBGPRINT(RT_DEBUG_INFO, ("%s::Tx1 power compensation = 0x%x\n", 
+		DBGPRINT(RT_DEBUG_TRACE, ("%s::Tx1 power compensation = 0x%x\n", 
 			__FUNCTION__, tx1_temp_comp & 0x3f)); 
 	}	
 }
@@ -1720,10 +1722,10 @@ VOID mt76x2_ate_asic_adjust_tx_power(
 	RTMP_CHIP_CAP *cap = &pAd->chipCap;
 	ANDES_CALIBRATION_PARAM param;
 	UINT32 pa_mode = 0, tssi_slope_offset = 0;
-	UINT32 ret = 0;
 	PATE_INFO   pATEInfo = &(pAd->ate);
 	UINT32 value;
 	char TxPower = 0;
+
 
 
 	if ((pAd->chipCap.tssi_enable) &&
@@ -2128,7 +2130,6 @@ extern UCHAR TemplateFrame[32];
 
 VOID mt76x2_ate_SendNullFrame(IN PRTMP_ADAPTER pAd)
 {
-	UINT32	ring_index=0;
 	RTMP_TX_RING *pTxRing = &pAd->TxRing[QID_AC_BE];
 	PATE_INFO   pATEInfo = &(pAd->ate);
 	UINT32 TxIdx = pTxRing->TxCpuIdx;
@@ -2140,11 +2141,15 @@ VOID mt76x2_ate_SendNullFrame(IN PRTMP_ADAPTER pAd)
 
 	PHEADER_802_11 pHeader_802_11;
 	ULONG Length;
-	UINT pos = 0;
+	/*UINT pos = 0;*/
 	TXINFO_STRUC *pTxInfo;
 
+#ifdef RT_BIG_ENDIAN
+	TXD_STRUC *pDestTxD;
+	UCHAR tx_hw_info[TXD_SIZE];
+#endif /* RT_BIG_ENDIAN */
 	PNDIS_PACKET pPacket=NULL;
-	PUCHAR pDest=NULL;
+	/*PUCHAR pDest=NULL;*/
 	PVOID AllocVa=NULL;
 	NDIS_PHYSICAL_ADDRESS AllocPa;
 	HTTRANSMIT_SETTING	TxHTPhyMode;
@@ -2153,8 +2158,7 @@ VOID mt76x2_ate_SendNullFrame(IN PRTMP_ADAPTER pAd)
 	PUCHAR pDMAHeaderBufVA = (PUCHAR) pTxRing->Cell[TxIdx].DmaBuf.AllocVa;
 	UINT8 TXWISize = pAd->chipCap.TXWISize;
 
-	UCHAR bw, sgi, stbc, mcs, phy_mode, frag, cfack, ts, ampdu, ack, nseq, bawinsize, pkt_id, txop;
-	USHORT byte_cnt;
+	UCHAR bw, sgi, stbc, mcs, phy_mode;
 
 	RTMP_IO_READ32(pAd, pTxRing->hw_didx_addr, &pTxRing->TxDmaIdx);
 	pTxRing->TxSwFreeIdx = pTxRing->TxDmaIdx;
@@ -2199,9 +2203,7 @@ VOID mt76x2_ate_SendNullFrame(IN PRTMP_ADAPTER pAd)
 	WriteBackToDescriptor((PUCHAR)pDestTxD, (PUCHAR)pTxD, FALSE, TYPE_TXD);
 #endif /* RT_BIG_ENDIAN */
 
-	bw = sgi = stbc = mcs = phy_mode = frag = cfack = ts =0;
-	ampdu = ack = nseq = bawinsize = pkt_id = txop = 0;
-	byte_cnt = 0;
+	bw = sgi = stbc = mcs = phy_mode = 0;
 #ifdef RLT_MAC
 	if (pAd->chipCap.hif_type == HIF_RLT) {
 		bw = pATEInfo->TxWI.TXWI_N.BW;
@@ -2209,18 +2211,6 @@ VOID mt76x2_ate_SendNullFrame(IN PRTMP_ADAPTER pAd)
 		stbc = pATEInfo->TxWI.TXWI_N.STBC;
 		mcs = pATEInfo->TxWI.TXWI_N.MCS;
 		phy_mode = pATEInfo->TxWI.TXWI_N.PHYMODE;
-			
-		frag = pATEInfo->TxWI.TXWI_N.FRAG;
-		cfack = pATEInfo->TxWI.TXWI_N.CFACK,
-		ts = pATEInfo->TxWI.TXWI_N.TS;
-		ampdu = pATEInfo->TxWI.TXWI_N.AMPDU;
-		ack = pATEInfo->TxWI.TXWI_N.ACK;
-		nseq = pATEInfo->TxWI.TXWI_N.NSEQ;
-		bawinsize =pATEInfo->TxWI.TXWI_N.BAWinSize;
-		byte_cnt = pATEInfo->TxWI.TXWI_N.MPDUtotalByteCnt;
-		pkt_id = pATEInfo->TxWI.TXWI_N.TxPktId;
-		txop = pATEInfo->TxWI.TXWI_N.txop;
-		cfack = pATEInfo->TxWI.TXWI_N.CFACK;
 	}
 #endif /* RLT_MAC */
 
@@ -2244,8 +2234,8 @@ VOID mt76x2_ate_SendNullFrame(IN PRTMP_ADAPTER pAd)
 	//COPY_MAC_ADDR(pHeader_802_11->Addr2, pATEInfo->Addr2);
 	//COPY_MAC_ADDR(pHeader_802_11->Addr3, pATEInfo->Addr3);
 	COPY_MAC_ADDR(pHeader_802_11->Addr1, pATEInfo->Addr1);
-	COPY_MAC_ADDR(pHeader_802_11->Addr2, pATEInfo->Addr2);
-	COPY_MAC_ADDR(pHeader_802_11->Addr3, pATEInfo->Addr3);
+	COPY_MAC_ADDR(pHeader_802_11->Addr2, pATEInfo->Addr3);
+	COPY_MAC_ADDR(pHeader_802_11->Addr3, pATEInfo->Addr2);
 
 	pHeader_802_11->FC.PwrMgmt = 0;
 
@@ -2269,11 +2259,11 @@ VOID mt76x2_ate_SendNullFrame(IN PRTMP_ADAPTER pAd)
 	{
 		pATEInfo->TxCount = 0;
 		DBGPRINT_ERR(("%s : fail to alloc packet space.\n", __FUNCTION__));
-		return -1;
+		return;
 	}
 
 	pTxRing->Cell[TxIdx].pNextNdisPacket = pPacket;
-	pDest = (PUCHAR) AllocVa;
+	/*pDest = (PUCHAR) AllocVa;*/
 
 	GET_OS_PKT_LEN(pPacket) = pATEInfo->TxLength - pATEInfo->HLen;
 #ifndef LINUX
@@ -2299,7 +2289,12 @@ VOID mt76x2_ate_SendNullFrame(IN PRTMP_ADAPTER pAd)
 		/* build Tx descriptor */
 		pTxD->SDPtr0 = RTMP_GetPhysicalAddressLow (pTxRing->Cell[TxIdx].DmaBuf.AllocPa);
 		pTxD->SDLen0 = TXWISize + pATEInfo->HLen /* LENGTH_802_11 */;
+#ifndef RT_SECURE_DMA
 		pTxD->SDPtr1 = PCI_MAP_SINGLE(pAd, &txblk, 0, 1, RTMP_PCI_DMA_TODEVICE);
+#else
+		NdisMoveMemory(pAd->TxSecureDMA[QID_AC_BE].AllocVa + (TxIdx * 4096), &txblk, GET_OS_PKT_LEN(pPacket));
+		pTxD->SDPtr1 = pAd->TxSecureDMA[QID_AC_BE].AllocPa + (TxIdx * 4096);
+#endif
 		pTxD->SDLen1 = GET_OS_PKT_LEN(pPacket);
 		pTxD->LastSec0 = (pTxD->SDLen1 == 0) ? 1 : 0;
 		pTxD->LastSec1 = 1;
@@ -2339,11 +2334,10 @@ static void mt76x2_ate_single_sku(IN PRTMP_ADAPTER	pAd, IN BOOLEAN value)
 	
 	if (value > 0)
 	{
-		pATEInfo->bDoSingleSKU = TRUE;
+		pATEInfo->bDoSingleSKU = TRUE;			
 		/* force reconfiguration of the channel , to apply single sku value */
 		pATEInfo->PreviousChannel = 0;
-		DBGPRINT(RT_DEBUG_ERROR, ("ATESINGLESKU = TRUE , enabled single sku in ATE! 
-		Force switch channel to calculate single sku\n"));
+		DBGPRINT(RT_DEBUG_ERROR, ("ATESINGLESKU = TRUE , enabled single sku in ATE! Force switch channel to calculate single sku\n"));
 	}
 	else
 	{

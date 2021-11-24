@@ -219,7 +219,7 @@ config RTMP_INTERNAL_TX_ALC
 config RTMP_TEMPERATURE_COMPENSATION
     	bool "Temperature Compensation"
     	depends on WIFI_DRIVER
-    	depends on RALINK_RT6352
+    	depends on RALINK_RT6352 || RALINK_MT7610E
     	default n
 
 config RTMP_THERMAL_PROTECT
@@ -405,7 +405,7 @@ config RALINK_MT7612U
 
 endif
 
-if RALINK_MT7602E || RALINK_MT7612E
+if RALINK_MT7602E || RALINK_MT7612E || RALINK_MT7610E
 	config RLT_MAC
 		bool
 		default y

@@ -41,7 +41,12 @@ struct iw_priv_args ap_privtab[] = {
   IW_PRIV_TYPE_CHAR | 1024, 0,
   "show"},
 { RTPRIV_IOCTL_GSITESURVEY,
-  0, IW_PRIV_TYPE_CHAR | 1024 ,
+#ifdef AIRPLAY_SUPPORT
+  IW_PRIV_TYPE_CHAR | 1024 ,
+#else
+  0 ,
+#endif /* AIRPLAY_SUPPORT */
+  IW_PRIV_TYPE_CHAR | 1024 ,
   "get_site_survey"}, 
 #ifdef INF_AR9
   { RTPRIV_IOCTL_GET_AR9_SHOW,
@@ -268,7 +273,6 @@ INT rt28xx_ap_ioctl(struct net_device *net_dev, struct ifreq *rq, int cmd)
 		    {
 /*				struct iw_range range; */
 				struct iw_range *prange = NULL;
-				UINT32 len;
 
 				/* allocate memory */
 				os_alloc_mem(NULL, (UCHAR **)&prange, sizeof(struct iw_range));
@@ -290,7 +294,7 @@ INT rt28xx_ap_ioctl(struct net_device *net_dev, struct ifreq *rq, int cmd)
 				prange->max_qual.qual = 100;
 				prange->max_qual.level = 0; /* dB */
 				prange->max_qual.noise = 0; /* dB */
-				len = copy_to_user(wrq->u.data.pointer, prange, sizeof(struct iw_range));
+				copy_to_user(wrq->u.data.pointer, prange, sizeof(struct iw_range));
 				os_free_mem(NULL, prange);
 		    }
 		    break;

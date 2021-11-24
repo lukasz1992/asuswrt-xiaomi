@@ -483,11 +483,6 @@ PNDIS_PACKET DuplicatePacket(
 {
 	struct sk_buff *skb;
 	PNDIS_PACKET pRetPacket = NULL;
-	USHORT DataSize;
-	UCHAR *pData;
-
-	DataSize = (USHORT) GET_OS_PKT_LEN(pPacket);
-	pData = (PUCHAR) GET_OS_PKT_DATAPTR(pPacket);
 
 	skb = skb_clone(RTPKT_TO_OSPKT(pPacket), MEM_ALLOC_FLAG);
 	if (skb) {

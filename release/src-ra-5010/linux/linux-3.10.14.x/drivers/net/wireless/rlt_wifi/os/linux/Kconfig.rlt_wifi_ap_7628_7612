@@ -92,6 +92,11 @@ config CON_WPS_SUPPORT
 	depends on WSC_V2_SUPPORT
 	default n	
 
+config AIRPLAY_SUPPORT
+        bool "AIRPLAY Support"
+        depends on RLT_AP_SUPPORT
+        default n
+
 #config MESH_SUPPORT
 #       bool "MESH Support"
 #       depends on RLT_AP_SUPPORT

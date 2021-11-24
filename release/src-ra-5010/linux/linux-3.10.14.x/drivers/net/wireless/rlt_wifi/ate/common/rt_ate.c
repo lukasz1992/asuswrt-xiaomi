@@ -260,6 +260,7 @@ CHAR ATEConvertToRssi(
 				return (Rssi + pAd->ARssiOffset[RssiNumber] - extra_gain);
 			else
 				return (Rssi + pAd->BGRssiOffset[RssiNumber] - extra_gain);
+			
 		} else
 			return (Rssi - LNAGain - RssiOffset);
 	}
@@ -646,7 +647,7 @@ static VOID SetJapanFilter(RTMP_ADAPTER *pAd)
 VOID ATEDisableAsicProtect(
 	IN		PRTMP_ADAPTER	pAd)
 {
-	PROT_CFG_STRUC	ProtCfg, ProtCfg4;
+	PROT_CFG_STRUC	ProtCfg;
 	UINT32 Protect[6];
 	USHORT			offset;
 	UCHAR			step;
@@ -660,7 +661,6 @@ VOID ATEDisableAsicProtect(
 
 	/* Initial common protection settings */
 	RTMPZeroMemory(Protect, sizeof(Protect));
-	ProtCfg4.word = 0;
 	ProtCfg.word = 0;
 	ProtCfg.field.TxopAllowGF40 = 1;
 	ProtCfg.field.TxopAllowGF20 = 1;
@@ -942,6 +942,8 @@ static NDIS_STATUS ATESTART(
 	mac_val &= (~0x2);
 	RTMP_IO_WRITE32(pAd, 0x1608, mac_val);
 
+	DBGPRINT(RT_DEBUG_ERROR,("%s: Clear fRTMP_ADAPTER_BSS_SCAN_IN_PROGRESS\n", __FUNCTION__));	
+	RTMP_CLEAR_FLAG(pAd, fRTMP_ADAPTER_BSS_SCAN_IN_PROGRESS);
 	Set_HT_BssCoex_Proc(pAd,"0"); //Disable 20/40 coexistense
 	AsicBBPAdjust(pAd);
 	/* Disable Protection */
@@ -2396,8 +2398,8 @@ static NDIS_STATUS TXFRAME(
 	/* ATE tool for CE BF gain certification, sounding mode and TxBf flag must be modified */
 	if (pAd->ceBfCertificationFlg == TRUE)
 	{
-		pAd->soundingMode = pATEInfo->txSoundingMode;
-                pAd->txLengthBackup = pATEInfo->TxLength;
+		pAd->soundingMode   = pATEInfo->txSoundingMode;
+        pAd->txLengthBackup = pATEInfo->TxLength;
 	}
 #endif 
 	for (ring_index = 0; (ring_index < TX_RING_SIZE-1) && (ring_index < pATEInfo->TxCount); ring_index++)
@@ -2445,7 +2447,7 @@ static NDIS_STATUS TXFRAME(
 		/* ATE tool for CE BF gain certification, sounding mode and TxBf flag must be modified */
 		if (pAd->ceBfCertificationFlg == TRUE)
 		{
-        		pATEInfo->txSoundingMode = 0;
+        	pATEInfo->txSoundingMode = 0;
 		}
 
 		if (pATEInfo->TxWI.TXWI_N.PHYMODE == MODE_VHT && pATEInfo->bTxBF == TRUE && pATEInfo->txSoundingMode != 0)
@@ -2455,8 +2457,8 @@ static NDIS_STATUS TXFRAME(
 		}
 		else
 		{
-		if (ATESetUpFrame(pAd, TxIdx) != 0)
-			return NDIS_STATUS_FAILURE;
+		    if (ATESetUpFrame(pAd, TxIdx) != 0)
+			    return NDIS_STATUS_FAILURE;
 		}
 #else
 		if (ATESetUpFrame(pAd, TxIdx) != 0)
@@ -2471,7 +2473,7 @@ static NDIS_STATUS TXFRAME(
 	}
 	else
 	{
-	ATESetUpFrame(pAd, pTxRing->TxCpuIdx);
+	    ATESetUpFrame(pAd, pTxRing->TxCpuIdx);
 	}
 
 	/* ATE tool for CE BF gain certification, sounding mode and TxBf flag must be modified */
@@ -2630,8 +2632,8 @@ if ( IS_MT76x2(pAd) )
 		value32 = (pATEInfo->TxWI.TXWI_N.iTxBF == TRUE) ? (value32 | 0x120) : value32;
 		RTMP_IO_WRITE32(pAd, PFMU_R1, value32);
 	}
-#endif
-#endif
+#endif /*TXBF_SUPPORT*/
+#endif /*MT76x2*/
 
 	DBGPRINT(RT_DEBUG_TRACE, ("ATE : <=== %s\n", __FUNCTION__));
 	return Status;
@@ -2676,7 +2678,6 @@ static NDIS_STATUS RXFRAME(
 
 	/* Disable Tx of MAC block. */
 	ATE_MAC_TX_DISABLE(pAd, MAC_SYS_CTRL, &MacData);
-
 
 	/* Enable Rx of MAC block. */
 	ATE_MAC_RX_ENABLE(pAd, MAC_SYS_CTRL, &MacData);
@@ -2740,7 +2741,9 @@ static NDIS_STATUS	ATECmdHandler(
 	ATE_INFO *pATEInfo = &(pAd->ate);
 	NDIS_STATUS		Status = NDIS_STATUS_SUCCESS;
 	BOOLEAN bNeedTxRx = FALSE;
-	UINT value32;
+#ifdef TXBF_SUPPORT
+    UINT32 value32;
+#endif
 
 	DBGPRINT(RT_DEBUG_TRACE, ("===> %s\n", __FUNCTION__));
 
@@ -2851,22 +2854,32 @@ static NDIS_STATUS	ATECmdHandler(
 			RTMP_IO_READ32(pAd, PFMU_R1, &value32);
 			value32 |= 0x330;
 			RTMP_IO_WRITE32(pAd, PFMU_R1, value32);
-			 //iBF divider calibration
-			pAd->chipOps.fITxBfDividerCalibration(pAd, 10, 0, pAd->divPhaseBackup);  
+			
+			//iBF divider calibration
+            pAd->chipOps.fITxBfDividerCalibration(pAd, 10, 0, pAd->divPhaseBackup);  
 		}
 #endif /* TXBF_SUPPORT */
 #endif /* MT76x2 */
+
 		Status = TXFRAME(pAd);
 	}
 	else if (!strcmp(arg, "TXFRAME_IBF"))    // flow for iBF verification, skip switch channel
-	{		
-        //ATEAsicSwitchChannel(pAd); 
-		RtmpOsMsDelay(5);
-		
+	{				
 #ifdef TXBF_SUPPORT
 #ifdef MT76x2
-         //iBF divider calibration
-         pAd->chipOps.fITxBfDividerCalibration(pAd, 10, 0, pAd->divPhaseBackup);
+        if (IS_MT76x2(pAd))
+        {
+            /* Enable TxBf profile update */
+            RTMP_IO_READ32(pAd, PFMU_R1, &value32);
+            value32 |= 0x330;
+            RTMP_IO_WRITE32(pAd, PFMU_R1, value32);
+        }
+        //iBF divider calibration , and write compensation value to TXBF_R13
+        pAd->chipOps.fITxBfDividerCalibration(pAd, 3, 0, pAd->divPhaseBackup);
+
+       	/* Enable TX Phase Compensation */
+     	RTMP_IO_READ32(pAd, TXBE_R12, &value32);
+	    RTMP_IO_WRITE32(pAd, TXBE_R12, value32 | 0x08); 
 #endif /* MT76x2 */		
 #endif /* TXBF_SUPPORT */
 
@@ -2874,14 +2887,10 @@ static NDIS_STATUS	ATECmdHandler(
 	}
 	else if (!strcmp(arg, "TXFRAMESOUNDING")) 
 	{
-		ATEAsicSwitchChannel(pAd);
-		/* AsicLockChannel() is empty function so far in fact */
-		AsicLockChannel(pAd, pATEInfo->Channel);
-		RtmpOsMsDelay(5);
 		
 #ifdef TXBF_SUPPORT
 		pAd->ceBfCertificationFlg = TRUE;
-                pAd->soundingPacketDone = 0;
+        pAd->soundingPacketDone = 0;
 		if (IS_MT76x2(pAd))
 		{
 			/* Enable TxBf profile update */
@@ -2892,7 +2901,7 @@ static NDIS_STATUS	ATECmdHandler(
 #endif /* TXBF_SUPPORT */
 
 		Status = TXFRAME(pAd);
-	}
+    }
 	else if (!strcmp(arg, "RXFRAME")) 
 	{
 #ifdef RT6352
@@ -2910,6 +2919,13 @@ static NDIS_STATUS	ATECmdHandler(
 			AsicLockChannel(pAd, pATEInfo->Channel);
 			RtmpusecDelay(5);
 		}
+
+#if defined(MT76x2) && defined(TXBF_SUPPORT)
+        /* Disable FOE Correct */
+        RTMP_IO_READ32(pAd, RXO_R16, &value32);
+        RTMP_IO_WRITE32(pAd, RXO_R16, value32 & (~BIT24));
+#endif /* MT76x2 && TXBF_SUPPORT */
+
 		Status = RXFRAME(pAd);
 	}
 	else if (!strcmp(arg, "TXAPPLY")) 
@@ -3288,6 +3304,11 @@ INT	Set_ATE_INIT_CHAN_Proc(
 		{
 			pATEInfo->TxPower0 = pAd->TxPower[index].Power;
 			pATEInfo->TxPower1 = pAd->TxPower[index].Power2;
+#ifdef TXBF_SUPPORT
+			pATEInfo->TxPower0 = 10;
+			pATEInfo->TxPower1 = 10;
+#endif /*TXBF_SUPPORT*/
+            DBGPRINT(RT_DEBUG_TRACE, ("TxPower0=%d ,TxPower1=%d\n", pATEInfo->TxPower0,pATEInfo->TxPower1));
 #ifdef DOT11N_SS3_SUPPORT
 			if (IS_RT2883(pAd) || IS_RT3593(pAd) || IS_RT3883(pAd))
 				pATEInfo->TxPower2 = pAd->TxPower[index].Power3;
@@ -3564,7 +3585,7 @@ INT	Set_ATE_TX_Antenna_Proc(
 		pATEInfo->TxAntennaSel = value;
 		pATEInfo->PreviousChannel = 0;
 	}
-	
+
 	DBGPRINT(RT_DEBUG_TRACE, ("Set_ATE_TX_Antenna_Proc (Antenna = %d)\n", pATEInfo->TxAntennaSel));
 	DBGPRINT(RT_DEBUG_TRACE, ("Ralink: Set_ATE_TX_Antenna_Proc Success\n"));
 
@@ -3577,6 +3598,15 @@ INT	Set_ATE_TX_Antenna_Proc(
 	if (IS_MT76x2(pAd))
 	ATEAsicSetTxRxPath(pAd);
 #endif /* MT76x2 */
+#ifdef RT6352
+	if (IS_RT6352(pAd))
+	{
+		if (pATEInfo->bTestTimeReduction == FALSE)
+		{
+			ATEAsicSwitchChannel(pAd);
+		}
+	}
+#endif /* RT6352 */
 #ifdef CONFIG_AP_SUPPORT
 #endif /* CONFIG_AP_SUPPORT */
 	
@@ -3780,7 +3810,6 @@ INT Set_ATE_AUTO_RESPONDER_Proc(
 	IN	PRTMP_ADAPTER	pAd, 
 	IN	PSTRING 		arg)
 {
-	PATE_INFO pATEInfo = &(pAd->ate);
 	INT auto_respond = simple_strtol(arg, 0, 10);
 	UINT32 MacValue;
 
@@ -4187,7 +4216,7 @@ INT	Set_ATE_TX_MODE_Proc(
 	}
 #endif /* RT3350 */
 
-	DBGPRINT(RT_DEBUG_TRACE, ("Set_ATE_TX_MODE_Proc (TxMode = %d)\n", phy_mode));
+	DBGPRINT(RT_DEBUG_TRACE, ("Set_ATE_TX_MODE_Proc (TxMode = %d, bw = %d)\n", phy_mode, bw));
 	DBGPRINT(RT_DEBUG_TRACE, ("Ralink: Set_ATE_TX_MODE_Proc Success\n"));
 
 #ifdef CONFIG_AP_SUPPORT
@@ -4846,6 +4875,119 @@ INT	Set_ATE_TXSOUNDING_Proc(
 	return TRUE;
 }
 
+/* 
+==========================================================================
+    Description:
+	get channel index of iBF channel table 
+
+    Input:
+     - channel 
+     - mode : 0- group center channel table
+              1 - iBF calibration all channel table
+
+    Return:
+	-1 , if not found in iBF channel table 
+	index , if found in iBF channel table 
+
+    Note: 
+==========================================================================
+*/
+
+UCHAR iBFCenterCHTbl[5]   = {44, 60, 108, 132, 157};
+UCHAR iBFCHTbl_new[13]    = {36, 44, 52, 60, 100, 108, 116, 120, 132, 140, 149, 157, 165};
+UCHAR iBFCHgroupBound[10] = {36, 48, 52, 64, 100, 118, 120, 144, 149, 165};
+
+INT ate_txbf_get_chan_idx(
+    IN RTMP_ADAPTER *pAd,
+	IN UCHAR channel,
+	IN UCHAR mode)
+{
+    INT i,chanIdx = -1;
+    if (mode ==0)
+    {
+        for (i=0; i<sizeof(iBFCenterCHTbl); i++)
+	    {
+            if (channel == iBFCenterCHTbl[i])
+                chanIdx = i;   
+        }
+	}
+    else
+    {
+        for (i=0; i<sizeof(iBFCHTbl_new); i++)
+	    {
+            if (channel == iBFCHTbl_new[i])
+                chanIdx = i;   
+        }
+    }    
+	return chanIdx;	    
+}
+
+/* 
+==========================================================================
+    Description:
+	get index of channel group  
+		
+    Input:
+     - channel 
+
+    Return:	
+	index of channel group  
+
+    Note: 
+ ==========================================================================
+*/
+INT ate_txbf_chan_group_base_idx(
+    IN RTMP_ADAPTER *pAd,
+	IN UCHAR channel)
+{
+     INT baseIdx,i;
+     baseIdx = -1;  
+     for (i=0; i<(sizeof(iBFCHgroupBound)/2); i++)
+     { 
+         if ((channel >= iBFCHgroupBound[i*2]) && (channel <= iBFCHgroupBound[i*2+1]))
+             baseIdx = i;   
+     }
+
+    DBGPRINT(RT_DEBUG_TRACE,("baseIdx=%d\n",baseIdx));
+
+    return baseIdx;
+}
+/*
+==========================================================================
+    Description:
+	Sanity check for the channel of Implicit TxBF calibration.
+
+    Return:
+        TRUE if all parameters are OK, FALSE otherwise
+
+    Note: 
+	1. This sanity check function only work for Implicit TxBF calibration.
+	2. Currently supported channels are:         
+        	1, 14, 36, 44, 52, 60, 100, 108, 116, 120, 132, 140, 149, 157, 165 for 11ac
+==========================================================================
+*/
+static BOOLEAN rtmp_ate_txbf_cal_valid_ch_new(
+	IN RTMP_ADAPTER *pAd,
+	IN UCHAR channel)
+{
+	BOOLEAN bValidCh;
+    UCHAR i;
+
+    bValidCh = FALSE;
+
+    if (channel == 0)
+        bValidCh = TRUE;
+
+    for (i=0 ; i< sizeof(iBFCHTbl_new); i++)
+	{
+        if (channel == iBFCHTbl_new[i])            
+            bValidCh = TRUE;
+    }
+
+
+	return bValidCh;	
+		}
+
 
 /* 
 ==========================================================================
@@ -4907,6 +5049,192 @@ static BOOLEAN rtmp_ate_txbf_cal_valid_ch(
 	return bValidCh;	
 }
 
+/* 
+==========================================================================
+    Description:
+      In calibration mode: 
+       -If the channel is a group center channel, enable auto K tank code
+       -If the channel is not a group center channel, set fixed tank code from group center channel 
+      In run time mode : 
+       -Set fixed tank code from group center channel       
+     
+     Return:
+     TRUE if all parameters are OK, FALSE otherwise
+ 
+     Note:   
+ ==========================================================================
+ */
+BOOLEAN rtmp_ate_txbf_fix_tank_code(
+         IN RTMP_ADAPTER *pAd,
+         IN UCHAR channel,
+         IN UCHAR CalibMode)
+{
+     INT    groupIdx, centrChanIdx;
+     UINT32 rf_val;
+     UINT   value,rptTank,lcTank0,lcTank1;
+     ITXBF_TANK_PARAMS tankParams;
+     BOOLEAN efuseStat;
+       
+     efuseStat = ITxBFGetEEPROM(pAd, 0, 0, 0, &tankParams);
+     centrChanIdx = ate_txbf_get_chan_idx(pAd, channel, 0);
+
+     DBGPRINT(RT_DEBUG_TRACE, ("######## CalibMode=%d ,efuseStat = %d,centrChanIdx = %d\n", CalibMode,efuseStat,centrChanIdx ));
+
+     if ((CalibMode == 0) && (efuseStat == TRUE))
+     {
+ 
+         DBGPRINT(RT_DEBUG_TRACE, ("######## (1) set Low-Q mode, and manual REPA-I ########\n"));
+         set_rf_bit(pAd, "1-150-12:12-0"); //low-Q mode		
+         set_rf_bit(pAd, "1-308-29:29-1"); //manaul REPA_I 
+         set_rf_bit(pAd, "1-320-23:20-c"); //manaul REPA_I
+
+         //enable manual tank code
+         DBGPRINT(RT_DEBUG_TRACE, ("######## enable manual tank code  ########\n"));
+         set_rf_bit(pAd, "1-308-28:28-1");
+         set_rf_bit(pAd, "1-2a8-24:24-1");
+         set_rf_bit(pAd, "0-2a8-24:24-1");
+
+         groupIdx = ate_txbf_chan_group_base_idx(pAd, channel);
+                
+         //ITxBFGetEEPROM(pAd, 0, 0, 0, &tankParams);
+         value = tankParams.TankCode[2*groupIdx];  
+         rptTank = value & 0x0F; 
+         value = tankParams.TankCode[2*groupIdx+1];
+         lcTank0 = value & 0x07; 
+         lcTank1 = (value & 0x70) >> 4; 
+
+         //write repeater tank code to rf_320[19:16]
+         mt_rf_read(pAd, 1, 0x320, &rf_val);
+         rf_val &= ~0x000F0000;
+         rf_val |= ((UINT32)rptTank)<<16 ;               
+         mt_rf_write(pAd, 1, 0x320, rf_val);
+
+         // Write LC tank code to rf(0/1) 0x2A8[D22:D20]        
+         mt_rf_read(pAd, 0, 0x2A8, &rf_val);
+         rf_val &= ~0x00700000;
+         rf_val |= ((UINT32)lcTank0)<<20 ;               
+         mt_rf_write(pAd, 0, 0x2A8, rf_val);
+
+         mt_rf_read(pAd, 1, 0x2A8, &rf_val);
+         rf_val &= ~0x00700000;
+         rf_val |= ((UINT32)lcTank1)<<20 ;               
+         mt_rf_write(pAd, 1, 0x2A8, rf_val);
+
+         DBGPRINT(RT_DEBUG_TRACE, (
+             "Load tank code from [%d],Rpt_efuse=%x,LC_efuse=%x \n"
+             "rptTank=%x, lcTank0=%x, lcTank1=%x\n",
+             groupIdx,tankParams.TankCode[2*groupIdx],tankParams.TankCode[2*groupIdx+1],rptTank,lcTank0,lcTank1));
+
+     }
+
+
+     if (CalibMode == 1) 
+     {
+         DBGPRINT(RT_DEBUG_TRACE, ("######## (2) set Low-Q mode, and manual REPA-I ########\n"));
+         set_rf_bit(pAd, "1-150-12:12-0"); //low-Q mode		
+         set_rf_bit(pAd, "1-308-29:29-1"); //manaul REPA_I 
+         set_rf_bit(pAd, "1-320-23:20-c"); //manaul REPA_I
+     
+         if (centrChanIdx >= 0) // calibration mode && group center channel  
+         {
+             // disable manual tank code
+             DBGPRINT(RT_DEBUG_TRACE, ("######## Disable manual tank code ########\n")); 
+             set_rf_bit(pAd, "1-308-28:28-0"); 
+             set_rf_bit(pAd, "1-2a8-24:24-0");
+             set_rf_bit(pAd, "0-2a8-24:24-0");
+         }  
+         else    // calibration mode, not group center channel
+         {  
+             //enable manual tank code
+             DBGPRINT(RT_DEBUG_TRACE, ("######## enable manual tank code  ########\n"));
+             set_rf_bit(pAd, "1-308-28:28-1");
+             set_rf_bit(pAd, "1-2a8-24:24-1");
+             set_rf_bit(pAd, "0-2a8-24:24-1");
+
+             groupIdx = ate_txbf_chan_group_base_idx(pAd, channel);
+                
+             value   = tankParams.TankCode[2*groupIdx];
+             rptTank = value & 0x0F; 
+             value   = tankParams.TankCode[2*groupIdx+1];
+             lcTank0 = value & 0x07; 
+             lcTank1 = (value & 0x70) >> 4; 
+
+             //write repeater tank code to rf_320[19:16]
+             mt_rf_read(pAd, 1, 0x320, &rf_val);
+             rf_val &= ~0x000F0000;
+             rf_val |= ((UINT32)rptTank)<<16 ;               
+             mt_rf_write(pAd, 1, 0x320, rf_val);
+
+             // Write LC tank code to rf(0/1) 0x2A8[D22:D20]        
+             mt_rf_read(pAd, 0, 0x2A8, &rf_val);
+             rf_val &= ~0x00700000;
+             rf_val |= ((UINT32)lcTank0)<<20 ;               
+             mt_rf_write(pAd, 0, 0x2A8, rf_val);
+
+             mt_rf_read(pAd, 1, 0x2A8, &rf_val);
+             rf_val &= ~0x00700000;
+             rf_val |= ((UINT32)lcTank1)<<20 ;               
+             mt_rf_write(pAd, 1, 0x2A8, rf_val);
+
+             DBGPRINT(RT_DEBUG_TRACE, (
+                      "Load tank code from [%d],Rpt_efuse=%x,LC_efuse=%x \n"
+                      "rptTank=%x, lcTank0=%x, lcTank1=%x\n",
+                      groupIdx,tankParams.TankCode[2*groupIdx],tankParams.TankCode[2*groupIdx+1],rptTank,lcTank0,lcTank1));
+          }   
+     }
+     
+     return TRUE;
+}
+
+/* 
+==========================================================================
+    Description:
+	If the channel is a group center channel,read tank code and save into efuse
+        	
+    Return:
+	TRUE if all parameters are OK, FALSE otherwise
+
+    Note: 
+==========================================================================
+*/
+
+BOOLEAN rtmp_ate_txbf_read_tank_code(
+     IN RTMP_ADAPTER *pAd,
+     IN UCHAR channel)
+{
+     UINT32 rf_val,regBBP;
+     INT    groupIdx;
+     UINT   rptTank,lcTank0,lcTank1;
+     ITXBF_TANK_PARAMS tankParams;
+
+     groupIdx = ate_txbf_get_chan_idx(pAd, channel, 0);
+     if (groupIdx >= 0) // group center channel 
+     {        
+         //read repeater tank code from rf_0x334[19:16], 
+         mt_rf_read(pAd, 1, 0x334, &rf_val);         
+         rptTank = (UINT)((rf_val & 0x000F0000) >> 16);
+
+         // read LC tank code from TXBE_R52(0x27d0)[6:4] WF1 , [2:0] WF0 
+         RTMP_IO_READ32(pAd, TXBE_R52, &regBBP);
+         lcTank1 = (UINT)((regBBP & 0x00000070) >> 4) ;
+         lcTank0 = (UINT)(regBBP  & 0x00000007);
+
+         /* Save new reference values in EEPROM and BBP */
+         ITxBFGetEEPROM(pAd, 0, 0, 0, &tankParams);
+
+         tankParams.TankCode[2*groupIdx] = rptTank;
+         tankParams.TankCode[2*groupIdx+1] = (lcTank0)|(lcTank1 <<4);
+         DBGPRINT(RT_DEBUG_TRACE,(
+                 "Save tank code to [%d],Rpt_efuse= %x, lc_efuse=%x\n"
+                 "rptTank=%x, lcTank0=%x, lcTank1=%x\n",
+                 groupIdx,tankParams.TankCode[2*groupIdx],tankParams.TankCode[2*groupIdx+1],rptTank,lcTank0,lcTank1));
+
+         ITxBFSetEEPROM(pAd, 0, 0, 0, &tankParams);
+
+     }
+     return TRUE;
+
+}
 
 /* 
 ==========================================================================
@@ -5025,7 +5353,7 @@ INT Set_ATE_TXBF_INIT_Proc(
 ==========================================================================
 */
 INT	Set_ATE_TXBF_DIVCAL_Proc(
-	IN	PRTMP_ADAPTER	pAd,
+	IN	PRTMP_ADAPTER	pAd, 
 	IN	PSTRING			arg)
 {
 	PATE_INFO pATEInfo = &(pAd->ate);
@@ -5034,77 +5362,11 @@ INT	Set_ATE_TXBF_DIVCAL_Proc(
 	CHAR initChanArg[] = "0";
 
 	value = simple_strtol(arg, 0, 10);
-
-	if (value<0 || value>2)
+	
+	if (value<0 || value>11)
 		return FALSE;
 
-	/* G band */
-	if (value==0 || value==1)
-	{
-		pATEInfo->Channel = 1;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-
-		pATEInfo->Channel = 14;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-
-		/* Display delta phase information */
-		ITxBFGetEEPROM(pAd, NULL, NULL, &divParams);
-
-#ifndef MT76x2
-		DBGPRINT(RT_DEBUG_WARN, ("Divider Cal Done:\n"
-						"ch1-ch14 = [%2d, %2d] degrees\n"
-						"ant0-ant2 = [%2d, %2d] degrees\n",
-				(UCHAR)(divParams.gBeg[0]-divParams.gEnd[0])*360/256,
-				(UCHAR)(divParams.gBeg[1]-divParams.gEnd[1])*360/256,
-				(UCHAR)(divParams.gBeg[0]-divParams.gBeg[1])*360/256,
-				(UCHAR)(divParams.gEnd[0]-divParams.gEnd[1])*360/256) );
-#endif
-	}
-
-	/* A Band */
-	if (value==0 || value==2)
-	{
-		pATEInfo->Channel = 36;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-
-		pATEInfo->Channel = 120;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-		
-#ifndef MT76x2	
-		pATEInfo->Channel = 165;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-#else
-
-		pATEInfo->Channel = 64;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-
-		pATEInfo->Channel = 100;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-
-		pATEInfo->Channel = 120;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-
-		pATEInfo->Channel = 144;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-
-		pATEInfo->Channel = 149;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-
-		pATEInfo->Channel = 173;
-		Set_ATE_INIT_CHAN_Proc(pAd, initChanArg);
-		pAd->chipOps.fITxBfDividerCalibration(pAd, 1, 0, NULL);
-#endif
-	}
+   pAd->chipOps.fITxBfDividerCalibration(pAd, value, 0, NULL);
 
 	return TRUE;
 }
@@ -5215,16 +5477,14 @@ INT	Set_ATE_TXBF_LNACAL_Proc(
 			"%s : Time consumption : %d sec\n",__FUNCTION__, (stTimeChk1 - stTimeChk0)*1000/OS_HZ));
 #endif
 
-	//if (pAd->chipCap.FlgITxBfBinWrite)
-	//{
+	if (pAd->chipCap.FlgITxBfBinWrite)
+	{
 		// Wite the calibrated phase into bit file
 		set_BinModeWriteBack_Proc(pAd, "1");
-	//}
-
+	}
+	
 	return TRUE;
 }
-
-
 
 
 /* 
@@ -5251,7 +5511,7 @@ INT Set_ATE_TXBF_GOLDEN_Proc(
 	USHORT eepromVal;
 	
 	ch = simple_strtol(arg, 0, 10);
-	if (rtmp_ate_txbf_cal_valid_ch(pAd, ch) == FALSE)
+	if (rtmp_ate_txbf_cal_valid_ch_new(pAd, ch) == FALSE)
 		return FALSE;	
 
 	/* iwpriv ra0 set ATE=ATESTART */
@@ -5261,13 +5521,15 @@ INT Set_ATE_TXBF_GOLDEN_Proc(
 	Set_ATE_Proc(pAd, "APSTOP");
 #endif // CONFIG_RT2880_ATE_CMD_NEW //
 
+	/* iwpriv ra0 set ATETXBF=3 */
+	Set_ATE_TXBF_Proc(pAd, "3");
+
 	/* set the ate channel and read txpower from EEPROM and set to bbp */
 	/* iwpriv ra0 set ATECHANNEL=Channel */
 	/* iwpriv ra0 set ATETXPOWER=0 */
 	snprintf(cmdStr, sizeof(cmdStr), "%d\n", ch);
 	Set_ATE_INIT_CHAN_Proc(pAd, cmdStr);
 	
-
 	/* Set self mac address as 11:11:11:11:11:11 */
 	/* iwpriv ra0 set ATESA=11:11:11:11:11:11 */
 	RTMP_IO_WRITE32(pAd, 0x1008, 0x11111111);
@@ -5278,38 +5540,31 @@ INT Set_ATE_TXBF_GOLDEN_Proc(
 	
 	/* iwpriv ra0 set ATETXBW=0 */
 	Set_ATE_TX_BW_Proc(pAd, "0");
-	
+
+    /*iwpriv rai0 set ATECHANNEL*/
+    snprintf(cmdStr, sizeof(cmdStr), "%d\n", ch);
+    Set_ATE_CHANNEL_Proc(pAd, cmdStr);
+
+    /*iwpriv rai0 set ATEIPG=16*/
+	Set_ATE_IPG_Proc(pAd,"16");
+
+    /*iwpriv rai0 set ATETXMCS=4*/
+    Set_ATE_TX_MCS_Proc(pAd, "4");
+    
 	/* iwpriv ra0 set ATETXGI=0 */
 	Set_ATE_TX_GI_Proc(pAd, "0");
-	
+        
 	/* iwpriv ra0 set ATETXANT=1 */
 	Set_ATE_TX_Antenna_Proc(pAd, "1");
 	
 	/* iwpriv ra0 set ATERXANT=1 */
 	Set_ATE_RX_Antenna_Proc(pAd, "1");
 
-	/* iwpriv ra0 set ATETXFREQOFFSET=ValueOfEEPROM */
-	RT28xx_EEPROM_READ16(pAd, 0x44, eepromVal);
-	snprintf(cmdStr, sizeof(cmdStr), "%d\n", (eepromVal & 0xff));
-	Set_ATE_TX_FREQ_OFFSET_Proc(pAd, cmdStr);
-
-#ifdef RTMP_BBP
-	/* iwpriv ra0 bbp 65=29 */
-	/* iwpriv ra0 bbp 163=9d */
-	/* iwpriv ra0 bbp 173=00 */
-	RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R65, 0x29);
-	RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R163, 0x9d);
-	RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R173, 0x00);
-#endif /* RTMP_BBP */
+    Set_ATE_TX_POWER0_Proc(pAd, "10");
+    Set_ATE_TX_POWER1_Proc(pAd, "10");        
 
 	/* iwpriv ra0 set ATE=RXFRAME */
 	Set_ATE_Proc(pAd, "RXFRAME");
-
-#ifdef RTMP_BBP	
-	/* reset the BBP_R173 as 0 to eliminate the compensation */
-	RTMP_BBP_IO_WRITE8_BY_REG_ID(pAd, BBP_R173, 0x00);
-#endif /* RTMP_BBP */
-
 	return TRUE;
 
 }
@@ -5318,11 +5573,16 @@ INT Set_ATE_TXBF_GOLDEN_Proc(
 ==========================================================================
     Description:
         Set to do iTxBF calibration procedures for specific channel, following show us the supported channels.
-        	1, 14, 36, 64, 128, 132, 165                in 11n
-        	1, 14, 36, 64, 100, 120, 140, 149, 173  in 11ac
+								1, 14, 36, 64, 128, 132, 165                in 11n
+        							1, 14, 36, 64, 100, 120, 140, 149, 173  in 11ac
 
+    Input arg:  (Could be only first one input argument)
+       chan:agc_val
+       - chan (decimal) : channel 
+       - agc_val (long hex): 0x2320[14:8] & 0x2324[14:8] agc gain setting 
+        
     Return:
-        TRUE if all parameters are OK, FALSE otherwise
+	TRUE if all parameters are OK, FALSE otherwise
 
     Note: 
    	This cmd shall only used in DUT side for calibration
@@ -5334,43 +5594,73 @@ INT Set_ATE_TXBF_Gd_Cal_Proc(
 {
 	UCHAR   ch;
 	UCHAR   cmdStr[32];
+    UINT    loopCnt = 0;
+    BOOLEAN flgIBFValid = FALSE;
 #ifdef MT76x2
-	UINT    CR_BK[35], value32;
+	UINT32  value32,agc_val;;
 #endif
+    INT     rv; 
+
+    rv = sscanf(arg, "%d:%lx", &(ch),&(agc_val));
 	
 	/* iwpriv ra0 set ATE=ATESTART */
 	Set_ATE_Proc(pAd, "ATESTART");
-
-	ch = simple_strtol(arg, 0, 10);
-	if (rtmp_ate_txbf_cal_valid_ch(pAd, ch) == FALSE)
+	
+	//ch = simple_strtol(arg, 0, 10);
+	if (rtmp_ate_txbf_cal_valid_ch_new(pAd, ch) == FALSE)
 		return FALSE;
+
+    DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBFCAL START, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
 
 	/* iwpriv ra0 set ATECHANNEL=Channel */
 	snprintf(cmdStr, sizeof(cmdStr), "%d\n", ch);
 	if (Set_ATE_CHANNEL_Proc(pAd, cmdStr) == FALSE)
 		return FALSE;
+
+	rtmp_ate_txbf_fix_tank_code(pAd, ch,1);  
+    
+    DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBF INIT_CHAN, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
 	
 	/* iwpriv ra0 set ATEINITCHAN =0 */
 	if (Set_ATE_INIT_CHAN_Proc(pAd, "0") == FALSE)
 		return FALSE;
+
+#ifdef MT76x2
+    /* Set RX gain after channel init */
+    if (rv == 2){
+	  RTMP_IO_READ32(pAd, AGC1_R8, &value32);
+      value32 &= (~0x00007F00);
+      value32 |= agc_val << 8;
+	  RTMP_IO_WRITE32(pAd, AGC1_R8, value32);
+
+      RTMP_IO_READ32(pAd, AGC1_R9, &value32);
+      value32 &= (~0x00007F00);
+      value32 |= agc_val << 8;
+      RTMP_IO_WRITE32(pAd, AGC1_R9, value32);
+    }
+#endif /*MT76x2*/
+
+    DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBF INIT_CHAN_DONE, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
+
+	rtmp_ate_txbf_read_tank_code(pAd,ch);
 	
 	/* iwpriv ra0 set ATETXSOUNDING=3 */
 #ifndef MT76x2	
 	if (Set_ATE_TXSOUNDING_Proc(pAd, "3") == FALSE)
 #else
 	if (Set_ATE_TXSOUNDING_Proc(pAd, "2") == FALSE)
-#endif
+#endif /* MT76x2 */
 		return FALSE;
 	
 	/* iwpriv ra0 set ETxBfNoncompress=0 */
 	if (Set_ETxBfNoncompress_Proc(pAd, "0") == FALSE)
 		return FALSE;
-	
-	/* iwpriv ra0 set ATETXMCS=0 */
-	if (Set_ATE_TX_MCS_Proc(pAd, "0") == FALSE)
+
+	/* iwpriv ra0 set ATETXMCS=8 */
+	if (Set_ATE_TX_MCS_Proc(pAd, "8") == FALSE)
 		return FALSE;
 	
-	/* iwpriv ra0 set ATETXCNT=1 */
+	/* iwpriv ra0 set ATETXCNT=2 */
 	if (Set_ATE_TX_COUNT_Proc(pAd, "2") == FALSE)
 		return FALSE;
 	
@@ -5382,47 +5672,54 @@ INT Set_ATE_TXBF_Gd_Cal_Proc(
 	if (Set_InvTxBfTag_Proc(pAd, "0") == FALSE)
 		return FALSE;
 
-	RtmpOsMsDelay(300); // wait for Tag clear process being finished
+    RtmpOsMsDelay(1);
+	//RtmpOsMsDelay(300); // wait for Tag clear process being finished
 
 #ifdef MT76x2	
-	/* iwpriv ra0 set ATETXBF=1 */
+	/* iwpriv ra0 set ATETXBF=3 */
 	if (Set_ATE_TXBF_Proc(pAd, "3") == FALSE)
 		return FALSE;
 	
 	/* Disable TX Phase Compensation */
 	RTMP_IO_READ32(pAd, TXBE_R12, &value32);
-	RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x28));
+	RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x00000028));
 #endif	
-	/* iwpriv ra0 set ATE=TXFRAME */
-	if (Set_ATE_Proc(pAd, "TXFRAME") == FALSE)
-		return FALSE;
+
+    while ((loopCnt <5) && (flgIBFValid == FALSE))
+    {
+	    /* iwpriv ra0 set ATE=TXFRAME */
+	    if (Set_ATE_Proc(pAd, "TXFRAME") == FALSE)
+		    return FALSE;
 	
 #ifdef MT76x2
-	RtmpOsMsDelay(100); // waiting 100ms for making sure TxBf profiles being calculated
-#endif	
-	
-	if (pAd->chipOps.fITxBfCal(pAd, "1") == FALSE) 
-		return FALSE;
+       RtmpOsMsDelay(20);
+       //RtmpOsMsDelay(100); // waiting 100ms for making sure TxBf profiles being calculated
 
-	//if (pAd->chipCap.FlgITxBfBinWrite)
-	//{
-		// Wite the calibrated phase into bit file
-		set_BinModeWriteBack_Proc(pAd, "1");
-	//}
+	   RTMP_IO_READ32(pAd, TXBE_R8, &value32);
+	   RTMP_IO_WRITE32(pAd, TXBE_R8, value32 & (~0x080000));  //disable DPD
+#endif	
+
+	   flgIBFValid = pAd->chipOps.fITxBfCal(pAd, "1");
+       loopCnt++;
+       DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@ loopCnt=%d @@@@@@@@@@@@@@@\n", loopCnt));
+    }
+    DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBFCAL END, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
+    DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  LOOP END, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
+
+	if (pAd->chipCap.FlgITxBfBinWrite)
+	{
+        if (flgIBFValid)		
+		    set_BinModeWriteBack_Proc(pAd, "1");  // Wite the calibrated phase into bit file
+	}
 
 	return TRUE;
-
-	
 }
-
 
 /* 
 ==========================================================================
     Description:
 	Set to do iTxBF calibration verification procedures at sepcified channel, following show us the supported channels.
 		arg => valid values are :
-        	1, 14, 36, 64, 128, 132, 165                in 11n
-        	1, 14, 36, 64, 100, 120, 140, 149, 173  in 11ac
 
     Return:
         TRUE if all parameters are OK, FALSE otherwise
@@ -5435,18 +5732,55 @@ INT Set_ATE_TXBF_Gd_Verify_Proc(
 	IN	PRTMP_ADAPTER	pAd, 
 	IN	PSTRING			arg)
 {
-	UCHAR ch;
+	UCHAR ch,i;
 	UCHAR cmdStr[32];
 	UINT32 value32;
+
+#ifdef MT76x2
+    UINT32  agc_val;;
+#endif
+    INT  rv; 
+    
+    rv = sscanf(arg, "%d:%lx", &(ch),&(agc_val));       
 	
-	ch = simple_strtol(arg, 0, 10);
-	if (rtmp_ate_txbf_cal_valid_ch(pAd, ch) == FALSE)
+	/* iwpriv ra0 set ATE=ATESTART */
+	Set_ATE_Proc(pAd, "ATESTART");
+
+	//ch = simple_strtol(arg, 0, 10);
+	if (rtmp_ate_txbf_cal_valid_ch_new(pAd, ch) == FALSE)
 		return FALSE;
+
+    DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBFVER START, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
+
+    rtmp_ate_txbf_fix_tank_code(pAd, ch, 0); //load tank code from efuse
 
 	/* iwpriv ra0 set ATECHANNEL=Channel */
 	snprintf(cmdStr, sizeof(cmdStr), "%d\n", ch);
+	
 	if (Set_ATE_CHANNEL_Proc(pAd, cmdStr) == FALSE)
+        DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBF INIT_CHAN, CHAN=%d @@@@@@@@@@@@@@@\n", ch));		
+
+	/* iwpriv ra0 set ATEINITCHAN =0 */
+	if (Set_ATE_INIT_CHAN_Proc(pAd, "0") == FALSE)
 		return FALSE;
+
+#ifdef MT76x2
+    /* Set RX gain after channel init */
+    if (rv == 2)
+    {    
+	    RTMP_IO_READ32(pAd, AGC1_R8, &value32);
+        value32 &= (~0x00007F00);
+        value32 |= agc_val << 8;
+	    RTMP_IO_WRITE32(pAd, AGC1_R8, value32);
+
+        RTMP_IO_READ32(pAd, AGC1_R9, &value32);
+        value32 &= (~0x00007F00);
+        value32 |= agc_val << 8;
+        RTMP_IO_WRITE32(pAd, AGC1_R9, value32);
+    }
+#endif 
+
+    DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBF INIT_CHAN_DONE, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
 
 #ifndef MT76x2	
 	/* iwpriv ra0 set ATETXSOUNDING=3 */
@@ -5461,11 +5795,11 @@ INT Set_ATE_TXBF_Gd_Verify_Proc(
 	if (Set_ETxBfNoncompress_Proc(pAd, "0") == FALSE)
 		return FALSE;
 
-	/* iwpriv ra0 set ATETXMCS=0 */	
-	if (Set_ATE_TX_MCS_Proc(pAd, "0") == FALSE)
+	/* iwpriv ra0 set ATETXMCS=8 */	
+	if (Set_ATE_TX_MCS_Proc(pAd, "8") == FALSE)
 		return FALSE;
 
-	/* iwpriv ra0 set ATETXCNT=1 */
+	/* iwpriv ra0 set ATETXCNT=2 */
 	if (Set_ATE_TX_COUNT_Proc(pAd, "2") == FALSE)
 		return FALSE;
 		
@@ -5480,33 +5814,45 @@ INT Set_ATE_TXBF_Gd_Verify_Proc(
 	RtmpOsMsDelay(300);
 
 #ifdef MT76x2
+    /* iwpriv ra0 set ATETXBF=3 */
+    if (Set_ATE_TXBF_Proc(pAd, "3") == FALSE)
+         return FALSE;     
 	
-		/* Disable RX Phase Compensation */
-		RTMP_IO_READ32(pAd, TXBE_R12, &value32);
-        DBGPRINT(RT_DEBUG_OFF, ("TXBE_R12 = 0x%08x\n", value32));
-		RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x28));
-        DBGPRINT(RT_DEBUG_OFF, ("TXBE_R12 = 0x%08x\n", value32 & (~0x28))); 
-
-	//RtmpOsMsDelay(10); // waiting 10ms
-
-	// LNA compensation
-        pAd->chipOps.fITxBfLNAPhaseCompensate(pAd);
-
-
-	/* Enable TX Phase Compensation */
+    /* Disable TX Phase Compensation */
 	RTMP_IO_READ32(pAd, TXBE_R12, &value32);
-	RTMP_IO_WRITE32(pAd, TXBE_R12, value32 | 0x08);
+	RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x28));
+
+    /* Clear Tx/Rx Phase compensated values */
+    RTMP_IO_READ32(pAd, CAL_R0, &value32);
+    value32 &= ~0x60;
+
+    // Clear Tx phase
+    RTMP_IO_WRITE32(pAd, CAL_R0, value32);
+    RTMP_IO_WRITE32(pAd, TXBE_R13, 0);
+    
+    // Clear Rx phase
+    for (i=0; i<3; i++)
+    {
+        RTMP_IO_WRITE32(pAd, CAL_R0, value32 | (i << 5));
+        RTMP_IO_WRITE32(pAd, RXFE_R3,  0);
+    }       	
+
 #endif		
 	/* iwpriv ra0 set ATE=TXFRAME */
 	if (Set_ATE_Proc(pAd, "TXFRAME_IBF") == FALSE)
 		return FALSE;
 
-        RtmpOsMsDelay(100); // waiting 100ms for making sure TxBf profiles being calculated
-	
-	
+    RtmpOsMsDelay(100); // waiting 100ms for making sure TxBf profiles being calculated
+
 	/* iwpriv ra0 set ITxBfCal=0 */
-	return pAd->chipOps.fITxBfCal(pAd, "0");
+    pAd->chipOps.fITxBfCal(pAd, "0");
+		
+    DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBFVER END, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
+    //DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  LOOP END, CHAN=%d @@@@@@@@@@@@@@@\n", ch));    
+
+	return TRUE;
 }
+
 
 /* 
 ==========================================================================
@@ -5533,7 +5879,7 @@ INT Set_ATE_TXBF_Gd_Verify_NoComp_Proc(
 	int retval;
 	
 	ch = simple_strtol(arg, 0, 10);
-	if (rtmp_ate_txbf_cal_valid_ch(pAd, ch) == FALSE)
+	if (rtmp_ate_txbf_cal_valid_ch_new(pAd, ch) == FALSE)
 		return FALSE;
 
 	/* iwpriv ra0 set ATECHANNEL=Channel */
@@ -5553,8 +5899,8 @@ INT Set_ATE_TXBF_Gd_Verify_NoComp_Proc(
 	if (Set_ATE_TX_MCS_Proc(pAd, "0") == FALSE)
 		return FALSE;
 	
-	/* iwpriv ra0 set ATETXCNT=1 */
-	if (Set_ATE_TX_COUNT_Proc(pAd, "1") == FALSE)
+	/* iwpriv ra0 set ATETXCNT=2 */
+	if (Set_ATE_TX_COUNT_Proc(pAd, "2") == FALSE)
 		return FALSE;
 	
 	/* iwpriv ra0 set ATETXLEN=258 */
@@ -5602,10 +5948,16 @@ INT Set_ATE_TXBF_Gd_Verify_NoComp_Proc(
 ==========================================================================
     Description:
         Set to do iTxBF calibration procedures for specific channel, following show us the supported channels.
-        	1, 14, 36, 64, 128, 132, 165                in 11n
-        	1, 14, 36, 64, 100, 120, 140, 149, 173  in 11ac
-
+									1, 14, 36, 64, 128, 132, 165                in 11n
+        							1, 14, 36, 64, 100, 120, 140, 149, 173		in 11ac
+        
         Combined flow of iBF phase calibration and verification
+
+    Input arg:  (Could be only first one , or first two input arguments)
+       chan:Bound:agc_val
+       - chan (decimal) : channel 
+       - Bound (hex) : Phase error verfication bound
+       - agc_val (long hex): 0x2320[14:8] & 0x2324[14:8] agc gain setting 
         
     Return:
         TRUE if all parameters are OK, FALSE otherwise
@@ -5613,126 +5965,511 @@ INT Set_ATE_TXBF_Gd_Verify_NoComp_Proc(
     Note: 
    	This cmd shall only used in DUT side for calibration
 ==========================================================================
-*/ 
+*/
 INT Set_ATE_TXBF_Gd_Phase_Cal_and_Verify_Proc(
-        IN  PRTMP_ADAPTER   pAd, 
-        IN  PSTRING         arg)
+	IN	PRTMP_ADAPTER	pAd, 
+	IN	PSTRING			arg)
+{
+	UCHAR ch;
+	UCHAR cmdStr[32];
+    UINT  i,loopCnt = 0,retryCnt,Bound;    
+    BOOLEAN flgIBFValid = FALSE;
+    BOOLEAN iBFVerifyPass = FALSE;
+    BOOLEAN flgVerifyValid;
+#ifdef MT76x2
+	UINT32  value32,agc_val;
+#endif
+    INT  rv;    
+    	
+    rv = sscanf(arg, "%d:%x:%lx", &(ch), &(Bound),&(agc_val));
+    if (rv == 1)
+        Bound = 0x15;
+    
+	/* iwpriv ra0 set ATE=ATESTART */
+	Set_ATE_Proc(pAd, "ATESTART");
+
+	//ch = simple_strtol(arg, 0, 10);
+	if (rtmp_ate_txbf_cal_valid_ch_new(pAd, ch) == FALSE)
+		return FALSE;
+    
+    retryCnt = 0;
+    while((retryCnt < 3) && (iBFVerifyPass == FALSE))
+    {
+	    /* iwpriv ra0 set ATECHANNEL=Channel */
+	    snprintf(cmdStr, sizeof(cmdStr), "%d\n", ch);
+	    if (Set_ATE_CHANNEL_Proc(pAd, cmdStr) == FALSE)
+		    return FALSE;
+	
+        rtmp_ate_txbf_fix_tank_code(pAd,ch,1);	
+
+	    /* iwpriv ra0 set ATEINITCHAN =0 */
+	    if (Set_ATE_INIT_CHAN_Proc(pAd, "0") == FALSE)
+		    return FALSE;
+
+#ifdef MT76x2
+        /* Set RX gain after channel init */
+        if (rv == 3)
+        {
+	        RTMP_IO_READ32(pAd, AGC1_R8, &value32);
+            value32 &= (~0x00007F00);
+            value32 |= agc_val << 8;
+	        RTMP_IO_WRITE32(pAd, AGC1_R8, value32);
+
+            RTMP_IO_READ32(pAd, AGC1_R9, &value32);
+            value32 &= (~0x00007F00);
+            value32 |= agc_val << 8;
+            RTMP_IO_WRITE32(pAd, AGC1_R9, value32);
+        }
+#endif
+
+        rtmp_ate_txbf_read_tank_code(pAd,ch);
+
+	    /* iwpriv ra0 set ATETXSOUNDING = 3 */
+#ifndef MT76x2	
+	    if (Set_ATE_TXSOUNDING_Proc(pAd, "3") == FALSE)
+#else
+	    if (Set_ATE_TXSOUNDING_Proc(pAd, "2") == FALSE)
+#endif
+		    return FALSE;
+	
+	    /* iwpriv ra0 set ETxBfNoncompress=0 */
+	    if (Set_ETxBfNoncompress_Proc(pAd, "0") == FALSE)
+		    return FALSE;
+	
+	    /* iwpriv ra0 set ATETXMCS=8 */
+	    if (Set_ATE_TX_MCS_Proc(pAd, "8") == FALSE)
+		    return FALSE;
+	
+	    /* iwpriv ra0 set ATETXCNT= 2 */
+	    if (Set_ATE_TX_COUNT_Proc(pAd, "2") == FALSE)
+		    return FALSE;
+
+	    /* iwpriv ra0 set ATETXLEN=258 */
+	    if (Set_ATE_TX_LENGTH_Proc(pAd, "258") == FALSE)
+		    return FALSE;
+
+	    /* iwpriv ra0 set InvTxBfTag=0 */
+	    if (Set_InvTxBfTag_Proc(pAd, "0") == FALSE)
+		    return FALSE;
+
+	    RtmpOsMsDelay(1); // wait for Tag clear process being finished
+
+#ifdef MT76x2	
+	    /* iwpriv ra0 set ATETXBF= 3 */
+	    if (Set_ATE_TXBF_Proc(pAd, "3") == FALSE)
+		    return FALSE;
+
+	    /* Disable TX Phase Compensation */
+	    RTMP_IO_READ32(pAd, TXBE_R12, &value32);
+	    RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x00000028));	
+#endif				
+        loopCnt = 0;
+        flgIBFValid = FALSE;
+        while((loopCnt < 5) && (flgIBFValid == FALSE))
+        {
+	        /* iwpriv ra0 set ATE=TXFRAME */
+	        if (Set_ATE_Proc(pAd, "TXFRAME") == FALSE)
+		        return FALSE;
+#ifdef MT76x2
+	        RtmpOsMsDelay(20); // waiting 100ms for making sure TxBf profiles being calculated
+   
+	        RTMP_IO_READ32(pAd, TXBE_R8, &value32);
+	        RTMP_IO_WRITE32(pAd, TXBE_R8, value32 & (~0x080000));  //disable DPD
+#endif	
+
+	        flgIBFValid = pAd->chipOps.fITxBfCal(pAd, "1");
+            loopCnt++;
+            //DBGPRINT(RT_DEBUG_OFF, ("@@@@@@@@@@@@@@@ loopCnt=%d @@@@@@@@@@@@@@@\n", loopCnt));
+        }     
+        
+        DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBFCAL END, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
+        DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  LOOP END, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
+    
+        if (pAd->chipCap.FlgITxBfBinWrite)
+        {
+            if (flgIBFValid)		
+		        set_BinModeWriteBack_Proc(pAd, "1");  // Wite the calibrated phase into bit file
+        }
+
+        //================== Verify ==================    
+        /* iwpriv ra0 set InvTxBfTag=0 */
+        if (Set_InvTxBfTag_Proc(pAd, "0") == FALSE)
+            return FALSE;
+    
+        RtmpOsMsDelay(1);  // wait for Tag clear process being finished
+    
+#ifdef MT76x2
+        /* Disable RX Phase Compensation */
+        //RTMP_IO_READ32(pAd, TXBE_R12, &value32);
+        //DBGPRINT(RT_DEBUG_OFF, ("TXBE_R12 = 0x%08x\n", value32));
+        //RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x28));
+        //DBGPRINT(RT_DEBUG_OFF, ("TXBE_R12 = 0x%08x\n", value32 & (~0x28))); 
+    
+        //RtmpOsMsDelay(10); // waiting 10ms
+
+        /* Disable TX Phase Compensation */
+        RTMP_IO_READ32(pAd, TXBE_R12, &value32);
+        RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x28));
+    
+        /* Clear Tx/Rx Phase compensated values */
+        RTMP_IO_READ32(pAd, CAL_R0, &value32);
+        value32 &= ~0x60;
+    
+        // Clear Tx phase
+        RTMP_IO_WRITE32(pAd, CAL_R0, value32);
+        RTMP_IO_WRITE32(pAd, TXBE_R13, 0);
+    
+        // Clear Rx phase
+        for (i=0; i<3; i++)
+        {
+            RTMP_IO_WRITE32(pAd, CAL_R0, value32 | (i << 5));
+            RTMP_IO_WRITE32(pAd, RXFE_R3,  0);
+        }       	
+
+#endif	
+        
+        /* iwpriv ra0 set ATE=TXFRAME_IBF */
+        if (Set_ATE_Proc(pAd, "TXFRAME_IBF") == FALSE)
+            return FALSE;
+        
+        RtmpOsMsDelay(20); // waiting 100ms for making sure TxBf profiles being calculated
+                   
+        flgVerifyValid = pAd->chipOps.fITxBfCal(pAd, "0");
+        
+        iBFVerifyPass = TRUE;
+        if(((pAd->iBFPhaseErrorBackup> Bound) && (pAd->iBFPhaseErrorBackup < (0xFF-Bound)))||
+            (flgVerifyValid != TRUE))
+            iBFVerifyPass = FALSE;
+ 
+        retryCnt++;
+        //DBGPRINT(RT_DEBUG_OFF, ("@@@@@@@@@@@@@@@ Error=%x @@@@@@@@@@@@@@@\n", pAd->iBFPhaseErrorBackup));
+        //DBGPRINT(RT_DEBUG_OFF, ("@@@@@@@@@@@@@@@ retryCnt=%d @@@@@@@@@@@@@@@\n", retryCnt));
+    }    
+    return TRUE;
+        
+}
+
+/* 
+==========================================================================
+    Description:
+        Set to do iTxBF calibration procedures for specific channel, following show us the supported channels.
+									1, 14, 36, 64, 128, 132, 165                in 11n
+        							1, 14, 36, 64, 100, 120, 140, 149, 173		in 11ac
+        
+        Combined flow of iBF phase calibration and verification
+
+     Input arg: (Could be only first one , or first two input arguments)
+        chan:Bound:agc_val
+        - chan (decimal) : channel 
+        - Bound (hex) : Phase error verfication bound
+        - agc_val (long hex): 0x2320 & 0x2324 agc gain setting 
+        
+    Return:
+        TRUE if all parameters are OK, FALSE otherwise
+
+    Note: 
+   	This cmd shall only used in DUT side for calibration
+==========================================================================
+*/
+INT Set_ATE_TXBF_Gd_Phase_Cal_Init_Verify_Proc(
+	IN	PRTMP_ADAPTER	pAd, 
+	IN	PSTRING			arg)
 {
 
-	UCHAR   ch;
-	UCHAR   cmdStr[32];
+	UCHAR ch;
+	UCHAR cmdStr[32];
+    UINT  i,loopCnt,retryCnt,Bound;    
+    BOOLEAN flgIBFValid;
+    BOOLEAN iBFVerifyPass = FALSE;
+    BOOLEAN flgVerifyValid;
 #ifdef MT76x2
-	UINT    CR_BK[35], value32;
-#endif
+	UINT32  value32,agc_val;
+#endif /*MT76x2*/
+	
+    INT  rv; 
+    	
+    rv = sscanf(arg, "%d:%x:%lx", &(ch), &(Bound),&(agc_val));
+    if (rv == 1)
+        Bound = 0x15;    // default value for error Bound 
 
 	/* iwpriv ra0 set ATE=ATESTART */
 	Set_ATE_Proc(pAd, "ATESTART");
 
-	ch = simple_strtol(arg, 0, 10);
-	if (rtmp_ate_txbf_cal_valid_ch(pAd, ch) == FALSE)
-		return FALSE;
-
-	/* iwpriv ra0 set ATECHANNEL=Channel */
-	snprintf(cmdStr, sizeof(cmdStr), "%d\n", ch);
-	if (Set_ATE_CHANNEL_Proc(pAd, cmdStr) == FALSE)
-		return FALSE;
-	
-	/* iwpriv ra0 set ATEINITCHAN =0 */
-	if (Set_ATE_INIT_CHAN_Proc(pAd, "0") == FALSE)
-		return FALSE;
-
-	/* iwpriv ra0 set ATETXSOUNDING = 3 */
-#ifndef MT76x2	
-	if (Set_ATE_TXSOUNDING_Proc(pAd, "3") == FALSE)
-#else
-	if (Set_ATE_TXSOUNDING_Proc(pAd, "2") == FALSE)
-#endif
-		return FALSE;
-	
-	/* iwpriv ra0 set ETxBfNoncompress=0 */
-	if (Set_ETxBfNoncompress_Proc(pAd, "0") == FALSE)
-		return FALSE;
-	
-	/* iwpriv ra0 set ATETXMCS=0 */
-	if (Set_ATE_TX_MCS_Proc(pAd, "0") == FALSE)
-		return FALSE;
-	
-	/* iwpriv ra0 set ATETXCNT= 2 */
-	if (Set_ATE_TX_COUNT_Proc(pAd, "2") == FALSE)
-		return FALSE;
-	
-	/* iwpriv ra0 set ATETXLEN=258 */
-	if (Set_ATE_TX_LENGTH_Proc(pAd, "258") == FALSE)
-		return FALSE;
-
-	/* iwpriv ra0 set InvTxBfTag=0 */
-	if (Set_InvTxBfTag_Proc(pAd, "0") == FALSE)
-		return FALSE;
-
-	RtmpOsMsDelay(300); // wait for Tag clear process being finished
-
-#ifdef MT76x2	
-	/* iwpriv ra0 set ATETXBF= 3 */
-	if (Set_ATE_TXBF_Proc(pAd, "3") == FALSE)
-		return FALSE;
-	
-	/* Disable TX Phase Compensation */
-	RTMP_IO_READ32(pAd, TXBE_R12, &value32);
-	RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x28));	
-#endif				
-
-	/* iwpriv ra0 set ATE=TXFRAME */
-	if (Set_ATE_Proc(pAd, "TXFRAME") == FALSE)
-		return FALSE;
-	
-#ifdef MT76x2
-	RtmpOsMsDelay(100); // waiting 100ms for making sure TxBf profiles being calculated
-#endif	
-
-	if (pAd->chipOps.fITxBfCal(pAd, "1") == FALSE) 
+	//ch = simple_strtol(arg, 0, 10);
+	if (rtmp_ate_txbf_cal_valid_ch_new(pAd, ch) == FALSE)
 		return FALSE;
     
-	//if (pAd->chipCap.FlgITxBfBinWrite)
-	//{
-		// Wite the calibrated phase into bit file
-		set_BinModeWriteBack_Proc(pAd, "1");
-	//}
+    retryCnt = 0;
+    while((retryCnt < 3) && (iBFVerifyPass == FALSE))
+    {
+	    /* iwpriv ra0 set ATECHANNEL=Channel */
+	    snprintf(cmdStr, sizeof(cmdStr), "%d\n", ch);
+	    if (Set_ATE_CHANNEL_Proc(pAd, cmdStr) == FALSE)
+		    return FALSE;
+	
+        rtmp_ate_txbf_fix_tank_code(pAd,ch,1);	
 
-//===============================================Verify    
+	    /* iwpriv ra0 set ATEINITCHAN =0 */
+	    if (Set_ATE_INIT_CHAN_Proc(pAd, "0") == FALSE)
+		    return FALSE;
+
+#ifdef MT76x2    
+	    /* Set RX gain after channel init */
+        if (rv == 3)
+        {
+            RTMP_IO_READ32(pAd, AGC1_R8, &value32);
+            value32 &= (~0x00007F00);
+            value32 |= agc_val << 8;
+            RTMP_IO_WRITE32(pAd, AGC1_R8, value32);
+    
+            RTMP_IO_READ32(pAd, AGC1_R9, &value32);
+            value32 &= (~0x00007F00);
+            value32 |= agc_val << 8;
+            RTMP_IO_WRITE32(pAd, AGC1_R9, value32);
+        }
+#endif /*MT76x2*/
+    
+        rtmp_ate_txbf_read_tank_code(pAd,ch);
+
+	    /* iwpriv ra0 set ATETXSOUNDING = 3 */
+#ifndef MT76x2	
+	    if (Set_ATE_TXSOUNDING_Proc(pAd, "3") == FALSE)
+#else
+	    if (Set_ATE_TXSOUNDING_Proc(pAd, "2") == FALSE)
+#endif /*MT76x2*/
+		    return FALSE;
+	
+	    /* iwpriv ra0 set ETxBfNoncompress=0 */
+	    if (Set_ETxBfNoncompress_Proc(pAd, "0") == FALSE)
+		    return FALSE;
+	
+	    /* iwpriv ra0 set ATETXMCS=8 */
+	    if (Set_ATE_TX_MCS_Proc(pAd, "8") == FALSE)
+		    return FALSE;
+	
+	    /* iwpriv ra0 set ATETXCNT= 2 */
+	    if (Set_ATE_TX_COUNT_Proc(pAd, "2") == FALSE)
+		    return FALSE;
+
+	    /* iwpriv ra0 set ATETXLEN=258 */
+	    if (Set_ATE_TX_LENGTH_Proc(pAd, "258") == FALSE)
+		    return FALSE;
+
+	    /* iwpriv ra0 set InvTxBfTag=0 */
+	    if (Set_InvTxBfTag_Proc(pAd, "0") == FALSE)
+		    return FALSE;
+
+	    RtmpOsMsDelay(1); // wait for Tag clear process being finished
+
+#ifdef MT76x2	
+	    /* iwpriv ra0 set ATETXBF= 3 */
+	    if (Set_ATE_TXBF_Proc(pAd, "3") == FALSE)
+		    return FALSE;
+
+	    /* Disable TX Phase Compensation */
+	    RTMP_IO_READ32(pAd, TXBE_R12, &value32);
+	    RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x00000028));	
+#endif /*MT76x2*/				
+        loopCnt = 0;
+        flgIBFValid = FALSE;
+        while((loopCnt < 5) && (flgIBFValid == FALSE))
+        {
+	        /* iwpriv ra0 set ATE=TXFRAME */
+	        if (Set_ATE_Proc(pAd, "TXFRAME") == FALSE)
+		       return FALSE;
+#ifdef MT76x2
+	        RtmpOsMsDelay(20); // waiting 100ms for making sure TxBf profiles being calculated
+   
+	        RTMP_IO_READ32(pAd, TXBE_R8, &value32);
+	        RTMP_IO_WRITE32(pAd, TXBE_R8, value32 & (~0x080000));  //disable DPD
+#endif /*MT76x2*/	
+	        flgIBFValid = pAd->chipOps.fITxBfCal(pAd, "1");
+            loopCnt++;
+            //DBGPRINT(RT_DEBUG_OFF, ("@@@@@@@@@@@@@@@ loopCnt=%d @@@@@@@@@@@@@@@\n", loopCnt));
+        }        
+        DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  TXBFCAL END, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
+        DBGPRINT(RT_DEBUG_TRACE, ("@@@@@@@@@@@@@@@  LOOP END, CHAN=%d @@@@@@@@@@@@@@@\n", ch));
+    
+	    if (pAd->chipCap.FlgITxBfBinWrite)
+	    {
+            if (flgIBFValid)		
+		        set_BinModeWriteBack_Proc(pAd, "1");  // Wite the calibrated phase into bit file
+	    }
+
+        //===================== Verify =====================
+        rtmp_ate_txbf_fix_tank_code(pAd, ch, 0); //load tank code from efuse
+               
+        /* iwpriv ra0 set ATEINITCHAN =0 */
+        if (Set_ATE_INIT_CHAN_Proc(pAd, "0") == FALSE)
+            return FALSE;
+
+#ifdef MT76x2 
+        /* Set RX gain after channel init */
+        if(rv ==3){        
+            RTMP_IO_READ32(pAd, AGC1_R8, &value32);
+            value32 &= (~0x00007F00);
+            value32 |= agc_val << 8;
+            RTMP_IO_WRITE32(pAd, AGC1_R8, value32);
+        
+            RTMP_IO_READ32(pAd, AGC1_R9, &value32);
+            value32 &= (~0x00007F00);
+            value32 |= agc_val << 8;
+            RTMP_IO_WRITE32(pAd, AGC1_R9, value32);
+        }
+#endif  /*MT76x2*/	
 
         /* iwpriv ra0 set InvTxBfTag=0 */
         if (Set_InvTxBfTag_Proc(pAd, "0") == FALSE)
             return FALSE;
     
-        RtmpOsMsDelay(300);  // wait for Tag clear process being finished
+        RtmpOsMsDelay(1);  // wait for Tag clear process being finished
     
 #ifdef MT76x2
         
         /* Disable RX Phase Compensation */
-        RTMP_IO_READ32(pAd, TXBE_R12, &value32);
-        DBGPRINT(RT_DEBUG_OFF, ("TXBE_R12 = 0x%08x\n", value32));
-        RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x28));
-        DBGPRINT(RT_DEBUG_OFF, ("TXBE_R12 = 0x%08x\n", value32 & (~0x28))); 
+        //RTMP_IO_READ32(pAd, TXBE_R12, &value32);
+        //DBGPRINT(RT_DEBUG_OFF, ("TXBE_R12 = 0x%08x\n", value32));
+        //RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x28));
+        //DBGPRINT(RT_DEBUG_OFF, ("TXBE_R12 = 0x%08x\n", value32 & (~0x28))); 
     
         //RtmpOsMsDelay(10); // waiting 10ms
-    
-        // LNA compensation
-        pAd->chipOps.fITxBfLNAPhaseCompensate(pAd);
-        
-        /* Enable TX Phase Compensation */
+
+        /* Disable TX Phase Compensation */
         RTMP_IO_READ32(pAd, TXBE_R12, &value32);
-        RTMP_IO_WRITE32(pAd, TXBE_R12, value32 | 0x08);
-#endif		
+        RTMP_IO_WRITE32(pAd, TXBE_R12, value32 & (~0x28));
+    
+        /* Clear Tx/Rx Phase compensated values */
+        RTMP_IO_READ32(pAd, CAL_R0, &value32);
+        value32 &= ~0x60;
+    
+        // Clear Tx phase
+        RTMP_IO_WRITE32(pAd, CAL_R0, value32);
+        RTMP_IO_WRITE32(pAd, TXBE_R13, 0);
+    
+        // Clear Rx phase
+        for (i=0; i<3; i++)
+        {
+            RTMP_IO_WRITE32(pAd, CAL_R0, value32 | (i << 5));
+            RTMP_IO_WRITE32(pAd, RXFE_R3,  0);
+        }       	
+
+#endif /*MT76x2*/			
         /* iwpriv ra0 set ATE=TXFRAME_IBF */
         if (Set_ATE_Proc(pAd, "TXFRAME_IBF") == FALSE)
             return FALSE;
         
-        RtmpOsMsDelay(100); // waiting 100ms for making sure TxBf profiles being calculated
+        RtmpOsMsDelay(20); // waiting 100ms for making sure TxBf profiles being calculated
         
         /* iwpriv ra0 set ITxBfCal=0 */
-        return pAd->chipOps.fITxBfCal(pAd, "0");
+        flgVerifyValid = pAd->chipOps.fITxBfCal(pAd, "0");
+
+        iBFVerifyPass = TRUE;
+        if(((pAd->iBFPhaseErrorBackup> Bound) && (pAd->iBFPhaseErrorBackup < (0xFF-Bound)))||
+           (flgVerifyValid != TRUE))  
+           iBFVerifyPass = FALSE;
+        
+        retryCnt++;
+        //DBGPRINT(RT_DEBUG_OFF, ("@@@@@@@@@@@@@@@ Error=%x @@@@@@@@@@@@@@@\n", pAd->iBFPhaseErrorBackup));      
+        //DBGPRINT(RT_DEBUG_OFF, ("@@@@@@@@@@@@@@@ retryCnt=%d @@@@@@@@@@@@@@@\n", retryCnt));
+    }    
+    return TRUE;
         
 }
+
+/* 
+==========================================================================
+    Description:
+        Check efuse to check iBF calibration 
+         - Check if there is any channel whose iBF is not calibrated
+         - Check if there is any channel whose calibration error is too big
+         
+     Input arg:
+        - Bound (hex) : Phase error verfication bound
+        
+    Return:
+        TRUE if all parameters are OK, FALSE otherwise
+
+    Note: 
+   	This cmd shall only used in DUT side for calibration
+==========================================================================
+*/
+UINT iBFCenterChIdx[5]={1, 3, 5, 8, 11};
+
+INT Set_ATE_TXBF_Gd_Check_Error_Proc(
+	IN	PRTMP_ADAPTER	pAd, 
+	IN	PSTRING			arg)
+{
+    UINT    i,idx, Bound,iBFCalibmode;
+    INT     rv;
+    BOOLEAN flgPass;
+
+    rv = sscanf(arg, "%x:%d", &(Bound),&(iBFCalibmode));
+
+    if(rv !=2)
+    {
+      iBFCalibmode = 2;
+    }
+    
+    ITXBF_PHASE_PARAMS phaseParams;
+    ITxBFGetEEPROM(pAd, &phaseParams, 0, 0, 0);
+
+    flgPass = TRUE;
+    if (iBFCalibmode==2)  // 13 channel calibration mode
+    { 
+        for(idx=0; idx<13 ; idx++)            
+        {
+            DBGPRINT(RT_DEBUG_TRACE, ("#### EFUSE Phase[%d]=%x\n",idx,phaseParams.E1aPhase[idx] ));
+            if(phaseParams.E1aPhase[idx] == 0xFF)
+            {
+                DBGPRINT(RT_DEBUG_OFF, ("#### ERROR: Not Calibrated : Channel %d\n",iBFCHTbl_new[idx]));         
+                flgPass = FALSE;
+            }
+        }
+
+        for(idx=0; idx<13 ; idx++)            
+        {         
+            DBGPRINT(RT_DEBUG_TRACE, ("#### EFUSE Error[%d]=%x\n",idx,phaseParams.E1aPhaseErr[idx] ));
+            if((phaseParams.E1aPhaseErr[idx] > Bound) && (phaseParams.E1aPhaseErr[idx] < (0xFF-Bound)))
+            {
+                DBGPRINT(RT_DEBUG_OFF, ("#### ERROR: Calibration Error too Big : Channel %d,Error=0x%x\n",iBFCHTbl_new[idx],phaseParams.E1aPhaseErr[idx]));
+                flgPass = FALSE;
+            }   
+        }
+    }
+    else // 5 channel calibration mode
+    { 
+        
+       for(i=0; i<5 ; i++)            
+       {              
+           idx = iBFCenterChIdx[i];
+           DBGPRINT(RT_DEBUG_TRACE, ("#### EFUSE Phase[%d]=%x\n",idx,phaseParams.E1aPhase[idx]));
+           if(phaseParams.E1aPhase[idx] == 0xFF)         
+           {
+               DBGPRINT(RT_DEBUG_OFF, ("#### ERROR: Not Calibrated : Channel %d\n",iBFCHTbl_new[idx]));         
+               flgPass = FALSE;
+           }
+       }
+
+       for(i=0; i<5 ; i++)            
+       {
+           idx = iBFCenterChIdx[i];
+           DBGPRINT(RT_DEBUG_TRACE, ("#### EFUSE Error[%d]=%x\n",idx,phaseParams.E1aPhaseErr[idx] ));
+           if((phaseParams.E1aPhaseErr[idx] > Bound) && (phaseParams.E1aPhaseErr[idx] < (0xFF-Bound)))
+           {
+               DBGPRINT(RT_DEBUG_OFF, ("#### ERROR: Calibration Error too Big : Channel %d,Error=0x%x\n",iBFCHTbl_new[idx],phaseParams.E1aPhaseErr[idx]));
+               flgPass = FALSE;
+           }
+       }
+
+    }
+    if(flgPass)
+        DBGPRINT(RT_DEBUG_OFF, ("#### ITxBf Calibration PASS ####\n"));   
+    else
+        DBGPRINT(RT_DEBUG_OFF, ("#### ITxBf Calibration FAIL ####\n"));       
+
+    return TRUE;
+}
+
 
 #ifdef MT76x2
 /* 
@@ -5812,9 +6549,7 @@ INT Set_ATE_TXBF_Intloop_Cal_Proc(
 	}
 	
 	return TRUE;
-	
 }
-
 
 
 /* 
@@ -5823,7 +6558,7 @@ INT Set_ATE_TXBF_Intloop_Cal_Proc(
 	Set to do iTxBF calibration verification procedures at sepcified channel, following show us the supported channels.
 		arg => valid values are :
 								1, 14, 36, 64, 128, 132, 165                in 11n
-        							1, 14, 36, 64, 100, 120, 140, 149, 173  in 11ac
+        						1, 14, 36, 64, 100, 120, 140, 149, 173  in 11ac
 
     Return:
 	TRUE if all parameters are OK, FALSE otherwise
@@ -5906,7 +6641,7 @@ INT Set_ATE_TXBF_Intloop_Phase_Verify_Proc(
 	Set to do iTxBF calibration verification procedures at sepcified channel, following show us the supported channels.
 		arg => valid values are :
 								1, 14, 36, 64, 128, 132, 165                in 11n
-        							1, 14, 36, 64, 100, 120, 140, 149, 173  in 11ac
+        						1, 14, 36, 64, 100, 120, 140, 149, 173  in 11ac
 
     Return:
 	TRUE if all parameters are OK, FALSE otherwise
@@ -6001,8 +6736,9 @@ INT Set_ATE_TXBF_Intloop_Phase_Cal_and_Verify_Proc(
 	return TRUE;
 }
 
-#endif /* MT76x2 */
 
+#endif /* MT76x2 */
+#endif /*TXBF_SUPPORT*/
 INT Set_ATE_ForceBBP_Proc(
 	IN	PRTMP_ADAPTER	pAd, 
 	IN	PSTRING			arg)
@@ -6024,9 +6760,7 @@ INT Set_ATE_ForceBBP_Proc(
 
 	return TRUE;
 }
-
-
-#endif /* TXBF_SUPPORT */
+//#endif /* TXBF_SUPPORT */
 
 
 /* 
@@ -6187,6 +6921,37 @@ INT	Set_ATE_Fixed_Payload_Proc(
 
 
 
+/* 
+==========================================================================
+    Description:
+        Enable ATE test time reduction.
+        
+        0: disable
+        1: enable
+        
+        Return:
+        	TRUE if all parameters are OK, FALSE otherwise
+==========================================================================
+*/
+INT	Set_ATE_TTR_Proc(
+	IN	PRTMP_ADAPTER	pAd, 
+	IN	PSTRING			arg)
+{
+	UINT32 value = simple_strtol(arg, 0, 10);
+
+	if (value > 0)
+	{
+		pAd->ate.bTestTimeReduction = TRUE;
+		DBGPRINT(RT_DEBUG_TRACE, ("ATETTR = TRUE , test time reduction enabled!\n"));
+	}
+	else
+	{
+		pAd->ate.bTestTimeReduction = FALSE;
+		DBGPRINT(RT_DEBUG_TRACE, ("ATETTR = FALSE , test time reduction disabled!\n"));
+	}	
+
+	return TRUE;
+}
 
 INT	Set_ATE_Show_Proc(
 	IN	PRTMP_ADAPTER	pAd, 
@@ -6429,21 +7194,62 @@ INT RT6352_ATETempCalibration(
 #endif /* RT6352 */	
 
 
-#ifdef RTMP_TEMPERATURE_CALIBRATION
+
+
+#if defined(RTMP_INTERNAL_TX_ALC) || defined(RTMP_TEMPERATURE_COMPENSATION)
+INT Set_ATE_TSSI_CALIBRATION_EX_Proc(
+	IN	PRTMP_ADAPTER	pAd,
+	IN	PSTRING			arg)
+{    
+	PATE_INFO pATEInfo = &(pAd->ate);
+
+	if (pATEInfo->pChipStruct->ExtendedTssiCalibration != NULL)
+	{
+		pATEInfo->pChipStruct->ExtendedTssiCalibration(pAd, arg);
+	}
+	else
+	{
+		RTMP_CHIP_ATE_TSSI_CALIBRATION_EXTEND(pAd, arg);
+	}
+	
+	return TRUE;
+}
+#endif /* defined(RTMP_INTERNAL_TX_ALC) || defined(RTMP_TEMPERATURE_COMPENSATION) */
+
+#ifdef RTMP_TEMPERATURE_COMPENSATION
+
+
+
+INT Set_ATE_READ_EXTERNAL_TSSI_Proc(
+	IN	PRTMP_ADAPTER	pAd,
+	IN	PSTRING			arg)
+{
+
+	RTMP_CHIP_ATE_READ_EXTERNAL_TSSI(pAd, arg);
+
+	return TRUE;
+}
+#endif /* RTMP_TEMPERATURE_COMPENSATION */
+
+#if defined(RTMP_TEMPERATURE_CALIBRATION) || defined(RTMP_TEMPERATURE_COMPENSATION)
 INT Set_ATE_TEMP_CAL_Proc(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	PSTRING			arg)
 {
 	INT ret = TRUE;
 
+#ifdef RTMP_TEMPERATURE_CALIBRATION
 #ifdef RT6352
 	if (IS_RT6352(pAd))
 		ret = RT6352_ATETempCalibration(pAd, arg);		
 #endif /* RT6352 */	
+#endif /* RTMP_TEMPERATURE_CALIBRATION */
+
+#ifdef RTMP_TEMPERATURE_COMPENSATION
+#endif /* RTMP_TEMPERATURE_COMPENSATION */
 
 	return ret;
 }
-
 
 INT Set_ATE_SHOW_TSSI_Proc(
 	IN	PRTMP_ADAPTER	pAd,
@@ -6455,6 +7261,10 @@ INT Set_ATE_SHOW_TSSI_Proc(
 	CHAR BbpR49 = 0;
 #endif /* RT6352 */
 
+#ifdef RTMP_TEMPERATURE_COMPENSATION
+#endif /* RTMP_TEMPERATURE_COMPENSATION */
+
+#ifdef RTMP_TEMPERATURE_CALIBRATION
 #ifdef RT6352
 	if (IS_RT6352(pAd))
 	{
@@ -6507,32 +7317,11 @@ INT Set_ATE_SHOW_TSSI_Proc(
 		printk("BBP R49: 0x%02X\n", BbpR49);
 	}
 #endif /* RT6352 */	
+#endif /* RTMP_TEMPERATURE_CALIBRATION */
 
 	return ret;
 }
-#endif /* RTMP_TEMPERATURE_CALIBRATION */
-
-
-#if defined(RTMP_INTERNAL_TX_ALC) || defined(RTMP_TEMPERATURE_COMPENSATION)
-INT Set_ATE_TSSI_CALIBRATION_EX_Proc(
-	IN	PRTMP_ADAPTER	pAd,
-	IN	PSTRING			arg)
-{    
-	PATE_INFO pATEInfo = &(pAd->ate);
-
-	if (pATEInfo->pChipStruct->ExtendedTssiCalibration != NULL)
-	{
-		pATEInfo->pChipStruct->ExtendedTssiCalibration(pAd, arg);
-	}
-	else
-	{
-		RTMP_CHIP_ATE_TSSI_CALIBRATION_EXTEND(pAd, arg);
-	}
-	
-	return TRUE;
-}
-#endif /* defined(RTMP_INTERNAL_TX_ALC) || defined(RTMP_TEMPERATURE_COMPENSATION) */
-
+#endif /* defined(RTMP_TEMPERATURE_CALIBRATION) || defined(RTMP_TEMPERATURE_COMPENSATION) */
 
 #ifdef RTMP_INTERNAL_TX_ALC
 
@@ -6717,19 +7506,6 @@ INT RT335xATETssiCalibrationExtend(
 
 #endif /* defined(RT3350) || defined(RT3352) */
 #endif /* RTMP_INTERNAL_TX_ALC */
-
-
-#ifdef RTMP_TEMPERATURE_COMPENSATION
-
-
-INT Set_ATE_READ_EXTERNAL_TSSI_Proc(
-	IN	PRTMP_ADAPTER	pAd,
-	IN	PSTRING			arg)
-{
-	RTMP_CHIP_ATE_READ_EXTERNAL_TSSI(pAd, arg);
-	return TRUE;
-}
-#endif /* RTMP_TEMPERATURE_COMPENSATION */
 
 
 
@@ -7113,7 +7889,7 @@ NDIS_STATUS ATEInit(
 	}
 
 #ifdef TXBF_SUPPORT
-	pATEInfo->bTxBF = FALSE;	
+	pATEInfo->bTxBF      = FALSE;	
 	pATEInfo->bITxBf_Cal = FALSE;
 #endif /* TXBF_SUPPORT */
 #ifdef RTMP_MAC_PCI
@@ -7614,7 +8390,7 @@ VOID ATEPeriodicExec(
 #ifdef MT76x2
 		if ( IS_MT76x2(pAd) )
 		{
-			if ( (pATEInfo->Mode == ATE_TXFRAME) && (pATEInfo->bAutoTxAlc == TRUE) )			{
+			if ( (pATEInfo->Mode == ATE_TXFRAME) && (pATEInfo->bAutoTxAlc == TRUE) ){
 				UCHAR i=0;
 				
 				pAd->ate.bSendTSSICmdOnly = TRUE;

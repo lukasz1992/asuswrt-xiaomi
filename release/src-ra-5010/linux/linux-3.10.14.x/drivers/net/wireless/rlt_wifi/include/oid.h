@@ -1408,7 +1408,7 @@ typedef struct _RT_LLTD_ASSOICATION_ENTRY {
 
 typedef struct _RT_LLTD_ASSOICATION_TABLE {
 	unsigned int Num;
-	RT_LLTD_ASSOICATION_ENTRY Entry[MAX_NUMBER_OF_MAC];
+	RT_LLTD_ASSOICATION_ENTRY Entry[64]; /* sync from LLTD daemon */
 } RT_LLTD_ASSOICATION_TABLE, *PRT_LLTD_ASSOICATION_TABLE;
 #endif /* LLTD_SUPPORT */
 
@@ -1498,6 +1498,12 @@ typedef struct _FT_CONFIG_INFO {
 
 
 
+
+
+#ifdef AIRPLAY_SUPPORT
+#define OID_AIRPLAY_IE_INSERT                   (0x0872)
+#define OID_AIRPLAY_ENABLE                      (0x0873)
+#endif/* AIRPLAY_SUPPORT*/
 
 
 enum {

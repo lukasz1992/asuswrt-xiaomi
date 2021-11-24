@@ -689,23 +689,23 @@ VOID NICReadEEPROMParameters(RTMP_ADAPTER *pAd, PSTRING mac_addr)
 	{
 		{
 			RT28xx_EEPROM_READ16(pAd, EEPROM_A_TSSI_BOUND1, Power.word);
-			pAd->TssiMinusBoundaryA[4] = Power.field.Byte0;
-			pAd->TssiMinusBoundaryA[3] = Power.field.Byte1;
+			pAd->TssiMinusBoundaryA[0][4] = Power.field.Byte0;
+			pAd->TssiMinusBoundaryA[0][3] = Power.field.Byte1;
 			RT28xx_EEPROM_READ16(pAd, EEPROM_A_TSSI_BOUND2, Power.word);
-			pAd->TssiMinusBoundaryA[2] = Power.field.Byte0;
-			pAd->TssiMinusBoundaryA[1] = Power.field.Byte1;
+			pAd->TssiMinusBoundaryA[0][2] = Power.field.Byte0;
+			pAd->TssiMinusBoundaryA[0][1] = Power.field.Byte1;
 			RT28xx_EEPROM_READ16(pAd, EEPROM_A_TSSI_BOUND3, Power.word);
 			pAd->TssiRefA = Power.field.Byte0;
-			pAd->TssiPlusBoundaryA[1] = Power.field.Byte1;
+			pAd->TssiPlusBoundaryA[0][1] = Power.field.Byte1;
 			RT28xx_EEPROM_READ16(pAd, EEPROM_A_TSSI_BOUND4, Power.word);
-			pAd->TssiPlusBoundaryA[2] = Power.field.Byte0;
-			pAd->TssiPlusBoundaryA[3] = Power.field.Byte1;
+			pAd->TssiPlusBoundaryA[0][2] = Power.field.Byte0;
+			pAd->TssiPlusBoundaryA[0][3] = Power.field.Byte1;
 			RT28xx_EEPROM_READ16(pAd, EEPROM_A_TSSI_BOUND5, Power.word);
-			pAd->TssiPlusBoundaryA[4] = Power.field.Byte0;
-			pAd->TxAgcStepA = Power.field.Byte1;
+			pAd->TssiPlusBoundaryA[0][4] = Power.field.Byte0;
+			pAd->TxAgcStepA = Power.field.Byte1;    
 			pAd->TxAgcCompensateA = 0;
-			pAd->TssiMinusBoundaryA[0] = pAd->TssiRefA;
-			pAd->TssiPlusBoundaryA[0]  = pAd->TssiRefA;
+			pAd->TssiMinusBoundaryA[0][0] = pAd->TssiRefA;
+			pAd->TssiPlusBoundaryA[0][0]  = pAd->TssiRefA;
 
 			/* Disable TxAgc if the based value is not right*/
 			if (pAd->TssiRefA == 0xff)
@@ -713,9 +713,9 @@ VOID NICReadEEPROMParameters(RTMP_ADAPTER *pAd, PSTRING mac_addr)
 		}
 
 		DBGPRINT(RT_DEBUG_TRACE,("E2PROM: A Tssi[-4 .. +4] = %d %d %d %d - %d -%d %d %d %d, step=%d, tuning=%d\n",
-			pAd->TssiMinusBoundaryA[4], pAd->TssiMinusBoundaryA[3], pAd->TssiMinusBoundaryA[2], pAd->TssiMinusBoundaryA[1],
+			pAd->TssiMinusBoundaryA[0][4], pAd->TssiMinusBoundaryA[0][3], pAd->TssiMinusBoundaryA[0][2], pAd->TssiMinusBoundaryA[0][1],
 			pAd->TssiRefA,
-			pAd->TssiPlusBoundaryA[1], pAd->TssiPlusBoundaryA[2], pAd->TssiPlusBoundaryA[3], pAd->TssiPlusBoundaryA[4],
+			pAd->TssiPlusBoundaryA[0][1], pAd->TssiPlusBoundaryA[0][2], pAd->TssiPlusBoundaryA[0][3], pAd->TssiPlusBoundaryA[0][4],
 			pAd->TxAgcStepA, pAd->bAutoTxAgcA));
 	}
 	pAd->BbpRssiToDbmDelta = 0x0;
@@ -865,7 +865,6 @@ VOID NICReadEEPROMParameters(RTMP_ADAPTER *pAd, PSTRING mac_addr)
 		pAd->ARssiOffset[0] = value & 0x00ff;
 		pAd->ARssiOffset[1] = (value >> 8);
 	}
-
 	{
 		RT28xx_EEPROM_READ16(pAd, (EEPROM_RSSI_A_OFFSET+2), value);
 		{
@@ -1618,12 +1617,16 @@ static VOID ClearTxRingClientAck(RTMP_ADAPTER *pAd, MAC_TABLE_ENTRY *pEntry)
 	TXWI_STRUC	TxWI;
 #endif /* RT_BIG_ENDIAN */
 #endif /* RTMP_MAC */
+#ifdef RT_BIG_ENDIAN
 	UINT8 TXWISize;
+#endif /* RT_BIG_ENDIAN */
 
 	if (!pAd || !pEntry)
 		return;
 
+#ifdef RT_BIG_ENDIAN
 	TXWISize = pAd->chipCap.TXWISize;
+#endif /* RT_BIG_ENDIAN */
 
 #ifdef RLT_MAC
 	if (pAd->chipCap.hif_type == HIF_RLT) {
@@ -1676,25 +1679,25 @@ VOID ApTxFailCntUpdate(RTMP_ADAPTER *pAd, MAC_TABLE_ENTRY *pEntry, ULONG TxSucce
 {
 #ifdef RT65xx
 	if (IS_RT65XX(pAd)) {
-        	if (pAd->MacTab.Size <= 8) {		
-
+        	if (pAd->MacTab.Size <= 8) {
+			
 #ifdef UAPSD_SUPPORT
 				/* check the EOSP packet by RateCtrl's way */
                 UAPSD_SP_AUE_Handle(pAd, pEntry, TRUE);
 #endif /* UAPSD_SUPPORT */
+			
+				if ((TxSuccess == 0) && (TxRetransmit > 0))
+				{
+						/* No TxPkt ok in this period as continue tx fail */
+						pEntry->ContinueTxFailCnt += TxRetransmit;
+				}
+				else
+				{
+						pEntry->ContinueTxFailCnt = 0;
+				}
 
-                	if ((TxSuccess == 0) && (TxRetransmit > 0))
-                	{
-                        	/* No TxPkt ok in this period as continue tx fail */
-                        	pEntry->ContinueTxFailCnt += TxRetransmit;
-                	}
-                	else
-                	{
-                        	pEntry->ContinueTxFailCnt = 0;
-                	}
-
-                	DBGPRINT(RT_DEBUG_INFO, ("%s:(OK:%d, FAIL:%d, ConFail:%d) \n",__FUNCTION__,
-                        	TxSuccess, TxRetransmit, pEntry->ContinueTxFailCnt));
+				DBGPRINT(RT_DEBUG_INFO, ("%s:(OK:%d, FAIL:%d, ConFail:%d) \n",__FUNCTION__,
+						TxSuccess, TxRetransmit, pEntry->ContinueTxFailCnt));
 		}
 	}
 	else
@@ -1874,8 +1877,6 @@ VOID NICUpdateFifoStaCounters(RTMP_ADAPTER *pAd)
 			if(pEntry->PsMode == PWR_ACTIVE)
 			{
 #ifdef DOT11_N_SUPPORT
-				int tid;
-
 #ifdef CONFIG_AP_SUPPORT
 #ifdef NOISE_TEST_ADJUST
 				if ((pAd->ApCfg.EntryClientCount > 2) &&
@@ -2048,7 +2049,6 @@ VOID NICUpdateFifoStaCounters(RTMP_ADAPTER *pAd)
 					reTry -= 9;
 
 				pEntry->OneSecTxRetryOkCount += reTry;
-
 #ifdef DYNAMIC_VGA_SUPPORT
 				pEntry->DyncVgaOneSecTxCount += reTry;
 #endif /*DYNAMIC_VGA_SUPPORT*/
@@ -2124,7 +2124,6 @@ VOID NICUpdateFifoStaCounters(RTMP_ADAPTER *pAd)
 				}
 
 				pEntry->OneSecTxRetryOkCount += reTry;
-
 #ifdef DYNAMIC_VGA_SUPPORT
 				pEntry->DyncVgaOneSecTxCount += reTry;
 #endif /*DYNAMIC_VGA_SUPPORT*/
@@ -2402,7 +2401,7 @@ VOID NICUpdateRawCounters(RTMP_ADAPTER *pAd)
 	RTMP_IO_READ32(pAd, RX_STA_CNT2, &RxStaCnt2.word);
 
 	pAd->RalinkCounters.PhyErrCnt += RxStaCnt0.field.PhyErr;
-	
+
 #ifdef CUSTOMER_DCC_FEATURE
 	if(!pAd->EnableChannelStatsCheck && !(ApScanRunning(pAd)))
 #endif
@@ -2884,6 +2883,14 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 	pAd->last_thermal_pro_temp = 0;
 	pAd->thermal_pro_criteria = 80;
 #endif /* THERMAL_PROTECT_SUPPORT */
+#if defined(RTMP_INTERNAL_TX_ALC) || defined(RTMP_TEMPERATURE_COMPENSATION)
+	pAd->TxPowerCtrl.bInternalTxALC = FALSE; /* Off by default */
+	pAd->TxPowerCtrl.idxTxPowerTable = 0;
+	pAd->TxPowerCtrl.idxTxPowerTable2 = 0;
+#ifdef RTMP_TEMPERATURE_COMPENSATION
+	pAd->TxPowerCtrl.LookupTableIndex = 0;
+#endif /* RTMP_TEMPERATURE_COMPENSATION */
+#endif /* RTMP_INTERNAL_TX_ALC || RTMP_TEMPERATURE_COMPENSATION */
 
 	pAd->RfIcType = RFIC_2820;
 
@@ -3097,6 +3104,10 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 
 	/* Tx Sw queue length setting */
 	pAd->TxSwQMaxLen = MAX_PACKETS_IN_QUEUE;
+
+#ifdef DATA_QUEUE_RESERVE
+	pAd->TxRsvLen = FIFO_RSV_FOR_HIGH_PRIORITY;
+#endif /* DATA_QUEUE_RESERVE */
 
 	pAd->CommonCfg.bRalinkBurstMode = FALSE;
 
@@ -3394,6 +3405,7 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 
 
 	pAd->CommonCfg.bWiFiTest = FALSE;
+	pAd->CommonCfg.bMcastTest = FALSE;
 #ifdef RTMP_MAC_PCI
     pAd->bPCIclkOff = FALSE;
 #endif /* RTMP_MAC_PCI */
@@ -3594,6 +3606,10 @@ VOID UserCfgInit(RTMP_ADAPTER *pAd)
 	pAd->RxDMAResetCount = 0;
 #endif /* RTMP_PCI_SUPPORT */
 #endif /* DMA_BUSY_RESET */
+
+    pAd->CommonCfg.ManualTxopThreshold = 10; // Mbps
+    pAd->CommonCfg.ManualTxopUpBound = 15; // Ratio
+    pAd->CommonCfg.ManualTxopLowBound = 5; // Ratio
 
 	DBGPRINT(RT_DEBUG_TRACE, ("<-- UserCfgInit\n"));
 }
@@ -3805,7 +3821,7 @@ VOID RTMPInitTimer(
 	pTimer->pAd = pAd;
 
 	RTMP_OS_Init_Timer(pAd, &pTimer->TimerObj,	pTimerFunc, (PVOID) pTimer, &pAd->RscTimerMemList);
-	DBGPRINT(RT_DEBUG_INFO,("%s: %lx\n",__FUNCTION__, (ULONG)pTimer));
+	DBGPRINT(RT_DEBUG_TRACE,("%s: %lx\n",__FUNCTION__, (ULONG)pTimer));
 
 	RTMP_SEM_UNLOCK(&TimerSemLock);
 }
@@ -4090,7 +4106,6 @@ static INT RtmpChipOpsRegister(RTMP_ADAPTER *pAd, INT infType)
 INT RtmpRaDevCtrlInit(VOID *pAdSrc, RTMP_INF_TYPE infType)
 {
 	RTMP_ADAPTER *pAd = (PRTMP_ADAPTER)pAdSrc;
-	UINT32 ret;
 
 	/* Assign the interface type. We need use it when do register/EEPROM access.*/
 	pAd->infType = infType;
@@ -4222,12 +4237,9 @@ VOID CMDHandler(RTMP_ADAPTER *pAd)
 {
 	PCmdQElmt cmdqelmt;
 	UCHAR *pData;
-	NDIS_STATUS NdisStatus = NDIS_STATUS_SUCCESS;
 
 	while (pAd && pAd->CmdQ.size > 0)
 	{
-		NdisStatus = NDIS_STATUS_SUCCESS;
-
 		NdisAcquireSpinLock(&pAd->CmdQLock);
 		RTThreadDequeueCmd(&pAd->CmdQ, &cmdqelmt);
 		NdisReleaseSpinLock(&pAd->CmdQLock);
@@ -4236,6 +4248,7 @@ VOID CMDHandler(RTMP_ADAPTER *pAd)
 			break;
 
 		pData = cmdqelmt->buffer;
+		ASSERT(pData != NULL);
 
 		if(!(RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_NIC_NOT_EXIST) || RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_HALT_IN_PROGRESS)))
 		{

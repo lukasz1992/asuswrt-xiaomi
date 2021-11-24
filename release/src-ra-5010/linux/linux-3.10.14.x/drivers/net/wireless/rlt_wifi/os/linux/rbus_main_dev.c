@@ -195,7 +195,7 @@ int __init rt2880_module_init(void)
 	
 	wl_proc_init();
 
-	DBGPRINT(RT_DEBUG_ERROR, ("%s: at CSR addr 0x%lx, IRQ %ld. \n", net_dev->name, (ULONG)csr_addr, net_dev->irq));
+	DBGPRINT(RT_DEBUG_ERROR, ("%s: at CSR addr 0x%lx, IRQ %u. \n", net_dev->name, (ULONG)csr_addr, net_dev->irq));
 
 	DBGPRINT(RT_DEBUG_ERROR, ("<=== rt2880_probe\n"));
 

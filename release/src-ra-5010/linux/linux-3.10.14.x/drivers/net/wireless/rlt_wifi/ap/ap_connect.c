@@ -889,10 +889,6 @@ VOID APUpdateBeaconFrame(RTMP_ADAPTER *pAd, INT apidx)
 
 		if (bNeedAppendExtIE == TRUE)
 		{
-#ifdef RT_BIG_ENDIAN
-			*((UINT32*)(pInfo)) = SWAP32(*((UINT32*)(pInfo)));
-			*((UINT32*)(pInfo+4)) = SWAP32(*((UINT32*)(pInfo+4)))
-#endif		
 			MakeOutgoingFrame(pBeaconFrame+FrameLen, &TmpLen,
 							1, &ExtCapIe,
 							1, &extInfoLen,
@@ -1135,6 +1131,25 @@ VOID APUpdateBeaconFrame(RTMP_ADAPTER *pAd, INT apidx)
 	FrameLen += TmpLen;
 
 }
+
+#ifdef AIRPLAY_SUPPORT
+	if (AIRPLAY_ON(pAd))
+	{ 
+		ULONG	AirplayTmpLen = 0;
+	
+		/*User user setting IE*/
+		if (pAd->pAirplayIe && (pAd->AirplayIeLen != 0))
+		{	
+	        //hex_dump("[BCN]IE:", pAd->pAirplayIe , pAd->AirplayIeLen);
+
+			MakeOutgoingFrame(pBeaconFrame+FrameLen, &AirplayTmpLen,
+								 pAd->AirplayIeLen, pAd->pAirplayIe,	 
+									END_OF_ARGS);
+			FrameLen += AirplayTmpLen;
+		}
+
+	}
+#endif /* AIRPLAY_SUPPORT*/
 	
 	/* add Mediatek-specific IE here */
 	{

@@ -367,7 +367,6 @@ PMEASURE_REQ_ENTRY MeasureReqLookUp(
 	UINT HashIdx;
 	PMEASURE_REQ_TAB pTab = pAd->CommonCfg.pMeasureReqTab;
 	PMEASURE_REQ_ENTRY pEntry = NULL;
-	PMEASURE_REQ_ENTRY pPrevEntry = NULL;
 
 	if (pTab == NULL)
 	{
@@ -386,7 +385,6 @@ PMEASURE_REQ_ENTRY MeasureReqLookUp(
 			break;
 		else
 		{
-			pPrevEntry = pEntry;
 			pEntry = pEntry->pNext;
 		}
 	}
@@ -592,7 +590,6 @@ static PTPC_REQ_ENTRY TpcReqLookUp(
 	UINT HashIdx;
 	PTPC_REQ_TAB pTab = pAd->CommonCfg.pTpcReqTab;
 	PTPC_REQ_ENTRY pEntry = NULL;
-	PTPC_REQ_ENTRY pPrevEntry = NULL;
 
 	if (pTab == NULL)
 	{
@@ -611,7 +608,6 @@ static PTPC_REQ_ENTRY TpcReqLookUp(
 			break;
 		else
 		{
-			pPrevEntry = pEntry;
 			pEntry = pEntry->pNext;
 		}
 	}
@@ -2304,8 +2300,6 @@ INT Set_MeasureReq_Proc(
 	UINT8 MeasureCh = 1;
 	UINT64 MeasureStartTime = GetCurrentTimeStamp(pAd);
 	MEASURE_REQ MeasureReq;
-	UINT8 TotalLen;
-
 	HEADER_802_11 ActHdr;
 	PUCHAR pOutBuffer = NULL;
 	NDIS_STATUS NStatus;
@@ -2363,8 +2357,6 @@ INT Set_MeasureReq_Proc(
 
 	NdisMoveMemory(pOutBuffer, (PCHAR)&ActHdr, sizeof(HEADER_802_11));
 	FrameLen = sizeof(HEADER_802_11);
-
-	TotalLen = sizeof(MEASURE_REQ_INFO) + sizeof(MEASURE_REQ);
 
 	MakeMeasurementReqFrame(pAd, pOutBuffer, &FrameLen,
 		sizeof(MEASURE_REQ_INFO), CATEGORY_RM, RM_BASIC,

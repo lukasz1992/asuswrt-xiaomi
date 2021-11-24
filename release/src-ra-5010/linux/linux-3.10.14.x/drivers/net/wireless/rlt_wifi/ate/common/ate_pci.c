@@ -150,7 +150,9 @@ VOID ATEWriteTxWI(
 	TXWI_STRUC TxWI, *pTxWI;
 	UINT8 TXWISize = pAd->chipCap.TXWISize;
 	UCHAR bw;
+#ifdef SINGLE_SKU_V2	
 	PATE_INFO pATEInfo = &(pAd->ate);
+#endif /* SINGLE_SKU_V2 */
 
 	/* If CCK or OFDM, BW must be 20 */
 	bw = (pTransmit->field.MODE <= MODE_OFDM) ? (BW_20) : (pTransmit->field.BW);
@@ -566,7 +568,12 @@ INT ATESetUpFrame(
 		/* build Tx descriptor */
 		pTxD->SDPtr0 = RTMP_GetPhysicalAddressLow(pTxRing->Cell[TxIdx].DmaBuf.AllocPa);
 		pTxD->SDLen0 = TXWISize + pATEInfo->HLen;
+#ifndef RT_SECURE_DMA
 		pTxD->SDPtr1 = AllocPa;
+#else
+		NdisMoveMemory(pAd->TxSecureDMA[QID_AC_BE].AllocVa + (TxIdx * 4096), AllocVa, GET_OS_PKT_LEN(pPacket));
+		pTxD->SDPtr1 = pAd->TxSecureDMA[QID_AC_BE].AllocPa + (TxIdx * 4096);
+#endif
 		pTxD->SDLen1 = GET_OS_PKT_LEN(pPacket);
 		pTxD->LastSec0 = (pTxD->SDLen1 == 0) ? 1 : 0;
 		pTxD->LastSec1 = 1;
@@ -592,7 +599,12 @@ INT ATESetUpFrame(
 		/* build Tx descriptor */
 		pTxD->SDPtr0 = RTMP_GetPhysicalAddressLow (pTxRing->Cell[TxIdx].DmaBuf.AllocPa);
 		pTxD->SDLen0 = TXWISize + pATEInfo->HLen /* LENGTH_802_11 */;
+#ifndef RT_SECURE_DMA
 		pTxD->SDPtr1 = PCI_MAP_SINGLE(pAd, &txblk, 0, 1, RTMP_PCI_DMA_TODEVICE);
+#else
+		NdisMoveMemory(pAd->TxSecureDMA[QID_AC_BE].AllocVa + (TxIdx * 4096), AllocVa, GET_OS_PKT_LEN(pPacket));
+		pTxD->SDPtr1 = pAd->TxSecureDMA[QID_AC_BE].AllocPa + (TxIdx * 4096);
+#endif
 		pTxD->SDLen1 = GET_OS_PKT_LEN(pPacket);
 		pTxD->LastSec0 = (pTxD->SDLen1 == 0) ? 1 : 0;
 		pTxD->LastSec1 = 1;
@@ -901,7 +913,12 @@ INT ATESetUpNDPAFrame(
 		/* build Tx descriptor */
 		pTxD->SDPtr0 = RTMP_GetPhysicalAddressLow(pTxRing->Cell[TxIdx].DmaBuf.AllocPa);
 		pTxD->SDLen0 = TXWISize + pATEInfo->HLen;
+#ifndef RT_SECURE_DMA
 		pTxD->SDPtr1 = AllocPa;
+#else
+		NdisMoveMemory(pAd->TxSecureDMA[QID_AC_BE].AllocVa + (TxIdx * 4096), AllocVa, GET_OS_PKT_LEN(pPacket));
+		pTxD->SDPtr1 = pAd->TxSecureDMA[QID_AC_BE].AllocPa + (TxIdx * 4096);
+#endif
 		pTxD->SDLen1 = GET_OS_PKT_LEN(pPacket);
 		pTxD->LastSec0 = (pTxD->SDLen1 == 0) ? 1 : 0;
 		pTxD->LastSec1 = 1;
@@ -927,7 +944,12 @@ INT ATESetUpNDPAFrame(
 		/* build Tx descriptor */
 		pTxD->SDPtr0 = RTMP_GetPhysicalAddressLow (pTxRing->Cell[TxIdx].DmaBuf.AllocPa);
 		pTxD->SDLen0 = TXWISize + pATEInfo->HLen /* LENGTH_802_11 */;
+#ifndef RT_SECURE_DMA
 		pTxD->SDPtr1 = PCI_MAP_SINGLE(pAd, &txblk, 0, 1, RTMP_PCI_DMA_TODEVICE);
+#else
+		NdisMoveMemory(pAd->TxSecureDMA[QID_AC_BE].AllocVa + (TxIdx * 4096), AllocVa, GET_OS_PKT_LEN(pPacket));
+		pTxD->SDPtr1 = pAd->TxSecureDMA[QID_AC_BE].AllocPa + (TxIdx * 4096);
+#endif
 		pTxD->SDLen1 = GET_OS_PKT_LEN(pPacket);
 		pTxD->LastSec0 = (pTxD->SDLen1 == 0) ? 1 : 0;
 		pTxD->LastSec1 = 1;

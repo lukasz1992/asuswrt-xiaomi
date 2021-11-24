@@ -342,6 +342,10 @@ BOOLEAN DOT1X_InternalCmdAction(
 BOOLEAN DOT1X_EapTriggerAction(RTMP_ADAPTER *pAd, MAC_TABLE_ENTRY *pEntry);
 #endif /* DOT1X_SUPPORT */
 
+#ifdef AIRPLAY_SUPPORT
+#define AIRPLAY_ON(_pAd)          ((_pAd)->bAirplayEnable == 1)
+#endif /* AIRPLAY_SUPPORT */
+
 VOID AP_E2PROM_IOCTL_PostCtrl(RTMP_IOCTL_INPUT_STRUCT *wrq, PSTRING msg);
 
 VOID IAPP_L2_UpdatePostCtrl(RTMP_ADAPTER *pAd, UINT8 *mac, INT bssid);

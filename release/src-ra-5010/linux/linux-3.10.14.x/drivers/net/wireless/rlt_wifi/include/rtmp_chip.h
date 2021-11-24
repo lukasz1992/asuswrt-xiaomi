@@ -418,6 +418,10 @@ enum RXWI_FRQ_OFFSET_FIELD {
 #ifdef MT76x2
 /* ITxBF calibration values EEPROM locations 0xC0 to 0xF1 */
 #define EEPROM1_ITXBF_CAL				0xc0
+#define EEPROM1_ITXBF_CAL_TANK          0x180
+#define EEPROM1_ITXBF_CAL_DIVPHASE  	0x18A
+#define EEPROM1_ITXBF_CAL_RESPHASE  	0x190
+#define EEPROM1_ITXBF_CAL_RESPHASE_ERR  0x19E
 #endif
 
 #define EEPROM_TXPOWER_BYRATE 			0xde	/* 20MHZ power. */
@@ -688,7 +692,6 @@ struct _RTMP_CHIP_CAP_ {
 	INT32 avg_rssi_all;
 	UCHAR dynamic_chE_mode;
 	BOOLEAN dynamic_chE_trigger;
-	BOOLEAN skip_long_range_dync_vga;	/* for 76x2 runtime turn long_range_dync_vga on/off , default do long_range_dync_vga */
 #ifdef CONFIG_AP_SUPPORT
 	INT32 dynamic_lna_trigger_timer;
 	BOOLEAN microwave_enable;
@@ -963,6 +966,18 @@ struct _RTMP_CHIP_CAP_ {
 	CHAR tx_pwr_2g_vht_mcs_8_9;
 	CHAR tx_pwr_5g_vht_mcs_8_9;
 
+	CHAR tx_pwr_cck_1_2_compensate;
+	CHAR tx_pwr_cck_5_11_compensate;
+	CHAR tx_pwr_g_band_ofdm_6_9_compensate;
+	CHAR tx_pwr_g_band_ofdm_12_18_compensate;
+	CHAR tx_pwr_a_band_ofdm_6_9_compensate;
+	CHAR tx_pwr_a_band_ofdm_12_18_compensate;
+	CHAR tx_pwr_g_band_ht_mcs_0_1_compensate; /*cover 8_9*/
+	CHAR tx_pwr_g_band_ht_mcs_2_3_compensate; /*cover 10_11*/
+	CHAR tx_pwr_a_band_ht_mcs_0_1_compensate; /*cover 8_9*/	
+	CHAR tx_pwr_a_band_ht_mcs_2_3_compensate; /*cover 10_11*/	
+	CHAR tx_pwr_5g_vht_mcs_8_9_compensate;
+
 	CHAR rf0_2g_rx_high_gain;
 	CHAR rf1_2g_rx_high_gain;
 	CHAR rf0_5g_grp0_rx_high_gain;
@@ -1145,11 +1160,11 @@ struct _RTMP_CHIP_OP_ {
 	int (*RFRandomWrite)(struct _RTMP_ADAPTER *ad, BANK_RF_REG_PAIR *RegPair, UINT32 Num);
 	int (*sc_random_write)(struct _RTMP_ADAPTER *ad, CR_REG *table, u32 num, u32 flags);
 	int (*sc_rf_random_write)(struct _RTMP_ADAPTER *ad, BANK_RF_CR_REG *table, u32 num, u32 flags);
-	void (*Calibration)(struct _RTMP_ADAPTER *pAd, UINT32 CalibrationID, ANDES_CALIBRATION_PARAM *param);
+	int (*Calibration)(struct _RTMP_ADAPTER *pAd, UINT32 CalibrationID, ANDES_CALIBRATION_PARAM *param);
 #endif /* CONFIG_ANDES_SUPPORT */
 	void (*DisableTxRx)(struct _RTMP_ADAPTER *ad, UCHAR Level);
-	void (*AsicRadioOn)(struct _RTMP_ADAPTER *ad, UCHAR Stage);
-	void (*AsicRadioOff)(struct _RTMP_ADAPTER *ad, u8 Stage);
+	BOOLEAN (*AsicRadioOn)(struct _RTMP_ADAPTER *ad, UCHAR Stage);
+	BOOLEAN (*AsicRadioOff)(struct _RTMP_ADAPTER *ad, u8 Stage, USHORT TbttNumToNextWakeUp);
 
 #ifdef MICROWAVE_OVEN_SUPPORT
 	VOID (*AsicMeasureFalseCCA)(IN struct _RTMP_ADAPTER *pAd);
@@ -1492,7 +1507,7 @@ do {	\
 #define ASIC_RADIO_OFF(_pAd, _Stage)	\
 do {	\
 	if (_pAd->chipOps.AsicRadioOff != NULL)	\
-		_pAd->chipOps.AsicRadioOff(_pAd, _Stage);	\
+		_pAd->chipOps.AsicRadioOff(_pAd, _Stage, 0);	\
 } while (0)
 
 #ifdef MICROWAVE_OVEN_SUPPORT
@@ -1589,6 +1604,15 @@ VOID RtmpChipWriteMemory(
 
 VOID RTMPReadChannelPwr(struct _RTMP_ADAPTER *pAd);
 VOID RTMPReadTxPwrPerRate(struct _RTMP_ADAPTER *pAd);
+#ifdef RTMP_TEMPERATURE_COMPENSATION
+BOOLEAN LoadTempCompTableFromEEPROM(
+		IN	struct _RTMP_ADAPTER	*pAd,
+		IN	const USHORT		E2P_OFFSET_START,
+		IN	const USHORT		E2P_OFFSET_END,
+		OUT	PUCHAR			TssiTable,
+		IN	const INT			StartIndex,
+		IN	const UINT32		TABLE_SIZE);
+#endif /* RTMP_TEMPERATURE_COMPENSATION */
 
 
 VOID NetDevNickNameInit(IN struct _RTMP_ADAPTER *pAd);

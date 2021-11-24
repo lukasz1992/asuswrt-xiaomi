@@ -108,6 +108,9 @@
 
 #define BSS_NOT_FOUND                    0xFFFFFFFF
 
+#ifdef EAPOL_QUEUE_SUPPORT
+#define MAX_LEN_OF_EAP_QUEUE            (40)
+#endif /* EAPOL_QUEUE_SUPPORT */
 #ifdef CONFIG_AP_SUPPORT
 #define MAX_LEN_OF_MLME_QUEUE            64 /*20*/ /*10 */
 #endif /* CONFIG_AP_SUPPORT */
@@ -897,6 +900,7 @@ typedef struct _BSS_ENTRY{
 	UCHAR SupRateLen;
 	UCHAR ExtRate[MAX_LEN_OF_SUPPORTED_RATES];
 	UCHAR ExtRateLen;
+	UCHAR Erp;
 	HT_CAPABILITY_IE HtCapability;
 	UCHAR HtCapabilityLen;
 	ADD_HT_INFO_IE AddHtInfo;	/* AP might use this additional ht info IE */
@@ -979,6 +983,10 @@ typedef struct _BSS_ENTRY{
 #endif /* WSC_INCLUDED */
 
 
+#if defined(DOT11R_FT_SUPPORT) || defined(DOT11K_RRM_SUPPORT)
+	BOOLEAN	 bHasMDIE;
+	FT_MDIE FT_MDIE;
+#endif /* (DOT11R_FT_SUPPORT) || defined(DOT11K_RRM_SUPPORT) */
 
 #ifdef DOT11K_RRM_SUPPORT
 	UINT8 RegulatoryClass;
@@ -1020,6 +1028,15 @@ typedef struct _MLME_QUEUE_ELEM {
 	ULONG Priv;
 } MLME_QUEUE_ELEM, *PMLME_QUEUE_ELEM;
 
+#ifdef EAPOL_QUEUE_SUPPORT
+typedef struct _EAP_MLME_QUEUE {
+    ULONG             Num;
+    ULONG             Head;
+    ULONG             Tail;
+    NDIS_SPIN_LOCK   Lock;
+    MLME_QUEUE_ELEM  Entry[MAX_LEN_OF_EAP_QUEUE];
+} EAP_MLME_QUEUE, *PEAP_MLME_QUEUE;
+#endif /* EAPOL_QUEUE_SUPPORT */
 typedef struct _MLME_QUEUE {
 	ULONG Num;
 	ULONG Head;

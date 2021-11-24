@@ -205,6 +205,11 @@ static VOID MT76x0ATEAsicSwitchChannel(
 
 	RtmpusecDelay(100000);
 
+	
+#ifdef SINGLE_SKU_V2
+	if(pATEInfo->bDoSingleSKU)
+		MT76x0_single_sku(pAd,Channel);
+#endif /* SINGLE_SKU_V2 */
 	return;
 }
 
@@ -443,76 +448,7 @@ static UCHAR CurrentPower1;
 
 #define DEFAULT_BO              4
 #define LIN2DB_ERROR_CODE       (-10000)
-static INT16 lin2dBd(
-	IN	unsigned short linearValue)
-{
-    short exp;
-    unsigned int mantisa;
-    int app,dBd;
-
-	/* Default backoff ; to enhance leading bit searching time */
-	mantisa = linearValue << DEFAULT_BO;
-	exp = -(DEFAULT_BO);
-
-	/* Leading bit searching */
-	if (mantisa < (0x8000))
-	{
-		while (mantisa < (0x8000))
-		{
-			mantisa = mantisa << 1; /* no need saturation */
-			exp--;
-			if (exp < -20)
-			{
-				DBGPRINT_ERR(("input too small\n"));
-				DBGPRINT_ERR(("exponent = %d\n",exp));
-
-				return LIN2DB_ERROR_CODE;
-			}
-		}
-	}
-	else 
-	{
-		while (mantisa > (0xFFFF))
-		{
-			mantisa = mantisa >> 1; /* no need saturation */
-			exp ++;
-			if (exp > 20)
-			{
-				DBGPRINT_ERR(("input too large\n"));
-				DBGPRINT_ERR(("exponent = %d\n",exp));
-
-				return LIN2DB_ERROR_CODE;
-			}
-		}
-	}
-/*	printk("exp=0d%d,mantisa=0x%x\n",exp,mantisa); */
-
-	if (mantisa <= 47104)
-	{
-		app=(mantisa+(mantisa>>3)+(mantisa>>4)-38400); /* S(15,0) */
-		if (app<0)
-		{
-			app=0;
-		}
-	}
-	else
-	{
-		app=(mantisa-(mantisa>>3)-(mantisa>>6)-23040); /* S(15,0) */
-		if (app<0)
-		{
-			app=0;
-		}
-	}
-
-	dBd=((15+exp)<<15)+app; /*since 2^15=1 here */
-/*	printk("dBd1=%d\n",dBd); */
-	dBd=(dBd<<2)+(dBd<<1)+(dBd>>6)+(dBd>>7);
-	dBd=(dBd>>10); /* S10.5 */
-/*	printk("app=%d,dBd=%d,dBdF=%f\n",app,dBd,(double)dBd/32); */
-
-	return(dBd);
-}
-
+extern INT16 lin2dBd(IN unsigned short linearValue);
 
 VOID MT76x0ATE_MakeUpTssiTable(
 	IN RTMP_ADAPTER *pAd)
@@ -1468,6 +1404,194 @@ static VOID MT76x0ATETssiCompensation(
 #endif /* MT76x0_TSSI_CAL_COMPENSATION */
 
 
+#ifdef RTMP_TEMPERATURE_COMPENSATION
+extern BOOLEAN MT76x0_AsicGetTssiReport(
+	IN PRTMP_ADAPTER pAd,
+	IN BOOLEAN bResetTssiInfo,
+	OUT PCHAR pTssiReport);
+
+/* MaxBoundaryLevel MUST not be greater than the array size of TssiBoundary */
+static BOOLEAN MT76x0ATE_GetTemperatureCompensationLevel(
+	IN		PRTMP_ADAPTER	pAd,
+	IN		BOOLEAN			bAutoTxAgc,
+	IN		CHAR			TssiRef, /* e2p[75h]: the zero reference */
+	IN		PCHAR			pTssiMinusBoundary,
+	IN		PCHAR			pTssiPlusBoundary,
+	IN		UINT8			MaxBoundaryLevel,
+	IN		UINT8			TxAgcStep,
+	IN		CHAR			CurrTemperature,
+	OUT		PCHAR			pCompensationLevel)
+{
+	INT			idx;
+
+	/* sanity check */
+	if ((pTssiMinusBoundary == NULL) || (pTssiPlusBoundary == NULL))
+	{
+		DBGPRINT(RT_DEBUG_ERROR, 
+					("%s(): pTssiBoundary is NULL!\n",
+					__FUNCTION__)); 
+		return FALSE;
+	}
+
+	/* ATE ALC is not controlled by e2p */
+	if (1 /* bAutoTxAgc */)
+	{
+		if (CurrTemperature < pTssiMinusBoundary[1])
+		{
+			/*
+				reading is larger than the reference value check
+				for how large we need to decrease the Tx power
+			*/
+			for (idx = 1; idx < MaxBoundaryLevel; idx++)
+			{
+				if (CurrTemperature >= pTssiMinusBoundary[idx]) 
+					break; /* level range found */
+			}
+
+			/* 
+				the index is the step we should decrease,
+				idx = 0 means there is nothing to compensate
+			*/
+			*pCompensationLevel = -(TxAgcStep * (idx-1));
+			DBGPRINT(RT_DEBUG_TRACE, 
+						("-- Tx Power, CurrTemperature=%d, TssiRef=%d, TxAgcStep=%d, step = -%d, CompensationLevel = %d\n",
+			    			CurrTemperature, TssiRef, TxAgcStep, idx-1, *pCompensationLevel));                    
+		}
+		else if (CurrTemperature > pTssiPlusBoundary[1])
+		{
+			/*
+				reading is smaller than the reference value check
+				for how large we need to increase the Tx power
+			*/
+			for (idx = 1; idx < MaxBoundaryLevel; idx++)
+			{
+				if (CurrTemperature <= pTssiPlusBoundary[idx])
+					break; /* level range found */
+			}
+
+			/*
+				the index is the step we should increase,
+				idx = 0 means there is nothing to compensate
+			*/
+			*pCompensationLevel = TxAgcStep * (idx-1);
+			DBGPRINT(RT_DEBUG_TRACE,
+						("++ Tx Power, CurrTemperature=%d, TssiRef=%d, TxAgcStep=%d, step = +%d, , CompensationLevel = %d\n",
+				    		CurrTemperature, TssiRef, TxAgcStep, idx-1, *pCompensationLevel));
+		}
+		else
+		{
+			*pCompensationLevel = 0;
+			DBGPRINT(RT_DEBUG_TRACE,
+						("  Tx Power, CurrTemperature=%d, TssiRef=%d, TxAgcStep=%d, step = +%d\n",
+						CurrTemperature, TssiRef, TxAgcStep, 0));
+		}
+	}
+
+	return TRUE;
+}
+
+
+/* 5G-band temperature compensation specific for MT7610E EP */
+static VOID MT76x0ATE_TemperatureCompensation(
+        IN PRTMP_ADAPTER pAd) 
+{
+	ATE_INFO* pATEInfo = &(pAd->ate);
+	PUCHAR pTssiMinusBoundary, pTssiPlusBoundary;
+	UINT32 MacValue;
+	INT32 base_power;
+	USHORT e2p_value = 0;
+	BOOLEAN bResetTssiInfo = TRUE;
+	CHAR delta_pwr = 0;
+	
+	/* MT7630 is 2.4G band only */
+	if (IS_MT7630(pAd))
+	{
+		DBGPRINT(RT_DEBUG_ERROR, ("error - 7630: Channel = %d\n", pATEInfo->Channel));
+		return;
+	}
+
+	if (IS_MT7610(pAd) || IS_MT7650(pAd))
+	{
+		if (pATEInfo->Channel <= 14)
+		{
+			DBGPRINT(RT_DEBUG_ERROR, 
+					("%s(): Current channel setting is NOT 5G band! \n", __FUNCTION__));
+			return;
+		}
+	}
+
+	/* TX 5G power compensation channel boundary index */
+	DBGPRINT(RT_DEBUG_TRACE, 
+			("%s(): channel boundary index = %u\n", __FUNCTION__, pAd->ChBndryIdx));
+
+	if (pATEInfo->Channel <= pAd->ChBndryIdx)
+	{
+		/* use table of 5G group 1 */
+		pTssiMinusBoundary = pAd->TssiMinusBoundaryA[0];
+		pTssiPlusBoundary = pAd->TssiPlusBoundaryA[0];
+	}
+	else
+	{
+		/* use table of 5G group 2 */
+		pTssiMinusBoundary = pAd->TssiMinusBoundaryA[1];
+		pTssiPlusBoundary = pAd->TssiPlusBoundaryA[1];
+	}
+
+	/* show base power from 0x13B0 bit[5:0] */
+	RTMP_IO_READ32(pAd, TX_ALC_CFG_0, &MacValue);
+	base_power = (MacValue & 0x0000003F);
+	DBGPRINT(RT_DEBUG_TRACE, ("%s(): base_power is %d\n", __FUNCTION__, base_power));
+
+	if (MT76x0_AsicGetTssiReport(pAd,
+								bResetTssiInfo,
+								&pAd->CurrTemperature) == TRUE)
+	{
+		if (MT76x0ATE_GetTemperatureCompensationLevel(
+							pAd,
+							pAd->bAutoTxAgcA,
+							pAd->TssiRefA,
+							pTssiMinusBoundary,
+							pTssiPlusBoundary,
+							8, /* no. of boundary levels */
+							2, /* pAd->TxAgcStepA, */
+							pAd->CurrTemperature,
+							&pAd->TxAgcCompensateA) == TRUE)
+		{
+			/* adjust compensation value by MP temperature readings(i.e., e2p[77h]) */
+			delta_pwr = pAd->TxAgcCompensateA - pAd->mp_delta_pwr;
+
+			DBGPRINT(RT_DEBUG_ERROR, ("%s(): base_power is %d\n", __FUNCTION__, pAd->TxAgcCompensateA));
+			/* 8-bit representation ==> 6-bit representation (2's complement) */
+			delta_pwr = (delta_pwr & 0x80) ? \
+							((delta_pwr & 0x1F) | 0x20) : (delta_pwr & 0x3F);						
+
+			/*
+				write compensation value into TX_ALC_CFG_1, 
+				delta_pwr (unit: 0.5dB) will be compensated by TX_ALC_CFG_1
+			*/     
+			RTMP_IO_READ32(pAd, TX_ALC_CFG_1, &MacValue); /* MAC 0x13B4 */
+			MacValue = (MacValue & (~0x3F)) | delta_pwr;
+			RTMP_IO_WRITE32(pAd, TX_ALC_CFG_1, MacValue);
+
+			DBGPRINT(RT_DEBUG_TRACE, 
+						("%s - delta_pwr = %d, TssiCalibratedOffset = %d, TssiMpOffset = %d, Mac 0x13B4 = 0x%08x, TxAgcCompensateA = %d\n",
+						__FUNCTION__,
+						(delta_pwr & 0x20) ? (delta_pwr | 0x0C) : (delta_pwr),
+						pAd->TssiCalibratedOffset/* reference temperature(i.e., e2p[D1h]) */,
+						pAd->mp_delta_pwr,
+						MacValue, pAd->TxAgcCompensateA));	
+		}
+		else
+		{
+			DBGPRINT(RT_DEBUG_ERROR, 
+						("%s(): Failed to get a compensation level!\n",
+						__FUNCTION__)); 
+		}
+	}
+}        
+#endif /* RTMP_TEMPERATURE_COMPENSATION */
+
+
 static VOID MT76x0ATE_AsicExtraPowerOverMAC(
 	IN PRTMP_ADAPTER pAd)
 {
@@ -1549,8 +1673,6 @@ VOID MT76x0ATE_VCO_CalibrationMode3(
 }
 
 
-/* This function vesion is specific for Cameo */
-/* It must be replaced by formal one for other customers */
 VOID MT76x0ATE_Calibration(
 	IN RTMP_ADAPTER *pAd,
 	IN UCHAR Channel,
@@ -1558,6 +1680,12 @@ VOID MT76x0ATE_Calibration(
 	IN BOOLEAN bFullCal)
 {
 	UINT32 MacReg = 0, reg_val = 0, reg_tx_alc = 0;
+	UINT32 param, _param0, _param1, _param2;
+#ifdef RTMP_FLASH_SUPPORT
+	UINT32 bCalFlash = pAd->ate.bSaveFlashEnabled;
+#else
+	UINT32 bCalFlash = FALSE;
+#endif /* RTMP_FLASH_SUPPORT */
 
 	/* MT7610 is 5G band only */
 	if (IS_MT7610(pAd))
@@ -1604,7 +1732,7 @@ VOID MT76x0ATE_Calibration(
 		*/
 		CHIP_CALIBRATION(pAd, R_CALIBRATION, 0x0);
 
-		MT76x0ATE_VCO_CalibrationMode3(pAd);
+		MT76x0_VCO_CalibrationMode3(pAd, Channel);
 		RtmpusecDelay(1);
 	}
 
@@ -1627,6 +1755,27 @@ VOID MT76x0ATE_Calibration(
 	*/
 	if (bFullCal)
 	{
+		if (Channel > 14)
+		{
+			_param0 = (1 /* 5G + External PA */) ? 1 : 2;
+			_param1 = 1; /* 0: G-Band, 1: A-Band */
+			
+			if (Channel < 100)
+				_param2 = (bCalFlash == TRUE) ? 0x7 : 0x0;
+			else if (Channel < 140)
+				_param2 = (bCalFlash == TRUE) ? 0x8 : 0x0;
+			else
+				_param2 = (bCalFlash == TRUE) ? 0x9 : 0x0;
+		}
+		else
+		{
+			// TODO: 2.4G Need to check parameter [31:16]
+			_param0 = 0; /* 2G */
+			_param1 = 0; /* 0: G-Band, 1: A-Band */
+			_param2 = (bCalFlash == TRUE) ? 0x6 : 0x0;
+		}
+		param = _param0 | (_param2 << 8); /* for LC Calibration */
+
 		/*
 			1. RXDC Calibration parameter
 				0:Back Ground Disable
@@ -1651,13 +1800,8 @@ VOID MT76x0ATE_Calibration(
 					8: A-Band (Mid) Restore Calibration
 					9: A-Band (High) Restore Calibration
 		*/
-		if (Channel > 14)
-		{
-			// TODO: check PA setting from EEPROM @20121016
-			CHIP_CALIBRATION(pAd, LC_CALIBRATION, 0x1);
-		}
-		else
-			CHIP_CALIBRATION(pAd, LC_CALIBRATION, 0x0);
+		// TODO: If 5G, check PA setting from EEPROM @20121016
+		CHIP_CALIBRATION(pAd, LC_CALIBRATION, param);
 
 		/*
 			3,4. BW-Calibration
@@ -1676,6 +1820,8 @@ VOID MT76x0ATE_Calibration(
 					9: A-Band (High) Restore Calibration
 		*/
 
+		param = _param1 | (_param2 << 8);
+
 		/*
 			5. RF LOFT-Calibration parameter
 				Bit[0:7] (0:G-Band, 1: A-Band)
@@ -1692,12 +1838,7 @@ VOID MT76x0ATE_Calibration(
 					9: A-Band (High) Restore Calibration
 
 		*/
-		if (Channel > 14)
-		{
-			CHIP_CALIBRATION(pAd, LOFT_CALIBRATION, 0x1);
-		}
-		else
-			CHIP_CALIBRATION(pAd, LOFT_CALIBRATION, 0x0);
+		CHIP_CALIBRATION(pAd, LOFT_CALIBRATION, param);
 
 		/*
 			6. TXIQ-Calibration parameter
@@ -1714,14 +1855,8 @@ VOID MT76x0ATE_Calibration(
 					8: A-Band (Mid) Restore Calibration
 					9: A-Band (High) Restore Calibration
 		*/
-		if (Channel > 14)
-		{
-			CHIP_CALIBRATION(pAd, TXIQ_CALIBRATION, 0x1);
-		}
-		else
-		{
-			CHIP_CALIBRATION(pAd, TXIQ_CALIBRATION, 0x0);
-		}
+		CHIP_CALIBRATION(pAd, TXIQ_CALIBRATION, param);
+
 		/*			
 			7. TX Group-Delay Calibation parameter
 				Bit[0:7] (0:G-Band, 1: A-Band)
@@ -1737,14 +1872,8 @@ VOID MT76x0ATE_Calibration(
 					8: A-Band (Mid) Restore Calibration
 					9: A-Band (High) Restore Calibration
 		*/
-		if (Channel > 14)
-		{
-			CHIP_CALIBRATION(pAd, TX_GROUP_DELAY_CALIBRATION, 0x1);
-		}
-		else
-		{
-			CHIP_CALIBRATION(pAd, TX_GROUP_DELAY_CALIBRATION, 0x0);
-		}
+		CHIP_CALIBRATION(pAd, TX_GROUP_DELAY_CALIBRATION, param);
+
 		/*
 			8. RXIQ-Calibration parameter
 				Bit[0:7] (0:G-Band, 1: A-Band)
@@ -1774,21 +1903,16 @@ VOID MT76x0ATE_Calibration(
 					8: A-Band (Mid) Restore Calibration
 					9: A-Band (High) Restore Calibration
 		*/
-		if (Channel > 14)
-		{
-			CHIP_CALIBRATION(pAd, RXIQ_CALIBRATION, 0x1);
-			CHIP_CALIBRATION(pAd, RX_GROUP_DELAY_CALIBRATION, 0x1);
-		}
-		else
-		{
-			CHIP_CALIBRATION(pAd, RXIQ_CALIBRATION, 0x0);
-			CHIP_CALIBRATION(pAd, RX_GROUP_DELAY_CALIBRATION, 0x0);
-		}
+		CHIP_CALIBRATION(pAd, RXIQ_CALIBRATION, param);
+		CHIP_CALIBRATION(pAd, RX_GROUP_DELAY_CALIBRATION, param);			
+
 		/* 
 			10. TX 2G DPD - Only 2.4G needs to do DPD Calibration. 
 		*/
 		if (Channel <= 14)
+		{
 			CHIP_CALIBRATION(pAd, DPD_CALIBRATION, 0x0);
+		}
 	}
 	else
 	{
@@ -1806,8 +1930,176 @@ VOID MT76x0ATE_Calibration(
 	RTMP_IO_WRITE32(pAd, TX_ALC_CFG_0, reg_tx_alc);
 }
 
+#ifdef RTMP_MAC_PCI
+#ifdef RTMP_FLASH_SUPPORT
+#define CR_COUNT (25) 
+#define BAND_GROUP (3) /* high, middle, low */
+#define CR_TOTAL_COUNT (CR_COUNT * BAND_GROUP)
+#define CR_FLASH_BASE_ADDR (0x200) /* == 512 */
 
-#ifdef SINGLE_SKU_V2
+
+NDIS_STATUS MT76x0ATE_FlashWrite(
+	RTMP_ADAPTER *pAd, UCHAR *pData, ULONG offset, ULONG length)
+{
+	UINT32 cr_offset = offset; 
+	UINT32 len = length;
+
+	if (!pAd->chipCap.ee_inited)
+	{
+		return NDIS_STATUS_FAILURE;
+	}
+
+	RtmpFlashWrite(pData, (ULONG)cr_offset, (ULONG)len);
+
+	return NDIS_STATUS_SUCCESS;
+}
+
+
+NDIS_STATUS  MT76x0ATE_SaveFlashCR(
+    RTMP_ADAPTER *pAd, UINT32 level)
+{
+	/* parameters */
+	ATE_INFO *pATEInfo = &(pAd->ate);
+	UINT32 reg_val[CR_TOTAL_COUNT + 1];
+	UINT32 bbp_index = 0;
+	UINT32 bbp_value = 0;
+	UINT32 cr_flash_offset = RF_OFFSET+CR_FLASH_BASE_ADDR; 
+	UINT32 total_content_size = ((CR_TOTAL_COUNT + 1) * 4); /* 1: valid flag(reserved) */
+	UINT ch_idx = 0, cr_index = 0;
+	UCHAR cmdStr[32];
+	UCHAR ch[] = {155, 136, 42, 0};
+	UCHAR rf_value = 0;
+	UCHAR pos = 0;
+
+	NdisZeroMemory((UCHAR *)reg_val, sizeof(reg_val));
+
+#ifdef CONFIG_RT2880_ATE_CMD_NEW
+	Set_ATE_Proc(pAd, "ATESTART");
+#else
+	Set_ATE_Proc(pAd, "APSTOP");
+#endif /* CONFIG_RT2880_ATE_CMD_NEW */
+
+	/* only for debug */
+	/* write all CR as 0x00 in flash */	
+	if (level == 0)
+	{
+		if (MT76x0ATE_FlashWrite(pAd, (UCHAR *)reg_val, (ULONG)cr_flash_offset,
+				(ULONG)total_content_size) != NDIS_STATUS_SUCCESS)
+		{
+			return NDIS_STATUS_FAILURE;
+		}
+		return NDIS_STATUS_SUCCESS;
+	}
+
+	/* DW[0] is reserved */
+	reg_val[0] = 0xFFFFFFFF;
+	
+	for (ch_idx = 0; ch[ch_idx] != 0; ch_idx++)
+	{
+		/* set BW ? */
+		/* set frequency offset ? */
+		/* switch channel ? */
+		snprintf(cmdStr, sizeof(cmdStr), "%d\n", ch[ch_idx]);
+		if (Set_ATE_CHANNEL_Proc(pAd, cmdStr) == FALSE)
+		{
+			return NDIS_STATUS_FAILURE;
+		}
+
+		ATEAsicSwitchChannel(pAd);
+		/* AsicLockChannel() is empty function so far in fact */
+		AsicLockChannel(pAd, pATEInfo->Channel);
+		RtmpOsMsDelay(5);
+		/* beginning position for each channel group */
+		pos = (CR_COUNT * ch_idx) + 1;
+
+		/* read A-band LC calibration results */
+		rlt_rf_read(pAd, RF_BANK0, RF_R39, &rf_value);
+		reg_val[pos] = (UINT32)rf_value;	
+		rlt_rf_read(pAd, RF_BANK6, RF_R24, &rf_value);
+		reg_val[pos+1] = (UINT32)rf_value;	
+		rlt_rf_read(pAd, RF_BANK6, RF_R39, &rf_value);
+		reg_val[pos+2] = (UINT32)rf_value;	
+		rlt_rf_read(pAd, RF_BANK6, RF_R17, &rf_value);
+		reg_val[pos+3] = (UINT32)rf_value;	
+		rlt_rf_read(pAd, RF_BANK6, RF_R58, &rf_value);
+		reg_val[pos+4] = (UINT32)rf_value;	
+		rlt_rf_read(pAd, RF_BANK6, RF_R59, &rf_value);
+		reg_val[pos+5] = (UINT32)rf_value;	
+
+		/* 
+			read the CR calibrated by TX group delay and TX IQ calibration
+		*/
+		RTMP_BBP_IO_READ32(pAd, CAL_R14, &bbp_value);
+		reg_val[pos+6] = bbp_value;
+
+		/* 
+			read 2 CRs calibrated by RX group delay
+			and RX IQ calibration
+		*/
+		RTMP_BBP_IO_READ32(pAd, CAL_R24, &bbp_value);
+		reg_val[pos+7] = bbp_value;
+		
+		RTMP_BBP_IO_READ32(pAd, CAL_R28, &bbp_value);
+		reg_val[pos+8] = bbp_value;
+		
+		/* read 16 CRs calibrated by LOFT calibration */
+		for (bbp_index = 0; bbp_index < 16; bbp_index++)
+		{
+			RTMP_BBP_IO_WRITE32(pAd, 0x2CF0, bbp_index);
+			RTMP_BBP_IO_READ32(pAd, 0x2CF4, &bbp_value);
+			reg_val[pos+9+bbp_index] = bbp_value;
+		}
+	}
+
+	/* write the buffer content to flash */	
+	if (level == 1)
+	{
+		if (MT76x0ATE_FlashWrite(pAd, (UCHAR *)reg_val, (ULONG)cr_flash_offset,
+				(ULONG)total_content_size) != NDIS_STATUS_SUCCESS)
+		{
+			return NDIS_STATUS_FAILURE;
+		}
+	}
+
+	/* only for debug */
+	/* not yet write the buffer content to flash */	
+	if (level == 2)
+	{
+		DBGPRINT(RT_DEBUG_OFF, ("================================\n"));
+
+		for (cr_index = 0; cr_index <= CR_TOTAL_COUNT; cr_index++)
+		{
+			if (cr_index==((CR_COUNT*0)+1))
+			{
+				DBGPRINT(RT_DEBUG_OFF, ("\nHigh channel CR:\n\n"));
+			}
+
+			if (cr_index==((CR_COUNT*1)+1))
+			{
+				DBGPRINT(RT_DEBUG_OFF, ("\nMiddle channel CR:\n\n"));
+			}
+
+			if (cr_index==((CR_COUNT*2)+1))
+			{
+				DBGPRINT(RT_DEBUG_OFF, ("\nLow channel CR:\n\n"));
+			}
+
+			DBGPRINT(RT_DEBUG_OFF, ("DW[%u]== 0x%08x\n", cr_index, reg_val[cr_index]));
+		}
+
+		DBGPRINT(RT_DEBUG_OFF, ("================================\n"));
+
+		RTDebugLevel = RT_DEBUG_TRACE;
+		hex_dump("content to save", (UCHAR *)reg_val, (UINT)total_content_size);
+		RTDebugLevel = RT_DEBUG_OFF;
+		DBGPRINT(RT_DEBUG_OFF, ("\nNote ! The content above is NOT saved to flash yet !\n"));
+	}
+
+	return NDIS_STATUS_SUCCESS;
+}
+#endif /* RTMP_FLASH_SUPPORT */
+#endif /* RTMP_MAC_PCI */
+
 static VOID MT76x0ATE_CalculateTxpower(
 	IN  BOOLEAN bMinus,
 	IN  USHORT InputTxpower,
@@ -2038,7 +2330,60 @@ VOID MT76x0AteReadTxPwrPerRate(
 	
     DBGPRINT(RT_DEBUG_TRACE, ("%s: <--\n", __FUNCTION__));
 }
-#endif /* SINGLE_SKU_V2 */
+
+
+#ifdef RTMP_MAC_PCI
+#ifdef RTMP_EFUSE_SUPPORT
+VOID MT76x0AteReadBufferAndInitAsic(
+	IN RTMP_ADAPTER *pAd)
+{
+	USHORT ee_val = 0;
+	UINT32 reg_val = 0;
+
+	RT28xx_EEPROM_READ16(pAd, 0x22, ee_val);
+	DBGPRINT(RT_DEBUG_TRACE, ("%s: 0x22 = 0x%x\n", __FUNCTION__, ee_val));
+	RTMP_IO_READ32(pAd, CMB_CTRL, &reg_val);
+	reg_val &= 0xFFFF0000;
+	reg_val |= ee_val;
+	RTMP_IO_WRITE32(pAd, CMB_CTRL, reg_val);
+
+	RT28xx_EEPROM_READ16(pAd, 0x24, ee_val);
+	DBGPRINT(RT_DEBUG_TRACE, ("%s: 0x24 = 0x%x\n", __FUNCTION__, ee_val));
+	RTMP_IO_READ32(pAd, 0x104, &reg_val);
+	reg_val &= 0xFFFF0000;
+	reg_val |= ee_val;
+	RTMP_IO_WRITE32(pAd, 0x104, reg_val);
+
+	return;
+}
+#endif /* RTMP_EFUSE_SUPPORT */
+#endif /* RTMP_MAC_PCI */
+
+#ifdef SINGLE_SKU_V2
+static void mt76x0_ate_single_sku(IN PRTMP_ADAPTER	pAd, IN BOOLEAN value)
+{	
+	PATE_INFO pATEInfo = &(pAd->ate);
+
+	/* should use BBPCurrentBW = BW 20 for single sku in band edge channel */
+	if(pAd->ate.Channel == 1 || pAd->ate.Channel == 2 || pAd->ate.Channel == 10 || pAd->ate.Channel == 11)
+		pAd->CommonCfg.BBPCurrentBW = BW_20;
+	else
+		pAd->CommonCfg.BBPCurrentBW = pATEInfo->BBPCurrentBW_Backup;
+	
+	if (value > 0)
+	{
+		pATEInfo->bDoSingleSKU = TRUE;			
+		/* force reconfiguration of the channel , to apply single sku value */
+		pATEInfo->PreviousChannel = 0;
+		DBGPRINT(RT_DEBUG_ERROR, ("ATESINGLESKU = TRUE , enabled single sku in ATE! Force switch channel to calculate single sku\n"));
+	}
+	else
+	{
+			}	
+	
+}
+#endif
+
 
 #ifdef RTMP_MAC_PCI
 struct _ATE_CHIP_STRUCT RALINK6590 =
@@ -2052,15 +2397,19 @@ struct _ATE_CHIP_STRUCT RALINK6590 =
 	.AsicSetTxRxPath = NULL,
 #ifdef MT76x0_TSSI_CAL_COMPENSATION
 	.AdjustTxPower = MT76x0ATETssiCompensation,
-#else
-	.AdjustTxPower = NULL,
 #endif /* MT76x0_TSSI_CAL_COMPENSATION */
+#ifdef RTMP_TEMPERATURE_COMPENSATION
+	.AdjustTxPower = MT76x0ATE_TemperatureCompensation,
+#endif /* RTMP_TEMPERATURE_COMPENSATION */
 	.AsicExtraPowerOverMAC = MT76x0ATE_AsicExtraPowerOverMAC,
 	.TemperCompensation = NULL,
 	
 	/* command handlers */
 	.Set_BW_Proc = MT76x0_Set_ATE_TX_BW_Proc,
 	.Set_FREQ_OFFSET_Proc = MT76x0_Set_ATE_TX_FREQ_OFFSET_Proc,
+#ifdef SINGLE_SKU_V2
+	.do_ATE_single_sku = mt76x0_ate_single_sku,
+#endif
 
 	/* variables */
 	.maxTxPwrCnt = 5,

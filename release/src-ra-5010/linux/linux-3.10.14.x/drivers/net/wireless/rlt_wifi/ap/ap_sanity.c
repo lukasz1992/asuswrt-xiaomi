@@ -56,7 +56,6 @@ BOOLEAN PeerAssocReqCmmSanity(
 	INT MsgLen,
 	IE_LISTS *ie_lists)
 {
-    CHAR *Ptr;
     PFRAME_802_11	Fr = (PFRAME_802_11)Msg;
     PEID_STRUCT eid_ptr;
     UCHAR Sanity = 0;
@@ -83,8 +82,6 @@ BOOLEAN PeerAssocReqCmmSanity(
 
 	COPY_MAC_ADDR(&ie_lists->Addr2[0], &Fr->Hdr.Addr2[0]);
 	
-	Ptr = (PCHAR)Fr->Octet;
-
 	NdisMoveMemory(&ie_lists->CapabilityInfo, &Fr->Octet[0], 2);
 	NdisMoveMemory(&ie_lists->ListenInterval, &Fr->Octet[2], 2);
 

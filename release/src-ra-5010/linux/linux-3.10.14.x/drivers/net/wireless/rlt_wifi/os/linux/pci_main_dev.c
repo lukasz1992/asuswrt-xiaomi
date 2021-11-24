@@ -262,7 +262,7 @@ static int DEVINIT rt_pci_probe(struct pci_dev *pdev, const struct pci_device_id
 	}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0)
-	print_name = pci_name(pdev);
+	print_name = (char *) pci_name(pdev);
 #else
 	print_name = pdev->slot_name;
 #endif /* LINUX_VERSION_CODE */
@@ -287,6 +287,24 @@ static int DEVINIT rt_pci_probe(struct pci_dev *pdev, const struct pci_device_id
 					(ULONG)pci_resource_start(pdev, 0), (ULONG)csr_addr, pdev->irq));
 	}
 
+#ifdef RT_SECURE_DMA
+	/* Map secure memory area to our pci_dev, for future dma buffer memory allocations */
+	/* The numbers here will need to be changed to match the platform. Currently 16MBytes
+	 * are allocated at address 256Mbyte
+	 */
+
+	/* Example of code for ST platform */
+
+	DBGPRINT(RT_DEBUG_OFF, ("%s(): RT_SECURE_DMA prepare\n", __FUNCTION__));
+
+	if( ! dma_declare_coherent_memory(&(pdev->dev), 0x10000000UL, 0x10000000UL, 0x01000000UL,
+									  DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE ) )
+	{
+		DBGPRINT(RT_DEBUG_OFF, ("%s(): dma_declare_coherent_memory failed!\n", __FUNCTION__));
+		goto err_out_iounmap;
+	}
+
+#endif
 	/* Set DMA master */
 	pci_set_master(pdev);
 
@@ -446,6 +464,9 @@ static VOID DEVEXIT rt_pci_remove(struct pci_dev *pci_dev)
 		release_mem_region(pci_resource_start(pci_dev, 0), pci_resource_len(pci_dev, 0));
 	}
 
+#ifdef RT_SECURE_DMA
+	dma_release_declared_memory(&(pci_dev->dev));
+#endif
 	/* Free the root net_device */
 	RtmpOSNetDevFree(net_dev);
 }

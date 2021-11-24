@@ -89,27 +89,6 @@
 #define EEPROM_DEFAULT_FILE_PATH                     "/etc_ro/wlan/RT2880_RT2820_AP_2T3R_V1_6.bin"
 #endif /* EEPROM_DEFAULT_FILE_PATH */
 
-#ifdef RTMP_FLASH_SUPPORT
-static USHORT EE_FLASH_ID_LIST[]={
-
-#ifdef RT6352
-	0x6352,
-	0x7620,
-#endif /* RT6352 */
-
-
-
-#ifdef MT76x2
-#ifdef RTMP_MAC_PCI
-	0x7662,
-#endif /* RTMP_MAC_PCI */
-#endif /* MT76x0 */
-
-};
-
-#define EE_FLASH_ID_NUM  (sizeof(EE_FLASH_ID_LIST) / sizeof(USHORT))
-#endif /* RTMP_FLASH_SUPPORT */
-
 /* For ioctl check usage */
 #define EEPROM_IS_PROGRAMMED		0x80
 
@@ -830,6 +809,8 @@ int rtmp_ee_prom_write16(
 NDIS_STATUS rtmp_nv_init(
 	IN struct _RTMP_ADAPTER *pAd);
 
+int rtmp_get_flash_id_num(VOID);
+
 int rtmp_ee_flash_read(
 	IN struct _RTMP_ADAPTER *pAd,
 	IN USHORT 			Offset,
@@ -848,6 +829,9 @@ VOID rtmp_ee_flash_write_all(
 	IN struct _RTMP_ADAPTER *pAd,
 	IN USHORT 			*Data);
 
+INT Set_LoadEepromBufferFromFlash_Proc(
+	IN struct _RTMP_ADAPTER *pAd,
+    IN PSTRING arg);
 #endif /* defined(RTMP_RBUS_SUPPORT) || defined(RTMP_FLASH_SUPPORT) */
 
 
@@ -908,4 +892,5 @@ INT Set_EepromBufferWriteBack_Proc(
 INT RtmpChipOpsEepromHook(struct _RTMP_ADAPTER *pAd, INT infType);
 
 BOOLEAN rtmp_get_default_bin_file_by_chip(struct _RTMP_ADAPTER *pAd, UINT32 ChipVersion, PSTRING *pBinFileName);
+UCHAR RtmpEepromGetDefault(struct _RTMP_ADAPTER *pAd);
 #endif /* __EEPROM_H__ */

@@ -5503,7 +5503,6 @@ VOID RT6352_ReCalibration(
 void RT6352_UpdateRssiForChannelModel(RTMP_ADAPTER * pAd)
 {
 	INT32 rx0_rssi, rx1_rssi;
-	UINT32 bbp_valuse = 0;
 	
 #ifdef CONFIG_AP_SUPPORT
 	IF_DEV_CONFIG_OPMODE_ON_AP(pAd)
@@ -5539,8 +5538,8 @@ static VOID RT6352_AsicDynamicVgaGainControl(
 		(pAd->bCalibrationDone)
 		)
 	{
-		UCHAR BbpReg = 0, bbp_196 = 0;
-                UCHAR VgaGainLowerBound = 0x10;
+		UCHAR BbpReg = 0;
+        UCHAR VgaGainLowerBound = 0x10;
 		
 
 		if (((pAd->chipCap.avg_rssi_all <= -76) && (pAd->CommonCfg.BBPCurrentBW == BW_80))

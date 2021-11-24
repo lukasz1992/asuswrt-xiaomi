@@ -26,6 +26,7 @@
 /* SHould not refer to this constant anymore */
 //#define RSSI_TO_DBM_OFFSET 120 /* RSSI-115 = dBm */
 
+
 typedef struct {
 	ULONG dirtyness[MAX_NUM_OF_CHANNELS+1];
 	ULONG ApCnt[MAX_NUM_OF_CHANNELS+1];

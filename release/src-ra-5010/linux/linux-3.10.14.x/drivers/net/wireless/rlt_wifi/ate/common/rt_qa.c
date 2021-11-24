@@ -1067,7 +1067,6 @@ INT DO_RACFG_CMD_ATE_MT76x2_Calibration(
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
 	IN  struct ate_racfghdr *pRaCfg)
 {
-	PATE_INFO pATEInfo = &(pAd->ate);
 	USHORT length;
 	UINT32 size, cal_id, param0;
 
@@ -1370,7 +1369,7 @@ static  INT DO_RACFG_CMD_ATE_START_TX_FRAME(
 	return NDIS_STATUS_SUCCESS;
 }	
 
-
+#ifdef MT76x2
 static  INT DO_RACFG_CMD_ATE_START_TX_FRAME_V2(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
@@ -1394,7 +1393,7 @@ static  INT DO_RACFG_CMD_ATE_START_TX_FRAME_V2(
 		pATEInfo->TxCount = 0xFFFFFFFF;
 	else
 		pATEInfo->TxCount = TxCount;
-	DBGPRINT(RT_DEBUG_TRACE, ("DO_RACFG_CMD_ATE_START_TX_FRAME_V2 (TxCount = %lu)\n", pATEInfo->TxCount));
+	DBGPRINT(RT_DEBUG_TRACE, ("DO_RACFG_CMD_ATE_START_TX_FRAME_V2 (TxCount = %u)\n", pATEInfo->TxCount));
 
 	pATEInfo->TxLength = TxLength;
 
@@ -1455,13 +1454,14 @@ static	INT DO_RACFG_CMD_ATE_SET_IPG(
 	value = OS_NTOHS(value);
 	pATEInfo->IPG = value;
 	DBGPRINT(RT_DEBUG_TRACE,("set pATEInfo->IPG : (%d)\n",pATEInfo->IPG));
-	snprintf((char *)str, sizeof(str), "%d", value);
+	snprintf((char *)str, sizeof(str), "%lu", value);
 	Set_ATE_IPG_Proc(pAd, str);
 	
 	ResponseToGUI(pRaCfg, wrq, sizeof(pRaCfg->status), NDIS_STATUS_SUCCESS);
 
 	return NDIS_STATUS_SUCCESS;
 }
+#endif /* MT76x2 */
 
 
 static  INT DO_RACFG_CMD_ATE_SET_BW(
@@ -1558,14 +1558,12 @@ static  INT DO_RACFG_CMD_ATE_SET_TX_POWER2(
 }
 #endif /* DOT11N_SS3_SUPPORT */
 
-
+#ifdef MT76x2
 static  INT DO_RACFG_CMD_ATE_TX_POWER_EVAL(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
 	IN  struct ate_racfghdr *pRaCfg)
 {
-	PATE_INFO pATEInfo = &(pAd->ate);
-
 	DBGPRINT(RT_DEBUG_TRACE,("DO_RACFG_CMD_ATE_TX_POWER_EVAL\n"));
 	
 	Set_ATE_TX_POWER_EVALUATION_Proc(pAd, "1");
@@ -1574,7 +1572,7 @@ static  INT DO_RACFG_CMD_ATE_TX_POWER_EVAL(
 
 	return NDIS_STATUS_SUCCESS;
 }
-
+#endif
 
 static  INT DO_RACFG_CMD_ATE_SET_FREQ_OFFSET(
 	IN	PRTMP_ADAPTER	pAd,
@@ -1597,6 +1595,8 @@ static  INT DO_RACFG_CMD_ATE_SET_FREQ_OFFSET(
 
 	return NDIS_STATUS_SUCCESS;
 }
+
+#ifdef MT76x2
 static INT DO_RACFG_CMD_ATE_SET_AUTO_RESPONDER(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
@@ -1618,6 +1618,7 @@ static INT DO_RACFG_CMD_ATE_SET_AUTO_RESPONDER(
 
 	return NDIS_STATUS_SUCCESS;
 }
+
 static  INT DO_RACFG_CMD_ATE_SET_TSSI_ON_OFF(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
@@ -1625,7 +1626,6 @@ static  INT DO_RACFG_CMD_ATE_SET_TSSI_ON_OFF(
 {
 	PATE_INFO pATEInfo = &(pAd->ate);
 	SHORT    value = 0;
-	UINT32 ret;
 
 	DBGPRINT(RT_DEBUG_TRACE,("DO_RACFG_CMD_ATE_SET_TSSI_ON_OFF\n"));				
 
@@ -1669,6 +1669,7 @@ static  INT DO_RACFG_CMD_ATE_SET_TSSI_ON_OFF(
 
 	return NDIS_STATUS_SUCCESS;
 }
+#endif 
 
 static  INT DO_RACFG_CMD_ATE_GET_STATISTICS(
 	IN	PRTMP_ADAPTER	pAd,
@@ -1882,14 +1883,13 @@ static  INT DO_RACFG_CMD_ATE_SET_ADDR3(
 	return NDIS_STATUS_SUCCESS;
 }
 
-
+#ifdef MT76x2
 static  INT DO_RACFG_CMD_ATE_SET_FIXED_PAYLOAD(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
 	IN  struct ate_racfghdr *pRaCfg)
 {
 	SHORT    value = 0;
-	PATE_INFO pATEInfo = &(pAd->ate);
 
 	memcpy((PUCHAR)&value, (PUCHAR)&(pRaCfg->status), 2);
 	value = OS_NTOHS(value);
@@ -1904,7 +1904,7 @@ static  INT DO_RACFG_CMD_ATE_SET_FIXED_PAYLOAD(
 
 	return NDIS_STATUS_SUCCESS;
 }
-
+#endif
 
 static  INT DO_RACFG_CMD_ATE_SET_RATE(
 	IN	PRTMP_ADAPTER	pAd,
@@ -1936,6 +1936,7 @@ static  INT DO_RACFG_CMD_ATE_SET_RATE(
 
 
 #ifdef DOT11_VHT_AC
+#ifdef MT76x2
 static  INT DO_RACFG_CMD_ATE_SET_VHT_NSS(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
@@ -1964,6 +1965,7 @@ static  INT DO_RACFG_CMD_ATE_SET_VHT_NSS(
 
 	return NDIS_STATUS_SUCCESS;
 }
+#endif /* MT76x2 */
 #endif /* VHT_SUPPORT */
 
 static  INT DO_RACFG_CMD_ATE_SET_TX_FRAME_LEN(
@@ -2213,13 +2215,13 @@ static  INT DO_RACFG_CMD_ATE_BBP_WRITE_BULK(
 	return NDIS_STATUS_SUCCESS;
 }
 
-
+#ifdef MT76x2
 static  INT DO_RACFG_CMD_ATE_MPS_SetSeqData(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
 	IN  struct ate_racfghdr *pRaCfg)
 {
-	UINT iCount,length=0,seqdata_test=0,i=0,Value=0;
+	UINT iCount,length=0;
 
 	PATE_INFO pATEInfo = &(pAd->ate);
 	
@@ -2310,7 +2312,7 @@ static  INT DO_RACFG_CMD_ATE_MPS_SetPowerGain(
 
 	return NDIS_STATUS_SUCCESS;
 }
-
+#endif /* MT76x2 */
 
 static INT MPSThread(IN ULONG Context)
 {
@@ -2318,9 +2320,7 @@ static INT MPSThread(IN ULONG Context)
 	PRTMP_ADAPTER	pAd = NULL;
 	PATE_INFO 		pATEInfo = NULL;
 	USHORT i;
-	NDIS_STATUS		ret;
 	UINT32 MTxCycle, MacReg = 0;
-	int 	Status = 0;
 
 	pTask = (RTMP_OS_TASK *)Context;
 	pAd = (PRTMP_ADAPTER)RTMP_OS_TASK_DATA_GET(pTask);
@@ -3298,14 +3298,12 @@ static  INT DO_RACFG_CMD_ATE_TXBF_VERIFY_NOCOMP(
 }
 #endif /* TXBF_SUPPORT */
 
-
+#ifdef MT76x2
 static  INT DO_RACFG_CMD_ATE_GET_HW_COUNTER(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	RTMP_IOCTL_INPUT_STRUCT	*wrq,
 	IN  struct ate_racfghdr *pRaCfg)
-{
-	PATE_INFO pATEInfo = &(pAd->ate);
-	
+{	
 	DBGPRINT(RT_DEBUG_TRACE,("DO_RACFG_CMD_ATE_GET_HW_COUNTER\n"));
 
 	memcpy_exl(pAd, &pRaCfg->data[0], (UCHAR *)&pAd->WlanCounters.FCSErrorCount.u.LowPart, 4);
@@ -3317,7 +3315,7 @@ static  INT DO_RACFG_CMD_ATE_GET_HW_COUNTER(
 
 	return NDIS_STATUS_SUCCESS;
 }
-
+#endif /* MT76x2 */
 
 static INT32 DO_RACFG_CMD_ATE_SHOW_PARAM(
 	IN	PRTMP_ADAPTER	pAd,

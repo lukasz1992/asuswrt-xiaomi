@@ -155,7 +155,7 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
 			{
 				pEntry->MaxSupportedRate = RATE_11;
 				pEntry->CurrTxRate = RATE_11;
-				NdisZeroMemory(pEntry, sizeof(MAC_TABLE_ENTRY));				
+				NdisZeroMemory(pEntry, sizeof(MAC_TABLE_ENTRY));
 #ifdef FIFO_EXT_SUPPORT
 				pEntry->hwFifoExtIdx = hwFifoExtIdx;
 				pEntry->bUseHwFifoExt = bUseHwFifoExt;
@@ -534,6 +534,11 @@ BOOLEAN MacTableDeleteEntry(RTMP_ADAPTER *pAd, USHORT wcid, UCHAR *pAddr)
 	if (wcid >= MAX_LEN_OF_MAC_TABLE)
 		return FALSE;
 
+	DBGPRINT(RT_DEBUG_TRACE, ("MacTableDelete Entry->wcid=%d\n",wcid));
+
+	if (pAddr != NULL)
+		DBGPRINT(RT_DEBUG_TRACE, ("MacTableDelete %02x:%02x:%02x:%02x:%02x:%02x\n",PRINT_MAC(pAddr)));
+
 	NdisAcquireSpinLock(&pAd->MacTabLock);
 
 	HashIdx = MAC_ADDR_HASH_INDEX(pAddr);
@@ -541,6 +546,11 @@ BOOLEAN MacTableDeleteEntry(RTMP_ADAPTER *pAd, USHORT wcid, UCHAR *pAddr)
 
 	if (pEntry && !IS_ENTRY_NONE(pEntry))
 	{
+#ifdef CONFIG_WIFI_PKT_FWD
+		if(wf_fwd_delete_entry_inform_hook)
+			wf_fwd_delete_entry_inform_hook(pEntry->Addr);
+#endif /* CONFIG_WIFI_PKT_FWD */
+
 		/* ENTRY PREEMPTION: Cancel all timers */
 		RTMPCancelTimer(&pEntry->RetryTimer, &Cancelled);
 		RTMPCancelTimer(&pEntry->EnqueueStartForPSKTimer, &Cancelled);
@@ -930,10 +940,10 @@ VOID MacTableReset(RTMP_ADAPTER *pAd)
 #ifdef RTMP_MAC_PCI
 		RTMP_IRQ_LOCK(&pAd->irq_lock, IrqFlags);
 #endif /* RTMP_MAC_PCI */
-		DBGPRINT(RT_DEBUG_TRACE, ("McastPsQueue.Number %ld...\n", pAd->MacTab.McastPsQueue.Number));
+		DBGPRINT(RT_DEBUG_TRACE, ("McastPsQueue.Number %u...\n", pAd->MacTab.McastPsQueue.Number));
 		if (pAd->MacTab.McastPsQueue.Number > 0)
 			APCleanupPsQueue(pAd, &pAd->MacTab.McastPsQueue);
-		DBGPRINT(RT_DEBUG_TRACE, ("2McastPsQueue.Number %ld...\n", pAd->MacTab.McastPsQueue.Number));
+		DBGPRINT(RT_DEBUG_TRACE, ("2McastPsQueue.Number %u...\n", pAd->MacTab.McastPsQueue.Number));
 
 		/* ENTRY PREEMPTION: Zero Mac Table but entry's content */
 /*		NdisZeroMemory(&pAd->MacTab, sizeof(MAC_TABLE));*/

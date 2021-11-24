@@ -37,7 +37,6 @@ RTMP_SRC_DIR = $(RT28xx_DIR)/RT$(MODULE)
 
 #PLATFORM: Target platform
 PLATFORM = PC
-#PLATFORM = ARM
 #PLATFORM = 5VT
 #PLATFORM = IKANOS_V160
 #PLATFORM = IKANOS_V180
@@ -205,11 +204,6 @@ LINUX_SRC = /lib/modules/$(shell uname -r)/build
 #LINUX_SRC = /usr/src/linux-2.4
 LINUX_SRC_MODULE = /lib/modules/$(shell uname -r)/kernel/drivers/net/wireless/
 CROSS_COMPILE = 
-endif
-
-ifeq ($(PLATFORM),ARM)
-LINUX_SRC = /home/freddy/Mediatek/SDK4320_Linux_Kernel_3.x/RT288x_SDK/source/linux-3.10.14.x  
-CROSS_COMPILE = /opt/buildroot-gcc463/usr/bin/mipsel-linux-
 endif
 
 ifeq ($(PLATFORM),INTELP6)
@@ -400,19 +394,8 @@ else
 ifeq ($(PLATFORM),FREESCALE8377)
 	$(MAKE) ARCH=powerpc CROSS_COMPILE=$(CROSS_COMPILE) -C  $(LINUX_SRC) SUBDIRS=$(RT28xx_DIR)/os/linux modules
 else
-ifeq ($(PLATFORM),ARM)
-	$(MAKE) ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE) -C $(LINUX_SRC) SUBDIRS=$(RT28xx_DIR)/os/linux modules
-#	Pls make sure below configs are included your kernel configuration.
-#     CONFIG_WIRELESS=y
-#     CONFIG_WIRELESS_EXT=y
-#     CONFIG_WEXT_CORE=y
-#     CONFIG_WEXT_PROC=y
-#     CONFIG_WEXT_SPY=y
-#     CONFIG_WEXT_PRIV=y
-else
 	$(MAKE) -C $(LINUX_SRC) SUBDIRS=$(RT28xx_DIR)/os/linux modules
-endif	
-endif	
+endif
 endif
 
 ifeq ($(OSABL),YES)

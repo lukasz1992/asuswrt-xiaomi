@@ -57,6 +57,39 @@
 #define BBP_R182			182
 // TODO: ---End
 
+#define BIT0    (1 << 0)
+#define BIT1	(1 << 1)
+#define BIT2	(1 << 2)
+#define BIT3	(1 << 3)
+#define BIT4	(1 << 4)
+#define BIT5	(1 << 5)
+#define BIT6	(1 << 6)
+#define BIT7	(1 << 7)
+#define BIT8	(1 << 8)
+#define BIT9	(1 << 9)
+#define BIT10	(1 << 10)
+#define BIT11	(1 << 11)
+#define BIT12	(1 << 12)
+#define BIT13	(1 << 13)
+#define BIT14	(1 << 14)
+#define BIT15	(1 << 15)
+#define BIT16	(1 << 16)
+#define BIT17	(1 << 17)
+#define BIT18	(1 << 18)
+#define BIT19	(1 << 19)
+#define BIT20	(1 << 20)
+#define BIT21	(1 << 21)
+#define BIT22	(1 << 22)
+#define BIT23	(1 << 23)
+#define BIT24	(1 << 24)
+#define BIT25	(1 << 25)
+#define BIT26	(1 << 26)
+#define BIT27	(1 << 27)
+#define BIT28	(1 << 28)
+#define BIT29	(1 << 29)
+#define BIT30	(1 << 30)
+#define BIT31	(1 << 31)
+
 typedef struct _ATE_CHIP_STRUCT {
 	/* functions */
 	VOID	(*ChannelSwitch)(PRTMP_ADAPTER pAd);
@@ -153,6 +186,8 @@ typedef struct _ATE_INFO {
 	BOOLEAN bDPDEnable;	/* Set DPD Calibration Enable */
 #endif /* RT6352 */
 	BOOLEAN bLowTemperature; /* Trigger Temperature Sensor */
+	BOOLEAN bTestTimeReduction;/* Set ATE test time reduction. */
+	
 #ifdef RTMP_INTERNAL_TX_ALC
 #if defined(RT3350) || defined(RT3352)
 	BOOLEAN bTSSICalbrEnableG; /* Enable TSSI calibration */
@@ -692,7 +727,7 @@ CHAR ATEGetDesiredTSSI(
 
 #endif /* RTMP_INTERNAL_TX_ALC */
 
-#ifdef RTMP_TEMPERATURE_CALIBRATION
+#if defined(RTMP_TEMPERATURE_CALIBRATION) || defined(RTMP_TEMPERATURE_COMPENSATION)
 INT Set_ATE_TEMP_CAL_Proc(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	PSTRING			arg);
@@ -700,7 +735,7 @@ INT Set_ATE_TEMP_CAL_Proc(
 INT Set_ATE_SHOW_TSSI_Proc(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	PSTRING			arg);
-#endif /* RTMP_TEMPERATURE_CALIBRATION */
+#endif /* defined(RTMP_TEMPERATURE_CALIBRATION) || defined(RTMP_TEMPERATURE_COMPENSATION) */
 
 #ifdef RT6352
 #ifdef RTMP_TEMPERATURE_CALIBRATION
@@ -711,6 +746,7 @@ INT RT6352_ATETempCalibration(
 #endif /* RT6352 */
 
 #ifdef RTMP_TEMPERATURE_COMPENSATION
+
 
 INT Set_ATE_READ_EXTERNAL_TSSI_Proc(
 	IN	PRTMP_ADAPTER	pAd,
@@ -903,6 +939,20 @@ INT	Set_ATE_TXSOUNDING_Proc(
 	IN	PRTMP_ADAPTER	pAd, 
 	IN	PSTRING			arg);
 
+INT ate_txbf_get_chan_idx(
+    IN RTMP_ADAPTER *pAd,
+	IN UCHAR channel,
+	IN UCHAR mode);
+
+INT ate_txbf_chan_group_base_idx(
+    IN RTMP_ADAPTER *pAd,
+	IN UCHAR channel);
+
+BOOLEAN rtmp_ate_txbf_fix_tank_code(
+         IN RTMP_ADAPTER *pAd,
+         IN UCHAR channel,
+         IN BOOLEAN  CalibMode);
+
 INT	Set_ATE_TXBF_DIVCAL_Proc(
 	IN	PRTMP_ADAPTER	pAd,
 	IN	PSTRING			arg);
@@ -925,9 +975,17 @@ INT Set_ATE_TXBF_Gd_Verify_Proc(
 
 INT Set_ATE_TXBF_Gd_Verify_NoComp_Proc(
 	IN	PRTMP_ADAPTER	pAd, 
-	IN	PSTRING			arg);
+	IN  PSTRING         arg);
 
 INT Set_ATE_TXBF_Gd_Phase_Cal_and_Verify_Proc(
+	IN	PRTMP_ADAPTER	pAd, 
+	IN	PSTRING			arg);
+
+INT Set_ATE_TXBF_Gd_Phase_Cal_Init_Verify_Proc(
+	IN	PRTMP_ADAPTER	pAd, 
+	IN	PSTRING			arg);
+
+INT Set_ATE_TXBF_Gd_Check_Error_Proc(
 	IN	PRTMP_ADAPTER	pAd, 
 	IN	PSTRING			arg);
 
@@ -954,6 +1012,10 @@ INT Set_ATE_ForceBBP_Proc(
 	IN	PSTRING			arg);
 #endif /* TXBF_SUPPORT */
 
+
+INT	Set_ATE_TTR_Proc(
+	IN	PRTMP_ADAPTER	pAd, 
+	IN	PSTRING			arg);
 
 INT	Set_ATE_Show_Proc(
 	IN	PRTMP_ADAPTER	pAd, 

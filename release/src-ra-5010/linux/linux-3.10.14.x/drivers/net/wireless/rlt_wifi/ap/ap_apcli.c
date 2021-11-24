@@ -243,7 +243,12 @@ BOOLEAN ApCliCheckHt(
 	NdisMoveMemory(pApCliEntry->RxMcsSet, pHtCapability->MCSSet, 16);
 
 	/* choose smaller setting */
+#ifdef APCLI_AUTO_BW_SUPPORT
+	aux_ht_cap->HtCapInfo.ChannelWidth = pAddHtInfo->AddHtInfo.RecomWidth & pApCliEntry->wdev.bw;
+#else
 	aux_ht_cap->HtCapInfo.ChannelWidth = pAddHtInfo->AddHtInfo.RecomWidth & rt_ht_cap->ChannelWidth;
+#endif /* APCLI_AUTO_BW_SUPPORT */
+
 	aux_ht_cap->HtCapInfo.GF =  pHtCapability->HtCapInfo.GF & rt_ht_cap->GF;
 
 	/* Send Assoc Req with my HT capability. */
@@ -261,6 +266,13 @@ BOOLEAN ApCliCheckHt(
 		aux_ht_cap->ExtHtCapInfo.RDGSupport = pHtCapability->ExtHtCapInfo.RDGSupport;
 	}
 	
+	if (pAd->CommonCfg.Channel <= 14) {
+		pApCliEntry->MlmeAux.HtCapability.HtCapInfo.ChannelWidth = pHtCapability->HtCapInfo.ChannelWidth;
+		pApCliEntry->MlmeAux.AddHtInfo.AddHtInfo.RecomWidth = pAddHtInfo->AddHtInfo.RecomWidth;
+		pApCliEntry->MlmeAux.AddHtInfo.AddHtInfo.ExtChanOffset = pAddHtInfo->AddHtInfo.ExtChanOffset;
+		pApCliEntry->MlmeAux.AddHtInfo.ControlChan = pAddHtInfo->ControlChan;
+	}
+	
 	/*COPY_AP_HTSETTINGS_FROM_BEACON(pAd, pHtCapability); */
 	return TRUE;
 }
@@ -274,9 +286,7 @@ BOOLEAN ApCliCheckVht(
 	IN VHT_CAP_IE *vht_cap,
 	IN VHT_OP_IE *vht_op)
 {
-	APCLI_STRUCT *pApCliEntry = NULL;
 	VHT_CAP_INFO *vht_cap_info = &vht_cap->vht_cap;
-	pApCliEntry = &pAd->ApCfg.ApCliTab[0];
 
 	// TODO: shiang-6590, not finish yet!!!!
 
@@ -391,6 +401,8 @@ BOOLEAN ApCliLinkUp(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 #ifdef APCLI_CERT_SUPPORT	
 	UINT32 Data;
 #endif /* APCLI_CERT_SUPPORT */
+	UCHAR   PhyMode = pAd->CommonCfg.PhyMode;
+	
 	do
 	{
 		if ((ifIndex < MAX_APCLI_NUM)
@@ -474,6 +486,10 @@ BOOLEAN ApCliLinkUp(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 #endif /* APCLI_CONNECTION_TRIAL */	
 
 		wdev = &pApCliEntry->wdev;
+#ifdef APCLI_AUTO_BW_SUPPORT
+        PhyMode = wdev->PhyMode;
+#endif /* APCLI_AUTO_BW_SUPPORT */
+		
 		DBGPRINT(RT_DEBUG_TRACE, ("!!! APCLI LINK UP - IF(apcli%d) AuthMode(%d)=%s, WepStatus(%d)=%s!\n",
 					ifIndex, 
 					wdev->AuthMode, GetAuthMode(wdev->AuthMode),
@@ -487,9 +503,13 @@ BOOLEAN ApCliLinkUp(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 			if (wf_fwd_get_rep_hook)
 				wf_fwd_get_rep_hook(pAd->CommonCfg.EtherTrafficBand);
 			
-			if (wf_fwd_entry_insert_hook)
-				wf_fwd_entry_insert_hook (wdev->if_dev, pAd->net_dev);
+			if (wf_fwd_entry_insert_hook) 
+				wf_fwd_entry_insert_hook (wdev->if_dev, pAd->net_dev, pAd);
+			
+			if (wf_fwd_insert_repeater_mapping_hook)
+				wf_fwd_insert_repeater_mapping_hook (pAd, &pAd->ApCfg.ReptCliEntryLock, &pAd->ApCfg.ReptCliHash[0], &pAd->ApCfg.ReptMapHash[0], &pAd->ApCfg.ApCliTab[0].wdev.if_addr);
 		}
+
 #endif /* CONFIG_WIFI_PKT_FWD */
 
 		/* Insert the Remote AP to our MacTable. */
@@ -737,13 +757,10 @@ BOOLEAN ApCliLinkUp(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 
 
 #ifdef DOT11_VHT_AC
-			if (WMODE_CAP_AC(pAd->CommonCfg.PhyMode) && pApCliEntry->MlmeAux.vht_cap_len &&  pApCliEntry->MlmeAux.vht_op_len)
+			if (WMODE_CAP_AC(PhyMode) && pApCliEntry->MlmeAux.vht_cap_len &&  pApCliEntry->MlmeAux.vht_op_len)
 			{
 			    vht_mode_adjust(pAd, pMacEntry, &(pApCliEntry->MlmeAux.vht_cap), &(pApCliEntry->MlmeAux.vht_op));
 				ApCliCheckVht(pAd,pMacEntry->Aid, pMacEntry,&(pApCliEntry->MlmeAux.vht_cap), &(pApCliEntry->MlmeAux.vht_op));
-#ifdef VHT_TXBF_SUPPORT
-				NdisMoveMemory(&pMacEntry->vht_cap_ie.vht_cap, &pApCliEntry->MlmeAux.vht_cap.vht_cap, sizeof(VHT_CAP_INFO));
-#endif /* VHT_TXBF_SUPPORT */
 			}
 #endif /* DOT11_VHT_AC */
 
@@ -986,15 +1003,15 @@ VOID ApCliLinkDown(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 		{
 			CliIdx = ((ifIndex - 64) % 16);
 			ifIndex = ((ifIndex - 64) / 16);
-			DBGPRINT(RT_DEBUG_ERROR, ("!!! REPEATER CLI LINK DOWN - IF(apcli%d) Cli %d !!!\n", ifIndex, CliIdx));
+			DBGPRINT(RT_DEBUG_OFF, ("!!! REPEATER CLI LINK DOWN - IF(apcli%d) Cli %d !!!\n", ifIndex, CliIdx));
 		}
 		else
 #endif /* MAC_REPEATER_SUPPORT */
-		DBGPRINT(RT_DEBUG_TRACE, ("!!! APCLI LINK DOWN - IF(apcli%d)!!!\n", ifIndex));
+		DBGPRINT(RT_DEBUG_OFF, ("!!! APCLI LINK DOWN - IF(apcli%d)!!!\n", ifIndex));
 	}
 	else
 	{
-		DBGPRINT(RT_DEBUG_TRACE, ("!!! ERROR : APCLI LINK DOWN - IF(apcli%d)!!!\n", ifIndex));
+		DBGPRINT(RT_DEBUG_OFF, ("!!! ERROR : APCLI LINK DOWN - IF(apcli%d)!!!\n", ifIndex));
 		return;
 	}
 
@@ -1012,14 +1029,14 @@ VOID ApCliLinkDown(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 #endif /* MAC_REPEATER_SUPPORT */
 	{
 		if (wf_fwd_entry_delete_hook)
-			wf_fwd_entry_delete_hook (pApCliEntry->wdev.if_dev, pAd->net_dev);
+			wf_fwd_entry_delete_hook (pApCliEntry->wdev.if_dev, pAd->net_dev, 1);
 	}
 #ifdef MAC_REPEATER_SUPPORT
 	else
 	{
 		if (packet_source_delete_entry_hook)
 			packet_source_delete_entry_hook(100);
-	}	
+	}
 #endif /* MAC_REPEATER_SUPPORT */
 #endif /* CONFIG_WIFI_PKT_FWD */
 
@@ -1035,7 +1052,32 @@ VOID ApCliLinkDown(RTMP_ADAPTER *pAd, UCHAR ifIndex)
 #endif /* MAC_REPEATER_SUPPORT */
 	MacTabWCID = pApCliEntry->MacTabWCID;
 
+#ifdef MAC_REPEATER_SUPPORT
+	if (CliIdx != 0xFF)
+	{
+		printk("ApCliLinkDown CliIdx != 0xFF(1) MacTabWCID=%d addr=(%02x:%02x:%02x:%02x:%02x:%02x)\n",MacTabWCID,PRINT_MAC(pAd->MacTab.Content[MacTabWCID].Addr));
+		printk("ApCliLinkDown CliIdx != 0xFF(2) pApCliEntry->MacTabWCID =%d addr=(%02x:%02x:%02x:%02x:%02x:%02x)\n",pApCliEntry->MacTabWCID,PRINT_MAC(APCLI_ROOT_BSSID_GET(pAd, pApCliEntry->MacTabWCID)));
+		
+	} else
+#endif /* MAC_REPEATER_SUPPORT */	
+	{
+		printk("ApCliLinkDown CliIdx == 0xFF(1) MacTabWCID=%d addr=(%02x:%02x:%02x:%02x:%02x:%02x)\n",MacTabWCID,PRINT_MAC(pAd->MacTab.Content[MacTabWCID].Addr));
+		printk("ApCliLinkDown CliIdx == 0xFF(2) pApCliEntry->MacTabWCID =%d addr=(%02x:%02x:%02x:%02x:%02x:%02x)\n",pApCliEntry->MacTabWCID,PRINT_MAC(APCLI_ROOT_BSSID_GET(pAd, pApCliEntry->MacTabWCID)));
+	
+	}
+	
+#ifdef MAC_REPEATER_SUPPORT
+	if (CliIdx != 0xFF)
+	{
+		printk("ApCliLinkDown CliIdx != 0xFF MacTabWCID=%d addr=(%02x:%02x:%02x:%02x:%02x:%02x)\n",MacTabWCID,PRINT_MAC(pAd->MacTab.Content[MacTabWCID].Addr));
+    		MacTableDeleteEntry(pAd, MacTabWCID, pAd->MacTab.Content[MacTabWCID].Addr);
+	}
+  	else		
+#endif /* MAC_REPEATER_SUPPORT */			
+  	{
+  		printk("ApCliLinkDown CliIdx == 0xFF MacTabWCID=%d addr=(%02x:%02x:%02x:%02x:%02x:%02x)\n",MacTabWCID, PRINT_MAC(APCLI_ROOT_BSSID_GET(pAd, pApCliEntry->MacTabWCID)));
 	MacTableDeleteEntry(pAd, MacTabWCID, APCLI_ROOT_BSSID_GET(pAd, pApCliEntry->MacTabWCID));
+  	}
 
 #ifdef MAC_REPEATER_SUPPORT
 	if (CliIdx != 0xFF)
@@ -1170,6 +1212,11 @@ VOID ApCliIfDown(RTMP_ADAPTER *pAd)
 	for(ifIndex = 0; ifIndex < MAX_APCLI_NUM; ifIndex++)
 	{
 		pApCliEntry = &pAd->ApCfg.ApCliTab[ifIndex];
+
+#if defined (CONFIG_WIFI_PKT_FWD)
+        if (wf_fwd_entry_delete_hook)
+            wf_fwd_entry_delete_hook (pApCliEntry->wdev.if_dev, pAd->net_dev, 1);
+#endif /* CONFIG_WIFI_PKT_FWD */                                
 		DBGPRINT(RT_DEBUG_TRACE, ("(%s) ApCli interface[%d] startdown.\n", __FUNCTION__, ifIndex));
 
 #ifdef MAC_REPEATER_SUPPORT
@@ -1524,7 +1571,7 @@ BOOLEAN ApCliPeerAssocRspSanity(
     OUT UCHAR *pCkipFlag,
     OUT IE_LISTS *ie_list) 
 {
-	CHAR          IeType, *Ptr;
+	CHAR          IeType;
 	PFRAME_802_11 pFrame = (PFRAME_802_11)pMsg;
 	PEID_STRUCT   pEid;
 	ULONG         Length = 0;
@@ -1533,7 +1580,6 @@ BOOLEAN ApCliPeerAssocRspSanity(
 	*pHtCapabilityLen = 0;
 	*pAddHtInfoLen = 0;
 	COPY_MAC_ADDR(pAddr2, pFrame->Hdr.Addr2);
-	Ptr = (CHAR *) pFrame->Octet;
 	Length += LENGTH_802_11;
         
 	NdisMoveMemory(pCapabilityInfo, &pFrame->Octet[0], 2);
@@ -1799,10 +1845,11 @@ INT ApCliAllowToSendPacket(
 				UINT SrcBufLen;
 				PMAC_TABLE_ENTRY pEntry = NULL;
 				REPEATER_CLIENT_ENTRY *pReptEntry = NULL;
+				UCHAR isLinkValid;
 
 				RTMP_QueryPacketInfo(pPacket, &PacketInfo, &pSrcBufVA, &SrcBufLen);
 
-				pReptEntry = RTMPLookupRepeaterCliEntry(pAd, TRUE, (pSrcBufVA + MAC_ADDR_LEN));
+				pReptEntry = RTMPLookupRepeaterCliEntry(pAd, TRUE, (pSrcBufVA + MAC_ADDR_LEN), TRUE, &isLinkValid);
 				if (pReptEntry)
 				{
 					*pWcid = pReptEntry->MacTabWCID;
@@ -1810,6 +1857,9 @@ INT ApCliAllowToSendPacket(
 				}
 				else
 				{
+					if (!isLinkValid)
+						return FALSE;
+				
 
 					if (RTMPRepeaterVaildMacEntry(pAd, pSrcBufVA + MAC_ADDR_LEN))
 					{
@@ -2412,7 +2462,9 @@ BOOLEAN  ApCliHandleRxBroadcastFrame(
 #ifdef MAC_REPEATER_SUPPORT
 	if (pAd->ApCfg.bMACRepeaterEn)
 	{
-		pReptEntry = RTMPLookupRepeaterCliEntry(pAd, FALSE, pHeader->Addr3);
+		UCHAR isLinkValid;
+	
+		pReptEntry = RTMPLookupRepeaterCliEntry(pAd, FALSE, pHeader->Addr3, TRUE, &isLinkValid);
 		if (pReptEntry)
 			return FALSE;	/* give up this frame */
 	}
@@ -2571,6 +2623,7 @@ VOID ApCliUpdateMlmeRate(RTMP_ADAPTER *pAd, USHORT ifIndex)
 	UCHAR	ProperMlmeRate; /*= RATE_54; */
 	UCHAR	i, j, RateIdx = 12; /* 1, 2, 5.5, 11, 6, 9, 12, 18, 24, 36, 48, 54 */
 	BOOLEAN	bMatch = FALSE;
+	UCHAR   PhyMode = pAd->CommonCfg.PhyMode;
 
 	PAPCLI_STRUCT pApCliEntry = NULL;
 
@@ -2578,8 +2631,11 @@ VOID ApCliUpdateMlmeRate(RTMP_ADAPTER *pAd, USHORT ifIndex)
 		return;
 
 	pApCliEntry = &pAd->ApCfg.ApCliTab[ifIndex];
+#ifdef APCLI_AUTO_BW_SUPPORT
+	PhyMode = pApCliEntry->wdev.PhyMode;	
+#endif /* APCLI_AUTO_BW_SUPPORT */
 
-	switch (pAd->CommonCfg.PhyMode) 
+	switch (PhyMode) 
 	{
 		case (WMODE_B):
 			ProperMlmeRate = RATE_11;
@@ -2770,6 +2826,9 @@ VOID APCli_Init(RTMP_ADAPTER *pAd, RTMP_OS_NETDEV_OP_HOOK *pNetDevOps)
 #endif /* HOSTAPD_SUPPORT */
 		
 		pApCliEntry = &pAd->ApCfg.ApCliTab[idx];
+
+		NdisZeroMemory(&pApCliEntry->ApCliCounter, sizeof(APCLI_COUNTER));
+
 #ifdef APCLI_CONNECTION_TRIAL
 		pApCliEntry->ifIndex = idx;
 		pApCliEntry->pAd = pAd;
@@ -2888,6 +2947,10 @@ VOID ApCli_Remove(RTMP_ADAPTER *pAd)
 BOOLEAN ApCli_Open(RTMP_ADAPTER *pAd, PNET_DEV dev_p)
 {
 	UCHAR ifIndex;
+#if defined (CONFIG_WIFI_PKT_FWD)
+	if (wf_fwd_probe_adapter)
+		wf_fwd_probe_adapter(pAd);
+#endif 
 
 	for (ifIndex = 0; ifIndex < MAX_APCLI_NUM; ifIndex++)
 	{
@@ -3126,10 +3189,8 @@ BOOLEAN ApCliAutoConnectExec(
 VOID ApCliSwitchCandidateAP(
 	IN PRTMP_ADAPTER pAd)
 {
-	POS_COOKIE  	pObj = (POS_COOKIE) pAd->OS_Cookie;
 	BSS_TABLE 		*pSsidBssTab;
-	PAPCLI_STRUCT	pApCliEntry;
-	UCHAR			lastEntryIdx, ifIdx = pObj->ioctl_if;
+	UCHAR			lastEntryIdx;
 
 #ifdef AP_PARTIAL_SCAN_SUPPORT
 	if (pAd->ApCfg.bPartialScanning == TRUE)
@@ -3138,7 +3199,6 @@ VOID ApCliSwitchCandidateAP(
 
 	DBGPRINT(RT_DEBUG_TRACE, ("---> ApCliSwitchCandidateAP()\n"));
 	pSsidBssTab = &pAd->MlmeAux.SsidBssTab;
-	pApCliEntry = &pAd->ApCfg.ApCliTab[ifIdx];
 	
 	/*
 		delete (zero) the previous connected-failled entry and always 
@@ -3329,6 +3389,51 @@ VOID ApCliRxOpenWEPCheck(
 		}
 		if(isMCPkt) pApCliEntry->OpenWEPErrMCPktCnt++;
 	}
+}
+
+
+BOOLEAN ApCli_StatsGet(
+	IN	PRTMP_ADAPTER pAd,
+	IN	RT_CMD_STATS *pStats)
+{
+	INT ifIndex = 0, index;
+
+	/*struct net_device_stats	stats; */
+	for(index = 0; index < MAX_APCLI_NUM; index++)
+	{
+		if (pAd->ApCfg.ApCliTab[index].wdev.if_dev == (PNET_DEV)(pStats->pNetDev))
+		{
+			ifIndex = index;
+			break;
+		}
+	}
+		
+	if(index >= MAX_APCLI_NUM)
+	{
+		DBGPRINT(RT_DEBUG_ERROR, ("rt28xx_ioctl apcli_statsGet can not find apcli I/F\n"));
+		return FALSE;
+	}
+
+	pStats->pStats = pAd->stats;
+
+	pStats->rx_packets = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.ReceivedFragmentCount.QuadPart;
+	pStats->tx_packets = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.TransmittedFragmentCount.QuadPart;
+
+	pStats->rx_bytes = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.ReceivedByteCount;
+	pStats->tx_bytes = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.TransmittedByteCount;
+
+	pStats->rx_errors = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.RxErrors;
+	pStats->tx_errors = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.TxErrors;
+
+	pStats->multicast = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.MulticastReceivedFrameCount.QuadPart;   /* multicast packets received */
+	pStats->collisions = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.OneCollision + pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.MoreCollisions;  /* Collision packets */
+
+	pStats->rx_over_errors = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.RxNoBuffer;                   /* receiver ring buff overflow */
+	pStats->rx_crc_errors = 0;/*pAd->WlanCounters.FCSErrorCount;     // recved pkt with crc error */
+	pStats->rx_frame_errors = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.RcvAlignmentErrors;          /* recv'd frame alignment error */
+	pStats->rx_fifo_errors = pAd->ApCfg.ApCliTab[ifIndex].ApCliCounter.RxNoBuffer;                   /* recv'r fifo overrun */
+
+	return TRUE;
 }
 #endif /* APCLI_SUPPORT */
 

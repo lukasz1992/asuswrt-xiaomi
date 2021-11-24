@@ -571,7 +571,7 @@ VOID ScanNextChannel(RTMP_ADAPTER *pAd, UCHAR OpMode)
 			if (pAd->ApCfg.bPartialScanning == TRUE)
 			{
 				/* Enhance Connectivity & for Hidden Ssid Scanning*/
-				CHAR desiredSsid[MAX_LEN_OF_SSID], backSsid[MAX_LEN_OF_SSID];
+				CHAR backSsid[MAX_LEN_OF_SSID];
 				UCHAR desiredSsidLen, backSsidLen;
 
 				desiredSsidLen= pAd->ApCfg.ApCliTab[0].CfgSsidLen;

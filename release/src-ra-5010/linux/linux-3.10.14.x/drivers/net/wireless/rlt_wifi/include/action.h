@@ -87,12 +87,6 @@ VOID PeerPublicAction(
 	IN MLME_QUEUE_ELEM *Elem);
 
 
-#ifdef CONFIG_AP_SUPPORT
-VOID ApPublicAction(
-	IN PRTMP_ADAPTER pAd, 
-	IN MLME_QUEUE_ELEM *Elem);
-#endif /* CONFIG_AP_SUPPORT */
-
 #ifdef QOS_DLS_SUPPORT
 VOID PeerDLSAction(
     IN PRTMP_ADAPTER pAd, 

@@ -54,6 +54,9 @@ struct chip_map chip_card_id_map[] ={
 	{7620, ""},
 };
 
+#ifdef RTMP_FLASH_SUPPORT
+extern USHORT EE_FLASH_ID_LIST[];
+#endif /* RTMP_FLASH_SUPPORT */
 
 UCHAR RtmpEepromGetDefault(
 	IN RTMP_ADAPTER 	*pAd)
@@ -103,7 +106,6 @@ out:
 static VOID RtmpEepromTypeAdjust(RTMP_ADAPTER *pAd, UCHAR *pE2pType)
 {
 	UINT EfuseFreeBlock=0;
-	BOOLEAN bCalFree;
 
 	eFuseGetFreeBlockCount(pAd, &EfuseFreeBlock);	
 	
@@ -116,12 +118,14 @@ static VOID RtmpEepromTypeAdjust(RTMP_ADAPTER *pAd, UCHAR *pE2pType)
 	else 
 	{
 		USHORT eeFlashId = 0;
-		int listIdx;
+		int listIdx, num_flash_id;
 		BOOLEAN bFound = FALSE;
+		
+		num_flash_id = rtmp_get_flash_id_num();
 
 		rtmp_ee_efuse_read16(pAd, 0, &eeFlashId);
 		DBGPRINT(RT_DEBUG_OFF, ("%s:: eeFlashId = 0x%x.\n", __FUNCTION__, eeFlashId));
-		for(listIdx =0 ; listIdx < EE_FLASH_ID_NUM; listIdx++)
+		for(listIdx =0 ; listIdx < num_flash_id; listIdx++)
 		{
 			if (eeFlashId == EE_FLASH_ID_LIST[listIdx])
 			{			
@@ -153,6 +157,13 @@ INT RtmpChipOpsEepromHook(
 		pAd->E2pAccessMode = E2P_BIN_MODE;
 #endif		
 
+	/* to get profile e2pAccessMode */
+	Status = RTMPReadParametersHook(pAd);
+	if (Status != NDIS_STATUS_SUCCESS)
+	{
+		DBGPRINT_ERR(("RTMPReadParametersHook failed, Status[=0x%08x]\n",Status));		
+	}
+	
 
 	e2p_type = pAd->E2pAccessMode;
 

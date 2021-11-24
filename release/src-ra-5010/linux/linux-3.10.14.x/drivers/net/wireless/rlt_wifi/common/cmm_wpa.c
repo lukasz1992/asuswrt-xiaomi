@@ -253,10 +253,35 @@ VOID WpaEAPOLKeyAction(
 	{
 #ifdef MAC_REPEATER_SUPPORT
 		if (CliIdx != 0xFF)
+		{
+			DBGPRINT(RT_DEBUG_OFF, ("%s: CliIdx != 0xFF  ifIndex(%d), CliIdx(%d) !!!\n",
+								__FUNCTION__,ifIndex, CliIdx));
+			
+			UCHAR MacTabMax = MAX_LEN_OF_MAC_TABLE;
+
+			if ((pAd->ApCfg.ApCliTab[ifIndex].RepeaterCli[CliIdx].CliValid == FALSE) ||
+				(pAd->ApCfg.ApCliTab[ifIndex].RepeaterCli[CliIdx].CliEnable == FALSE) ||
+				(pAd->ApCfg.ApCliTab[ifIndex].RepeaterCli[CliIdx].MacTabWCID > (MAX_LEN_OF_MAC_TABLE - 1)))
+			{
+				pEntry = NULL;
+
+				DBGPRINT(RT_DEBUG_OFF, ("%s: calculate wrong wcid(%d), ifIndex(%d), CliIdx(%d) !!!\n",
+								__FUNCTION__, pAd->ApCfg.ApCliTab[ifIndex].RepeaterCli[CliIdx].MacTabWCID,
+								ifIndex, CliIdx));
+				break;
+			}
+			else
+			{
 			pEntry = &pAd->MacTab.Content[pAd->ApCfg.ApCliTab[ifIndex].RepeaterCli[CliIdx].MacTabWCID];
+			}
+		}
 		else
 #endif /* MAC_REPEATER_SUPPORT */
+		{
+			DBGPRINT(RT_DEBUG_OFF, ("%s: CliIdx == 0xFF  pHeader->Addr2(%02X-%02X-%02X-%02X-%02X-%02X) !!!\n",
+								__FUNCTION__,PRINT_MAC(pHeader->Addr2)));
 			pEntry = MacTableLookup(pAd, pHeader->Addr2);
+		}
 
 		if (!pEntry || (!IS_ENTRY_CLIENT(pEntry) && !IS_ENTRY_APCLI(pEntry)))		
 			break;
@@ -264,7 +289,7 @@ VOID WpaEAPOLKeyAction(
 		if (pEntry->AuthMode < Ndis802_11AuthModeWPA)
 			break;		
 
-		DBGPRINT(RT_DEBUG_TRACE, ("Receive EAPoL-Key frame from STA %02X-%02X-%02X-%02X-%02X-%02X\n", PRINT_MAC(pEntry->Addr)));
+		DBGPRINT(RT_DEBUG_OFF, ("Receive EAPoL-Key frame from STA %02X-%02X-%02X-%02X-%02X-%02X wcid(%d)\n", PRINT_MAC(pEntry->Addr), pEntry->wcid));
 
 		if (eapol_len > Elem->MsgLen - LENGTH_802_11 - LENGTH_802_1_H)
 		{
@@ -823,7 +848,6 @@ VOID WPAStart4WayHS(
     PEAPOL_PACKET	pEapolFrame;
 	PUINT8			pBssid = NULL;
 	UCHAR			group_cipher = Ndis802_11WEPDisabled;
-	struct wifi_dev *wdev;
 #ifdef CONFIG_AP_SUPPORT
 	MULTISSID_STRUCT *pMbss;
 #endif /* CONFIG_AP_SUPPORT */
@@ -848,7 +872,7 @@ VOID WPAStart4WayHS(
 	        }
 
 		pMbss = (MULTISSID_STRUCT *)pEntry->wdev->func_dev;
-		wdev = pEntry->wdev;
+
 		if (pEntry->wdev != &pMbss->wdev)
 		{
 			DBGPRINT(RT_DEBUG_ERROR, ("[ERROR]WPAStart4WayHS : cannot get binding wdev(%p).\n", pEntry->wdev));
@@ -1177,7 +1201,6 @@ VOID PeerPairMsg2Action(
 {   
 	UCHAR				PTK[80];
     BOOLEAN             Cancelled;
-    PHEADER_802_11      pHeader;
 	UCHAR   			*mpool;
 	PEAPOL_PACKET		pEapolFrame;
 	PEAPOL_PACKET       pMsg2;
@@ -1260,10 +1283,6 @@ VOID PeerPairMsg2Action(
 	}
 #endif /* CONFIG_AP_SUPPORT */
 	
-
-    /* pointer to 802.11 header*/
-	pHeader = (PHEADER_802_11)Elem->Msg;
-
 	/* skip 802.11_header(24-byte) and LLC_header(8) */
 	pMsg2 = (PEAPOL_PACKET)&Elem->Msg[LENGTH_802_11 + LENGTH_802_1_H];       
 	MsgLen = Elem->MsgLen - LENGTH_802_11 - LENGTH_802_1_H;
@@ -1460,7 +1479,6 @@ VOID WPAPairMsg3Retry(
 	UCHAR				default_key = 0;
 	UCHAR				group_cipher = Ndis802_11WEPDisabled;
 	PUINT8				rsnie_ptr = NULL;
-	PUINT8				pmk_ptr = NULL;
 	UCHAR				rsnie_len = 0;
 	UCHAR 				TxTsc[6];
 	UCHAR               Header802_3[LENGTH_802_3];
@@ -1483,7 +1501,6 @@ VOID WPAPairMsg3Retry(
 
 		wdev = &pAd->ApCfg.MBSSID[apidx].wdev;
 		pBssid = wdev->bssid;
-		pmk_ptr = pAd->ApCfg.MBSSID[apidx].PMK;
 		gtk_ptr = pAd->ApCfg.MBSSID[apidx].GTK;
 		group_cipher = wdev->GroupKeyWepStatus;
 		default_key = wdev->DefaultKeyId;
@@ -1594,7 +1611,6 @@ VOID PeerPairMsg3Action(
     IN MAC_TABLE_ENTRY  *pEntry,
     IN MLME_QUEUE_ELEM  *Elem) 
 {
-	PHEADER_802_11		pHeader;
 	UCHAR               Header802_3[14];
 	UCHAR				*mpool;
 	PEAPOL_PACKET		pEapolFrame;
@@ -1649,7 +1665,6 @@ VOID PeerPairMsg3Action(
 		return;
 	
 	/* Record 802.11 header & the received EAPOL packet Msg3*/
-	pHeader	= (PHEADER_802_11) Elem->Msg;
 	pMsg3 = (PEAPOL_PACKET) &Elem->Msg[LENGTH_802_11 + LENGTH_802_1_H];
 	MsgLen = Elem->MsgLen - LENGTH_802_11 - LENGTH_802_1_H;
 
@@ -1792,9 +1807,8 @@ VOID PeerPairMsg4Action(
     IN MLME_QUEUE_ELEM  *Elem) 
 {    
 	PEAPOL_PACKET   	pMsg4;    
-    PHEADER_802_11      pHeader;
-    UINT            	MsgLen;
-    BOOLEAN             Cancelled;
+	UINT            	MsgLen;
+	BOOLEAN             Cancelled;
 	UCHAR				group_cipher = Ndis802_11WEPDisabled;
 
     DBGPRINT(RT_DEBUG_TRACE, ("===> PeerPairMsg4Action\n"));
@@ -1823,9 +1837,6 @@ VOID PeerPairMsg4Action(
 			group_cipher = pAd->ApCfg.MBSSID[apidx].wdev.GroupKeyWepStatus;
 		}
 #endif /* CONFIG_AP_SUPPORT */
-
-        /* pointer to 802.11 header*/
-        pHeader = (PHEADER_802_11)Elem->Msg;
 
 		/* skip 802.11_header(24-byte) and LLC_header(8) */
 		pMsg4 = (PEAPOL_PACKET)&Elem->Msg[LENGTH_802_11 + LENGTH_802_1_H]; 
@@ -1916,6 +1927,7 @@ VOID PeerPairMsg4Action(
 				pR1khEntry = FT_R1khEntryTabLookup(pAd, pEntry->FT_PMK_R1_NAME);
 				if (pR1khEntry != NULL)
 				{
+					pR1khEntry->AuthMode = pEntry->AuthMode;
 					hex_dump("R1KHTab-R0KHID", pR1khEntry->R0khId, pR1khEntry->R0khIdLen);
 					hex_dump("R1KHTab-PairwiseCipher", pR1khEntry->PairwisChipher, 4);
 					hex_dump("R1KHTab-AKM", pR1khEntry->AkmSuite, 4);
@@ -2292,7 +2304,11 @@ VOID EnqueueStartForPSKExec(
 			case EAPOL_START_PSK:								
 				DBGPRINT(RT_DEBUG_TRACE, ("Enqueue EAPoL-Start-PSK for sta(%02x:%02x:%02x:%02x:%02x:%02x) \n", PRINT_MAC(pEntry->Addr)));
 
+#ifdef EAPOL_QUEUE_SUPPORT
+				EAPMlmeEnqueue(pAd, WPA_STATE_MACHINE, MT2_EAPOLStart, 6, &pEntry->Addr, 0);
+#else /* EAPOL_QUEUE_SUPPORT */
 				MlmeEnqueue(pAd, WPA_STATE_MACHINE, MT2_EAPOLStart, 6, &pEntry->Addr, 0);
+#endif /* !EAPOL_QUEUE_SUPPORT */
 				RTMP_MLME_HANDLER(pAd);
 				break;
 #ifdef CONFIG_AP_SUPPORT

@@ -101,11 +101,6 @@ static VOID eFuseWritePhysical(
   	PUCHAR lpOutBuffer,
   	ULONG nOutBufferSize);
 
-static NTSTATUS eFuseWriteRegistersFromBin(
-	IN	PRTMP_ADAPTER	pAd,
-	IN	USHORT Offset, 
-	IN	USHORT Length, 
-	IN	USHORT* pData);
 
 
 /*
@@ -344,12 +339,11 @@ NTSTATUS eFuseRead(
 	IN	USHORT			Length)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
-	UCHAR	EFSROM_AOUT;
 	int	i;
 	
 	for(i=0; i<Length; i+=2)
 	{
-		EFSROM_AOUT = eFuseReadRegisters(pAd, Offset+i, 2, &pData[i/2]);
+		eFuseReadRegisters(pAd, Offset+i, 2, &pData[i/2]);
 	} 
 	return Status;
 }
@@ -1025,10 +1019,8 @@ INT	set_eFuseLoadFromBin_Proc(
 	INT 						retval, memSize;
 	PSTRING					buffer, memPtr;
 	INT						TotalByte= 0;
-	USHORT					*PDATA;
 	UCHAR					SkipData[16] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 	UCHAR					*ptr;
-	UCHAR					index;
 	USHORT					offset = 0;
 	
 	memSize = 128 + MAX_EEPROM_BIN_FILE_SIZE + sizeof(USHORT) * 8;
@@ -1040,7 +1032,6 @@ INT	set_eFuseLoadFromBin_Proc(
 	NdisZeroMemory(memPtr, memSize);
 	src = memPtr; /* kmalloc(128, MEM_ALLOC_FLAG);*/
 	buffer = src + 128;		/* kmalloc(MAX_EEPROM_BIN_FILE_SIZE, MEM_ALLOC_FLAG);*/
-	PDATA = (USHORT*)(buffer + MAX_EEPROM_BIN_FILE_SIZE);	/* kmalloc(sizeof(USHORT)*8,MEM_ALLOC_FLAG);*/
 	ptr = buffer;
 	
  	if(strlen(arg)>0)
@@ -1134,7 +1125,6 @@ INT rtmp_ee_write_to_efuse(
 {
 	USHORT	length = pAd->chipCap.EEPROM_DEFAULT_BIN_SIZE;
 	UCHAR	*ptr = pAd->EEPROMImage;
-	UCHAR	index;
 	USHORT offset = 0;
 	UCHAR SkipData[16] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
@@ -1266,7 +1256,9 @@ INT eFuse_init(RTMP_ADAPTER *pAd)
 {
 	UINT EfuseFreeBlock=0;
 	INT result;
+#ifdef CAL_FREE_IC_SUPPORT
 	BOOLEAN bCalFree;
+#endif /* CAL_FREE_IC_SUPPORT */
 
 	/*RT3572 means 3062/3562/3572*/
 	/*3593 means 3593*/

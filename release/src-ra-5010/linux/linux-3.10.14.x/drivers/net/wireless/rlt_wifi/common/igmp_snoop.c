@@ -214,6 +214,14 @@ BOOLEAN MulticastFilterTableInsertEntry(
 	/* check the rule is in table already or not. */
 	if ((pEntry = MulticastFilterTableLookup(pMulticastFilterTable, pGrpId, dev)))
 	{
+
+		if (pEntry && type == MCAT_FILTER_STATIC)
+		{
+			RTMP_SEM_LOCK(&pMulticastFilterTable->MulticastFilterTabLock);
+			pEntry->type = MCAT_FILTER_STATIC;
+			RTMP_SEM_UNLOCK(&pMulticastFilterTable->MulticastFilterTabLock);
+		}
+	
 		/* doesn't indicate member mac address. */
 		if(pMemberAddr == NULL)
 		{
@@ -338,7 +346,8 @@ BOOLEAN MulticastFilterTableDeleteEntry(
 	IN PRTMP_ADAPTER pAd,
 	IN PUCHAR pGrpId,
 	IN PUCHAR pMemberAddr,
-	IN PNET_DEV dev)
+	IN PNET_DEV dev,
+	IN MulticastFilterEntryType type)
 {
 	USHORT HashIdx;
 	MULTICAST_FILTER_TABLE_ENTRY *pEntry, *pPrevEntry;
@@ -379,6 +388,9 @@ BOOLEAN MulticastFilterTableDeleteEntry(
 
 		if (pEntry)
 		{
+			if ((pEntry->type == MCAT_FILTER_STATIC) && (type != MCAT_FILTER_STATIC))
+				break;
+		
 			if (pEntry == pMulticastFilterTable->Hash[HashIdx])
 			{
 				pMulticastFilterTable->Hash[HashIdx] = pEntry->pNext;
@@ -527,7 +539,7 @@ VOID IGMPSnooping(
 				ConvertMulticastIP2MAC(pGroupIpAddr, (PUCHAR *)&pGroupMacAddr, ETH_P_IP);
 			DBGPRINT(RT_DEBUG_TRACE, ("IGMP Group=%02x:%02x:%02x:%02x:%02x:%02x\n",
 				GroupMacAddr[0], GroupMacAddr[1], GroupMacAddr[2], GroupMacAddr[3], GroupMacAddr[4], GroupMacAddr[5]));
-			MulticastFilterTableDeleteEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev);
+			MulticastFilterTableDeleteEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev, MCAT_FILTER_DYNAMIC);
 			break;
 
 		case IGMP_V3_MEMBERSHIP_REPORT: /* IGMP version 3 membership report. */
@@ -561,7 +573,7 @@ VOID IGMPSnooping(
 						|| (GroupType == BLOCK_OLD_SOURCES))
 					{
 						if(numOfSources == 0)
-							MulticastFilterTableDeleteEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev);
+							MulticastFilterTableDeleteEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev, MCAT_FILTER_DYNAMIC);
 						else
 							MulticastFilterTableInsertEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev, MCAT_FILTER_DYNAMIC);
 						break;
@@ -750,7 +762,7 @@ VOID IgmpGroupDelMembers(
 
 			if((pEntry->type == MCAT_FILTER_DYNAMIC)
 				&& (IgmpMemberCnt(&pEntry->MemberList) == 0))
-				MulticastFilterTableDeleteEntry(pAd, pEntry->Addr, pMemberAddr, pDev);
+				MulticastFilterTableDeleteEntry(pAd, pEntry->Addr, pMemberAddr, pDev, MCAT_FILTER_DYNAMIC);
 		}
 	}
 }
@@ -928,13 +940,13 @@ INT Set_IgmpSn_DelEntry_Proc(
 			memberCnt++;
 
 		if (memberCnt > 0 )
-			MulticastFilterTableDeleteEntry(pAd, (PUCHAR)GroupId, Addr, pDev);
+			MulticastFilterTableDeleteEntry(pAd, (PUCHAR)GroupId, Addr, pDev, MCAT_FILTER_STATIC);
 
 		bGroupId = 0;
 	}
 
 	if(memberCnt == 0)
-		MulticastFilterTableDeleteEntry(pAd, (PUCHAR)GroupId, NULL, pDev);
+		MulticastFilterTableDeleteEntry(pAd, (PUCHAR)GroupId, NULL, pDev, MCAT_FILTER_STATIC);
 
 	DBGPRINT(RT_DEBUG_TRACE, ("%s (%2X:%2X:%2X:%2X:%2X:%2X)\n",
 		__FUNCTION__, Addr[0], Addr[1], Addr[2], Addr[3], Addr[4], Addr[5]));
@@ -1143,7 +1155,12 @@ NDIS_STATUS IgmpPktClone(
 			else
 			{
 				/* insert the pkt to TxSwQueue. */
+#ifdef DATA_QUEUE_RESERVE 
+				if (!(RTMP_GET_PACKET_DHCP(pPacket) || RTMP_GET_PACKET_EAPOL(pPacket) || RTMP_GET_PACKET_ICMP(pPacket))
+					&& (pAd->TxSwQueue[QueIdx].Number >= (pAd->TxSwQMaxLen - pAd->TxRsvLen)))
+#else /* DATA_QUEUE_RESERVE */
 				if (pAd->TxSwQueue[QueIdx].Number >= pAd->TxSwQMaxLen)
+#endif /* !DATA_QUEUE_RESERVE */
 				{
 #ifdef BLOCK_NET_IF
 					StopNetIfQueue(pAd, QueIdx, pSkbClone);
@@ -1451,7 +1468,7 @@ VOID MLDSnooping(
 				ConvertMulticastIP2MAC(pGroupIpAddr, (PUCHAR *)&pGroupMacAddr, ETH_P_IPV6);
 				DBGPRINT(RT_DEBUG_TRACE, ("Group Id=%02x:%02x:%02x:%02x:%02x:%02x\n",
 						GroupMacAddr[0], GroupMacAddr[1], GroupMacAddr[2], GroupMacAddr[3], GroupMacAddr[4], GroupMacAddr[5]));
-				MulticastFilterTableDeleteEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev);
+				MulticastFilterTableDeleteEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev, MCAT_FILTER_DYNAMIC);
 				break;
 
 			case MLD_V2_LISTERNER_REPORT: /* IGMP version 3 membership report. */
@@ -1485,7 +1502,7 @@ VOID MLDSnooping(
 							|| (GroupType == BLOCK_OLD_SOURCES))
 						{
 							if(numOfSources == 0)
-								MulticastFilterTableDeleteEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev);
+								MulticastFilterTableDeleteEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev, MCAT_FILTER_DYNAMIC);
 							else
 								MulticastFilterTableInsertEntry(pAd, GroupMacAddr, pSrcMacAddr, pDev, MCAT_FILTER_DYNAMIC);
 							break;

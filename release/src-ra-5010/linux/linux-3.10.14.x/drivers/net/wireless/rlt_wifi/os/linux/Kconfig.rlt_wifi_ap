@@ -13,10 +13,18 @@ config WDS_SUPPORT
 config MBSS_SUPPORT
 	bool "MBSSID"
 	depends on RLT_AP_SUPPORT
+
 config SNIFFER_SUPPORT
 	bool "SNIFFER"
 	depends on RLT_AP_SUPPORT
 	default n
+
+config SNIFFER_PPI_SUPPORT
+	bool "SNIFFER omnipeek 8.1above support"
+	depends on RLT_AP_SUPPORT
+	depends on SNIFFER_SUPPORT
+	default n
+
 config CFG80211_SUPPORT
 	bool "CFG80211"
 	depends on RLT_AP_SUPPORT
@@ -24,7 +32,7 @@ config CFG80211_SUPPORT
 
 config NEW_MBSSID_MODE
 	bool "New MBSSID Mode"
-	depends on RLT_AP_SUPPORT || RALINK_RT3883 || RALINK_RT3352 || RALINK_RT5350 || RALINK_RT6352 || RALINK_MT7620
+	depends on RLT_AP_SUPPORT || RALINK_RT3883 || RALINK_RT3352 || RALINK_RT5350 || RALINK_RT6352 || RALINK_MT7620 || RALINK_MT7610E
 	depends on MBSS_SUPPORT
 	default n
 
@@ -43,6 +51,12 @@ config APCLI_CERT_SUPPORT
 	depends on RLT_AP_SUPPORT
         depends on APCLI_SUPPORT
         default n
+
+config APCLI_AUTO_BW_SUPPORT
+	bool "AP-Client Auto Bandwidth Support"
+	depends on RLT_AP_SUPPORT
+        depends on APCLI_SUPPORT
+	default n
 
 config MAC_REPEATER_SUPPORT
 	bool "MAC Repeater Support"
@@ -98,6 +112,11 @@ config CON_WPS_SUPPORT
 	depends on WSC_INCLUDED
 	depends on WSC_V2_SUPPORT
 	default n
+
+config AIRPLAY_SUPPORT
+        bool "AIRPLAY Support"
+        depends on RLT_AP_SUPPORT
+        default n
 	
 #config MESH_SUPPORT
 #       bool "MESH Support"
@@ -106,11 +125,12 @@ config CON_WPS_SUPPORT
 config DOT11R_FT_SUPPORT
        bool "802.11r Fast BSS Transition"
        depends on RLT_AP_SUPPORT
-
+       default y
+	   
 config DOT11K_RRM_SUPPORT
        bool "802.11k Radio Resource Management"
        depends on RLT_AP_SUPPORT
-       default n
+       default y
 
 #config RT2860V2_SNMP
 #	bool "Net-SNMP Support"
