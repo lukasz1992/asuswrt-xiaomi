@@ -888,8 +888,9 @@ static void mt76x2_ITxBFPhaseParams( RTMP_ADAPTER *pAd, UCHAR phaseValues[2], UC
      INT chanIdx; 
      INT dbg; 
      UINT dbg1, dbg2; 
-    
+#ifdef RALINK_ATE
      chanIdx = ate_txbf_get_chan_idx(pAd, channel, 1);
+#endif /* RALINK_ATE */
     
      if(pAd->CommonCfg.ITxBfCalibMode!=2) //Use the phase of group center for other channels in the group 
      {
@@ -914,6 +915,7 @@ static void mt76x2_ITxBFPhaseParams( RTMP_ADAPTER *pAd, UCHAR phaseValues[2], UC
              phaseValues[0] = phaseParams->E1aPhase[11];//chan157
          }
      }
+#ifdef RALINK_ATE
      else    // interpolate iBF phase from 13 calibrated channels 
      {
          if(chanIdx >=0)
@@ -974,6 +976,7 @@ static void mt76x2_ITxBFPhaseParams( RTMP_ADAPTER *pAd, UCHAR phaseValues[2], UC
 		               __FUNCTION__,dbg, dbg1,dbg2));
          }
     }
+#endif /* RALINK_ATE */
 }
 #endif /*MT76x2*/
 
@@ -1954,7 +1957,7 @@ INT mt76x2_ITxBFDividerCalibration(
 
 		ITxBFSetEEPROM(pAd, 0, 0, &divParams, 0);
 		break;
-
+#ifdef RALINK_ATE
 	case 2:
 		/*
 			Update BBP Registers. Quantize DeltaPhase to 90 or 180 depending on band. Then
@@ -2048,6 +2051,7 @@ INT mt76x2_ITxBFDividerCalibration(
 		         groupIdx, divParams.E1aDivPhase[groupIdx], divPhase[0]));
         }
 		break;
+#endif /* RALINK_ATE */
 
 	default:
 		result = FALSE;

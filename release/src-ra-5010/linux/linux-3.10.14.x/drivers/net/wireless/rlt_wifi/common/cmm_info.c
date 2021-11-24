@@ -6537,6 +6537,7 @@ INT	mt76x2_Set_ITxBfCal_Proc(
 			        "Residual phase          = 0x%x\n",
 			        __FUNCTION__, calParams[0], phaseValues[0]));
 
+#ifdef RALINK_ATE
 			/* Update EEPROM */
 			ITxBFGetEEPROM(pAd, &phaseParams, 0, 0, 0);
 
@@ -6552,7 +6553,7 @@ INT	mt76x2_Set_ITxBfCal_Proc(
                  " Save Resphase to efuse[%d], value = 0x%x\n"
                  " ============================================================ \n", 
                  idx, phaseValues[0]));
-
+#endif /* RALINK_ATE */
 			DBGPRINT(RT_DEBUG_WARN, ("Set_ITxBfCal_Proc: Calibration Parameters updated\n"));
 
 			break;
