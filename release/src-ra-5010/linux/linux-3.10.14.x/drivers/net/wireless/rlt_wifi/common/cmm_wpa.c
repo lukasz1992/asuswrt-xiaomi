@@ -254,7 +254,7 @@ VOID WpaEAPOLKeyAction(
 #ifdef MAC_REPEATER_SUPPORT
 		if (CliIdx != 0xFF)
 		{
-			DBGPRINT(RT_DEBUG_OFF, ("%s: CliIdx != 0xFF  ifIndex(%d), CliIdx(%d) !!!\n",
+			DBGPRINT(RT_DEBUG_INFO, ("%s: CliIdx != 0xFF  ifIndex(%d), CliIdx(%d) !!!\n",
 								__FUNCTION__,ifIndex, CliIdx));
 			
 			UCHAR MacTabMax = MAX_LEN_OF_MAC_TABLE;
@@ -265,7 +265,7 @@ VOID WpaEAPOLKeyAction(
 			{
 				pEntry = NULL;
 
-				DBGPRINT(RT_DEBUG_OFF, ("%s: calculate wrong wcid(%d), ifIndex(%d), CliIdx(%d) !!!\n",
+				DBGPRINT(RT_DEBUG_INFO, ("%s: calculate wrong wcid(%d), ifIndex(%d), CliIdx(%d) !!!\n",
 								__FUNCTION__, pAd->ApCfg.ApCliTab[ifIndex].RepeaterCli[CliIdx].MacTabWCID,
 								ifIndex, CliIdx));
 				break;
@@ -278,7 +278,7 @@ VOID WpaEAPOLKeyAction(
 		else
 #endif /* MAC_REPEATER_SUPPORT */
 		{
-			DBGPRINT(RT_DEBUG_OFF, ("%s: CliIdx == 0xFF  pHeader->Addr2(%02X-%02X-%02X-%02X-%02X-%02X) !!!\n",
+			DBGPRINT(RT_DEBUG_INFO, ("%s: CliIdx == 0xFF  pHeader->Addr2(%02X-%02X-%02X-%02X-%02X-%02X) !!!\n",
 								__FUNCTION__,PRINT_MAC(pHeader->Addr2)));
 			pEntry = MacTableLookup(pAd, pHeader->Addr2);
 		}
@@ -289,7 +289,7 @@ VOID WpaEAPOLKeyAction(
 		if (pEntry->AuthMode < Ndis802_11AuthModeWPA)
 			break;		
 
-		DBGPRINT(RT_DEBUG_OFF, ("Receive EAPoL-Key frame from STA %02X-%02X-%02X-%02X-%02X-%02X wcid(%d)\n", PRINT_MAC(pEntry->Addr), pEntry->wcid));
+		DBGPRINT(RT_DEBUG_INFO, ("Receive EAPoL-Key frame from STA %02X-%02X-%02X-%02X-%02X-%02X wcid(%d)\n", PRINT_MAC(pEntry->Addr), pEntry->wcid));
 
 		if (eapol_len > Elem->MsgLen - LENGTH_802_11 - LENGTH_802_1_H)
 		{

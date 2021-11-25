@@ -492,7 +492,7 @@ VOID MtPsRedirectDisableCheck(
 	if (pfgForce)
 	{
 		wlan_idx = (UINT32)wcid;
-		DBGPRINT(RT_DEBUG_ERROR | DBG_FUNC_PS, ("%s(%d): [wlan_idx=0x%x] PS Redirect mode(pfgForce = %d) is enabled. Send PC Clear command to FW.\n", 
+		DBGPRINT(RT_DEBUG_TRACE, ("%s(%d): [wlan_idx=0x%x] PS Redirect mode(pfgForce = %d) is enabled. Send PC Clear command to FW.\n", 
 			__FUNCTION__, __LINE__, wlan_idx, pfgForce));
 		//RTEnqueueInternalCmd(pAd, CMDTHREAD_PS_CLEAR, (VOID *)&wlan_idx, sizeof(UINT32));
 		/* clear CR directly instead of inband cmd, PSE Reset may lead cmd is not success */
