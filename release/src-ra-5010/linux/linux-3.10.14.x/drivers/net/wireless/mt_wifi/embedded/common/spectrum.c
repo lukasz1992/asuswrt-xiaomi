@@ -28,12 +28,17 @@
 #include "rt_config.h"
 #include "action.h"
 
-UINT8 GetRegulatoryMaxTxPwr(RTMP_ADAPTER *pAd, UINT8 channel)
+UINT8 GetRegulatoryMaxTxPwr(RTMP_ADAPTER *pAd, UINT8 channel, struct wifi_dev *wdev)
 {
 	ULONG ChIdx;
 	PCH_REGION pChRegion = NULL;
 	UCHAR FirstChannelIdx, NumCh;
-	UCHAR increment = 0, index = 0, ChannelIdx = 0;
+	UCHAR increment = 0, index = 0, ChannelIdx = 0, cfg_bw = 0;
+#ifdef DOT11_VHT_AC
+	if (WMODE_CAP_AC(wdev->PhyMode))
+		cfg_bw = wlan_config_get_vht_bw(wdev);
+#endif /*DOT11_VHT_AC*/
+
 	/* Get Channel Region (CountryCode)*/
 	pChRegion = GetChRegion(pAd->CommonCfg.CountryCode);
 
@@ -59,7 +64,12 @@ UINT8 GetRegulatoryMaxTxPwr(RTMP_ADAPTER *pAd, UINT8 channel)
 			else
 				increment = 1;
 
-			if (channel == ChannelIdx)
+			if (channel == ChannelIdx
+#ifdef DOT11_VHT_AC
+				|| channel == vht_cent_ch_freq(ChannelIdx, cfg_bw)
+#endif /*DOT11_VHT_AC*/
+
+			)
 				return pChRegion->pChDesp[index].MaxTxPwr;
 
 			ChannelIdx += increment;
@@ -682,7 +692,8 @@ VOID InsertChannelRepIE(
 	IN RTMP_STRING *pCountry,
 	IN UINT8 RegulatoryClass,
 	IN UINT8 *ChReptList,
-	IN UCHAR PhyMode
+	IN UCHAR PhyMode,
+	IN UINT8 IfIdx
 )
 {
 	ULONG TempLen;
@@ -696,43 +707,99 @@ VOID InsertChannelRepIE(
 	PUCHAR channel_set = NULL;
 	UCHAR channel_set_num;
 	UCHAR ch_list_num = 0;
+#ifdef OCE_SUPPORT
+	UINT8 k, t;
+	struct wifi_dev *wdev;
+	BOOLEAN Same = FALSE;
+	BSS_TABLE *ScanTab = NULL;
+	BSS_ENTRY *pBssEntry = NULL;
+#endif /* OCE_SUPPORT */
 
 	if (RegulatoryClass == 0)
 		return;
 
 	Len = 1;
-	channel_set = get_channelset_by_reg_class(pAd, RegulatoryClass, PhyMode);
-	channel_set_num = get_channel_set_num(channel_set);
+#ifdef OCE_SUPPORT
+	wdev = &pAd->ApCfg.MBSSID[IfIdx].wdev;
+	NumberOfChannels = 0;
+	ScanTab = &pAd->ScanTab;
+	pBssEntry = &ScanTab->BssEntry[0];
 
-	ch_list_num = get_channel_set_num(ChReptList);
+	if (IS_OCE_RNR_ENABLE(wdev)) {
 
-	/* no match channel set. */
-	if (channel_set == NULL)
-		return;
+		/* not vap and no nr */
+		if (ScanTab->BssNr == 0 && pAd->ApCfg.BssidNum == 0)
+			return;
 
-	/* empty channel set. */
-	if (channel_set_num == 0)
-		return;
+		if (pAd->ApCfg.BssidNum > 1)
+			ChannelList[NumberOfChannels++] = wdev->channel;
 
-	if (ch_list_num) { /* assign partial channel list */
-		for (i = 0; i < channel_set_num; i++) {
-			for (j = 0; j < ch_list_num; j++) {
-				if (ChReptList[j] == channel_set[i])
-					ChannelList[NumberOfChannels++] = channel_set[i];
+		for (i = 0; i < ScanTab->BssNr; i++) {
+			pBssEntry = &ScanTab->BssEntry[i];
+
+			Same = FALSE;
+			for (j = 0; j < NumberOfChannels; j++) {
+				if (pBssEntry->Channel == ChannelList[j]) {
+					Same = TRUE;
+					break;
+				}
+			}
+			if (Same == FALSE)
+				ChannelList[NumberOfChannels++] = pBssEntry->Channel;
+
+		}
+		if (NumberOfChannels > 0) {
+			for (i = 0; i < NumberOfChannels-1; i++) {
+				for (j = i+1, k = i; j < NumberOfChannels; j++) {
+					if (ChannelList[j] < ChannelList[k])
+						k = j;
+				}
+			t = ChannelList[k];
+			ChannelList[k] = ChannelList[i];
+			ChannelList[i] = t;
 			}
 		}
 
 		pChannelList = &ChannelList[0];
-	} else {
-		NumberOfChannels = channel_set_num;
-		pChannelList = channel_set;
-	}
+		Len += NumberOfChannels;
+		pChListPtr = pChannelList;
 
-	MTWF_LOG(DBG_CAT_HW, DBG_SUBCAT_ALL, DBG_LVL_INFO,
-			 ("%s: Requlatory class (%d), NumberOfChannels=%d, channel_set_num=%d\n",
-			  __func__, RegulatoryClass, NumberOfChannels, channel_set_num));
-	Len += NumberOfChannels;
-	pChListPtr = pChannelList;
+	} else
+#endif /* OCE_SUPPORT */
+	{
+		channel_set = get_channelset_by_reg_class(pAd, RegulatoryClass, PhyMode);
+		channel_set_num = get_channel_set_num(channel_set);
+
+		ch_list_num = get_channel_set_num(ChReptList);
+
+		/* no match channel set. */
+		if (channel_set == NULL)
+			return;
+
+		/* empty channel set. */
+		if (channel_set_num == 0)
+			return;
+
+		if (ch_list_num) { /* assign partial channel list */
+			for (i = 0; i < channel_set_num; i++) {
+				for (j = 0; j < ch_list_num; j++) {
+					if (ChReptList[j] == channel_set[i])
+						ChannelList[NumberOfChannels++] = channel_set[i];
+				}
+			}
+
+			pChannelList = &ChannelList[0];
+		} else {
+			NumberOfChannels = channel_set_num;
+			pChannelList = channel_set;
+		}
+
+		MTWF_LOG(DBG_CAT_HW, DBG_SUBCAT_ALL, DBG_LVL_INFO,
+				("%s: Requlatory class (%d), NumberOfChannels=%d, channel_set_num=%d\n",
+				__func__, RegulatoryClass, NumberOfChannels, channel_set_num));
+		Len += NumberOfChannels;
+		pChListPtr = pChannelList;
+	}
 
 	if (Len > 1) {
 		MakeOutgoingFrame(pFrameBuf,	&TempLen,
@@ -2269,12 +2336,15 @@ VOID InsertChSwAnnIENew(
 INT NotifyChSwAnnToConnectedSTAs(
 	IN PRTMP_ADAPTER pAd,
 	IN UINT8		ChSwMode,
+	IN UINT8        OriChannel,
 	IN UINT8		Channel,
 	struct wifi_dev *wdev)
 {
 	UINT32 i;
 	MAC_TABLE_ENTRY *pEntry;
 	struct DOT11_H *pDot11h = wdev->pDot11_H;
+	if (pAd->Dot11_H[0].CSPeriod > pAd->CommonCfg.channelSwitch.CHSWPeriod)
+		pAd->CommonCfg.channelSwitch.CHSWPeriod = pAd->Dot11_H[0].CSPeriod;
 
 	pAd->CommonCfg.channelSwitch.CHSWMode = ChSwMode;
 	pAd->CommonCfg.channelSwitch.CHSWCount = 0;
@@ -2288,9 +2358,9 @@ INT NotifyChSwAnnToConnectedSTAs(
 		}
 	}
 
-	if (HcUpdateCsaCntByChannel(pAd, Channel) != 0) {
+	if (HcUpdateCsaCntByChannel(pAd, OriChannel) != 0)
 		return FALSE;
-	}
+
 	return TRUE;
 }
 
@@ -2324,7 +2394,7 @@ VOID EnqueueChSwAnnNew(
 	InsertChSwAnnIENew(pAd, (pOutBuffer + FrameLen), &FrameLen, ChSwMode, NewCh, pAd->CommonCfg.channelSwitch.CHSWPeriod);
 
 #ifdef DOT11_N_SUPPORT
-	InsertSecondaryChOffsetIE(pAd, (pOutBuffer + FrameLen), &FrameLen, HcGetExtCha(pAd, wdev->channel));
+	InsertSecondaryChOffsetIE(pAd, (pOutBuffer + FrameLen), &FrameLen, wlan_config_get_ext_cha(wdev));
 #endif
 
 	MiniportMMRequest(pAd, QID_AC_BE, pOutBuffer, FrameLen);
@@ -2359,7 +2429,7 @@ INT Set_PwrConstraint(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 	MAC_TABLE_ENTRY *pEntry = &pAd->MacTab.Content[0];
 
 	Value = (UINT) os_str_tol(arg, 0, 10);
-	MaxTxPwr = GetRegulatoryMaxTxPwr(pAd, pEntry->wdev->channel) - (CHAR)Value;
+	MaxTxPwr = GetRegulatoryMaxTxPwr(pAd, pEntry->wdev->channel, pEntry->wdev) - (CHAR)Value;
 	CurTxPwr = RTMP_GetTxPwr(pAd, pEntry->HTPhyMode, pEntry->wdev->channel, pEntry->wdev);
 	DaltaPwr = CurTxPwr - MaxTxPwr;
 
@@ -2398,7 +2468,7 @@ INT Set_PwrConstraint(RTMP_ADAPTER *pAd, RTMP_STRING *arg)
 #ifdef DOT11K_RRM_SUPPORT
 #endif /* DOT11K_RRM_SUPPORT */
 
-VOID RguClass_BuildBcnChList(RTMP_ADAPTER *pAd, UCHAR *pBuf, ULONG *pBufLen, UCHAR PhyMode, UCHAR RegClass)
+VOID RguClass_BuildBcnChList(RTMP_ADAPTER *pAd, UCHAR *pBuf, ULONG *pBufLen, struct wifi_dev *wdev, UCHAR RegClass)
 {
 	/* INT loop; */
 	ULONG TmpLen;
@@ -2411,7 +2481,7 @@ VOID RguClass_BuildBcnChList(RTMP_ADAPTER *pAd, UCHAR *pBuf, ULONG *pBufLen, UCH
 	if (RegClass == 0)
 		return;
 
-	channel_set = get_channelset_by_reg_class(pAd, RegClass, PhyMode);
+	channel_set = get_channelset_by_reg_class(pAd, RegClass, wdev->PhyMode);
 	channel_set_num = get_channel_set_num(channel_set);
 
 	/* no match channel set. */
@@ -2427,7 +2497,10 @@ VOID RguClass_BuildBcnChList(RTMP_ADAPTER *pAd, UCHAR *pBuf, ULONG *pBufLen, UCH
 		we choose the minimum
 	*/
 	for (i = 0; i < channel_set_num; i++) {
-		MaxTxPwr = GetRegulatoryMaxTxPwr(pAd, channel_set[i]);
+		MaxTxPwr = GetRegulatoryMaxTxPwr(pAd, channel_set[i], wdev);
+
+		if (!strncmp((RTMP_STRING *) pAd->CommonCfg.CountryCode, "CN", 2))
+			MaxTxPwr = pAd->MaxTxPwr;/*for CN CountryCode*/
 
 		if (MaxTxPwr < ChSetMinLimPwr)
 			ChSetMinLimPwr = MaxTxPwr;
