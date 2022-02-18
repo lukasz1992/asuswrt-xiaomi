@@ -3847,7 +3847,7 @@ int init_nvram(void)
 		add_rc_support("2.4G 5G noupdate");
 #endif
 #if defined(RTMIR4A)
-		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
+		nvram_set_int("led_pwr_gpio", 10|GPIO_ACTIVE_LOW);
 #elif defined(RTRM2100)
 		nvram_set_int("led_pwr_gpio",  8|GPIO_ACTIVE_LOW);
 		nvram_set_int("led_wan_gpio", 12|GPIO_ACTIVE_LOW);
