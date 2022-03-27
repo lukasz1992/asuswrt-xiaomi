@@ -824,7 +824,6 @@ static const applets_t applets[] = {
 #endif
 #endif
 #ifdef RTCONFIG_WPS
-	{ "wpsaide",			wpsaide_main			},
 #ifdef RTCONFIG_QCA
 	{ "get_wps_er",			get_wps_er_main			},
 #endif

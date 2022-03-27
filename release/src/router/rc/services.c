@@ -7351,7 +7351,6 @@ start_services(void)
 #endif
 	start_wps();
 #ifdef RTCONFIG_WPS
-	start_wpsaide();
 #endif
 #ifdef RTCONFIG_NOTIFICATION_CENTER
 	start_wlc_nt();
@@ -7759,7 +7758,6 @@ stop_services(void)
 	stop_wlc_nt();
 #endif
 #ifdef RTCONFIG_WPS
-	stop_wpsaide();
 #endif
 	stop_wps();
 #ifdef CONFIG_BCMWL5
@@ -7956,7 +7954,6 @@ stop_services_mfg(void)
 	stop_wlc_nt();
 #endif
 #ifdef RTCONFIG_WPS
-	stop_wpsaide();
 #endif
 	stop_wps();
 
