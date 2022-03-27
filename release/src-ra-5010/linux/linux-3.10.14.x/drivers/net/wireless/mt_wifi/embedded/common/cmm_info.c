@@ -4544,7 +4544,7 @@ static inline RTMP_STRING *GetEncryModeStr2(
 	else if (IS_CIPHER_TKIP(encryMode))
 		return "TKIP";
 	else
-		return "UNKNOWN";
+		return "Unknown";
 }
 
 RTMP_STRING *GetAuthMode(CHAR auth)
