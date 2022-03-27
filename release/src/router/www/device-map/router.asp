@@ -428,13 +428,13 @@ function change_wpa_type(mode){
 	/* enable/disable crypto algorithm */
 	if(lyra_hide_support)
 		inputCtrl(document.form.wl_crypto, 0);
-	else if(mode == "wpa" || mode == "wpa2" || mode == "wpawpa2" || mode == "psk" || mode == "psk2" || mode == "sae" || mode == "pskpsk2" || mode == "psk2sae")
+	else if(mode == "wpa" || mode == "wpa2" || mode == "wpawpa2" || mode == "psk" || mode == "psk2" || mode == "pskpsk2" || mode == "psk3" || mode == "psk2psk3")
 		inputCtrl(document.form.wl_crypto, 1);
 	else
 		inputCtrl(document.form.wl_crypto, 0);
 	
 	/* enable/disable psk passphrase */
-	if(mode == "psk" || mode == "psk2" || mode == "sae" || mode == "pskpsk2" || mode == "psk2sae")
+	if(mode == "psk" || mode == "psk2" || mode == "pskpsk2" || mode == "psk3" || mode == "psk2psk3")
 		inputCtrl(document.form.wl_wpa_psk, 1);
 	else
 		inputCtrl(document.form.wl_wpa_psk, 0);
@@ -447,7 +447,7 @@ function change_wpa_type(mode){
 		}
 	
 	/* Reconstruct algorithm array from new crypto algorithms */
-	if(mode == "psk" || mode == "psk2" || mode == "sae" || mode == "pskpsk2" || mode == "psk2sae" || mode == "wpa" || mode == "wpa2" || mode == "wpawpa2"){
+	if(mode == "psk" || mode == "psk2" || mode == "pskpsk2" || mode == "psk3" || mode == "psk2psk3" || mode == "wpa" || mode == "wpa2" || mode == "wpawpa2"){
 		/* Save current crypto algorithm */
 			if(opts[opts.selectedIndex].text == "WPA-Personal" || opts[opts.selectedIndex].text == "WPA-Enterprise")
 				new_array = new Array("TKIP");
@@ -666,7 +666,7 @@ function submitForm(){
 	document.form.current_page.value = '<% abs_index_page(); %>';
 	document.form.next_page.value = '<% abs_index_page(); %>';
 	
-	if(auth_mode == "psk" || auth_mode == "psk2" || auth_mode == "sae" || auth_mode == "pskpsk2" || auth_mode == "psk2sae"){
+	if(auth_mode == "psk" || auth_mode == "psk2" || auth_mode == "pskpsk2" || auth_mode == "psk3" || auth_mode == "psk2psk3"){
 		if(is_KR_sku){
 			if(!validator.psk_KR(document.form.wl_wpa_psk))
 				return false;
@@ -993,9 +993,9 @@ function checkWLReady(){
 							<option value="shared"  <% nvram_match("wl_auth_mode_x", "shared", "selected"); %>>Shared Key</option>
 							<option value="psk"     <% nvram_match("wl_auth_mode_x", "psk",    "selected"); %>>WPA-Personal</option>
 							<option value="psk2"    <% nvram_match("wl_auth_mode_x", "psk2",   "selected"); %>>WPA2-Personal</option>
-							<option value="sae"    <% nvram_match("wl_auth_mode_x", "sae",   "selected"); %>>WPA3-Personal</option>
 							<option value="pskpsk2" <% nvram_match("wl_auth_mode_x", "pskpsk2","selected"); %>>WPA-Auto-Personal</option>
-							<option value="psk2sae" <% nvram_match("wl_auth_mode_x", "psk2sae","selected"); %>>WPA2/WPA3-Personal</option>
+							<option value="psk3"    <% nvram_match("wl_auth_mode_x", "psk3",   "selected"); %>>WPA3-Personal</option>
+							<option value="psk2psk3" <% nvram_match("wl_auth_mode_x", "psk2psk3","selected"); %>>WPA2/WPA3-Personal</option>
 							<option value="wpa"     <% nvram_match("wl_auth_mode_x", "wpa",    "selected"); %>>WPA-Enterprise</option>
 							<option value="wpa2"    <% nvram_match("wl_auth_mode_x", "wpa2",   "selected"); %>>WPA2-Enterprise</option>
 							<option value="wpawpa2" <% nvram_match("wl_auth_mode_x", "wpawpa2","selected"); %>>WPA-Auto-Enterprise</option>

@@ -20921,7 +20921,7 @@ ej_check_passwd_strength(int eid, webs_t wp, int argc, char **argv){
 			auth_mode = nvram_safe_get(strcat_r(prefix, "auth_mode_x", tmp));
 			nLength=0; nConsecAlphaUC=0; nConsecCharType=0; nAlphaUC=0; nConsecAlphaLC=0; nAlphaLC=0; nMidChar=0; nConsecNumber=0; nNumber=0; nConsecSymbol=0; nSymbol=0; nRepChar=0; nUnqChar=0; nSeqAlpha=0; nSeqNumber=0; nSeqChar = 0; nSeqSymbol=0;
 			nTmpAlphaUC = -1; nTmpAlphaLC = -1; nTmpNumber = -1; nTmpSymbol = -1;
-		   if(pwd != NULL && (!strcmp(auth_mode,"psk2") || !strcmp(auth_mode,"pskpsk2") || !strcmp(auth_mode,"wpa2") || !strcmp(auth_mode,"wpawpa2"))){
+		   if(pwd != NULL && (!strcmp(auth_mode,"psk2") || !strcmp(auth_mode,"pskpsk2") || !strcmp(auth_mode,"psk3") || !strcmp(auth_mode,"psk2psk3") || !strcmp(auth_mode,"wpa2") || !strcmp(auth_mode,"wpawpa2"))){
 			nScore=0;
 			nLength=0;
 			pwd_st = pwd;
@@ -21130,7 +21130,7 @@ ej_check_wireless_encryption(int eid, webs_t wp, int argc, char **argv){
 		SKIP_ABSENT_BAND_AND_INC_UNIT(unit);
 		snprintf(prefix, sizeof(prefix), "wl%d_", unit);
 		auth_mode = nvram_safe_get(strcat_r(prefix, "auth_mode_x", tmp));
-		if(!strcmp(auth_mode,"psk2") || !strcmp(auth_mode,"pskpsk2") || !strcmp(auth_mode,"wpa2") || !strcmp(auth_mode,"wpawpa2"))
+		if(!strcmp(auth_mode,"psk2") || !strcmp(auth_mode,"pskpsk2") || !strcmp(auth_mode,"psk3") || !strcmp(auth_mode,"psk2psk3") || !strcmp(auth_mode,"wpa2") || !strcmp(auth_mode,"wpawpa2"))
 			;
 		else
 			return websWrite(wp, "\"0\"");

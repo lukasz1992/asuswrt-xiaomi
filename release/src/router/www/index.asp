@@ -550,15 +550,15 @@ function show_middle_status(auth_mode, wl_wep_x){
 		case "psk2":
 				security_mode = "WPA2-Personal";
 				break;
-		case "sae":
-				security_mode = "WPA3-Personal";
-				break;
-		case "psk2sae":
-				security_mode = "WPA2/WPA3-Personal";
-				break;
 		case "pskpsk2":
 				security_mode = "WPA-Auto-Personal";
 				document.getElementById("wl_securitylevel_span").style.fontSize = "16px";
+				break;
+		case "psk3":
+				security_mode = "WPA3-Personal";
+				break;
+		case "psk2psk3":
+				security_mode = "WPA2/WPA3-Personal";
 				break;
 		case "wpa":
 				security_mode = "WPA-Enterprise";
