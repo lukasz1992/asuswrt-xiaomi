@@ -552,7 +552,7 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 
 /*
 #if defined(RTAC52U) || defined(RTAC51U) || defined(RTN54U)  || defined(RTAC1200HP) || defined(RTAC54U) || defined(RTAC1200) || defined(RTAC1200GA1) || defined(RTAC1200GU) || defined(RTAC85U) || defined(RTAC85P) || defined(MTK_REP) || defined(RTACRH26)
-	if (unit == 1)
+	if (unit == 1)*/
 	{
 		char *p = tmp;
 		size_t len = sizeof(tmp);
@@ -590,7 +590,7 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 		}
 		if(*tmp != '\0')
 			ret+=websWrite(wp, "Phy Mode	: 11%s\n", tmp+1); // skip first '/'
-	}
+/*	}
 	else
 #endif
 	if (phy_mode==PHY_11BG_MIXED)
