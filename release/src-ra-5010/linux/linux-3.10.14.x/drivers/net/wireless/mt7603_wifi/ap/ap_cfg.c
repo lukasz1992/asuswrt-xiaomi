@@ -14482,6 +14482,114 @@ INT Set_McastMcs(
 				pAd->CommonCfg.MCastPhyMode.field.MCS = Mcs;
 			break;
 
+		case CMD_RTPRIV_IOCTL_ASUSCMD:
+			switch (subcmd) {
+				case ASUS_SUBCMD_RADIO_STATUS:
+				{
+					INT RadioStatus = !(pAd->Flags & fRTMP_ADAPTER_RADIO_OFF);
+					wrq->u.data.length = 4;
+					copy_to_user(wrq->u.data.pointer, &RadioStatus, 4);
+				}
+					break;
+				case ASUS_SUBCMD_GSTAINFO:
+				case ASUS_SUBCMD_GROAM:
+				case ASUS_SUBCMD_CLIQ:
+				{
+					UCHAR *msg;
+					INT i;
+					os_alloc_mem(NULL, &msg, 4096);
+					if (!msg)
+						return NDIS_STATUS_FAILURE;
+					msg[0] = 0;
+					if (subcmd == ASUS_SUBCMD_GSTAINFO) {
+						sprintf(msg+strlen(msg), "BackOff Slot	  : %s slot time\n",
+								OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_SHORT_SLOT_INUSED) ? "short" : "long");
+						sprintf(msg+strlen(msg), "HT Operating Mode : %d\n", pAd->CommonCfg.AddHTInfo.AddHtInfo2.OperaionMode);
+						sprintf(msg+strlen(msg), "\n%-19s%-4s%-4s%-4s%-4s%-8s%-7s%-7s%-7s%-10s%-6s%-6s%-6s%-6s%-7s%-7s\n",
+								"MAC", "AID", "BSS", "PSM", "WMM", "MIMOPS", "RSSI0", "RSSI1",
+								"RSSI2", "PhMd", "BW", "MCS", "SGI", "STBC", "Idle", "Rate");
+					} else if (subcmd == ASUS_SUBCMD_GROAM)
+						sprintf(msg+strlen(msg), "%-19s%-7s%-7s%-7s\n", "MAC", "RSSI0", "RRSI1", "RSSI2");
+					for (i=0; i<MAX_LEN_OF_MAC_TABLE; i++)
+					{
+						PMAC_TABLE_ENTRY pEntry = &pAd->MacTab.Content[i];
+						if ((IS_ENTRY_CLIENT(pEntry) || IS_ENTRY_APCLI(pEntry)) && (pEntry->Sst == SST_ASSOC)) {
+							ULONG DataRate=0;
+							if (subcmd == ASUS_SUBCMD_CLIQ) {
+								if (!IS_ENTRY_APCLI(pEntry))
+									continue;
+								else {
+									CHAR Rssi = RTMPMaxRssi(pAd, pEntry->RssiSample.AvgRssi[0], pEntry->RssiSample.AvgRssi[1], 0);
+									CHAR Rssi_Quality = 0;
+									if (Rssi >= -50)
+										Rssi_Quality = 100;
+									else if (Rssi >= -80)    /* between -50 ~ -80dbm*/
+										Rssi_Quality = (UINT)(24 + ((Rssi + 80) * 26)/10);
+									else if (Rssi >= -90)   /* between -80 ~ -90dbm*/
+										Rssi_Quality = (UINT)(((Rssi + 90) * 26)/10);
+									sprintf(msg, "%d", Rssi_Quality);
+									wrq->u.data.length = strlen(msg);
+									copy_to_user(wrq->u.data.pointer, msg, wrq->u.data.length);
+									os_free_mem(NULL, msg);
+									return NDIS_STATUS_SUCCESS;
+								}
+							}
+							getRate(pEntry->HTPhyMode, &DataRate);
+							sprintf(msg+strlen(msg), "%02X:%02X:%02X:%02X:%02X:%02X  ",
+								pEntry->Addr[0], pEntry->Addr[1], pEntry->Addr[2],
+								pEntry->Addr[3], pEntry->Addr[4], pEntry->Addr[5]);
+							if (subcmd == ASUS_SUBCMD_GSTAINFO) {
+								sprintf(msg+strlen(msg), "%-4d", (int)pEntry->Aid);
+								sprintf(msg+strlen(msg), "%-4d", (int)pEntry->func_tb_idx);
+								sprintf(msg+strlen(msg), "%-4d", (int)pEntry->PsMode);
+								sprintf(msg+strlen(msg), "%-4d", (int)CLIENT_STATUS_TEST_FLAG(pEntry, fCLIENT_STATUS_WMM_CAPABLE));
+								sprintf(msg+strlen(msg), "%-8d", (int)pEntry->MmpsMode);
+							}
+							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[0]);
+							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[1]);
+							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[2]);
+							if (subcmd == ASUS_SUBCMD_GSTAINFO) {
+								sprintf(msg+strlen(msg), "%-10s", get_phymode_str(pEntry->HTPhyMode.field.MODE));
+								sprintf(msg+strlen(msg), "%-6s", get_bw_str(pEntry->HTPhyMode.field.BW));
+								sprintf(msg+strlen(msg), "%-6d", pEntry->HTPhyMode.field.MCS);
+								sprintf(msg+strlen(msg), "%-6d", pEntry->HTPhyMode.field.ShortGI);
+								sprintf(msg+strlen(msg), "%-6d", pEntry->HTPhyMode.field.STBC);
+								sprintf(msg+strlen(msg), "%-7d", (int)(pEntry->StaIdleTimeout - pEntry->NoDataIdleCount));
+								sprintf(msg+strlen(msg), "%-7d", (int)DataRate);
+							}
+							sprintf(msg+strlen(msg), "\n");
+						}
+						if (strlen(msg) > 3840) break;
+					}
+					if (subcmd != ASUS_SUBCMD_CLIQ) {
+						wrq->u.data.length = strlen(msg);
+						copy_to_user(wrq->u.data.pointer, msg, wrq->u.data.length);
+					} else
+						Status = RTMP_IO_EINVAL;
+					os_free_mem(NULL, msg);
+				}
+					break;
+#ifdef APCLI_SUPPORT
+				case ASUS_SUBCMD_CONN_STATUS:
+				{
+					POS_COOKIE pObj = (POS_COOKIE) pAd->OS_Cookie;
+					PAPCLI_STRUCT apcli = &pAd->ApCfg.ApCliTab[pObj->ioctl_if];
+					INT result[2] = {apcli->CtrlCurrState, 0};
+					ULONG DataRate;
+					if (pObj->ioctl_if_type != INT_APCLI)
+						return RTMP_IO_EINVAL;
+					getRate(apcli->wdev.HTPhyMode, &DataRate);
+					result[1] = (INT) DataRate;
+					wrq->u.data.length = 8;
+					copy_to_user(wrq->u.data.pointer, &result, 8);
+				}
+					break;
+#endif
+				default:
+					return RTMP_IO_EOPNOTSUPP;
+			}
+			break;
+
 		default:
 			pAd->CommonCfg.MCastPhyMode.field.MCS = Mcs;
 			break;

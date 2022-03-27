@@ -2652,6 +2652,20 @@ RTMP_STRING *GetEncryptType(CHAR enc)
     	return "UNKNOWN";
 }
 
+static inline RTMP_STRING *GetEncryptType2(CHAR enc)
+{
+	if(enc == Ndis802_11WEPDisabled)
+		return "NONE";
+	if(enc == Ndis802_11WEPEnabled)
+		return "WEP";
+	if(enc == Ndis802_11TKIPEnable)
+		return "TKIP";
+	if(enc == Ndis802_11AESEnable || enc == Ndis802_11TKIPAESMix)
+		return "AES";
+	else
+		return "Unknown";
+}
+
 RTMP_STRING *GetAuthMode(CHAR auth)
 {
     if(auth == Ndis802_11AuthModeOpen)
@@ -2694,6 +2708,30 @@ RTMP_STRING *GetAuthMode(CHAR auth)
     	return "UNKNOWN";
 }		
 
+static inline RTMP_STRING *GetAuthMode2(CHAR auth)
+{
+	if(auth == Ndis802_11AuthModeOpen)
+		return "Open System";
+	if(auth == Ndis802_11AuthModeShared)
+		return "Shared Key";
+	if(auth == Ndis802_11AuthModeWPA || auth == Ndis802_11AuthModeWPA1WPA2)
+		return "WPA-Enterprise";
+	if(auth == Ndis802_11AuthModeWPAPSK)
+		return "WPA-Personal";
+	if(auth == Ndis802_11AuthModeWPA2)
+		return "WPA2-Enterprise";
+	if(auth == Ndis802_11AuthModeWPA2PSK || auth == Ndis802_11AuthModeWPA1PSKWPA2PSK)
+		return "WPA2-Personal";
+#ifdef DOT11_SAE_SUPPORT
+	if (auth == Ndis802_11AuthModeWPA3PSK || auth == Ndis802_11AuthModeWPA2PSKWPA3PSK)
+		return "WPA3-Personal";
+#endif
+#ifdef CONFIG_OWE_SUPPORT
+	if (auth == Ndis802_11AuthModeOWE)
+		return "Open System";
+#endif
+    return "Unknown";
+}
 
 /* 
     ==========================================================================
@@ -2867,7 +2905,7 @@ VOID RTMPCommSiteSurveyData(
 		ap_cipher = pBss->WepStatus;		
 	}
 
-	sprintf(msg+strlen(msg), "%-9s%-16s", GetEncryptType((CHAR)ap_cipher), GetAuthMode((CHAR)ap_auth_mode));
+	sprintf(msg+strlen(msg), "%-9s%-16s", GetEncryptType2((CHAR)ap_cipher), GetAuthMode2((CHAR)ap_auth_mode));
 
 		/* Rssi*/
 		Rssi = (INT)pBss->Rssi;

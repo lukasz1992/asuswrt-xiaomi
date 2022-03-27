@@ -503,6 +503,10 @@ INT rt28xx_ap_ioctl(struct net_device *net_dev, struct ifreq *rq, int cmd)
 		break;
 #endif
 
+	case RTPRIV_IOCTL_ASUSCMD:
+		Status = RTMP_AP_IoctlHandle(pAd, wrq, CMD_RTPRIV_IOCTL_ASUSCMD, wrqin->u.data.flags, NULL, 0);
+		break;
+
 	default:
 		/*			MTWF_LOG(DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("IOCTL::unknown IOCTL's cmd = 0x%08x\n", cmd)); */
 		Status = RTMP_IO_EOPNOTSUPP;
