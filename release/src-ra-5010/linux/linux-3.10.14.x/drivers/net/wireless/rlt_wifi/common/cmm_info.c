@@ -2103,7 +2103,7 @@ PSTRING GetEncryptType(CHAR enc)
     	return "UNKNOWN";
 }
 
-static inline RTMP_STRING *GetEncryptType2(CHAR enc)
+static inline PSTRING GetEncryptType2(CHAR enc)
 {
     if(enc == Ndis802_11WEPDisabled)
         return "NONE";
@@ -2149,7 +2149,7 @@ PSTRING GetAuthMode(CHAR auth)
     	return "UNKNOWN";
 }		
 
-static inline RTMP_STRING *GetAuthMode2(CHAR auth)
+static inline PSTRING GetAuthMode2(CHAR auth)
 {
     if(auth == Ndis802_11AuthModeOpen)
         return "Open System";

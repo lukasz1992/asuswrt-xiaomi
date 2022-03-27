@@ -14962,7 +14962,7 @@ INT RTMP_AP_IoctlHandle(
 								if (!IS_ENTRY_APCLI(pEntry))
 									continue;
 								else {
-									CHAR Rssi = RTMPMaxRssi(pAd, pEntry->RssiSample.AvgRssi[0], pEntry->RssiSample.AvgRssi[1], 0);
+									CHAR Rssi = RTMPMaxRssi(pAd, pEntry->RssiSample.AvgRssi0, pEntry->RssiSample.AvgRssi1, 0);
 									CHAR Rssi_Quality = 0;
 									if (Rssi >= -50)
 										Rssi_Quality = 100;
@@ -14988,9 +14988,9 @@ INT RTMP_AP_IoctlHandle(
 								sprintf(msg+strlen(msg), "%-4d", (int)CLIENT_STATUS_TEST_FLAG(pEntry, fCLIENT_STATUS_WMM_CAPABLE));
 								sprintf(msg+strlen(msg), "%-8d", (int)pEntry->MmpsMode);
 							}
-							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[0]);
-							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[1]);
-							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[2]);
+							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi0);
+							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi1);
+							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi2);
 							if (subcmd == ASUS_SUBCMD_GSTAINFO) {
 								sprintf(msg+strlen(msg), "%-10s", get_phymode_str(pEntry->HTPhyMode.field.MODE));
 								sprintf(msg+strlen(msg), "%-6s", get_bw_str(pEntry->HTPhyMode.field.BW));

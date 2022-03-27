@@ -20570,11 +20570,11 @@ INT Steer_Action(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq)
 						sprintf(msg+strlen(msg), "BackOff Slot	  : %s slot time\n",
 								OPSTATUS_TEST_FLAG(pAd, fOP_STATUS_SHORT_SLOT_INUSED) ? "short" : "long");
 						sprintf(msg+strlen(msg), "HT Operating Mode : %d\n", pAd->CommonCfg.AddHTInfo.AddHtInfo2.OperaionMode);
-						sprintf(msg+strlen(msg), "\n%-19s%-4s%-4s%-4s%-4s%-8s%-7s%-7s%-7s%-10s%-6s%-6s%-6s%-6s%-7s%-7s\n",
+						sprintf(msg+strlen(msg), "\n%-19s%-4s%-4s%-4s%-4s%-8s%-7s%-7s%-7s%-7s%-10s%-6s%-6s%-6s%-6s%-7s%-7s\n",
 								"MAC", "AID", "BSS", "PSM", "WMM", "MIMOPS", "RSSI0", "RSSI1",
-								"RSSI2", "PhMd", "BW", "MCS", "SGI", "STBC", "Idle", "Rate");
+								"RSSI2", "RSSI3", "PhMd", "BW", "MCS", "SGI", "STBC", "Idle", "Rate");
 					} else if (subcmd == ASUS_SUBCMD_GROAM)
-						sprintf(msg+strlen(msg), "%-19s%-7s%-7s%-7s\n", "MAC", "RSSI0", "RRSI1", "RSSI2");
+						sprintf(msg+strlen(msg), "%-19s%-7s%-7s%-7s%-7s\n", "MAC", "RSSI0", "RRSI1", "RSSI2", "RSSI3");
 					for (i=0; i<MAX_LEN_OF_MAC_TABLE; i++)
 					{
 						PMAC_TABLE_ENTRY pEntry = &pAd->MacTab.Content[i];
@@ -20614,6 +20614,7 @@ INT Steer_Action(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq)
 							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[0]);
 							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[1]);
 							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[2]);
+							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[3]);
 							if (subcmd == ASUS_SUBCMD_GSTAINFO) {
 								sprintf(msg+strlen(msg), "%-10s", get_phymode_str(pEntry->HTPhyMode.field.MODE));
 								sprintf(msg+strlen(msg), "%-6s", get_bw_str(pEntry->HTPhyMode.field.BW));
@@ -20683,7 +20684,7 @@ INT Steer_Action(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq)
 								"MAC", "AID", "BSS", "PSM", "WMM", "MIMOPS", "RSSI0", "RSSI1",
 								"RSSI2", "PhMd", "BW", "MCS", "SGI", "STBC", "Idle", "Rate");
 					} else if (subcmd == ASUS_SUBCMD_GROAM)
-						sprintf(msg+strlen(msg), "%-19s%-7s%-7s%-7s\n", "MAC", "RSSI0", "RRSI1", "RSSI2");
+						sprintf(msg+strlen(msg), "%-19s%-7s%-7s%-7s%-7s\n", "MAC", "RSSI0", "RRSI1", "RSSI2", "RSSI3");
 					for (i=0; i<MAX_LEN_OF_MAC_TABLE; i++)
 					{
 						PMAC_TABLE_ENTRY pEntry = &pAd->MacTab.Content[i];
@@ -20723,6 +20724,7 @@ INT Steer_Action(PRTMP_ADAPTER pAd, RTMP_IOCTL_INPUT_STRUCT *wrq)
 							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[0]);
 							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[1]);
 							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[2]);
+							sprintf(msg+strlen(msg), "%-7d", pEntry->RssiSample.AvgRssi[3]);
 							if (subcmd == ASUS_SUBCMD_GSTAINFO) {
 								sprintf(msg+strlen(msg), "%-10s", get_phymode_str(pEntry->HTPhyMode.field.MODE));
 								sprintf(msg+strlen(msg), "%-6s", get_bw_str(pEntry->HTPhyMode.field.BW));

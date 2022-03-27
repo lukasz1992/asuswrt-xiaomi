@@ -4532,18 +4532,19 @@ RTMP_STRING *GetEncryptType(CHAR enc)
 		return "UNKNOWN";
 }
 
-static inline RTMP_STRING *GetEncryptType2(CHAR enc)
+static inline RTMP_STRING *GetEncryModeStr2(
+	IN UINT32 encryMode)
 {
-	if(enc == Ndis802_11WEPDisabled)
+	if (IS_CIPHER_NONE(encryMode))
 		return "NONE";
-	if(enc == Ndis802_11WEPEnabled)
+	else if (IS_CIPHER_WEP(encryMode))
 		return "WEP";
-	if(enc == Ndis802_11TKIPEnable)
-		return "TKIP";
-	if(enc == Ndis802_11AESEnable || enc == Ndis802_11TKIPAESMix)
+	else if (IS_CIPHER_CCMP128(encryMode))
 		return "AES";
+	else if (IS_CIPHER_TKIP(encryMode))
+		return "TKIP";
 	else
-		return "Unknown";
+		return "UNKNOWN";
 }
 
 RTMP_STRING *GetAuthMode(CHAR auth)
@@ -4581,29 +4582,25 @@ RTMP_STRING *GetAuthMode(CHAR auth)
 	return "UNKNOWN";
 }
 
-static inline RTMP_STRING *GetAuthMode2(CHAR auth)
+static inline RTMP_STRING *GetAuthModeStr2(
+	IN UINT32 authMode)
 {
-	if(auth == Ndis802_11AuthModeOpen)
+	if (IS_AKM_OPEN(authMode) || IS_AKM_OWE(authMode))
 		return "Open System";
-	if(auth == Ndis802_11AuthModeShared)
+	else if (IS_AKM_SHARED(authMode))
 		return "Shared Key";
-	if(auth == Ndis802_11AuthModeWPA || auth == Ndis802_11AuthModeWPA1WPA2)
-		return "WPA-Enterprise";
-	if(auth == Ndis802_11AuthModeWPAPSK)
-		return "WPA-Personal";
-	if(auth == Ndis802_11AuthModeWPA2)
-		return "WPA2-Enterprise";
-	if(auth == Ndis802_11AuthModeWPA2PSK || auth == Ndis802_11AuthModeWPA1PSKWPA2PSK)
-		return "WPA2-Personal";
-#ifdef DOT11_SAE_SUPPORT
-	if (auth == Ndis802_11AuthModeWPA3PSK || auth == Ndis802_11AuthModeWPA2PSKWPA3PSK)
+	else if (IS_AKM_WPA3PSK(authMode))
 		return "WPA3-Personal";
-#endif
-#ifdef CONFIG_OWE_SUPPORT
-	if (auth == Ndis802_11AuthModeOWE)
-		return "Open System";
-#endif
-    return "Unknown";
+	else if (IS_AKM_WPA2PSK(authMode))
+		return "WPA2-Personal";
+	else if (IS_AKM_WPA1PSK(authMode))
+		return "WPA-Personal";
+	else if (IS_AKM_WPA2(authMode))
+		return "WPA2-Enterprise";
+	else if (IS_AKM_WPA1(authMode))
+		return "WPA-Enterprise";
+	else
+		return "Unknown";
 }
 
 /*
@@ -4645,8 +4642,6 @@ VOID RTMPCommSiteSurveyData(
 	UINT        Rssi_Quality = 0;
 	NDIS_802_11_NETWORK_TYPE    wireless_mode;
 	CHAR		Ssid[MAX_LEN_OF_SSID + 1];
-	NDIS_802_11_ENCRYPTION_STATUS	ap_cipher = Ndis802_11EncryptionDisabled;
-	NDIS_802_11_AUTHENTICATION_MODE	ap_auth_mode = Ndis802_11AuthModeOpen;
 	/*Channel*/
 	sprintf(msg + strlen(msg), "%-4d", pBss->Channel);
 	/*SSID*/
@@ -4672,105 +4667,8 @@ VOID RTMPCommSiteSurveyData(
 			pBss->Bssid[3],
 			pBss->Bssid[4],
 			pBss->Bssid[5]);
-
 	/*Security*/
-	if ((Ndis802_11AuthModeWPA <= pBss->AuthMode) &&
-		(pBss->AuthMode <= Ndis802_11AuthModeWPA1PSKWPA2PSK))
-	{
-		if (pBss->AuthMode == Ndis802_11AuthModeWPANone)
-		{
-			ap_auth_mode = pBss->AuthMode;
-				ap_cipher = pBss->WPA.PairCipher;
-		}
-		else if ((pBss->AuthModeAux == Ndis802_11AuthModeOpen) || (pBss->AuthModeAux == Ndis802_11AuthModeMax))
-		{
-			ap_auth_mode = pBss->AuthMode;
-			if ((ap_auth_mode == Ndis802_11AuthModeWPA) || 
-				(ap_auth_mode == Ndis802_11AuthModeWPAPSK))
-			{
-				if (pBss->WPA.PairCipherAux == Ndis802_11WEPDisabled)
-					ap_cipher = pBss->WPA.PairCipher;
-				else 
-					ap_cipher = Ndis802_11TKIPAESMix;
-			}
-			else if ((ap_auth_mode == Ndis802_11AuthModeWPA2) || 
-					 (ap_auth_mode == Ndis802_11AuthModeWPA2PSK))
-			{
-				if (pBss->WPA2.PairCipherAux == Ndis802_11WEPDisabled)
-					ap_cipher = pBss->WPA2.PairCipher;
-				else 
-					ap_cipher = Ndis802_11TKIPAESMix;
-			}
-		}
-		else if ((pBss->AuthMode == Ndis802_11AuthModeWPAPSK) || 
-				 (pBss->AuthMode == Ndis802_11AuthModeWPA2PSK))
-		{
-			if ((pBss->AuthModeAux == Ndis802_11AuthModeWPAPSK) ||
-				(pBss->AuthModeAux == Ndis802_11AuthModeWPA2PSK))
-				ap_auth_mode = Ndis802_11AuthModeWPA1PSKWPA2PSK;
-			else
-				ap_auth_mode = pBss->AuthMode;
-
-#ifdef DOT11W_PMF_SUPPORT
-			if ((pBss->AuthMode == Ndis802_11AuthModeWPA2PSK) && 
-				(pBss->AuthModeAux == Ndis802_11AuthModeWPA2PSK))
-				ap_auth_mode = pBss->AuthMode;
-#endif /* DOT11W_PMF_SUPPORT */
-
-			if (pBss->WPA.PairCipher != pBss->WPA2.PairCipher)
-			{
-#ifdef DOT11W_PMF_SUPPORT
-				if ((pBss->AuthMode == Ndis802_11AuthModeWPA2PSK) && (pBss->AuthModeAux == Ndis802_11AuthModeWPA2PSK))
-					ap_cipher = pBss->WPA2.PairCipher;
-				else
-#endif /* DOT11W_PMF_SUPPORT */
-					ap_cipher = Ndis802_11TKIPAESMix;
-			}
-			else if ((pBss->WPA.PairCipher == pBss->WPA2.PairCipher) &&
-					 (pBss->WPA.PairCipherAux != pBss->WPA2.PairCipherAux))
-				ap_cipher = Ndis802_11TKIPAESMix;
-			else if ((pBss->WPA.PairCipher == pBss->WPA2.PairCipher) &&
-					 (pBss->WPA.PairCipherAux == pBss->WPA2.PairCipherAux) &&
-					 (pBss->WPA.PairCipherAux != Ndis802_11WEPDisabled))
-				ap_cipher = Ndis802_11TKIPAESMix;
-			else if ((pBss->WPA.PairCipher == pBss->WPA2.PairCipher) &&
-					 (pBss->WPA.PairCipherAux == pBss->WPA2.PairCipherAux) &&
-					 (pBss->WPA.PairCipherAux == Ndis802_11WEPDisabled))
-				ap_cipher = pBss->WPA.PairCipher;
-		}
-		else if ((pBss->AuthMode == Ndis802_11AuthModeWPA) || 
-				 (pBss->AuthMode == Ndis802_11AuthModeWPA2))
-		{
-			if ((pBss->AuthModeAux == Ndis802_11AuthModeWPA) ||
-				(pBss->AuthModeAux == Ndis802_11AuthModeWPA2))
-				ap_auth_mode = Ndis802_11AuthModeWPA1WPA2;
-			else
-				ap_auth_mode = pBss->AuthMode;
-
-			if (pBss->WPA.PairCipher != pBss->WPA2.PairCipher)
-				ap_cipher = Ndis802_11TKIPAESMix;
-			else if ((pBss->WPA.PairCipher == pBss->WPA2.PairCipher) &&
-					 (pBss->WPA.PairCipherAux != pBss->WPA2.PairCipherAux))
-				ap_cipher = Ndis802_11TKIPAESMix;
-			else if ((pBss->WPA.PairCipher == pBss->WPA2.PairCipher) &&
-					 (pBss->WPA.PairCipherAux == pBss->WPA2.PairCipherAux) &&
-					 (pBss->WPA.PairCipherAux != Ndis802_11WEPDisabled))
-				ap_cipher = Ndis802_11TKIPAESMix;
-			else if ((pBss->WPA.PairCipher == pBss->WPA2.PairCipher) &&
-					 (pBss->WPA.PairCipherAux == pBss->WPA2.PairCipherAux) &&
-					 (pBss->WPA.PairCipherAux == Ndis802_11WEPDisabled))
-				ap_cipher = pBss->WPA.PairCipher;
-		}
-
-	}
-	else
-	{
-		ap_auth_mode = pBss->AuthMode;
-		ap_cipher = pBss->WepStatus;
-	}
-
-	sprintf(msg+strlen(msg), "%-9s%-16s", GetEncryptType2((CHAR)ap_cipher), GetAuthMode2((CHAR)ap_auth_mode));
-
+	sprintf(msg+strlen(msg), "%-9s%-16s", GetEncryModeStr2(pBss->PairwiseCipher), GetAuthModeStr2(pBss->AKMMap));
 	/* Rssi*/
 	Rssi = (INT)pBss->Rssi;
 
