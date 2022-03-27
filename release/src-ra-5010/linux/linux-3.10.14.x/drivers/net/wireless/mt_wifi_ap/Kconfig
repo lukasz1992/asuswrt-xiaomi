@@ -32,7 +32,7 @@ config TXRX_STAT_SUPPORT
 config SNIFFER_SUPPORT
 	bool "SNIFFER"
 	depends on MT_AP_SUPPORT && WIFI_EAP_FEATURE
-	default y
+	default n
 
 config ANTENNA_CONTROL_SUPPORT
 	bool "Antenna Control"
