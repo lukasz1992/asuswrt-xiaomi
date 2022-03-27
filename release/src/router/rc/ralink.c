@@ -2906,7 +2906,7 @@ int gen_ralink_config(int band, int is_iNIC)
 		nvram_set(strcat_r(prefix, "bw", tmp), nvram_safe_get(strcat_r(prefix_wlc, "nbw_cap", tmp1)));
 
 		fprintf(fp, "ApCliEnable=0\n");
-		fprintf(fp, "ApCliSsid%d=%s\n", 1, nvram_safe_get(strcat_r(prefix_wlc, "ssid", tmp1)));
+		fprintf(fp, "ApCliSsid=%s\n", nvram_safe_get(strcat_r(prefix_wlc, "ssid", tmp1)));
 		fprintf(fp, "ApCliBssid=\n");
 
 		str = nvram_safe_get(strcat_r(prefix_wlc, "auth_mode", tmp));
@@ -2941,7 +2941,7 @@ int gen_ralink_config(int band, int is_iNIC)
 					fprintf(fp, "ApCliEncrypType=%s\n", "AES");
 
 				//WPAPSK
-				fprintf(fp, "ApCliWPAPSK%d=%s\n", 1, nvram_safe_get(strcat_r(prefix_wlc, "wpa_psk", tmp)));
+				fprintf(fp, "ApCliWPAPSK=%s\n", nvram_safe_get(strcat_r(prefix_wlc, "wpa_psk", tmp)));
 			}
 			else
 			{
@@ -3037,7 +3037,7 @@ int gen_ralink_config(int band, int is_iNIC)
 
 
 		fprintf(fp, "ApCliEnable=0\n");
-		fprintf(fp, "ApCliSsid%d=%s\n", 1, nvram_safe_get("wlc_ssid"));
+		fprintf(fp, "ApCliSsid=%s\n", nvram_safe_get("wlc_ssid"));
 		fprintf(fp, "ApCliBssid=\n");
 
 		str = nvram_safe_get("wlc_auth_mode");
@@ -3072,7 +3072,7 @@ int gen_ralink_config(int band, int is_iNIC)
 					fprintf(fp, "ApCliEncrypType=%s\n", "AES");
 
 				//WPAPSK
-				fprintf(fp, "ApCliWPAPSK%d=%s\n", 1, nvram_safe_get("wlc_wpa_psk"));
+				fprintf(fp, "ApCliWPAPSK=%s\n", nvram_safe_get("wlc_wpa_psk"));
 			}
 			else
 			{
@@ -3289,9 +3289,9 @@ next_mrate:
 		str = " (5G)";
 	else
 		str = "";
-	fprintf(fp, "WscManufacturer=%s\n", "ASUSTeK Computer Inc.");
+	fprintf(fp, "WscManufacturer=%s\n", "Xiaomi");
 	fprintf(fp, "WscModelName=%s%s\n", "WPS Router", str);
-	fprintf(fp, "WscDeviceName=%s%s\n", "ASUS WPS Router", str);
+	fprintf(fp, "WscDeviceName=%s%s\n", "Xiaomi WPS Router", str);
 	fprintf(fp, "WscModelNumber=%s\n", get_productid());
 	fprintf(fp, "WscSerialNumber=%s\n", "00000000");
 

@@ -413,7 +413,7 @@ struct nvram_tuple router_defaults[] = {
 #else
 	{ "wps_modelname", "Wi-Fi Protected Setup Router", CKN_STR_DEFAULT, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },
 #endif
-	{ "wps_mfstring", "ASUSTeK Computer Inc.", CKN_STR_DEFAULT, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },
+	{ "wps_mfstring", "Xiaomi", CKN_STR_DEFAULT, CKN_TYPE_DEFAULT, CKN_ACC_LEVEL_DEFAULT, CKN_ENC_DEFAULT, 0 },
 //	{ "wps_device_name", RT_BUILD_NAME, 0 },
 #ifdef RTCONFIG_RALINK
 #elif defined(RTCONFIG_QCA)
