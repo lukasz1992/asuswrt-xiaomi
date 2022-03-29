@@ -560,6 +560,9 @@ function show_middle_status(auth_mode, wl_wep_x){
 		case "psk2psk3":
 				security_mode = "WPA2/WPA3-Personal";
 				break;
+		case "owe":
+				security_mode = "Enhanced Open System (OWE)";
+				break;
 		case "wpa":
 				security_mode = "WPA-Enterprise";
 				break;

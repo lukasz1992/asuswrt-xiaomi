@@ -1657,6 +1657,10 @@ int gen_ralink_config(int band, int is_iNIC)
 			{
 				sprintf(tmpstr, "%s%s", tmpstr, "WPA2PSKWPA3PSK");
 			}
+			else if (!strcmp(str, "owe"))
+			{
+				sprintf(tmpstr, "%s%s", tmpstr, "OWE");
+			}
 			else if (!strcmp(str, "wpa"))
 			{
 				sprintf(tmpstr, "%s%s", tmpstr, "WPA");
@@ -1730,7 +1734,8 @@ int gen_ralink_config(int band, int is_iNIC)
 		{
 			sprintf(tmpstr, "%s%s", tmpstr, "TKIP");
 		}
-		else if (nvram_match(strcat_r(prefix_mssid, "crypto", temp), "aes"))
+		else if (nvram_match(strcat_r(prefix_mssid, "crypto", temp), "aes") ||
+				nvram_match(strcat_r(prefix_mssid, "auth_mode_x", temp), "owe"))
 		{
 			sprintf(tmpstr, "%s%s", tmpstr, "AES");
 		}
@@ -2942,6 +2947,10 @@ int gen_ralink_config(int band, int is_iNIC)
 
 				//WPAPSK
 				fprintf(fp, "ApCliWPAPSK=%s\n", nvram_safe_get(strcat_r(prefix_wlc, "wpa_psk", tmp)));
+			}
+			else if (!strcmp(str, "owe")) {
+				fprintf(fp, "ApCliAuthMode=%s\n", "OWE");
+				fprintf(fp, "ApCliEncrypType=%s\n", "AES");
 			}
 			else
 			{

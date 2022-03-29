@@ -205,12 +205,14 @@ function translate_auth(flag){
 		return "WPA-Personal";
 	else if(flag == "psk2")
  		return "WPA2-Personal";
-	else if(flag == "pskpsk2")
-		return "WPA-Auto-Personal";
 	else if(flag == "psk3")
 		return "WPA3-Personal";
 	else if(flag == "psk2psk3")
 		return "WPA2/WPA3-Personal";
+	else if(flag == "pskpsk2")
+		return "WPA-Auto-Personal";
+	else if(flag == "owe")
+		return "Enhanced Open System (OWE)";
 	else if(flag == "wpa")
 		return "WPA-Enterprise";
 	else if(flag == "wpa2")
@@ -1464,6 +1466,7 @@ function dis_qos_enable(_wl_idx, _form_obj, _control_item){
 										<option value="pskpsk2" <% nvram_match("wl_auth_mode_x", "pskpsk2","selected"); %>>WPA-Auto-Personal</option>
 										<option value="psk3"    <% nvram_match("wl_auth_mode_x", "psk3",    "selected"); %>>WPA3-Personal</option>
 										<option value="psk2psk3" <% nvram_match("wl_auth_mode_x", "psk2psk3","selected"); %>>WPA2/WPA3-Personal</option>
+										<option value="owe"     <% nvram_match("wl_auth_mode_x", "owe",    "selected"); %>>Enhanced Open System (OWE)</option>
 									</select>
 									<br>
 									<span id="wl_nmode_x_hint" style="display:none;"><#WLANConfig11n_automode_limition_hint#></span>
