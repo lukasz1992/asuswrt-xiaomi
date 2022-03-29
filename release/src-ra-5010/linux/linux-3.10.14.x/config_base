@@ -789,7 +789,7 @@ CONFIG_WEXT_PRIV=y
 # CFG80211 needs to be enabled for MAC80211
 #
 # CONFIG_WIMAX is not set
-CONFIG_RFKILL=y
+# CONFIG_RFKILL is not set
 # CONFIG_NET_9P is not set
 # CONFIG_CAIF is not set
 # CONFIG_CEPH_LIB is not set
