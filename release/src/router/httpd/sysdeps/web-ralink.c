@@ -590,8 +590,8 @@ wl_status(int eid, webs_t wp, int argc, char_t **argv, int unit)
 		}
 		if(*tmp != '\0')
 			ret+=websWrite(wp, "Phy Mode	: 11%s\n", tmp+1); // skip first '/'
-/*	}
-	else
+	}
+/*	else
 #endif
 	if (phy_mode==PHY_11BG_MIXED)
 		ret+=websWrite(wp, "Phy Mode	: 11b/g\n");
