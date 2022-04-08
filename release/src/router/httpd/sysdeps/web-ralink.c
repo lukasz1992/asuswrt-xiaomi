@@ -1765,7 +1765,7 @@ static int ej_wl_channel_list(int eid, webs_t wp, int argc, char_t **argv, int u
 #endif
 
 	//try getting channel list via wifi driver first
-	if(get_channel_list_via_driver(unit, chList, sizeof(chList)) > 0)
+	if(/*get_channel_list_via_driver(unit, chList, sizeof(chList)) >*/ 0)
 	{
 		retval += websWrite(wp, "[%s]", chList);
 	}
