@@ -109,7 +109,7 @@ unsigned int CFG_BLOCKSIZE;
 #ifdef CONFIG_RT2880_ROOTFS_IN_FLASH
 #define NAND_MTD_ROOTFS_PARTITION_NO            5
 #endif
-static int shift_on_bbt = 0;
+#define shift_on_bbt 0
 static int is_skip_bad_block(struct mtd_info *mtd, int page);
 extern void nand_bbt_set(struct mtd_info *mtd, int page, int flag);
 extern int nand_bbt_get(struct mtd_info *mtd, int page);
@@ -5064,7 +5064,7 @@ int mtk_nand_probe()
     {
         MSG(INIT, "[mtk_nand] probe successfully!\n");
         nand_disable_clock();
-#if defined(SKIP_BAD_BLOCK)
+#if 0
 	shift_on_bbt = 1;
 #if defined(CONFIG_SUPPORT_OPENWRT)
 	printk("rootfs = %x to %x\n", (int)rootfs_offset, (int)rootfs_data_offset);
