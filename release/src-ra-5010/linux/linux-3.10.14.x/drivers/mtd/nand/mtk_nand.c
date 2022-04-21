@@ -5048,6 +5048,9 @@ int mtk_nand_probe()
 	g_pasStatic_Partition[2].offset = 0xc0000;
 	g_pasStatic_Partition[6].size = 0xa000000;
 #endif
+// Change offset if all sectors in Config partition are bad
+    if ((fact_bbt[3] & 0xf0) == 0xf0)
+        g_pasStatic_Partition[1].offset = 0x180000;
 // Xiaomi
 	err = add_mtd_partitions(mtd, g_pasStatic_Partition, part_num);
 	//err = mtd_device_register(mtd, g_pasStatic_Partition, part_num);
