@@ -4,7 +4,6 @@ This is version of AsusWRT that works with Xiaomi Mi routers, based on MT7621 CP
 ## Supported devices
 - Xiaomi MI R3G
 - Xiaomi MI R3P
-- Xiaomi MI R3Gv2 and R4A (only Gbit ethernet version)
 - Xiaomi Redmi AC2100
 - Xiaomi AC2100
 
@@ -25,5 +24,5 @@ Installation process is similar to OpenWRT
 1. cd release/src-ra-5010
 2. make model (currently available models are: rt-mir3g, rt-mir3p, rt-mir4a, rt-rm2100, rt-r2100)
 
-## Important note
+## Important notes
 - I do not take responsibility for any damages - you do everything on your own risk
